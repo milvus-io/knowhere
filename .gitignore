@@ -1,0 +1,71 @@
+
+# CLion generated files
+**/cmake-build-debug/*
+**/cmake-build-release/*
+**/cmake_build_release/*
+**/cmake_build/*
+
+internal/core/output/*
+internal/core/build/*
+internal/kv/rocksdb/cwrapper/output/*
+**/.idea/*
+internal/msgstream/pulsarms/client-cpp/build/
+internal/msgstream/pulsarms/client-cpp/build/*
+
+# vscode generated files
+.vscode
+docker-compose-devcontainer.yml
+docker-compose-devcontainer.yml.tmp
+
+*.code-workspace
+
+# Docker generated cache file
+.docker/
+
+**/_artifacts/**
+
+# Compiled source
+bin/
+lib/
+*.a
+*.so
+*.so.*
+*.o
+*.lo
+*.tar.gz
+*.log
+.coverage
+*.pyc
+*.log
+
+# macOS generated files & other irrelevant files
+.DS_Store
+*.sw[po]
+cwrapper_build
+**/cwrapper_rocksdb_build/
+**/.clangd/*
+**/compile_commands.json
+**/.lint
+typescript
+**/.pytest_cache/
+.root
+gtags.conf
+
+# Delve generated file
+**/__debug_bin
+
+# codecov-go generated files
+*coverage.txt
+profile.out
+*coverage.html
+cover.out
+
+# codecov-cpp generated files
+lcov_*.info
+cpp_coverage/
+
+# virtualenv
+venv/
+
+# docker compose volumes
+deployments/docker/*/volumes
