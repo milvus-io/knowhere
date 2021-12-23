@@ -10,9 +10,6 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <gtest/gtest.h>
-
-#include <fiu-control.h>
-#include <fiu/fiu-local.h>
 #include <iostream>
 #include <thread>
 
@@ -180,7 +177,6 @@ TEST_P(IVFTest, ivf_basic_gpu) {
 }
 
 TEST_P(IVFTest, ivf_serialize) {
-    fiu_init(0);
     auto serialize = [](const std::string& filename, milvus::knowhere::BinaryPtr& bin, uint8_t* ret) {
         FileIOWriter writer(filename);
         writer(static_cast<void*>(bin->data.get()), bin->size);
@@ -213,7 +209,6 @@ TEST_P(IVFTest, ivf_serialize) {
 }
 
 TEST_P(IVFTest, ivf_slice) {
-    fiu_init(0);
     {
         // serialize index
         index_->Train(base_dataset, conf_);
@@ -310,14 +305,8 @@ TEST_P(IVFTest, gpu_seal_test) {
 
     auto result = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result, nq, conf_[milvus::knowhere::meta::TOPK]);
-
-    fiu_init(0);
-    fiu_enable("IVF.Search.throw_std_exception", 1, nullptr, 0);
     ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
-    fiu_disable("IVF.Search.throw_std_exception");
-    fiu_enable("IVF.Search.throw_faiss_exception", 1, nullptr, 0);
     ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
-    fiu_disable("IVF.Search.throw_faiss_exception");
 
     auto cpu_idx = milvus::knowhere::cloner::CopyGpuToCpu(index_, milvus::knowhere::Config());
     milvus::knowhere::IVFPtr ivf_idx = std::dynamic_pointer_cast<milvus::knowhere::IVF>(cpu_idx);
@@ -350,15 +339,8 @@ TEST_P(IVFTest, invalid_gpu_source) {
     // }
 
     index_->Train(base_dataset, conf_);
-
-    fiu_init(0);
-    fiu_enable("GPUIVF.SerializeImpl.throw_exception", 1, nullptr, 0);
     ASSERT_ANY_THROW(index_->Serialize(conf_));
-    fiu_disable("GPUIVF.SerializeImpl.throw_exception");
-
-    fiu_enable("GPUIVF.search_impl.invald_index", 1, nullptr, 0);
     ASSERT_ANY_THROW(index_->Query(base_dataset, invalid_conf, nullptr));
-    fiu_disable("GPUIVF.search_impl.invald_index");
 
     auto ivf_index = std::dynamic_pointer_cast<milvus::knowhere::GPUIVF>(index_);
     if (ivf_index) {
@@ -375,16 +357,12 @@ TEST_P(IVFTest, IVFSQHybrid_test) {
     if (index_type_ != milvus::knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
         return;
     }
-    fiu_init(0);
 
     index_->SetIndexSize(0);
     milvus::knowhere::cloner::CopyGpuToCpu(index_, conf_);
     ASSERT_ANY_THROW(milvus::knowhere::cloner::CopyCpuToGpu(index_, -1, conf_));
-
-    fiu_enable("FaissGpuResourceMgr.GetRes.ret_null", 1, nullptr, 0);
     ASSERT_ANY_THROW(index_->Train(base_dataset, conf_));
     ASSERT_ANY_THROW(index_->CopyCpuToGpu(DEVICEID, conf_));
-    fiu_disable("FaissGpuResourceMgr.GetRes.ret_null");
 
     index_->Train(base_dataset, conf_);
     auto index = std::dynamic_pointer_cast<milvus::knowhere::IVFSQHybrid>(index_);

@@ -9,8 +9,6 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
-#include <fiu-control.h>
-#include <fiu/fiu-local.h>
 #include <gtest/gtest.h>
 #include <memory>
 
@@ -77,7 +75,6 @@ class NSGInterfaceTest : public DataGen, public ::testing::Test {
 
 TEST_F(NSGInterfaceTest, basic_test) {
     assert(!xb.empty());
-    fiu_init(0);
     // untrained index
     {
         ASSERT_ANY_THROW(index_->Serialize(search_conf));
@@ -201,7 +198,6 @@ TEST_F(NSGInterfaceTest, delete_test) {
 
 TEST_F(NSGInterfaceTest, slice_test) {
     assert(!xb.empty());
-    fiu_init(0);
     // untrained index
     {
         ASSERT_ANY_THROW(index_->Serialize(search_conf));

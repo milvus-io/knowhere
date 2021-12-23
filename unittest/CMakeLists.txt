@@ -21,7 +21,6 @@ set(DEPEND_LIBS
         gtest_main
         gmock_main
         faiss
-        fiu
         ngt
         index_log
         openblas

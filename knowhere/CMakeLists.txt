@@ -110,7 +110,6 @@ set(depend_libs
         gomp
         gfortran
         pthread
-        fiu
         ngt
         index_log
         )
@@ -179,4 +178,19 @@ if (MILVUS_SUPPORT_SPTAG)
         )
 endif ()
 
-set(INDEX_INCLUDE_DIRS ${INDEX_INCLUDE_DIRS} PARENT_SCOPE)
+#set(INDEX_INCLUDE_DIRS ${INDEX_INCLUDE_DIRS} PARENT_SCOPE)
+
+install(TARGETS index_log DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+install(TARGETS knowhere DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+
+install(DIRECTORY "${INDEX_SOURCE_DIR}/knowhere/cache/" 
+        DESTINATION "include/knowhere/cache"
+        FILES_MATCHING 
+        PATTERN "*.h" 
+)
+
+install(DIRECTORY "${INDEX_SOURCE_DIR}/knowhere/knowhere/" 
+        DESTINATION "include/knowhere"
+        FILES_MATCHING 
+        PATTERN "*.h" 
+)

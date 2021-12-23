@@ -11,8 +11,6 @@
 
 #include <gtest/gtest.h>
 
-#include <fiu-control.h>
-#include <fiu/fiu-local.h>
 #include <iostream>
 #include <thread>
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
@@ -478,14 +476,11 @@ TEST_P(IDMAPTest, idmap_copy) {
         ASSERT_ANY_THROW(milvus::knowhere::cloner::CopyCpuToGpu(index_, -1, conf));
         auto clone_index = milvus::knowhere::cloner::CopyCpuToGpu(index_, DEVICEID, conf);
         auto clone_result = clone_index->Query(query_dataset, conf, nullptr);
+
         AssertAnns(clone_result, nq, k);
         ASSERT_THROW({ std::static_pointer_cast<milvus::knowhere::GPUIDMAP>(clone_index)->GetRawVectors(); },
                      milvus::knowhere::KnowhereException);
-
-        fiu_init(0);
-        fiu_enable("GPUIDMP.SerializeImpl.throw_exception", 1, nullptr, 0);
         ASSERT_ANY_THROW(clone_index->Serialize(conf));
-        fiu_disable("GPUIDMP.SerializeImpl.throw_exception");
 
         auto binary = clone_index->Serialize(conf);
         clone_index->Load(binary);

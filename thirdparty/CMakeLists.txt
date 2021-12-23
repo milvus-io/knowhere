@@ -35,7 +35,6 @@ message( STATUS "Thirdparty downloaded file path: ${THIRDPARTY_DOWNLOAD_PATH}" )
 set( THREADS_PREFER_PTHREAD_FLAG ON )
 find_package( Threads REQUIRED )
 
-add_subdirectory(fiu)
 # ****************************** Thirdparty googletest ***************************************
 if ( KNOWHERE_BUILD_TESTS )
     if(NOT TARGET gtest::gtest_main)
@@ -56,8 +55,7 @@ set(FAISS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/faiss)
 
 macro(build_faiss)
     message(STATUS "Building FAISS-${FAISS_VERSION} from source")
-
-    set(FAISS_PREFIX "${INDEX_BINARY_DIR}/faiss_ep-prefix/src/faiss_ep")
+    set(FAISS_PREFIX "${INDEX_BINARY_DIR}/thirdparty/faiss_ep-prefix")
     set(FAISS_INCLUDE_DIR "${FAISS_PREFIX}/include")
     set(FAISS_STATIC_LIB
             "${FAISS_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}faiss${CMAKE_STATIC_LIBRARY_SUFFIX}")
@@ -185,3 +183,34 @@ if (KNOWHERE_WITH_FAISS AND NOT TARGET faiss_ep)
     include_directories(SYSTEM "${FAISS_INCLUDE_DIR}")
     link_directories(SYSTEM ${FAISS_PREFIX}/lib/)
 endif ()
+
+install(DIRECTORY "${INDEX_SOURCE_DIR}/thirdparty/annoy/" 
+        DESTINATION "include/annoy"
+        FILES_MATCHING 
+        PATTERN "*.h" 
+)
+
+install(DIRECTORY "${INDEX_SOURCE_DIR}/thirdparty/easyloggingpp/" 
+        DESTINATION "include/easyloggingpp"
+        FILES_MATCHING 
+        PATTERN "*.h" 
+)
+
+install(DIRECTORY "${INDEX_SOURCE_DIR}/thirdparty/faiss/" 
+        DESTINATION "include/faiss"
+        FILES_MATCHING 
+        PATTERN "*.h" 
+)
+
+install(DIRECTORY "${INDEX_SOURCE_DIR}/thirdparty/hnswlib/" 
+        DESTINATION "include/hnswlib"
+        FILES_MATCHING 
+        PATTERN "*.h" 
+)
+
+install(DIRECTORY "${INDEX_SOURCE_DIR}/thirdparty/NGT/lib/NGT/" 
+        DESTINATION "include/NGT"
+        FILES_MATCHING 
+        PATTERN "*.h" 
+)
+

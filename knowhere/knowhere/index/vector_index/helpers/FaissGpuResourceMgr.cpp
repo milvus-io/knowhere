@@ -12,7 +12,6 @@
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
 #include "knowhere/common/Log.h"
 
-#include <fiu/fiu-local.h>
 #include <utility>
 
 namespace milvus {
@@ -83,7 +82,6 @@ FaissGpuResourceMgr::InitResource() {
 
 ResPtr
 FaissGpuResourceMgr::GetRes(const int64_t device_id, const int64_t alloc_size) {
-    fiu_return_on("FaissGpuResourceMgr.GetRes.ret_null", nullptr);
     InitResource();
 
     auto finder = idle_map_.find(device_id);

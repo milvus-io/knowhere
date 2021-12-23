@@ -16,7 +16,6 @@
 #ifdef MILVUS_GPU_VERSION
 #include <faiss/gpu/GpuCloner.h>
 #endif
-#include <fiu/fiu-local.h>
 #include <string>
 
 #include "knowhere/common/Exception.h"
@@ -42,7 +41,6 @@ GPUIDMAP::CopyGpuToCpu(const Config& config) {
 BinarySet
 GPUIDMAP::SerializeImpl(const IndexType& type) {
     try {
-        fiu_do_on("GPUIDMP.SerializeImpl.throw_exception", throw std::exception());
         MemoryIOWriter writer;
         {
             faiss::Index* index = index_.get();

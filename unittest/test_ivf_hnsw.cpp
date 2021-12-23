@@ -10,9 +10,6 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <gtest/gtest.h>
-
-#include <fiu-control.h>
-#include <fiu/fiu-local.h>
 #include <iostream>
 #include <thread>
 
@@ -80,7 +77,6 @@ TEST_P(IVFHNSWTest, ivfhnsw_basic_cpu) {
 }
 
 TEST_P(IVFHNSWTest, ivfhnsw_slice) {
-    fiu_init(0);
     {
         // serialize index
         index_->Train(base_dataset, conf_);

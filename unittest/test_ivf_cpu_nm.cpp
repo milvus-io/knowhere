@@ -11,8 +11,6 @@
 
 #include <gtest/gtest.h>
 
-#include <fiu-control.h>
-#include <fiu/fiu-local.h>
 #include <iostream>
 #include <thread>
 

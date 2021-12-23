@@ -22,7 +22,6 @@
 #include <faiss/gpu/GpuCloner.h>
 #endif
 
-#include <fiu/fiu-local.h>
 #include <chrono>
 #include <memory>
 #include <string>
@@ -156,8 +155,6 @@ IVF_NM::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::
     };
 
     try {
-        fiu_do_on("IVF_NM.Search.throw_std_exception", throw std::exception());
-        fiu_do_on("IVF_NM.Search.throw_faiss_exception", throw faiss::FaissException(""));
         auto k = config[meta::TOPK].get<int64_t>();
         auto elems = rows * k;
 

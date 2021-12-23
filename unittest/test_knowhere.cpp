@@ -13,8 +13,6 @@
 #include "wrapper/KnowhereConfig.h"
 #include "wrapper/utils.h"
 
-#include <fiu-control.h>
-#include <fiu/fiu-local.h>
 #include <gtest/gtest.h>
 
 using namespace milvus;

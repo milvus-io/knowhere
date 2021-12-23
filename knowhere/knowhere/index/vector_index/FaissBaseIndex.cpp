@@ -10,7 +10,6 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License
 
 #include <faiss/index_io.h>
-#include <fiu/fiu-local.h>
 
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/IndexType.h"
@@ -23,7 +22,6 @@ namespace knowhere {
 BinarySet
 FaissBaseIndex::SerializeImpl(const IndexType& type) {
     try {
-        fiu_do_on("FaissBaseIndex.SerializeImpl.throw_exception", throw std::exception());
         faiss::Index* index = index_.get();
 
         MemoryIOWriter writer;

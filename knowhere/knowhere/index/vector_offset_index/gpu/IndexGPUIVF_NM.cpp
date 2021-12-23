@@ -15,7 +15,6 @@
 #include <faiss/gpu/GpuIndexIVF.h>
 #include <faiss/gpu/GpuIndexIVFFlat.h>
 #include <faiss/index_io.h>
-#include <fiu/fiu-local.h>
 #include <string>
 
 #include "knowhere/common/Exception.h"
@@ -96,7 +95,6 @@ GPUIVF_NM::SerializeImpl(const IndexType& type) {
     }
 
     try {
-        fiu_do_on("GPUIVF_NM.SerializeImpl.throw_exception", throw std::exception());
         MemoryIOWriter writer;
         {
             faiss::Index* index = index_.get();
@@ -124,7 +122,6 @@ GPUIVF_NM::QueryImpl(int64_t n,
                      const Config& config,
                      const faiss::BitsetView bitset) {
     auto device_index = std::dynamic_pointer_cast<faiss::gpu::GpuIndexIVF>(index_);
-    fiu_do_on("GPUIVF_NM.search_impl.invald_index", device_index = nullptr);
     if (device_index) {
         device_index->nprobe = config[IndexParams::nprobe];
         ResScope rs(res_, gpu_id_);

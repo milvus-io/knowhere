@@ -13,7 +13,6 @@
 #include <faiss/gpu/GpuCloner.h>
 #include <faiss/gpu/GpuIndexIVF.h>
 #include <faiss/index_factory.h>
-#include <fiu/fiu-local.h>
 #include <string>
 #include <utility>
 
@@ -207,7 +206,6 @@ IVFSQHybrid::SerializeImpl(const IndexType& type) {
         KNOWHERE_THROW_MSG("index not initialize or trained");
     }
 
-    fiu_do_on("IVFSQHybrid.SerializeImpl.zero_gpu_mode", gpu_mode_ = 0);
     if (gpu_mode_ == 0) {
         MemoryIOWriter writer;
         faiss::write_index(index_.get(), &writer);
