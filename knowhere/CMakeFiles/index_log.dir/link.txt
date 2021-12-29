@@ -1,0 +1,2 @@
+/usr/bin/ar qc libindex_log.a CMakeFiles/index_log.dir/knowhere/common/Log.cpp.o CMakeFiles/index_log.dir/__/thirdparty/easyloggingpp/easylogging++.cc.o
+/usr/bin/ranlib libindex_log.a
