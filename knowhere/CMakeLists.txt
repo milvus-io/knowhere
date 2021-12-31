@@ -14,6 +14,7 @@
 include_directories(${INDEX_SOURCE_DIR}/knowhere)
 include_directories(${INDEX_SOURCE_DIR}/thirdparty)
 include_directories(${INDEX_SOURCE_DIR}/thirdparty/NGT/lib)
+include_directories(${INDEX_SOURCE_DIR}/knowhere/knowhere/utils)
 
 set(KNOWHERE_THIRDPARTY_SRC ${INDEX_SOURCE_DIR}/thirdparty)
 if (MILVUS_SUPPORT_SPTAG)
@@ -112,6 +113,7 @@ set(depend_libs
         pthread
         ngt
         index_log
+        knowhere_utils
         )
 
 if (MILVUS_SUPPORT_SPTAG)
@@ -156,6 +158,8 @@ if (NOT TARGET knowhere)
             ${vector_index_srcs}
             ${vector_offset_index_srcs}
     )
+
+    target_include_directories(knowhere PUBLIC ${INDEX_SOURCE_DIR}/knowere)
 endif ()
 
 target_link_libraries(

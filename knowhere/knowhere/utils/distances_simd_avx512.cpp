@@ -1,12 +1,12 @@
 
 // -*- c++ -*-
 
-#include <faiss/utils/distances_simd_avx512.h>
-
 #include <cstdio>
 #include <cassert>
 #include <immintrin.h>
 #include <string>
+
+#include "distances_simd_avx512.h"
 
 namespace faiss {
 

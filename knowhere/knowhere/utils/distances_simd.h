@@ -11,9 +11,6 @@
 
 #include <stdint.h>
 
-#include <faiss/utils/BitsetView.h>
-
-
 namespace faiss {
 
  /*********************************************************

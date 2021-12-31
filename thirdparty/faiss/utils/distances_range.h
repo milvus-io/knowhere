@@ -11,8 +11,8 @@
 
 #include <stdint.h>
 
-#include <faiss/utils/BitsetView.h>
 #include <faiss/impl/AuxIndexStructures.h>
+#include <knowhere/utils/BitsetView.h>
 
 
 namespace faiss {
