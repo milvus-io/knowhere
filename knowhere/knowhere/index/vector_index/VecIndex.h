@@ -11,7 +11,6 @@
 
 #pragma once
 
-#include <faiss/utils/BitsetView.h>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -23,6 +22,7 @@
 #include "knowhere/index/Index.h"
 #include "knowhere/index/IndexType.h"
 #include "knowhere/index/vector_index/Statistics.h"
+#include "knowhere/index/vector_index/faiss_common/BitsetView.h"
 #include "knowhere/index/vector_index/helpers/DynamicResultSet.h"
 
 namespace milvus {

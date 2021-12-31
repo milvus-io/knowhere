@@ -15,7 +15,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "IndexIVF.h"
 #include "knowhere/common/Log.h"
 #include "knowhere/index/vector_index/Statistics.h"
 

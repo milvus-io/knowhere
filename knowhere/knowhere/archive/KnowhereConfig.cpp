@@ -8,8 +8,11 @@
 // Unless required by applicable law or agreed to in writing, software distributed under the License
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
-
+#ifdef __APPLE__
+    // do nothing
+#elif __linux__
 #include <string>
+#include <knowhere/index/vector_index/Statistics.h>
 
 #include "KnowhereConfig.h"
 #include "NGT/lib/NGT/defines.h"
@@ -18,9 +21,7 @@
 #include "faiss/common.h"
 #include "faiss/utils/distances.h"
 #include "faiss/utils/utils.h"
-#include "knowhere/common/Exception.h"
 #include "knowhere/common/Log.h"
-#include "knowhere/index/vector_index/IndexHNSW.h"
 #ifdef MILVUS_GPU_VERSION
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
 #endif
@@ -116,3 +117,6 @@ KnowhereConfig::FreeGPUResource() {
 
 }  // namespace engine
 }  // namespace milvus
+#else
+#   error "Unknown compiler"
+#endif

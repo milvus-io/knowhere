@@ -15,7 +15,6 @@
 #include "BinarySet.h"
 #include "Config.h"
 #include "Exception.h"
-#include "knowhere/index/vector_index/helpers/FaissIO.h"
 
 namespace milvus {
 namespace knowhere {

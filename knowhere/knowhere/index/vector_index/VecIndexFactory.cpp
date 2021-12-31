@@ -13,6 +13,8 @@
 
 #include "knowhere/common/Exception.h"
 #include "knowhere/common/Log.h"
+
+#ifdef __linux__
 #include "knowhere/index/vector_index/IndexAnnoy.h"
 #include "knowhere/index/vector_index/IndexBinaryIDMAP.h"
 #include "knowhere/index/vector_index/IndexBinaryIVF.h"
@@ -43,12 +45,16 @@
 #include "knowhere/index/vector_index/helpers/Cloner.h"
 #include "knowhere/index/vector_offset_index/gpu/IndexGPUIVF_NM.h"
 #endif
+#endif
 
 namespace milvus {
 namespace knowhere {
 
 VecIndexPtr
 VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
+#ifdef __APPLE__
+    KNOWHERE_THROW_MSG("Unsupported operation on MacOS!");
+#elif __linux__
 #ifdef MILVUS_GPU_VERSION
     auto gpu_device = -1;  // TODO: remove hardcode here, get from invoker
 #endif
@@ -108,6 +114,7 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
     } else {
         return nullptr;
     }
+#endif
 }
 
 }  // namespace knowhere
