@@ -4,10 +4,10 @@ set (CMAKE_CXX_STANDARD 11)
 
 project(BruteForce)
 
-set(CMAKE_C_COMPILER "/opt/homebrew/Cellar/llvm/13.0.0_2/bin/clang")
-set(CMAKE_CXX_COMPILER "/opt/homebrew/Cellar/llvm/13.0.0_2/bin/clang++")
-set(OPENMP_LIBRARIES "/opt/homebrew/Cellar/llvm/13.0.0_2/lib")
-set(OPENMP_INCLUDES "/opt/homebrew/Cellar/llvm/13.0.0_2/include")
+#set(CMAKE_C_COMPILER "/opt/homebrew/Cellar/llvm/13.0.0_2/bin/clang")
+#set(CMAKE_CXX_COMPILER "/opt/homebrew/Cellar/llvm/13.0.0_2/bin/clang++")
+#set(OPENMP_LIBRARIES "/opt/homebrew/Cellar/llvm/13.0.0_2/lib")
+#set(OPENMP_INCLUDES "/opt/homebrew/Cellar/llvm/13.0.0_2/include")
 
 OPTION (USE_OpenMP "Use OpenMP to enable <omp.h>" ON)
 
@@ -34,12 +34,12 @@ if(USE_OpenMP)
     find_package(OpenMP REQUIRED)
 endif(USE_OpenMP)
 
-if (OPENMP_FOUND)
-    include_directories("${OPENMP_INCLUDES}")
-    link_directories("${OPENMP_LIBRARIES}")
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-endif(OPENMP_FOUND)
+#if (OPENMP_FOUND)
+#    include_directories("${OPENMP_INCLUDES}")
+#    link_directories("${OPENMP_LIBRARIES}")
+#    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+#    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+#endif(OPENMP_FOUND)
 
 add_subdirectory(include)
 

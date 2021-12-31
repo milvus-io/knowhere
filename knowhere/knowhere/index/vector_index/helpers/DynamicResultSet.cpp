@@ -10,11 +10,10 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <cstring>
-#include <iostream>
 #include <string>
 #include <utility>
 
-#include "faiss/impl/AuxIndexStructures.h"
+#include "knowhere/index/vector_index/faiss_common/AuxIndexStructures.h"
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/vector_index/helpers/DynamicResultSet.h"
 
