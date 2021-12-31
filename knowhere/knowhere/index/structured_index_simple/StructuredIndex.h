@@ -14,7 +14,6 @@
 #include <map>
 #include <memory>
 #include <string>
-#include "faiss/utils/ConcurrentBitset.h"
 #include "knowhere/index/Index.h"
 #include <boost/dynamic_bitset.hpp>
 
