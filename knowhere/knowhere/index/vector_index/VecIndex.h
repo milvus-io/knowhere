@@ -24,6 +24,10 @@
 #include "knowhere/index/vector_index/Statistics.h"
 #include "knowhere/utils/BitsetView.h"
 
+#ifdef __linux__
+#include "knowhere/index/vector_index/helpers/DynamicResultSet.h"
+#endif
+
 namespace milvus {
 namespace knowhere {
 
