@@ -1,14 +1,13 @@
 
 // -*- c++ -*-
 
-#include <iostream>
 #include <mutex>
 
-#include <faiss/FaissHookFvec.h>
-#include <faiss/utils/distances_simd.h>
-#include <faiss/utils/distances_simd_avx.h>
-#include <faiss/utils/distances_simd_avx512.h>
-#include <faiss/utils/instruction_set.h>
+#include "FaissHookFvec.h"
+#include "distances_simd.h"
+#include "distances_simd_avx.h"
+#include "distances_simd_avx512.h"
+#include "instruction_set.h"
 
 namespace faiss {
 

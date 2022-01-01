@@ -22,7 +22,7 @@
 #include "knowhere/index/Index.h"
 #include "knowhere/index/IndexType.h"
 #include "knowhere/index/vector_index/Statistics.h"
-#include "knowhere/index/vector_index/faiss_common/BitsetView.h"
+#include <knowhere/utils/BitsetView.h>
 
 namespace milvus {
 namespace knowhere {

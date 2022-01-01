@@ -16,16 +16,16 @@
 
 #pragma once
 
-#include	<bitset>
+#include <bitset>
 #include <sstream>
 
-#include	"NGT/defines.h"
-#include	"NGT/Common.h"
-#include	"NGT/ObjectSpaceRepository.h"
+#include "NGT/defines.h"
+#include "NGT/Common.h"
+#include "NGT/ObjectSpaceRepository.h"
 
-#include "faiss/utils/BitsetView.h"
+#include "knowhere/utils/BitsetView.h"
 
-#include	"NGT/HashBasedBooleanSet.h"
+#include "NGT/HashBasedBooleanSet.h"
 
 #ifndef NGT_GRAPH_CHECK_VECTOR
 #include	<unordered_set>

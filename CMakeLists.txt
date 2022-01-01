@@ -105,6 +105,11 @@ if (MILVUS_SUPPORT_SPTAG)
     add_compile_definitions("MILVUS_SUPPORT_SPTAG")
 endif ()
 
+include(ThirdPartyPackagesCore)
+add_subdirectory(knowhere/knowhere/utils)
+add_subdirectory(thirdparty)
+add_subdirectory(knowhere/knowhere/utils)
+
 if (MACOS)
     include_directories(${INDEX_SOURCE_DIR}/thirdparty/easyloggingpp)
     include_directories(${INDEX_SOURCE_DIR}/thirdparty/nolohmann)
