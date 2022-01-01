@@ -41,6 +41,7 @@ endif ()
 
 set(external_srcs
         knowhere/common/Exception.cpp
+        knowhere/common/Status.cpp
         knowhere/common/Timer.cpp
         knowhere/common/Utils.cpp
         )
