@@ -36,8 +36,8 @@
 #include <faiss/gpu/StandardGpuResources.h>
 #include <faiss/index_factory.h>
 #include <faiss/index_io.h>
-#include <faiss/utils/BitsetView.h>
 #include <faiss/utils/distances.h>
+#include <knowhere/utils/BitsetView.h>
 
 /*****************************************************
  * To run this test, please download the HDF5 from

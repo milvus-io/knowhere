@@ -15,9 +15,9 @@
 #include <stdint.h>
 
 #include <faiss/utils/Heap.h>
-#include <faiss/utils/BitsetView.h>
 #include <faiss/utils/distances_range.h>
-#include <faiss/utils/distances_simd.h>
+#include <knowhere/utils/distances_simd.h>
+#include <knowhere/utils/BitsetView.h>
 
 
 namespace faiss {

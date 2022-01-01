@@ -89,6 +89,7 @@ if (MILVUS_SUPPORT_SPTAG)
 endif ()
 
 include(ThirdPartyPackagesCore)
+add_subdirectory(knowhere/knowhere/utils)
 add_subdirectory(thirdparty)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")

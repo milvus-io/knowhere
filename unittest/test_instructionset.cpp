@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#include "faiss/utils/instruction_set.h"
+#include "knowhere/utils/instruction_set.h"
 
 #include <gtest/gtest.h>
 #include <iostream>

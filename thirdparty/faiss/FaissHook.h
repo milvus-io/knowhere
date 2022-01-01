@@ -4,9 +4,9 @@
 #pragma once
 
 #include <string>
-#include <faiss/FaissHookFvec.h>
-#include <faiss/impl/ScalarQuantizer.h>
 #include <faiss/MetricType.h>
+#include <faiss/impl/ScalarQuantizer.h>
+#include <knowhere/utils/FaissHookFvec.h>
 
 namespace faiss {
 
