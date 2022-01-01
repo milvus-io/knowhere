@@ -13,9 +13,8 @@
 #include <string>
 #include <utility>
 
-#include "faiss/AuxIndexStructures.h"
 #include "knowhere/common/Exception.h"
-#include "knowhere/index/vector_index/helpers/DynamicResultSet.h"
+#include "DynamicResultSet.h"
 
 namespace milvus {
 namespace knowhere {

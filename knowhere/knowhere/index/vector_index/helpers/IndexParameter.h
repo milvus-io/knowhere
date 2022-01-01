@@ -12,7 +12,7 @@
 #pragma once
 
 #include <string>
-#include "knowhere/index/vector_index/faiss_common/MetricType.h"
+#include "knowhere/common/MetricType.h"
 
 namespace milvus {
 namespace knowhere {

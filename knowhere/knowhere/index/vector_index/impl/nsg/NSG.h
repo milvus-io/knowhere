@@ -19,6 +19,7 @@
 
 #include "Distance.h"
 #include "Neighbor.h"
+#include "knowhere/utils/BitsetView.h"
 #include "knowhere/common/Config.h"
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
 

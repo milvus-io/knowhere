@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "../../../thirdparty/nlohmann/json.hpp"
+#include "nlohmann/json.hpp"
 
 namespace milvus {
 

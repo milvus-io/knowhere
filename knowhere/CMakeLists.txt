@@ -12,6 +12,7 @@
 #-------------------------------------------------------------------------------
 
 include_directories(${INDEX_SOURCE_DIR}/knowhere)
+include_directories(${INDEX_SOURCE_DIR}/thirdparty)
 add_subdirectory(${INDEX_SOURCE_DIR}/knowhere/knowhere/utils)
 
 set(KNOWHERE_THIRDPARTY_SRC ${INDEX_SOURCE_DIR}/thirdparty)
@@ -37,9 +38,7 @@ set(config_srcs
         )
 
 if (LINUX)
-    include_directories(${INDEX_SOURCE_DIR}/thirdparty)
     include_directories(${INDEX_SOURCE_DIR}/thirdparty/NGT/lib)
-
     if (MILVUS_SUPPORT_SPTAG)
         include_directories(${INDEX_SOURCE_DIR}/thirdparty/SPTAG/AnnService)
 
@@ -168,6 +167,14 @@ if (LINUX)
                 ${vector_offset_index_srcs}
         )
     endif ()
+    target_link_libraries(knowhere ${depend_libs})
+    set(INDEX_INCLUDE_DIRS
+        ${INDEX_SOURCE_DIR}/knowhere
+        ${INDEX_SOURCE_DIR}/thirdparty
+        ${FAISS_INCLUDE_DIR}
+        ${OpenBLAS_INCLUDE_DIR}
+        ${LAPACK_INCLUDE_DIR}
+        )
 endif()
 
 if (MACOS)

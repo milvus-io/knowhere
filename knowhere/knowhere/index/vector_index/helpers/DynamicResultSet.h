@@ -14,7 +14,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "knowhere/index/vector_index/faiss_common/AuxIndexStructures.h"
+#include "faiss/impl/AuxIndexStructures.h"
 #include "knowhere/common/Typedef.h"
 
 namespace milvus {
