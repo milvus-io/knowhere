@@ -13,7 +13,7 @@
 #include <string>
 #include <utility>
 
-#include "knowhere/index/vector_index/faiss_common/AuxIndexStructures.h"
+#include "faiss/AuxIndexStructures.h"
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/vector_index/helpers/DynamicResultSet.h"
 

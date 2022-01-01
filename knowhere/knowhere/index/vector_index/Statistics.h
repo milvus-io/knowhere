@@ -20,7 +20,7 @@
 #include <utility>
 #include <vector>
 
-#include "knowhere/index/vector_index/faiss_common/BitsetView.h"
+#include "knowhere/utils/BitsetView.h"
 #include "knowhere/common/Log.h"
 #include "knowhere/index/IndexType.h"
 

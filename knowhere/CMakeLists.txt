@@ -12,18 +12,22 @@
 #-------------------------------------------------------------------------------
 
 include_directories(${INDEX_SOURCE_DIR}/knowhere)
-set(KNOWHERE_THIRDPARTY_SRC ${INDEX_SOURCE_DIR}/thirdparty)
+add_subdirectory(${INDEX_SOURCE_DIR}/knowhere/knowhere/utils)
 
+set(KNOWHERE_THIRDPARTY_SRC ${INDEX_SOURCE_DIR}/thirdparty)
 set(external_srcs
         knowhere/common/Exception.cpp
         knowhere/common/Timer.cpp
+        knowhere/common/Status.cpp
         knowhere/common/Utils.cpp
+        ${MILVUS_THIRDPARTY_SRC}/nlohmann/json.hpp
         )
 
 set (LOG_SRC
         knowhere/common/Log.cpp
         ${MILVUS_THIRDPARTY_SRC}/easyloggingpp/easylogging++.cc
         )
+
 add_library(index_log STATIC ${LOG_SRC})
 set_target_properties(index_log PROPERTIES RULE_LAUNCH_COMPILE "")
 set_target_properties(index_log PROPERTIES RULE_LAUNCH_LINK "")
@@ -168,12 +172,9 @@ endif()
 
 if (MACOS)
     set(vector_index_srcs
-            knowhere/index/vector_index/faiss_common/AuxIndexStructures.cpp
-            knowhere/index/vector_index/faiss_common/FaissException.cpp
             knowhere/index/IndexType.cpp
             knowhere/index/vector_index/adapter/VectorAdapter.cpp
             knowhere/index/vector_index/helpers/IndexParameter.cpp
-            knowhere/index/vector_index/helpers/DynamicResultSet.cpp
             knowhere/index/vector_index/ConfAdapter.cpp
             knowhere/index/vector_index/ConfAdapterMgr.cpp
             knowhere/index/vector_index/Statistics.cpp
@@ -188,7 +189,7 @@ if (MACOS)
         )
     endif ()
 
-    target_link_libraries(knowhere gfortran pthread index_log)
+    target_link_libraries(knowhere gfortran pthread index_log knowhere_utils)
     set(INDEX_INCLUDE_DIRS ${INDEX_SOURCE_DIR}/knowhere)
 endif()
 

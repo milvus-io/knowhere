@@ -12,8 +12,7 @@
 #pragma once
 
 #include <string>
-
-#include "easyloggingpp/easylogging++.h"
+#include "../../../thirdparty/easyloggingpp/easylogging++.h"
 
 namespace milvus {
 namespace knowhere {
