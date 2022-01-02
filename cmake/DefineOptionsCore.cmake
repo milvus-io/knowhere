@@ -91,6 +91,13 @@ define_option(MILVUS_CUDA_ARCH "Build with CUDA arch" "DEFAULT")
 #----------------------------------------------------------------------
 set_option_category("Test and benchmark")
 
+unset(KNOWHERE_BUILD_TESTS CACHE)
+if (BUILD_UNIT_TEST)
+    define_option(KNOWHERE_BUILD_TESTS "Build KNOWHERE googletest unit tests" ON)
+else ()
+    define_option(KNOWHERE_BUILD_TESTS "Build KNOWHERE googletest unit tests" OFF)
+endif (BUILD_UNIT_TEST)
+
 #----------------------------------------------------------------------
 macro(config_summary)
     message(STATUS "---------------------------------------------------------------------")

@@ -15,6 +15,7 @@
 #include <memory>
 #include <string>
 #include "knowhere/index/Index.h"
+#include "knowhere/utils/BitsetView.h"
 
 namespace milvus {
 namespace knowhere {
