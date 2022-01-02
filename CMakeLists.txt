@@ -21,10 +21,27 @@ set(MILVUS_THIRDPARTY_SRC  ${PROJECT_SOURCE_DIR}/thirdparty)
 set(CMAKE_BUILD_TYPE  "Debug")
 set(CMAKE_CUDA_COMPILER  "/usr/local/cuda/bin/nvcc")
 set(MILVUS_ENABLE_PROFILING  "OFF")
+include(CheckCXXCompilerFlag)
 
 if (NOT CMAKE_INSTALL_PREFIX) 
     set(CMAKE_INSTALL_PREFIX "./cmake_build")
 endif (NOT CMAKE_INSTALL_PREFIX)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    message(STATUS "==============OSX Environment================")
+    set(MACOS TRUE)
+    set(CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++")
+    set(CMAKE_CXX_FLAGS "-I/usr/local/opt/llvm/include -I/usr/local/include -I/usr/local/opt/openblas/include -I/usr/local/opt/libomp/include")
+    check_cxx_compiler_flag(-std=c++11 HAS_STD_CPP11_FLAG)
+    if(HAS_STD_CPP11_FLAG)
+     add_compile_options(-std=c++11)
+    endif()
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    message(STATUS "==============Linux Environment===============")
+    set(LINUX TRUE)
+else ()
+    message(FATAL_ERROR "Unsupported platform!" )
+endif ()
 
 
 # if no build build type is specified, default to release builds
@@ -87,9 +104,17 @@ if (MILVUS_SUPPORT_SPTAG)
     add_compile_definitions("MILVUS_SUPPORT_SPTAG")
 endif ()
 
-include(ThirdPartyPackagesCore)
-add_subdirectory(knowhere/knowhere/utils)
-add_subdirectory(thirdparty)
+if (MACOS)
+    add_subdirectory(thirdparty)
+    add_subdirectory(selfdev/bruteforce)
+endif ()
+
+if (LINUX)
+    include(ThirdPartyPackagesCore)
+    add_subdirectory(thirdparty)
+endif ()
+
+add_subdirectory(knowhere)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fPIC -DELPP_THREAD_SAFE -fopenmp")
@@ -102,8 +127,6 @@ else ()
         set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -O0 -g")
     endif ()
 endif ()
-
-add_subdirectory(knowhere)
 
 if (BUILD_COVERAGE STREQUAL "ON")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")

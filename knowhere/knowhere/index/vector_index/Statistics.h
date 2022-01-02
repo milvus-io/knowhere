@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "knowhere/utils/BitsetView.h"
 #include "knowhere/common/Log.h"
 #include "knowhere/index/IndexType.h"
 

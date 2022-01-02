@@ -11,8 +11,8 @@
 
 #pragma once
 
-#include <faiss/Index.h>
 #include <string>
+#include "knowhere/common/MetricType.h"
 
 namespace milvus {
 namespace knowhere {

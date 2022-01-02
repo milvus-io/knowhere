@@ -12,7 +12,6 @@
 #pragma once
 
 #include <string>
-
 #include "easyloggingpp/easylogging++.h"
 
 namespace milvus {

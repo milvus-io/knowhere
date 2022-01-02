@@ -9,7 +9,7 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
-#include "knowhere/common/Log.h"
+#include "Log.h"
 
 #include <cstdarg>
 #include <cstdio>
@@ -35,7 +35,11 @@ LogOut(const char* pattern, ...) {
 
 void
 SetThreadName(const std::string& name) {
-    pthread_setname_np(pthread_self(), name.c_str());
+    #ifdef __APPLE__
+        pthread_setname_np(name.c_str());
+    #elif __linux__
+        pthread_setname_np(pthread_self(), name.c_str());
+    #endif
 }
 
 std::string

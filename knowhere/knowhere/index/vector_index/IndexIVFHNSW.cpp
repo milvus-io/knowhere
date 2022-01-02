@@ -23,6 +23,7 @@
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/vector_index/IndexIVFHNSW.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
+#include "knowhere/index/vector_index/helpers/FaissIO.h"
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
 
 namespace milvus {
