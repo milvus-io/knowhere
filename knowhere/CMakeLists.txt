@@ -14,7 +14,6 @@
 include_directories(${INDEX_SOURCE_DIR}/knowhere)
 include_directories(${INDEX_SOURCE_DIR}/thirdparty)
 add_subdirectory(${INDEX_SOURCE_DIR}/knowhere/knowhere/utils)
-add_subdirectory(${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/impl/bruteforce)
 
 set(KNOWHERE_THIRDPARTY_SRC ${INDEX_SOURCE_DIR}/thirdparty)
 set(external_srcs
@@ -22,6 +21,7 @@ set(external_srcs
         knowhere/common/Timer.cpp
         knowhere/common/Status.cpp
         knowhere/common/Utils.cpp
+        knowhere/common/Heap.cpp
         ${MILVUS_THIRDPARTY_SRC}/nlohmann/json.hpp
         )
 
@@ -62,13 +62,13 @@ if (LINUX)
         endif ()
     endif ()
 
-
     set(vector_index_srcs
             knowhere/index/IndexType.cpp
             knowhere/index/vector_index/adapter/VectorAdapter.cpp
             knowhere/index/vector_index/helpers/FaissIO.cpp
             knowhere/index/vector_index/helpers/IndexParameter.cpp
             knowhere/index/vector_index/helpers/DynamicResultSet.cpp
+            knowhere/index/vector_index/impl/bruteforce/distances/BruteForce.cpp
             knowhere/index/vector_index/impl/nsg/Distance.cpp
             knowhere/index/vector_index/impl/nsg/NSG.cpp
             knowhere/index/vector_index/impl/nsg/NSGHelper.cpp
@@ -180,6 +180,7 @@ endif()
 
 if (MACOS)
     set(vector_index_srcs
+            knowhere/index/vector_index/impl/bruteforce/distances/BruteForce.cpp
             knowhere/index/IndexType.cpp
             knowhere/index/vector_index/adapter/VectorAdapter.cpp
             knowhere/index/vector_index/helpers/IndexParameter.cpp
