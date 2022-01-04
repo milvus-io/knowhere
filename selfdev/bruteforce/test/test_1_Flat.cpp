@@ -101,7 +101,7 @@ int main() {
 
     gettimeofday(&t0, 0);
 
-    knowhere::SimpleIndexFlat flat(d, knowhere::MetricType::METRIC_INNER_PRODUCT);
+    knowhere::SimpleIndexFlat flat(d, knowhere::MetricType::METRIC_L2);
     flat.add(nb, xb);
 
     gettimeofday(&t1, 0);
