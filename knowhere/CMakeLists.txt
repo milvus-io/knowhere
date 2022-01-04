@@ -14,6 +14,7 @@
 include_directories(${INDEX_SOURCE_DIR}/knowhere)
 include_directories(${INDEX_SOURCE_DIR}/thirdparty)
 add_subdirectory(${INDEX_SOURCE_DIR}/knowhere/knowhere/utils)
+add_subdirectory(${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/impl/bruteforce)
 
 set(KNOWHERE_THIRDPARTY_SRC ${INDEX_SOURCE_DIR}/thirdparty)
 set(external_srcs

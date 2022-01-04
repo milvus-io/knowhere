@@ -127,15 +127,11 @@ if (MILVUS_SUPPORT_SPTAG)
     add_compile_definitions("MILVUS_SUPPORT_SPTAG")
 endif ()
 
-if (MACOS)
-    add_subdirectory(thirdparty)
-    add_subdirectory(selfdev/bruteforce)
-endif ()
-
 if (LINUX)
     include(ThirdPartyPackagesCore)
-    add_subdirectory(thirdparty)
 endif ()
+
+add_subdirectory(thirdparty)
 
 add_subdirectory(knowhere)
 
