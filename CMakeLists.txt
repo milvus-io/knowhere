@@ -27,12 +27,6 @@ if (NOT CMAKE_INSTALL_PREFIX)
     set(CMAKE_INSTALL_PREFIX "./cmake_build")
 endif (NOT CMAKE_INSTALL_PREFIX)
 
-OPTION (USE_OpenMP "Use OpenMP to enable <omp.h>" ON)
-
-if (NOT CMAKE_INSTALL_PREFIX)
-    set(CMAKE_INSTALL_PREFIX "./cmake_build")
-endif (NOT CMAKE_INSTALL_PREFIX)
-
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     message(STATUS "==============OSX Environment================")
     set(MACOS TRUE)
