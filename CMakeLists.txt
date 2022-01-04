@@ -37,7 +37,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     message(STATUS "==============OSX Environment================")
     set(MACOS TRUE)
     # Adjust accordingly if libomp is not install here.
-    set(CMAKE_CXX_FLAGS "-I/usr/local/opt/libomp/include")
+    set(CMAKE_CXX_FLAGS "-I/opt/homebrew/Cellar/libomp/13.0.0/include")
     check_cxx_compiler_flag(-std=c++11 HAS_STD_CPP11_FLAG)
     if(HAS_STD_CPP11_FLAG)
         add_compile_options(-std=c++11)

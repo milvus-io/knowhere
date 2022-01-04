@@ -9,7 +9,7 @@
 #include <cstdlib>
 #include <vector>
 
-#include "../indexing/SimpleIndexFlat.h"
+#include "knowhere/index/vector_index/impl/bruteforce/indexing/SimpleIndexFlat.h"
 
 #include <sys/stat.h>
 #include <sys/time.h>

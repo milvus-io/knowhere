@@ -1,6 +1,6 @@
 #include "SimpleIndexFlat.h"
-#include "../include/Heap.h"
-#include "../distances/BruteForce.h"
+#include "knowhere/common/Heap.h"
+#include "knowhere/index/vector_index/impl/bruteforce/distances/BruteForce.h"
 
 namespace knowhere {
 
@@ -16,7 +16,7 @@ void SimpleIndexFlat::add (idx_t n, const float *x) {
 
 void SimpleIndexFlat::search (idx_t n, const float *x, idx_t k,
                         float *distances, idx_t *labels,
-                        const BitsetView bitset) const
+                        const faiss::BitsetView bitset) const
 {
     // we see the distances and labels as heaps
     if (metric_type == METRIC_INNER_PRODUCT) {

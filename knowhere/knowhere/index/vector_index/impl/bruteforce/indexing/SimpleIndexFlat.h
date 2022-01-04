@@ -8,7 +8,7 @@
 #include <typeinfo>
 #include <string>
 #include <vector>
-#include "../include/BitsetView.h"
+#include "knowhere/utils/BitsetView.h"
 
 namespace knowhere {
 
@@ -63,7 +63,7 @@ struct SimpleIndexFlat {
             idx_t k,
             float *distances,
             idx_t *labels,
-            const BitsetView bitset = nullptr) const;
+            const faiss::BitsetView bitset = nullptr) const;
 
     void train(idx_t n, const float* x);
 

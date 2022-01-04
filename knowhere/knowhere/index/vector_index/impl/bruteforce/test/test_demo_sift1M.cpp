@@ -16,7 +16,7 @@
 
 #include <sys/time.h>
 
-#include "../indexing/SimpleIndexFlat.h"
+#include "knowhere/index/vector_index/impl/bruteforce/indexing/SimpleIndexFlat.h"
 
 /**
  * To run this demo, please download the ANN_SIFT1M dataset from
