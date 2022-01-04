@@ -9,11 +9,11 @@
 # is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 # or implied. See the License for the specific language governing permissions and limitations under the License
 
-include_directories(${INDEX_SOURCE_DIR}/thirdparty)
-include_directories(${INDEX_SOURCE_DIR}/thirdparty/SPTAG/AnnService)
-include_directories(${INDEX_SOURCE_DIR}/thirdparty/NGT/lib)
-include_directories(${INDEX_SOURCE_DIR}/knowhere)
-include_directories(${INDEX_SOURCE_DIR})
+include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty)
+include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService)
+include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib)
+include_directories(${KNOWHERE_SOURCE_DIR}/knowhere)
+include_directories(${KNOWHERE_SOURCE_DIR})
 
 set(DEPEND_LIBS
         gtest
@@ -29,16 +29,16 @@ set(DEPEND_LIBS
 set(BASIC_LIBS gomp gfortran pthread)
 
 set(UTIL_SRCS
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/adapter/VectorAdapter.cpp
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/FaissIO.cpp
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/IndexParameter.cpp
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/DynamicResultSet.cpp
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/Statistics.cpp
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/IndexType.cpp
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/common/Exception.cpp
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/common/Timer.cpp
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/common/Utils.cpp
-        ${INDEX_SOURCE_DIR}/unittest/utils.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/adapter/VectorAdapter.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/FaissIO.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/IndexParameter.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/DynamicResultSet.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/Statistics.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/IndexType.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/common/Exception.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/common/Timer.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/common/Utils.cpp
+        ${KNOWHERE_SOURCE_DIR}/unittest/utils.cpp
         )
 
 if (MILVUS_GPU_VERSION)
@@ -50,34 +50,34 @@ if (MILVUS_GPU_VERSION)
             )
     set(BASIC_LIBS ${basic_libs} ${cuda_lib})
     set(UTIL_SRCS ${util_srcs}
-            ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/FaissGpuResourceMgr.cpp
+            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/FaissGpuResourceMgr.cpp
             )
 endif ()
 
 set(FAISS_SRCS
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/FaissBaseIndex.cpp
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/FaissBaseBinaryIndex.cpp
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/IndexBinaryIDMAP.cpp
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/IndexBinaryIVF.cpp
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/IndexIDMAP.cpp
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/IndexIVF.cpp
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/IndexIVFSQ.cpp
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/IndexIVFPQ.cpp
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/IndexIVFHNSW.cpp
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_offset_index/OffsetBaseIndex.cpp
-        ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_offset_index/IndexIVF_NM.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/FaissBaseIndex.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/FaissBaseBinaryIndex.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/IndexBinaryIDMAP.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/IndexBinaryIVF.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/IndexIDMAP.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/IndexIVF.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/IndexIVFSQ.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/IndexIVFPQ.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/IndexIVFHNSW.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_offset_index/OffsetBaseIndex.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_offset_index/IndexIVF_NM.cpp
         )
 
 if (MILVUS_GPU_VERSION)
     set(FAISS_SRCS ${faiss_srcs}
-            ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/ConfAdapter.cpp
-            ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/Cloner.cpp
-            ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/gpu/IndexGPUIDMAP.cpp
-            ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/gpu/IndexGPUIVF.cpp
-            ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/gpu/IndexGPUIVFSQ.cpp
-            ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/gpu/IndexGPUIVFPQ.cpp
-            ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_index/gpu/IndexIVFSQHybrid.cpp
-            ${INDEX_SOURCE_DIR}/knowhere/knowhere/index/vector_offset_index/gpu/IndexGPUIVF_NM.cpp
+            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/ConfAdapter.cpp
+            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/Cloner.cpp
+            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/gpu/IndexGPUIDMAP.cpp
+            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/gpu/IndexGPUIVF.cpp
+            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/gpu/IndexGPUIVFSQ.cpp
+            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/gpu/IndexGPUIVFPQ.cpp
+            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/gpu/IndexIVFSQHybrid.cpp
+            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_offset_index/gpu/IndexGPUIVF_NM.cpp
             )
 endif ()
 

@@ -75,7 +75,7 @@ function(ExternalProject_Use_Cache project_name package_file install_path)
             "Extracting ${package_file} to ${install_path}"
             COMMAND
             ${CMAKE_COMMAND} -E tar xzf ${package_file} ${install_path}
-            WORKING_DIRECTORY ${INDEX_BINARY_DIR}
+            WORKING_DIRECTORY ${KNOWHERE_BINARY_DIR}
             )
 
     ExternalProject_Add_StepTargets(${project_name} extract)

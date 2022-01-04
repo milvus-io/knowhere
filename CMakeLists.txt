@@ -12,125 +12,240 @@
 #-------------------------------------------------------------------------------
 
 cmake_minimum_required(VERSION 3.18)
-message(STATUS "------------------------------KNOWHERE-----------------------------------")
-message(STATUS "Building using CMake version: ${CMAKE_VERSION}")
+message( STATUS "------------------------------KNOWHERE-----------------------------------" )
+message( STATUS "Building using CMake version: ${CMAKE_VERSION}" )
 
-project(knowhere LANGUAGES C CXX)
-set(CMAKE_CXX_STANDARD 17)
-set(MILVUS_THIRDPARTY_SRC  ${PROJECT_SOURCE_DIR}/thirdparty)
-set(CMAKE_BUILD_TYPE  "Debug")
-set(CMAKE_CUDA_COMPILER  "/usr/local/cuda/bin/nvcc")
-set(MILVUS_ENABLE_PROFILING  "OFF")
-include(CheckCXXCompilerFlag)
+set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
+include( Utils )
 
-if (NOT CMAKE_INSTALL_PREFIX) 
-    set(CMAKE_INSTALL_PREFIX "./cmake_build")
-endif (NOT CMAKE_INSTALL_PREFIX)
 
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    message(STATUS "==============OSX Environment================")
-    set(MACOS TRUE)
-    # Adjust accordingly if libomp is not install here.
-    set(CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++")
-    set(CMAKE_CXX_FLAGS "-I/usr/local/opt/libomp/include")
-    check_cxx_compiler_flag(-std=c++11 HAS_STD_CPP11_FLAG)
-    if(HAS_STD_CPP11_FLAG)
-        add_compile_options(-std=c++11)
-    endif()
-elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    message(STATUS "==============Linux Environment===============")
-    set(LINUX TRUE)
-else ()
-    message(FATAL_ERROR "Unsupported platform!" )
-endif ()
+#******************* Build time, type and code version *****************
+get_current_time( BUILD_TIME )
+message( STATUS "Build time = ${BUILD_TIME}" )
 
-# if no build build type is specified, default to release builds
-if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif (NOT CMAKE_BUILD_TYPE)
+get_build_type( TARGET  BUILD_TYPE 
+                        DEFAULT "Release" )
+message( STATUS "Build type = ${BUILD_TYPE}" )
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)")
-    message(STATUS "building milvus_engine on x86 architecture")
-    set(KNOWHERE_BUILD_ARCH x86_64)
-elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "(ppc)")
-    message(STATUS "building milvus_engine on ppc architecture")
-    set(KNOWHERE_BUILD_ARCH ppc64le)
-else ()
-    message(WARNING "unknown processor type")
-    message(WARNING "CMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}")
-    set(KNOWHERE_BUILD_ARCH unknown)
-endif ()
+get_knowhere_version( TARGET  KNOWHERE_VERSION 
+                              DEFAULT "0.1.0" )
+message( STATUS "Build version = ${KNOWHERE_VERSION}" )
 
-if (CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(BUILD_TYPE "release")
-else ()
-    set(BUILD_TYPE "debug")
-endif ()
-message(STATUS "Build type = ${BUILD_TYPE}")
+get_last_commit_id( LAST_COMMIT_ID )
+message( STATUS "LAST_COMMIT_ID = ${LAST_COMMIT_ID}" )
 
-include(GNUInstallDirs)
-set(CMAKE_INSTALL_LIBDIR lib)
-set(INDEX_SOURCE_DIR ${PROJECT_SOURCE_DIR})
-set(INDEX_BINARY_DIR ${PROJECT_BINARY_DIR})
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${INDEX_SOURCE_DIR}/cmake")
+#configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in
+#                ${CMAKE_CURRENT_SOURCE_DIR}/src/version.h @ONLY )
+
+# unset(CMAKE_EXPORT_COMPILE_COMMANDS CACHE)
+set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
+
+
+#******************************* Project *******************************
+project( knowhere VERSION "${KNOWHERE_VERSION}" )
+
+project( knowhere LANGUAGES C CXX )
+set( CMAKE_CXX_STANDARD 17 )
+set( CMAKE_CXX_STANDARD_REQUIRED on )
+
+set( KNOWHERE_SOURCE_DIR ${PROJECT_SOURCE_DIR} )
+set( KNOWHERE_BINARY_DIR ${PROJECT_BINARY_DIR} )
+set( KNOWHERE_THIRDPARTY_SRC ${PROJECT_SOURCE_DIR}/thirdparty )
 
 # This will set RPATH to all excutable TARGET
 # self-installed dynamic libraries will be correctly linked by excutable
-set( CMAKE_INSTALL_RPATH "/usr/lib" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" )
+set( CMAKE_INSTALL_RPATH "/usr/lib" "${CMAKE_INSTALL_PREFIX}/lib" )
 set( CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE )
 
-include(ExternalProject)
-include(DefineOptionsCore)
-include(BuildUtilsCore)
+
+#***************************** Dependencies ****************************
+include( GNUInstallDirs )
+include( DefineOptionsCore )
+include( BuildUtilsCore )
+include( ExternalProject )
+
+include( ThirdPartyPackagesCore )
 
 using_ccache_if_defined( KNOWHERE_USE_CCACHE )
-set_directory_properties(PROPERTIES  RULE_LAUNCH_COMPILE "")
 
-if (MILVUS_GPU_VERSION)
-    message(STATUS "Building Knowhere GPU version")
-    add_compile_definitions("MILVUS_GPU_VERSION")
-    enable_language(CUDA)
-    find_package(CUDA 10 REQUIRED)
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -Xcompiler -fPIC -std=c++11 -D_FORCE_INLINES --expt-extended-lambda")
+
+#************************** Compiler arguments *************************
+set( CMAKE_CUDA_COMPILER  "/usr/local/cuda/bin/nvcc" )
+include( CheckCXXCompilerFlag )
+
+
+if ( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
+    message( STATUS "============== OSX Environment ================" )
+    set( MACOS TRUE )
+    # Adjust accordingly if libomp is not install here.
+    set( CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++" )
+    set( CMAKE_CXX_FLAGS "-I/usr/local/opt/libomp/include" )
+    check_cxx_compiler_flag( -std=c++11 HAS_STD_CPP11_FLAG )
+    if ( HAS_STD_CPP11_FLAG )
+        add_compile_options( -std=c++11 )
+    endif ()
+elseif ( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
+    message( STATUS "============== Linux Environment ===============" )
+    set( LINUX TRUE )
+else ()
+    message( FATAL_ERROR "Unsupported platform!" )
+endif ()
+
+
+if ( MILVUS_GPU_VERSION )
+    message( STATUS "Building Knowhere GPU version" )
+    add_compile_definitions( "KNOWHERE_GPU_VERSION" )
+    enable_language( CUDA )
+    find_package( CUDA 10 REQUIRED )
+    include_directories( ${CUDA_INCLUDE_DIRS} )
+    link_directories( ${CUDA_TOOLKIT_ROOT_DIR}/lib64 )
+    set( CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -Xcompiler -fPIC -std=c++11 -D_FORCE_INLINES --expt-extended-lambda" )
     if ( CCACHE_FOUND )
-        set(CMAKE_CUDA_COMPILER_LAUNCHER "${CCACHE_FOUND}")
-    endif()
-else ()
-    message(STATUS "Building Knowhere CPU version")
-endif ()
-
-if (MILVUS_SUPPORT_SPTAG)
-    message(STATUS "Building Knowhere with SPTAG supported")
-    add_compile_definitions("MILVUS_SUPPORT_SPTAG")
-endif ()
-
-if (CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fPIC -DELPP_THREAD_SAFE -fopenmp")
-    if (MILVUS_GPU_VERSION)
-        set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -O3")
+        set( CMAKE_CUDA_COMPILER_LAUNCHER "${CCACHE_FOUND}" )
     endif ()
 else ()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -fPIC -DELPP_THREAD_SAFE -fopenmp")
-    if (MILVUS_GPU_VERSION)
-        set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -O0 -g")
-    endif ()
+    message( STATUS "Building Knowhere CPU version" )
 endif ()
 
-if (LINUX)
-    include(ThirdPartyPackagesCore)
+if ( MILVUS_SUPPORT_SPTAG )
+    message( STATUS "Building Knowhere with SPTAG supported" )
+    add_compile_definitions( "MILVUS_SUPPORT_SPTAG" )
 endif ()
 
-add_subdirectory(knowhere/knowhere/utils)
-add_subdirectory(thirdparty)
-add_subdirectory(knowhere)
-
-if (BUILD_COVERAGE STREQUAL "ON")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
+if ( CMAKE_BUILD_TYPE STREQUAL "Release" )
+    message( STATUS "Building Release CYD" )
+    append_flags( CMAKE_CXX_FLAGS FLAGS "-O3" )
+    append_flags( CUDA_NVCC_FLAGS FLAGS "-O3" )
+else ()
+    message( STATUS "Building Debug CYD" )
+    append_flags( CMAKE_CXX_FLAGS FLAGS "-O0" "-g" )
+    append_flags( CUDA_NVCC_FLAGS FLAGS "-O0" "-g" )
 endif ()
 
-if (KNOWHERE_BUILD_TESTS)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DELPP_DISABLE_LOGS")
-    add_subdirectory(unittest)
+# option "-rdynamic" is to print out detailed backtrace info for debug-ease
+append_flags( CMAKE_CXX_FLAGS
+              FLAGS
+                    "-fPIC"
+                    "-DELPP_THREAD_SAFE"
+                    "-fopenmp"
+                    "-Werror"
+                    "-rdynamic"
+                    )
+
+
+#*********************** Coding style check tools **********************
+find_package( Python COMPONENTS Interpreter Development )
+find_package( ClangTools )
+set( BUILD_SUPPORT_DIR "${CMAKE_SOURCE_DIR}/build-support" )
+
+if("$ENV{CMAKE_EXPORT_COMPILE_COMMANDS}" STREQUAL "1" OR CLANG_TIDY_FOUND)
+  # Generate a Clang compile_commands.json "compilation database" file for use
+  # with various development tools, such as Vim's YouCompleteMe plugin.
+  # See http://clang.llvm.org/docs/JSONCompilationDatabase.html
+  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+  set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+endif()
+
+#
+# "make lint" target
+#
+if ( NOT MILVUS_VERBOSE_LINT )
+    set( MILVUS_LINT_QUIET "--quiet" )
 endif ()
 
+if ( NOT LINT_EXCLUSIONS_FILE )
+    # source files matching a glob from a line in this file
+    # will be excluded from linting (cpplint, clang-tidy, clang-format)
+    set( LINT_EXCLUSIONS_FILE ${BUILD_SUPPORT_DIR}/lint_exclusions.txt )
+endif ()
+
+if ( NOT IGNORE_CHECKS_FILE )
+    set( IGNORE_CHECKS_FILE ${BUILD_SUPPORT_DIR}/ignore_checks.txt )
+endif ()
+
+find_program( CPPLINT_BIN NAMES cpplint cpplint.py HINTS ${BUILD_SUPPORT_DIR} )
+message( STATUS "Found cpplint executable at ${CPPLINT_BIN}" )
+
+#
+# "make lint" targets
+#
+add_custom_target( lint
+    ${PYTHON_EXECUTABLE}    ${BUILD_SUPPORT_DIR}/run_cpplint.py
+                            --cpplint_binary    ${CPPLINT_BIN}
+                            --exclude_globs     ${LINT_EXCLUSIONS_FILE}
+                            --source_dir        ${CMAKE_CURRENT_SOURCE_DIR}
+                            ${MILVUS_LINT_QUIET}
+                            )
+
+#
+# "make clang-format" and "make check-clang-format" targets
+#
+if ( ${CLANG_FORMAT_FOUND} )
+    # runs clang format and updates files in place.
+    add_custom_target( clang-format
+        ${PYTHON_EXECUTABLE}    ${BUILD_SUPPORT_DIR}/run_clang_format.py
+                                --clang_format_binary   ${CLANG_FORMAT_BIN}
+                                --exclude_globs         ${LINT_EXCLUSIONS_FILE}
+                                --source_dir            ${CMAKE_CURRENT_SOURCE_DIR}/src
+                                --fix
+                                ${MILVUS_LINT_QUIET} )
+
+    # runs clang format and exits with a non-zero exit code if any files need to be reformatted
+    add_custom_target( check-clang-format
+        ${PYTHON_EXECUTABLE}    ${BUILD_SUPPORT_DIR}/run_clang_format.py
+                                --clang_format_binary   ${CLANG_FORMAT_BIN}
+                                --exclude_globs         ${LINT_EXCLUSIONS_FILE}
+                                --source_dir            ${CMAKE_CURRENT_SOURCE_DIR}/src
+                                ${MILVUS_LINT_QUIET} )
+endif ()
+
+#
+# "make clang-tidy" and "make check-clang-tidy" targets
+#
+if ( ${CLANG_TIDY_FOUND} )
+    # runs clang-tidy and attempts to fix any warning automatically
+    add_custom_target( clang-tidy
+        ${PYTHON_EXECUTABLE}    ${BUILD_SUPPORT_DIR}/run_clang_tidy.py
+                                --clang_tidy_binary ${CLANG_TIDY_BIN}
+                                --exclude_globs     ${LINT_EXCLUSIONS_FILE}
+                                --compile_commands  ${CMAKE_BINARY_DIR}/compile_commands.json
+                                --source_dir        ${CMAKE_CURRENT_SOURCE_DIR}/src
+                                --fix
+                                ${MILVUS_LINT_QUIET} )
+
+    # runs clang-tidy and exits with a non-zero exit code if any errors are found.
+    add_custom_target( check-clang-tidy
+        ${PYTHON_EXECUTABLE}    ${BUILD_SUPPORT_DIR}/run_clang_tidy.py
+                                --clang_tidy_binary ${CLANG_TIDY_BIN}
+                                --exclude_globs     ${LINT_EXCLUSIONS_FILE}
+                                --ignore_checks     ${IGNORE_CHECKS_FILE}
+                                --compile_commands  ${CMAKE_BINARY_DIR}/compile_commands.json
+                                --source_dir        ${CMAKE_CURRENT_SOURCE_DIR}/src
+                                ${MILVUS_LINT_QUIET} )
+endif ()
+
+#
+# Validate and print out Milvus configuration options
+#
 config_summary()
+
+
+#***************************** Source files ****************************
+add_subdirectory( knowhere/knowhere/utils )
+add_subdirectory( thirdparty )
+add_subdirectory( knowhere )
+
+if ( KNOWHERE_BUILD_TESTS )
+    if ( BUILD_COVERAGE STREQUAL "ON" )
+        append_flags( CMAKE_CXX_FLAGS
+                      FLAGS
+                           "-fprofile-arcs"
+                           "-ftest-coverage"
+                           )
+    endif ()
+    append_flags( CMAKE_CXX_FLAGS FLAGS "-DELPP_DISABLE_LOGS")
+
+    add_subdirectory( unittest )
+endif ()
+
+
