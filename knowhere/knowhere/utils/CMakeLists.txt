@@ -14,34 +14,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(UTILS_SRC
-        distances_simd.cpp
-        FaissHookFvec.cpp
-        )
+if (APPLE)
+    set(UTILS_SRC
+            distances_simd.cpp
+            )
+    add_library(knowhere_utils STATIC
+            ${UTILS_SRC}
+            )
+else ()
+    set(UTILS_SRC
+            distances_simd.cpp
+            FaissHookFvec.cpp
+            )
 
-set(UTILS_AVX_SRC
-        distances_simd_avx.cpp
-        )
+    set(UTILS_AVX_SRC
+            distances_simd_avx.cpp
+            )
 
-set(UTILS_AVX512_SRC
-        distances_simd_avx512.cpp
-        )
+    set(UTILS_AVX512_SRC
+            distances_simd_avx512.cpp
+            )
 
-add_library(utils_avx OBJECT
-        ${UTILS_AVX_SRC}
-        )
-add_library(utils_avx512 OBJECT
-        ${UTILS_AVX512_SRC}
-        )
+    add_library(utils_avx OBJECT
+            ${UTILS_AVX_SRC}
+            )
+    add_library(utils_avx512 OBJECT
+            ${UTILS_AVX512_SRC}
+            )
 
-target_compile_options(utils_avx PUBLIC "-mf16c;-mavx2")
-target_compile_options(utils_avx512 PUBLIC "-mf16c;-mavx512f;-mavx512dq;-mavx512bw")
+    target_compile_options(utils_avx PUBLIC "-mf16c;-mavx2")
+    target_compile_options(utils_avx512 PUBLIC "-mf16c;-mavx512f;-mavx512dq;-mavx512bw")
 
-add_library(knowhere_utils STATIC
-        ${UTILS_SRC}
-        $<TARGET_OBJECTS:utils_avx>
-        $<TARGET_OBJECTS:utils_avx512>
-        )
+    add_library(knowhere_utils STATIC
+            ${UTILS_SRC}
+            $<TARGET_OBJECTS:utils_avx>
+            $<TARGET_OBJECTS:utils_avx512>
+            )
+endif ()
 
 target_compile_options(knowhere_utils PUBLIC "-msse4.2")
 target_link_libraries(knowhere_utils PUBLIC openblas)
