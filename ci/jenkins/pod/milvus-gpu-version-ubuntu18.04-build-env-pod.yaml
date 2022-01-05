@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: milvus-gpu-build-env
+  labels:
+    app: milvus
+    componet: gpu-build-env
+spec:
+  containers:
+  - name: milvus-gpu-build-env
+    image: registry.zilliz.com/milvus/milvus-gpu-build-env:v0.10.2-ubuntu18.04
+    env:
+    - name: POD_IP
+      valueFrom:
+        fieldRef:
+          fieldPath: status.podIP
+    - name: OS_NAME
+      value: "ubuntu18.04"
+    - name: BUILD_ENV_IMAGE_ID
+      value: "6256089f8cf38ff4e7cdd2d2dd29e420fb966b27f4e819b370c25e7eb25f65f5"
+    command:
+    - cat
+    tty: true
+    resources:
+      limits:
+        memory: "24Gi"
+        cpu: "10.0"
+        # nvidia.com/gpu: 1
+        aliyun.com/gpu-mem: 2 # GiB
+      requests:
+        memory: "8Gi"
+        cpu: "4.0"
+  tolerations:
+  - key: dedicated
+    operator: Equal
+    value: milvus
+    effect: NoSchedule
