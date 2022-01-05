@@ -196,7 +196,7 @@ if (MACOS)
         )
     endif ()
 
-    target_link_libraries(knowhere gfortran pthread index_log knowhere_utils)
+    target_link_libraries(knowhere pthread index_log knowhere_utils)
     set(INDEX_INCLUDE_DIRS ${INDEX_SOURCE_DIR}/knowhere)
 endif()
 
