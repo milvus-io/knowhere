@@ -52,9 +52,7 @@ namespace knowhere {
 
 VecIndexPtr
 VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
-#ifdef __APPLE__
-    KNOWHERE_THROW_MSG("Unsupported operation on MacOS!");
-#elif __linux__
+#ifdef __linux__
 #ifdef MILVUS_GPU_VERSION
     auto gpu_device = -1;  // TODO: remove hardcode here, get from invoker
 #endif
@@ -114,6 +112,8 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
     } else {
         return nullptr;
     }
+#else
+    KNOWHERE_THROW_MSG("Unsupported CreateVecIndex on current platform!");
 #endif
 }
 

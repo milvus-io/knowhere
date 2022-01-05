@@ -13,16 +13,15 @@
 
 include_directories(${INDEX_SOURCE_DIR}/knowhere)
 include_directories(${INDEX_SOURCE_DIR}/thirdparty)
-add_subdirectory(${INDEX_SOURCE_DIR}/knowhere/knowhere/utils)
+include_directories(${INDEX_SOURCE_DIR}/knowhere/knowhere/utils)
 
 set(KNOWHERE_THIRDPARTY_SRC ${INDEX_SOURCE_DIR}/thirdparty)
 set(external_srcs
         knowhere/common/Exception.cpp
-        knowhere/common/Timer.cpp
         knowhere/common/Status.cpp
+        knowhere/common/Timer.cpp
         knowhere/common/Utils.cpp
         knowhere/common/Heap.cpp
-        ${MILVUS_THIRDPARTY_SRC}/nlohmann/json.hpp
         )
 
 set (LOG_SRC
@@ -123,6 +122,7 @@ if (LINUX)
             pthread
             ngt
             index_log
+            knowhere_utils
             )
 
     if (MILVUS_SUPPORT_SPTAG)

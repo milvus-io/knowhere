@@ -31,6 +31,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     message(STATUS "==============OSX Environment================")
     set(MACOS TRUE)
     # Adjust accordingly if libomp is not install here.
+    set(CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++")
     set(CMAKE_CXX_FLAGS "-I/usr/local/opt/libomp/include")
     check_cxx_compiler_flag(-std=c++11 HAS_STD_CPP11_FLAG)
     if(HAS_STD_CPP11_FLAG)
@@ -103,14 +104,6 @@ if (MILVUS_SUPPORT_SPTAG)
     add_compile_definitions("MILVUS_SUPPORT_SPTAG")
 endif ()
 
-if (LINUX)
-    include(ThirdPartyPackagesCore)
-endif ()
-
-add_subdirectory(thirdparty)
-
-add_subdirectory(knowhere)
-
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fPIC -DELPP_THREAD_SAFE -fopenmp")
     if (MILVUS_GPU_VERSION)
@@ -123,11 +116,17 @@ else ()
     endif ()
 endif ()
 
+if (LINUX)
+    include(ThirdPartyPackagesCore)
+endif ()
+
+add_subdirectory(knowhere/knowhere/utils)
+add_subdirectory(thirdparty)
+add_subdirectory(knowhere)
+
 if (BUILD_COVERAGE STREQUAL "ON")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
 endif ()
-
-set(INDEX_INCLUDE_DIRS ${INDEX_INCLUDE_DIRS} PARENT_SCOPE)
 
 if (KNOWHERE_BUILD_TESTS)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DELPP_DISABLE_LOGS")
