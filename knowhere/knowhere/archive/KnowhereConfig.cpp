@@ -125,7 +125,7 @@ void
 KnowhereConfig::SetLogHandler() {
 #ifdef __APPLE__
     // do nothing
-#elif __linux_
+#elif __linux__
     faiss::LOG_ERROR_ = &knowhere::log_error_;
     faiss::LOG_WARNING_ = &knowhere::log_warning_;
     NGT_LOG_ERROR_ = &knowhere::log_error_;
