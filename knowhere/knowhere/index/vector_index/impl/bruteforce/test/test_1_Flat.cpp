@@ -9,7 +9,7 @@
 #include <cstdlib>
 #include <vector>
 
-#include "../indexing/SimpleIndexFlat.h"
+#include "knowhere/index/vector_index/impl/bruteforce/indexing/SimpleIndexFlat.h"
 
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -101,7 +101,7 @@ int main() {
 
     gettimeofday(&t0, 0);
 
-    knowhere::SimpleIndexFlat flat(d, knowhere::MetricType::METRIC_INNER_PRODUCT);
+    knowhere::SimpleIndexFlat flat(d, knowhere::MetricType::METRIC_L2);
     flat.add(nb, xb);
 
     gettimeofday(&t1, 0);

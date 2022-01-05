@@ -7,20 +7,11 @@
 #pragma once
 
 #include <cstdio>
-#include "../include//Heap.h"
-#include "../include/BitsetView.h"
+#include "knowhere/common/Heap.h"
+#include "knowhere/utils/BitsetView.h"
+#include "knowhere/utils/distances_simd.h"
 
 namespace knowhere {
-
-/** Copied from Faiss. **/
-float fvec_L2sqr_ref(const float *x,
-                     const float *y,
-                     size_t d);
-
-/** Copied from Faiss. **/
-float fvec_inner_product_ref(const float *x,
-                             const float *y,
-                             size_t d);
 
 /** Partly copied from <knn_L2sqr_sse> in knowhere project. **/
 void knn_L2sqr_sse(
@@ -28,13 +19,13 @@ void knn_L2sqr_sse(
         const float *y,
         size_t d, size_t nx, size_t ny,
         float_maxheap_array_t *res,
-        const BitsetView bitset = nullptr);
+        const faiss::BitsetView bitset = nullptr);
 
 /** Partly copied from <knn_L2sqr_sse> in knowhere project. **/
 void knn_inner_product_sse(const float *x,
                            const float *y,
                            size_t d, size_t nx, size_t ny,
                            float_minheap_array_t *res,
-                           const BitsetView bitset = nullptr);
+                           const faiss::BitsetView bitset = nullptr);
 
 }  // namespace knowhere

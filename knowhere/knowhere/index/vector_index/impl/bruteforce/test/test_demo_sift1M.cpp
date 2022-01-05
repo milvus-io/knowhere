@@ -16,7 +16,7 @@
 
 #include <sys/time.h>
 
-#include "../indexing/SimpleIndexFlat.h"
+#include "knowhere/index/vector_index/impl/bruteforce/indexing/SimpleIndexFlat.h"
 
 /**
  * To run this demo, please download the ANN_SIFT1M dataset from
@@ -107,7 +107,7 @@ int main() {
     // knowhere::SimpleIndexFlatFlatL2 quantizer(d);
     // knowhere::SimpleIndexFlatIVFPQ index(&quantizer, d, nlist, m, 8);
 
-    knowhere::SimpleIndexFlat index(d, knowhere::METRIC_INNER_PRODUCT);
+    knowhere::SimpleIndexFlat index(d, knowhere::METRIC_L2);
     //index.setNumProbes(10);
 
     index.train(nb, xb);

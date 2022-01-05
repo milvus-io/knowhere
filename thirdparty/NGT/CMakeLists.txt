@@ -1,4 +1,4 @@
-if(APPLE)
+if(MACOS)
   cmake_minimum_required(VERSION 3.0)
 else()
   cmake_minimum_required(VERSION 2.8)

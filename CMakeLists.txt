@@ -30,11 +30,12 @@ endif (NOT CMAKE_INSTALL_PREFIX)
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     message(STATUS "==============OSX Environment================")
     set(MACOS TRUE)
+    # Adjust accordingly if libomp is not install here.
     set(CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++")
-    set(CMAKE_CXX_FLAGS "-I/usr/local/opt/llvm/include -I/usr/local/include -I/usr/local/opt/openblas/include -I/usr/local/opt/libomp/include")
+    set(CMAKE_CXX_FLAGS "-I/usr/local/opt/libomp/include")
     check_cxx_compiler_flag(-std=c++11 HAS_STD_CPP11_FLAG)
     if(HAS_STD_CPP11_FLAG)
-     add_compile_options(-std=c++11)
+        add_compile_options(-std=c++11)
     endif()
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     message(STATUS "==============Linux Environment===============")
@@ -42,7 +43,6 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 else ()
     message(FATAL_ERROR "Unsupported platform!" )
 endif ()
-
 
 # if no build build type is specified, default to release builds
 if (NOT CMAKE_BUILD_TYPE)
@@ -116,9 +116,7 @@ else ()
     endif ()
 endif ()
 
-if (MACOS)
-    add_subdirectory(selfdev/bruteforce)
-elseif (LINUX)
+if (LINUX)
     include(ThirdPartyPackagesCore)
 endif ()
 
