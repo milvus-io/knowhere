@@ -120,9 +120,9 @@ if (MACOS)
     add_subdirectory(selfdev/bruteforce)
 elseif (LINUX)
     include(ThirdPartyPackagesCore)
-    add_subdirectory(knowhere/knowhere/utils)
 endif ()
 
+add_subdirectory(knowhere/knowhere/utils)
 add_subdirectory(thirdparty)
 add_subdirectory(knowhere)
 
