@@ -21,7 +21,7 @@
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
 #include "knowhere/index/vector_offset_index/IndexIVF_NM.h"
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 #include "knowhere/index/vector_index/gpu/IndexGPUIVF.h"
 #include "knowhere/index/vector_index/gpu/IndexGPUIVFPQ.h"
 #include "knowhere/index/vector_index/gpu/IndexGPUIVFSQ.h"
@@ -54,7 +54,7 @@ IndexFactory(const milvus::knowhere::IndexType& type, const milvus::knowhere::In
         } else {
             std::cout << "Invalid IndexType " << type << std::endl;
         }
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
     } else {
         if (type == milvus::knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
             return std::make_shared<milvus::knowhere::GPUIVF>(DEVICEID);
@@ -154,14 +154,14 @@ class TestGpuIndexBase : public ::testing::Test {
  protected:
     void
     SetUp() override {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         milvus::knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
 #endif
     }
 
     void
     TearDown() override {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         milvus::knowhere::FaissGpuResourceMgr::GetInstance().Free();
 #endif
     }

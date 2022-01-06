@@ -40,7 +40,7 @@ class SingleIndexTest : public DataGen, public TestGpuIndexBase {
     milvus::knowhere::IVFPtr index_ = nullptr;
 };
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 TEST_F(SingleIndexTest, IVFSQHybrid) {
     assert(!xb.empty());
 

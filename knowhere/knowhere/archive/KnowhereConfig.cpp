@@ -23,7 +23,7 @@
 #include "faiss/utils/distances.h"
 #include "faiss/utils/utils.h"
 #endif
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
 #endif
 
@@ -136,7 +136,7 @@ KnowhereConfig::SetLogHandler() {
 #endif
 }
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 void
 KnowhereConfig::InitGPUResource(const std::vector<int64_t>& gpu_ids) {
     for (auto id : gpu_ids) {

@@ -17,7 +17,7 @@
 #include <faiss/IndexIVFPQ.h>
 #include <faiss/clone_index.h>
 #include <faiss/index_io.h>
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 #include <faiss/gpu/GpuAutoTune.h>
 #include <faiss/gpu/GpuCloner.h>
 #endif
@@ -33,7 +33,7 @@
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
 #include "knowhere/index/vector_offset_index/IndexIVF_NM.h"
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 #include "knowhere/index/vector_index/gpu/IndexGPUIVF.h"
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
 #endif
@@ -74,7 +74,7 @@ IVF_NM::Load(const BinarySet& binary_set) {
         ivf_index->nprobe_statistics.resize(invlists->nlist, 0);
     }
 
-#ifndef MILVUS_GPU_VERSION
+#ifndef KNOWHERE_GPU_VERSION
     auto ails = dynamic_cast<faiss::ArrayInvertedLists*>(invlists);
     size_t nb = binary->size / invlists->code_size;
     auto arranged_data = new float[d * nb];
@@ -250,7 +250,7 @@ IVF_NM::Seal() {
 
 VecIndexPtr
 IVF_NM::CopyCpuToGpu(const int64_t device_id, const Config& config) {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
     if (auto res = FaissGpuResourceMgr::GetInstance().GetRes(device_id)) {
         ResScope rs(res, device_id, false);
         auto gpu_index = faiss::gpu::index_cpu_to_gpu_without_codes(res->faiss_res.get(), device_id, index_.get(),
@@ -329,7 +329,7 @@ IVF_NM::QueryImpl(int64_t n,
     }
     bool is_sq8 = (index_type_ == IndexEnum::INDEX_FAISS_IVFSQ8) ? true : false;
 
-#ifndef MILVUS_GPU_VERSION
+#ifndef KNOWHERE_GPU_VERSION
     auto data = static_cast<const uint8_t*>(data_.get());
 #else
     auto data = static_cast<const uint8_t*>(ro_codes->data);
@@ -363,7 +363,7 @@ IVF_NM::QueryImpl(int64_t n,
 
 void
 IVF_NM::SealImpl() {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
     faiss::Index* index = index_.get();
     auto idx = dynamic_cast<faiss::IndexIVF*>(index);
     if (idx != nullptr) {

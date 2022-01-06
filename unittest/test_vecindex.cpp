@@ -16,7 +16,7 @@
 #include "knowhere/index/vector_index/VecIndexFactory.h"
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 #include "knowhere/index/vector_index/helpers/Cloner.h"
 #endif
 
@@ -31,7 +31,7 @@ class VecIndexTest : public DataGen, public Tuple<milvus::knowhere::IndexType, m
  protected:
     void
     SetUp() override {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         milvus::knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
 #endif
         std::tie(index_type_, index_mode_, parameter_type_) = GetParam();
@@ -42,7 +42,7 @@ class VecIndexTest : public DataGen, public Tuple<milvus::knowhere::IndexType, m
 
     void
     TearDown() override {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         milvus::knowhere::FaissGpuResourceMgr::GetInstance().Free();
 #endif
     }
@@ -59,7 +59,7 @@ INSTANTIATE_TEST_CASE_P(
     IVFParameters,
     IVFTest,
     Values(
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         std::make_tuple(milvus::knowhere::IndexType::INDEX_FAISS_IVFFLAT, milvus::knowhere::IndexMode::MODE_GPU),
         std::make_tuple(milvus::knowhere::IndexType::INDEX_FAISS_IVFPQ, milvus::knowhere::IndexMode::MODE_GPU),
         std::make_tuple(milvus::knowhere::IndexType::INDEX_FAISS_IVFSQ8, milvus::knowhere::IndexMode::MODE_GPU),
@@ -109,7 +109,7 @@ TEST_P(VecIndexTest, serialize) {
 }
 
 // todo
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 TEST_P(VecIndexTest, copytogpu) {
     // todo
 }

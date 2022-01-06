@@ -65,7 +65,7 @@ macro(build_faiss)
 
     if (CCACHE_FOUND)
         set(FAISS_C_COMPILER "${CCACHE_FOUND} ${CMAKE_C_COMPILER}")
-        if (MILVUS_GPU_VERSION)
+        if (KNOWHERE_GPU_VERSION)
             set(FAISS_CXX_COMPILER "${CMAKE_CXX_COMPILER}")
             set(FAISS_CUDA_COMPILER "${CCACHE_FOUND} ${CMAKE_CUDA_COMPILER}")
         else ()
@@ -92,7 +92,7 @@ macro(build_faiss)
         "LDFLAGS=-L${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
         )
 
-    if (MILVUS_GPU_VERSION)
+    if (KNOWHERE_GPU_VERSION)
         if (NOT MILVUS_CUDA_ARCH OR MILVUS_CUDA_ARCH STREQUAL "DEFAULT")
             set(FAISS_CONFIGURE_ARGS ${FAISS_CONFIGURE_ARGS}
                 "--with-cuda=${CUDA_TOOLKIT_ROOT_DIR}"

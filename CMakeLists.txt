@@ -16,8 +16,7 @@ message( STATUS "------------------------------KNOWHERE-------------------------
 message( STATUS "Building using CMake version: ${CMAKE_VERSION}" )
 
 set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
-include( Utils )
-
+include( KnowhereUtils )
 
 #******************* Build time, type and code version *****************
 get_current_time( BUILD_TIME )
@@ -92,7 +91,7 @@ using_ccache_if_defined( KNOWHERE_USE_CCACHE )
 
 
 #************************** Compiler arguments *************************
-if ( MILVUS_GPU_VERSION )
+if ( KNOWHERE_GPU_VERSION )
     message( STATUS "Building Knowhere GPU version" )
     add_compile_definitions( "KNOWHERE_GPU_VERSION" )
     enable_language( CUDA )
@@ -107,9 +106,9 @@ else ()
     message( STATUS "Building Knowhere CPU version" )
 endif ()
 
-if ( MILVUS_SUPPORT_SPTAG )
+if ( KNOWHERE_SUPPORT_SPTAG )
     message( STATUS "Building Knowhere with SPTAG supported" )
-    add_compile_definitions( "MILVUS_SUPPORT_SPTAG" )
+    add_compile_definitions( "KNOWHERE_SUPPORT_SPTAG" )
 endif ()
 
 if ( CMAKE_BUILD_TYPE STREQUAL "Release" )
@@ -148,8 +147,8 @@ endif ()
 #
 # "make lint" target
 #
-if ( NOT MILVUS_VERBOSE_LINT )
-    set( MILVUS_LINT_QUIET "--quiet" )
+if ( NOT KNOWHERE_VERBOSE_LINT )
+    set( KNOWHERE_LINT_QUIET "--quiet" )
 endif ()
 
 if ( NOT LINT_EXCLUSIONS_FILE )
@@ -166,14 +165,14 @@ find_program( CPPLINT_BIN NAMES cpplint cpplint.py HINTS ${BUILD_SUPPORT_DIR} )
 message( STATUS "Found cpplint executable at ${CPPLINT_BIN}" )
 
 #
-# "make lint" targets
+# "make lint-knowhere" targets
 #
-add_custom_target( lint
+add_custom_target( lint-knowhere
     ${PYTHON_EXECUTABLE}    ${BUILD_SUPPORT_DIR}/run_cpplint.py
                             --cpplint_binary    ${CPPLINT_BIN}
                             --exclude_globs     ${LINT_EXCLUSIONS_FILE}
                             --source_dir        ${CMAKE_CURRENT_SOURCE_DIR}
-                            ${MILVUS_LINT_QUIET}
+                            ${KNOWHERE_LINT_QUIET}
                             )
 
 #
@@ -187,15 +186,15 @@ if ( ${CLANG_FORMAT_FOUND} )
                                 --exclude_globs         ${LINT_EXCLUSIONS_FILE}
                                 --source_dir            ${CMAKE_CURRENT_SOURCE_DIR}/src
                                 --fix
-                                ${MILVUS_LINT_QUIET} )
+                                ${KNOWHERE_LINT_QUIET} )
 
     # runs clang format and exits with a non-zero exit code if any files need to be reformatted
-    add_custom_target( check-clang-format
+    add_custom_target( check-clang-format-knowhere
         ${PYTHON_EXECUTABLE}    ${BUILD_SUPPORT_DIR}/run_clang_format.py
                                 --clang_format_binary   ${CLANG_FORMAT_BIN}
                                 --exclude_globs         ${LINT_EXCLUSIONS_FILE}
                                 --source_dir            ${CMAKE_CURRENT_SOURCE_DIR}/src
-                                ${MILVUS_LINT_QUIET} )
+                                ${KNOWHERE_LINT_QUIET} )
 endif ()
 
 #
@@ -210,17 +209,17 @@ if ( ${CLANG_TIDY_FOUND} )
                                 --compile_commands  ${CMAKE_BINARY_DIR}/compile_commands.json
                                 --source_dir        ${CMAKE_CURRENT_SOURCE_DIR}/src
                                 --fix
-                                ${MILVUS_LINT_QUIET} )
+                                ${KNOWHERE_LINT_QUIET} )
 
     # runs clang-tidy and exits with a non-zero exit code if any errors are found.
-    add_custom_target( check-clang-tidy
+    add_custom_target( check-clang-tidy-knowhere
         ${PYTHON_EXECUTABLE}    ${BUILD_SUPPORT_DIR}/run_clang_tidy.py
                                 --clang_tidy_binary ${CLANG_TIDY_BIN}
                                 --exclude_globs     ${LINT_EXCLUSIONS_FILE}
                                 --ignore_checks     ${IGNORE_CHECKS_FILE}
                                 --compile_commands  ${CMAKE_BINARY_DIR}/compile_commands.json
                                 --source_dir        ${CMAKE_CURRENT_SOURCE_DIR}/src
-                                ${MILVUS_LINT_QUIET} )
+                                ${KNOWHERE_LINT_QUIET} )
 endif ()
 
 #
