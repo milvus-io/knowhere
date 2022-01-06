@@ -180,7 +180,7 @@ add_custom_target( lint-knowhere
 #
 if ( ${CLANG_FORMAT_FOUND} )
     # runs clang format and updates files in place.
-    add_custom_target( clang-format
+    add_custom_target( clang-format-knowhere
         ${PYTHON_EXECUTABLE}    ${BUILD_SUPPORT_DIR}/run_clang_format.py
                                 --clang_format_binary   ${CLANG_FORMAT_BIN}
                                 --exclude_globs         ${LINT_EXCLUSIONS_FILE}
