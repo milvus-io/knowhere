@@ -11,11 +11,11 @@
 # or implied. See the License for the specific language governing permissions and limitations under the License.
 #-------------------------------------------------------------------------------
 
-include_directories(${INDEX_SOURCE_DIR}/knowhere)
-include_directories(${INDEX_SOURCE_DIR}/thirdparty)
-include_directories(${INDEX_SOURCE_DIR}/knowhere/knowhere/utils)
+include_directories(${KNOWHERE_SOURCE_DIR}/knowhere)
+include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty)
+include_directories(${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/utils)
 
-set(KNOWHERE_THIRDPARTY_SRC ${INDEX_SOURCE_DIR}/thirdparty)
+set(KNOWHERE_THIRDPARTY_SRC ${KNOWHERE_SOURCE_DIR}/thirdparty)
 set(external_srcs
         knowhere/common/Exception.cpp
         knowhere/common/Status.cpp
@@ -26,7 +26,7 @@ set(external_srcs
 
 set (LOG_SRC
         knowhere/common/Log.cpp
-        ${MILVUS_THIRDPARTY_SRC}/easyloggingpp/easylogging++.cc
+        ${KNOWHERE_THIRDPARTY_SRC}/easyloggingpp/easylogging++.cc
         )
 
 add_library(index_log STATIC ${LOG_SRC})
@@ -38,11 +38,11 @@ set(config_srcs
         )
 
 if (LINUX)
-    include_directories(${INDEX_SOURCE_DIR}/thirdparty/NGT/lib)
+    include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib)
     if (MILVUS_SUPPORT_SPTAG)
-        include_directories(${INDEX_SOURCE_DIR}/thirdparty/SPTAG/AnnService)
+        include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService)
 
-        set(SPTAG_SOURCE_DIR ${INDEX_SOURCE_DIR}/thirdparty/SPTAG)
+        set(SPTAG_SOURCE_DIR ${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG)
         file(GLOB HDR_FILES
                 ${SPTAG_SOURCE_DIR}/AnnService/inc/Core/*.h
                 ${SPTAG_SOURCE_DIR}/AnnService/inc/Core/Common/*.h
@@ -110,7 +110,7 @@ if (LINUX)
                 ${vector_index_srcs}
                 )
         set(INDEX_INCLUDE_DIRS
-                ${INDEX_SOURCE_DIR}/thirdparty/SPTAG/AnnService
+                ${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService
                 ${INDEX_INCLUDE_DIRS}
                 )
     endif ()
@@ -170,8 +170,8 @@ if (LINUX)
     endif ()
     target_link_libraries(knowhere ${depend_libs})
     set(INDEX_INCLUDE_DIRS
-        ${INDEX_SOURCE_DIR}/knowhere
-        ${INDEX_SOURCE_DIR}/thirdparty
+        ${KNOWHERE_SOURCE_DIR}/knowhere
+        ${KNOWHERE_SOURCE_DIR}/thirdparty
         ${FAISS_INCLUDE_DIR}
         ${OpenBLAS_INCLUDE_DIR}
         ${LAPACK_INCLUDE_DIR}
@@ -199,19 +199,19 @@ if (MACOS)
     endif ()
 
     target_link_libraries(knowhere pthread index_log knowhere_utils)
-    set(INDEX_INCLUDE_DIRS ${INDEX_SOURCE_DIR}/knowhere)
+    set(INDEX_INCLUDE_DIRS ${KNOWHERE_SOURCE_DIR}/knowhere)
 endif()
 
 target_include_directories(knowhere PUBLIC ${INDEX_INCLUDE_DIRS})
 install(TARGETS index_log DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 install(TARGETS knowhere DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-install(DIRECTORY "${INDEX_SOURCE_DIR}/knowhere/cache/" 
+install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/knowhere/cache/"
         DESTINATION "include/knowhere/cache"
         FILES_MATCHING 
         PATTERN "*.h" 
 )
 
-install(DIRECTORY "${INDEX_SOURCE_DIR}/knowhere/knowhere/" 
+install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/"
         DESTINATION "include/knowhere"
         FILES_MATCHING 
         PATTERN "*.h" 

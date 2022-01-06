@@ -53,6 +53,6 @@ else ()
 endif ()
 
 target_compile_options(knowhere_utils PUBLIC "-msse4.2")
-target_link_libraries(knowhere_utils PUBLIC openblas)
+#target_link_libraries(knowhere_utils PUBLIC openblas)
 
-target_include_directories(knowhere_utils PUBLIC ${INDEX_SOURCE_DIR}/knowhere/knowhere/utils)
+target_include_directories(knowhere_utils PUBLIC ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/utils)
