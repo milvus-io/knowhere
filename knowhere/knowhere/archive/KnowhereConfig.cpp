@@ -11,9 +11,8 @@
 
 #include <string>
 
-#include "KnowhereConfig.h"
+#include "knowhere/archive/KnowhereConfig.h"
 #include "knowhere/common/Log.h"
-#include "knowhere/common/Exception.h"
 
 #ifdef __linux__
 #include "knowhere/index/vector_index/Statistics.h"

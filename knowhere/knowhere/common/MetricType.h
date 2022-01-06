@@ -36,6 +36,6 @@ enum MetricType {
     METRIC_JensenShannon,
 };
 
-}
+}  // namespace faiss
 
 #endif
