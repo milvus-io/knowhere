@@ -14,7 +14,7 @@
 #include <iostream>
 #include <thread>
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 #include <faiss/gpu/GpuIndexIVFFlat.h>
 #endif
 
@@ -24,7 +24,7 @@
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #include "knowhere/index/vector_offset_index/IndexIVF_NM.h"
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 #include "knowhere/index/vector_index/helpers/Cloner.h"
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
 #include "knowhere/index/vector_offset_index/gpu/IndexGPUIVF_NM.h"
@@ -42,7 +42,7 @@ class IVFNMCPUTest : public DataGen,
  protected:
     void
     SetUp() override {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         milvus::knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
 #endif
         std::tie(index_type_, index_mode_) = GetParam();
@@ -53,7 +53,7 @@ class IVFNMCPUTest : public DataGen,
 
     void
     TearDown() override {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         milvus::knowhere::FaissGpuResourceMgr::GetInstance().Free();
 #endif
     }
@@ -101,7 +101,7 @@ TEST_P(IVFNMCPUTest, ivf_basic_cpu) {
     auto result = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result, nq, k);
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
     // copy from cpu to gpu
     {
         EXPECT_NO_THROW({
@@ -122,7 +122,7 @@ TEST_P(IVFNMCPUTest, ivf_basic_cpu) {
     auto result_bs_1 = index_->Query(query_dataset, conf_, concurrent_bitset_ptr);
     AssertAnns(result_bs_1, nq, k, CheckMode::CHECK_NOT_EQUAL);
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
     milvus::knowhere::FaissGpuResourceMgr::GetInstance().Dump();
 #endif
 }

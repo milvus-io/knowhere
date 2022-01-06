@@ -22,7 +22,7 @@ set(DEPEND_LIBS
         gmock_main
         faiss
         ngt
-        index_log
+        knowhere_log
         openblas
         )
 
@@ -41,7 +41,7 @@ set(UTIL_SRCS
         ${KNOWHERE_SOURCE_DIR}/unittest/utils.cpp
         )
 
-if (MILVUS_GPU_VERSION)
+if (KNOWHERE_GPU_VERSION)
     include_directories(${CUDA_INCLUDE_DIRS})
     link_directories("${CUDA_TOOLKIT_ROOT_DIR}/lib64")
     set(CUDA_LIB
@@ -68,7 +68,7 @@ set(FAISS_SRCS
         ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_offset_index/IndexIVF_NM.cpp
         )
 
-if (MILVUS_GPU_VERSION)
+if (KNOWHERE_GPU_VERSION)
     set(FAISS_SRCS ${faiss_srcs}
             ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/ConfAdapter.cpp
             ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/Cloner.cpp
@@ -115,7 +115,7 @@ set(ALL_INDEXING_SRCS
         test_ngtonng.cpp
         )
 
-if (MILVUS_GPU_VERSION)
+if (KNOWHERE_GPU_VERSION)
     set(ALL_INDEXING_SRCS
             ${ALL_INDEXING_SRCS}
             test_ivf_gpu_nm.cpp
@@ -123,7 +123,7 @@ if (MILVUS_GPU_VERSION)
             )
 endif ()
 
-if (MILVUS_SUPPORT_SPTAG)
+if (KNOWHERE_SUPPORT_SPTAG)
     set(ALL_INDEXING_SRCS
             test_sptag.cpp
             )

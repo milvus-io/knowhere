@@ -15,7 +15,7 @@
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
 #include "knowhere/index/vector_offset_index/IndexNSG_NM.h"
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 #include "knowhere/index/vector_index/gpu/IndexGPUIDMAP.h"
 #include "knowhere/index/vector_index/helpers/Cloner.h"
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
@@ -36,7 +36,7 @@ class NSGInterfaceTest : public DataGen, public ::testing::Test {
  protected:
     void
     SetUp() override {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         int64_t MB = 1024 * 1024;
         milvus::knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICE_GPU0, MB * 200, MB * 600, 1);
 #endif
@@ -62,7 +62,7 @@ class NSGInterfaceTest : public DataGen, public ::testing::Test {
 
     void
     TearDown() override {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         milvus::knowhere::FaissGpuResourceMgr::GetInstance().Free();
 #endif
     }

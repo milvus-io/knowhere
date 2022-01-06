@@ -39,7 +39,7 @@ set(config_srcs
 
 if (LINUX)
     include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib)
-    if (MILVUS_SUPPORT_SPTAG)
+    if (KNOWHERE_SUPPORT_SPTAG)
         include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService)
 
         set(SPTAG_SOURCE_DIR ${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG)
@@ -102,16 +102,16 @@ if (LINUX)
             knowhere/index/vector_offset_index/IndexNSG_NM.cpp
             )
 
-    if (MILVUS_SUPPORT_SPTAG)
+    if (KNOWHERE_SUPPORT_SPTAG)
         set(vector_index_srcs
                 knowhere/index/vector_index/adapter/SptagAdapter.cpp
                 knowhere/index/vector_index/helpers/SPTAGParameterMgr.cpp
                 knowhere/index/vector_index/IndexSPTAG.cpp
                 ${vector_index_srcs}
                 )
-        set(INDEX_INCLUDE_DIRS
+        set(KNOWHERE_INCLUDE_DIRS
                 ${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService
-                ${INDEX_INCLUDE_DIRS}
+                ${KNOWHERE_INCLUDE_DIRS}
                 )
     endif ()
 
@@ -125,7 +125,7 @@ if (LINUX)
             knowhere_utils
             )
 
-    if (MILVUS_SUPPORT_SPTAG)
+    if (KNOWHERE_SUPPORT_SPTAG)
         set(depend_libs
                 SPTAGLibStatic
                 ${depend_libs}
@@ -133,7 +133,7 @@ if (LINUX)
     endif ()
 
 
-    if (MILVUS_GPU_VERSION)
+    if (KNOWHERE_GPU_VERSION)
         include_directories(${CUDA_INCLUDE_DIRS})
         link_directories("${CUDA_TOOLKIT_ROOT_DIR}/lib64")
         set(cuda_lib
@@ -169,7 +169,7 @@ if (LINUX)
         )
     endif ()
     target_link_libraries(knowhere ${depend_libs})
-    set(INDEX_INCLUDE_DIRS
+    set(KNOWHERE_INCLUDE_DIRS
         ${KNOWHERE_SOURCE_DIR}/knowhere
         ${KNOWHERE_SOURCE_DIR}/thirdparty
         ${FAISS_INCLUDE_DIR}
@@ -199,10 +199,10 @@ if (MACOS)
     endif ()
 
     target_link_libraries(knowhere pthread knowhere_log knowhere_utils)
-    set(INDEX_INCLUDE_DIRS ${KNOWHERE_SOURCE_DIR}/knowhere)
+    set(KNOWHERE_INCLUDE_DIRS ${KNOWHERE_SOURCE_DIR}/knowhere)
 endif()
 
-target_include_directories(knowhere PUBLIC ${INDEX_INCLUDE_DIRS})
+target_include_directories(knowhere PUBLIC ${KNOWHERE_INCLUDE_DIRS})
 install(TARGETS knowhere_log DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 install(TARGETS knowhere DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/knowhere/cache/"

@@ -11,7 +11,7 @@
 
 #include "easyloggingpp/easylogging++.h"
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
 #include "wrapper/WrapperException.h"
@@ -36,7 +36,7 @@ class KnowhereWrapperTest
  protected:
     void
     SetUp() override {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
 #endif
         std::string generator_type;
@@ -56,7 +56,7 @@ class KnowhereWrapperTest
 
     void
     TearDown() override {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         knowhere::FaissGpuResourceMgr::GetInstance().Free();
 #endif
     }
@@ -73,7 +73,7 @@ INSTANTIATE_TEST_CASE_P(
     KnowhereWrapperTest,
     Values(
 //["Index type", "Generator type", "dim", "nb", "nq", "k", "build config", "search config"]
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         std::make_tuple(milvus::engine::IndexType::FAISS_IVFFLAT_GPU, "Default", DIM, NB, 10, 10),
         std::make_tuple(milvus::engine::IndexType::FAISS_IVFFLAT_MIX, "Default", 64, 1000, 10, 10),
         std::make_tuple(milvus::engine::IndexType::FAISS_IVFSQ8_GPU, "Default", DIM, NB, 10, 10),
@@ -88,7 +88,7 @@ INSTANTIATE_TEST_CASE_P(
         std::make_tuple(milvus::engine::IndexType::FAISS_IVFFLAT_CPU, "Default", 64, 1000, 10, 10),
         std::make_tuple(milvus::engine::IndexType::FAISS_IVFSQ8_CPU, "Default", DIM, NB, 10, 10)));
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 TEST_P(KnowhereWrapperTest, WRAPPER_EXCEPTION_TEST) {
     std::string err_msg = "failed";
     milvus::engine::WrapperException ex(err_msg);
@@ -118,7 +118,7 @@ TEST_P(KnowhereWrapperTest, BASE_TEST) {
     }
 }
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 TEST_P(KnowhereWrapperTest, TO_GPU_TEST) {
     if (index_type == milvus::engine::IndexType::HNSW) {
         return;

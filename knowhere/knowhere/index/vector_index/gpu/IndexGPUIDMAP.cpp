@@ -13,7 +13,7 @@
 #include <faiss/IndexFlat.h>
 #include <faiss/MetaIndexes.h>
 #include <faiss/index_io.h>
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 #include <faiss/gpu/GpuCloner.h>
 #endif
 #include <string>

@@ -18,7 +18,7 @@
 #include "knowhere/common/Log.h"
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 #include "faiss/gpu/utils/DeviceUtils.h"
 #endif
 
@@ -135,7 +135,7 @@ IVFConfAdapter::CheckTrain(Config& oricfg, const IndexMode mode) {
 bool
 IVFConfAdapter::CheckSearch(Config& oricfg, const IndexType type, const IndexMode mode) {
     int64_t max_nprobe = MAX_NPROBE;
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
     if (mode == IndexMode::MODE_GPU) {
         max_nprobe = faiss::gpu::getMaxKSelection();
     }
@@ -172,7 +172,7 @@ IVFPQConfAdapter::CheckTrain(Config& oricfg, const IndexMode mode) {
 
 bool
 IVFPQConfAdapter::CheckPQParams(int64_t dimension, int64_t m, int64_t nbits, IndexMode& mode) {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
     if (mode == knowhere::IndexMode::MODE_GPU && !IVFPQConfAdapter::CheckGPUPQParams(dimension, m, nbits)) {
         mode = knowhere::IndexMode::MODE_CPU;
     }
