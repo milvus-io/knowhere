@@ -202,7 +202,7 @@ endif ()
 #
 if ( ${CLANG_TIDY_FOUND} )
     # runs clang-tidy and attempts to fix any warning automatically
-    add_custom_target( clang-tidy
+    add_custom_target( clang-tidy-knowhere
         ${PYTHON_EXECUTABLE}    ${BUILD_SUPPORT_DIR}/run_clang_tidy.py
                                 --clang_tidy_binary ${CLANG_TIDY_BIN}
                                 --exclude_globs     ${LINT_EXCLUSIONS_FILE}
