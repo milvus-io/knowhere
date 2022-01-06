@@ -75,7 +75,7 @@ endif (UNIX)
 
 # ----------------------------------------------------------------------
 # thirdparty directory
-set(THIRDPARTY_DIR "${KNOWHERE_SOURCE_DIR}/thirdparty")
+set(THIRDPARTY_DIR "${INDEX_SOURCE_DIR}/thirdparty")
 
 # ----------------------------------------------------------------------
 # ExternalProject options
