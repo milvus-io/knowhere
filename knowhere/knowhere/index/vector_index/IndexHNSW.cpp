@@ -12,9 +12,8 @@
 #include "knowhere/index/vector_index/IndexHNSW.h"
 
 #include <algorithm>
-#include <cassert>
 #include <chrono>
-#include <iterator>
+#include <queue>
 #include <string>
 #include <utility>
 #include <vector>

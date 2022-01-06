@@ -14,7 +14,7 @@
 #include <utility>
 
 #include "knowhere/common/Exception.h"
-#include "DynamicResultSet.h"
+#include "knowhere/index/vector_index/helpers/DynamicResultSet.h"
 
 namespace milvus {
 namespace knowhere {

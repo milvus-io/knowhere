@@ -9,12 +9,12 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
-#include "Log.h"
-
 #include <cstdarg>
 #include <cstdio>
 #include <memory>
 #include <string>
+
+#include "knowhere/common/Log.h"
 
 namespace milvus {
 namespace knowhere {

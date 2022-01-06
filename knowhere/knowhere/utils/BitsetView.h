@@ -213,14 +213,14 @@ class ConcurrentBitset {
             x = (x & 0x0F) + ((x >> 4) & 0x0F);
             return x;
         };
-        for (size_t i = 0; i < len; ++ i) {
+        for (size_t i = 0; i < len; ++i) {
             ret += __builtin_popcountl(*p_data);
-            p_data ++;
+            p_data++;
         }
         auto p_byte = data() + (len << 3);
-        for (auto i = (len << 3); i < size(); ++ i) {
+        for (auto i = (len << 3); i < size(); ++i) {
             ret += popcount8(*p_byte);
-            p_byte ++;
+            p_byte++;
         }
         return ret;
     }
@@ -239,7 +239,7 @@ class BitsetView {
     BitsetView(const uint8_t* blocks, int64_t size) : blocks_(blocks), size_(size) {
     }
 
-    BitsetView(const ConcurrentBitset& bitset) : size_(bitset.count()) {
+    explicit BitsetView(const ConcurrentBitset& bitset) : size_(bitset.count()) {
         // memcpy(block_data_.data(), bitset.data(), bitset.size());
         // blocks_ = block_data_.data();
         blocks_ = new uint8_t[bitset.size()];
@@ -247,7 +247,7 @@ class BitsetView {
     }
 
     BitsetView(const ConcurrentBitsetPtr& bitset_ptr) {
-        if(bitset_ptr) {
+        if (bitset_ptr) {
             *this = BitsetView(*bitset_ptr);
         }
     }
@@ -255,14 +255,14 @@ class BitsetView {
     BitsetView(const std::nullptr_t nullptr_value): BitsetView() {
         assert(nullptr_value == nullptr);
     }
-    
+
     bool
     empty() const {
         return size_ == 0;
     }
-    
+
     // return count of all bits
-    int64_t 
+    int64_t
     size() const {
         return size_;
     }
@@ -307,14 +307,14 @@ class BitsetView {
             x = (x & 0x0F) + ((x >> 4) & 0x0F);
             return x;
         };
-        for (int64_t i = 0; i < len; ++ i) {
+        for (int64_t i = 0; i < len; ++i) {
             ret += __builtin_popcountl(*p_data);
-            p_data ++;
+            p_data++;
         }
         auto p_byte = blocks_ + (len << 3);
-        for (auto i = (len << 3); i < u8size(); ++ i) {
+        for (auto i = (len << 3); i < u8size(); ++i) {
             ret += popcount8(*p_byte);
-            p_byte ++;
+            p_byte++;
         }
         return ret;
     }
