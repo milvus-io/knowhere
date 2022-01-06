@@ -85,7 +85,7 @@ CMAKE_CMD="cmake -DBUILD_UNIT_TEST=${BUILD_UNITTEST} \
 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
 -DCMAKE_CUDA_COMPILER=${CUDA_COMPILER} \
 -DMILVUS_ENABLE_PROFILING=${SUPPORT_PROFILING} \
--DMILVUS_GPU_VERSION=${SUPPORT_GPU} \
+-DKNOWHERE_GPU_VERSION=${SUPPORT_GPU} \
 -DCMAKE_CROSSCOMPILING=true \
 -DRUN_HAVE_GNU_POSIX_REGEX=0 \
 -DCMAKE_C_COMPILER=/usr/local/opt/llvm/bin/clang \
@@ -96,7 +96,7 @@ ${CMAKE_CMD}
 
 if [[ ${RUN_CPPLINT} == "ON" ]]; then
   # cpplint check
-  make lint
+  make lint-knowhere
   if [ $? -ne 0 ]; then
     echo "ERROR! cpplint check failed"
     exit 1
@@ -104,7 +104,7 @@ if [[ ${RUN_CPPLINT} == "ON" ]]; then
   echo "cpplint check passed!"
 
   # clang-format check
-  make check-clang-format
+  make check-clang-format-knowhere
   if [ $? -ne 0 ]; then
     echo "ERROR! clang-format check failed"
     exit 1
@@ -112,7 +112,7 @@ if [[ ${RUN_CPPLINT} == "ON" ]]; then
   echo "clang-format check passed!"
 
   # clang-tidy check
-  make check-clang-tidy
+  make check-clang-tidy-knowhere
   if [ $? -ne 0 ]; then
       echo "ERROR! clang-tidy check failed"
       exit 1
@@ -122,3 +122,4 @@ else
   # compile and build
   make -j 8 install || exit 1
 fi
+

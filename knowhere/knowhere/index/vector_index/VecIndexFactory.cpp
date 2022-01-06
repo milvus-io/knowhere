@@ -31,11 +31,11 @@
 #include "knowhere/index/vector_offset_index/IndexIVF_NM.h"
 #include "knowhere/index/vector_offset_index/IndexNSG_NM.h"
 
-#ifdef MILVUS_SUPPORT_SPTAG
+#ifdef KNOWHERE_SUPPORT_SPTAG
 #include "knowhere/index/vector_index/IndexSPTAG.h"
 #endif
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 #include <cuda.h>
 #include "knowhere/index/vector_index/gpu/IndexGPUIDMAP.h"
 #include "knowhere/index/vector_index/gpu/IndexGPUIVF.h"
@@ -53,33 +53,33 @@ namespace knowhere {
 VecIndexPtr
 VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
 #ifdef __linux__
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
     auto gpu_device = -1;  // TODO: remove hardcode here, get from invoker
 #endif
     if (type == IndexEnum::INDEX_FAISS_IDMAP) {
         return std::make_shared<knowhere::IDMAP>();
     } else if (type == IndexEnum::INDEX_FAISS_IVFFLAT) {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         if (mode == IndexMode::MODE_GPU) {
             return std::make_shared<knowhere::GPUIVF_NM>(gpu_device);
         }
 #endif
         return std::make_shared<knowhere::IVF_NM>();
     } else if (type == IndexEnum::INDEX_FAISS_IVFPQ) {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         if (mode == IndexMode::MODE_GPU) {
             return std::make_shared<knowhere::GPUIVFPQ>(gpu_device);
         }
 #endif
         return std::make_shared<knowhere::IVFPQ>();
     } else if (type == IndexEnum::INDEX_FAISS_IVFSQ8) {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         if (mode == IndexMode::MODE_GPU) {
             return std::make_shared<knowhere::GPUIVFSQ>(gpu_device);
         }
 #endif
         return std::make_shared<knowhere::IVFSQ>();
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
     } else if (type == IndexEnum::INDEX_FAISS_IVFSQ8H) {
         return std::make_shared<knowhere::IVFSQHybrid>(gpu_device);
 #endif
@@ -89,7 +89,7 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
         return std::make_shared<knowhere::BinaryIVF>();
     } else if (type == IndexEnum::INDEX_NSG) {
         return std::make_shared<knowhere::NSG_NM>(-1);
-#ifdef MILVUS_SUPPORT_SPTAG
+#ifdef KNOWHERE_SUPPORT_SPTAG
     } else if (type == IndexEnum::INDEX_SPTAG_KDT_RNT) {
         return std::make_shared<knowhere::CPUSPTAGRNG>("KDT");
     } else if (type == IndexEnum::INDEX_SPTAG_BKT_RNT) {

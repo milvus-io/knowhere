@@ -40,7 +40,7 @@ class IVFHNSWTest : public DataGen,
 
     void
     TearDown() override {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         milvus::knowhere::FaissGpuResourceMgr::GetInstance().Free();
 #endif
     }

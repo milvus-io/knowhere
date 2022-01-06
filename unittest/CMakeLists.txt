@@ -23,7 +23,7 @@ if (APPLE)
             gmock
             gtest_main
             gmock_main
-            index_log
+            knowhere_log
             )
 else()
     set(DEPEND_LIBS
@@ -33,7 +33,7 @@ else()
             gmock_main
             faiss
             ngt
-            index_log
+            knowhere_log
             openblas
             )
 endif()
@@ -66,7 +66,7 @@ else()
             )
 endif()
 
-if (NOT APPLE AND MILVUS_GPU_VERSION)
+if (NOT APPLE AND KNOWHERE_GPU_VERSION)
     include_directories(${CUDA_INCLUDE_DIRS})
     link_directories("${CUDA_TOOLKIT_ROOT_DIR}/lib64")
     set(CUDA_LIB
@@ -94,7 +94,7 @@ if (NOT APPLE)
             ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_offset_index/IndexIVF_NM.cpp
             )
 
-    if (MILVUS_GPU_VERSION)
+    if (KNOWHERE_GPU_VERSION)
         set(FAISS_SRCS ${faiss_srcs}
                 ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/ConfAdapter.cpp
                 ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/Cloner.cpp
@@ -152,7 +152,7 @@ else()
             )
 endif()
 
-if (NOT APPLE AND MILVUS_GPU_VERSION)
+if (NOT APPLE AND KNOWHERE_GPU_VERSION)
     set(ALL_INDEXING_SRCS
             ${ALL_INDEXING_SRCS}
             test_ivf_gpu_nm.cpp
@@ -160,7 +160,7 @@ if (NOT APPLE AND MILVUS_GPU_VERSION)
             )
 endif ()
 
-if (NOT APPLE AND MILVUS_SUPPORT_SPTAG)
+if (NOT APPLE AND KNOWHERE_GPU_VERSION)
     set(ALL_INDEXING_SRCS
             test_sptag.cpp
             )

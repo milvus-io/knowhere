@@ -20,7 +20,7 @@
 #include "knowhere/index/vector_index/impl/nsg/NSGIO.h"
 #include "knowhere/index/vector_offset_index/IndexNSG_NM.h"
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 #include "knowhere/index/vector_index/gpu/IndexGPUIDMAP.h"
 #include "knowhere/index/vector_index/gpu/IndexGPUIVF.h"
 #include "knowhere/index/vector_index/helpers/Cloner.h"
@@ -112,7 +112,7 @@ NSG_NM::BuildAll(const DatasetPtr& dataset_ptr, const Config& config) {
     impl::Graph knng;
     const float* raw_data = idmap->GetRawVectors();
     auto k = config[IndexParams::knng].get<int64_t>();
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
     const auto device_id = config[knowhere::meta::DEVICEID].get<int64_t>();
     if (device_id == -1) {
         auto preprocess_index = std::make_shared<IVF>();

@@ -14,7 +14,7 @@
 #include <iostream>
 #include <thread>
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 #include <faiss/gpu/GpuIndexIVFFlat.h>
 #endif
 
@@ -24,7 +24,7 @@
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #include "knowhere/index/vector_offset_index/IndexIVF_NM.h"
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 #include "knowhere/index/vector_index/helpers/Cloner.h"
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
 #include "knowhere/index/vector_offset_index/gpu/IndexGPUIVF_NM.h"
@@ -53,13 +53,13 @@ class IVFNMGPUTest : public DataGen,
  protected:
     void
     SetUp() override {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         milvus::knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
 #endif
         index_type_ = milvus::knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
         index_mode_ = milvus::knowhere::IndexMode::MODE_GPU;
         Generate(DIM, NB, NQ);
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         index_ = std::make_shared<milvus::knowhere::GPUIVF_NM>(DEVICEID);
 #endif
         conf_ = ParamGenerator::GetInstance().Gen(index_type_);
@@ -67,7 +67,7 @@ class IVFNMGPUTest : public DataGen,
 
     void
     TearDown() override {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         milvus::knowhere::FaissGpuResourceMgr::GetInstance().Free();
 #endif
     }
@@ -79,7 +79,7 @@ class IVFNMGPUTest : public DataGen,
     milvus::knowhere::IVFPtr index_ = nullptr;
 };
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 TEST_F(IVFNMGPUTest, ivf_basic_gpu) {
     assert(!xb.empty());
 

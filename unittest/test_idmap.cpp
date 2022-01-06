@@ -18,7 +18,7 @@
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/IndexType.h"
 #include "knowhere/index/vector_index/IndexIDMAP.h"
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 #include <faiss/gpu/GpuCloner.h>
 #include "knowhere/index/vector_index/gpu/IndexGPUIDMAP.h"
 #include "knowhere/index/vector_index/helpers/Cloner.h"
@@ -35,7 +35,7 @@ class IDMAPTest : public DataGen, public TestWithParam<milvus::knowhere::IndexMo
  protected:
     void
     SetUp() override {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         milvus::knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
 #endif
         index_mode_ = GetParam();
@@ -45,7 +45,7 @@ class IDMAPTest : public DataGen, public TestWithParam<milvus::knowhere::IndexMo
 
     void
     TearDown() override {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         milvus::knowhere::FaissGpuResourceMgr::GetInstance().Free();
 #endif
     }
@@ -58,7 +58,7 @@ class IDMAPTest : public DataGen, public TestWithParam<milvus::knowhere::IndexMo
 INSTANTIATE_TEST_CASE_P(IDMAPParameters,
                         IDMAPTest,
                         Values(
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
                             milvus::knowhere::IndexMode::MODE_GPU,
 #endif
                             milvus::knowhere::IndexMode::MODE_CPU));
@@ -87,7 +87,7 @@ TEST_P(IDMAPTest, idmap_basic) {
     //    PrintResult(result, nq, k);
 
     if (index_mode_ == milvus::knowhere::IndexMode::MODE_GPU) {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         // cpu to gpu
         index_ = std::dynamic_pointer_cast<milvus::knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICEID, conf));
 #endif
@@ -144,7 +144,7 @@ TEST_P(IDMAPTest, idmap_serialize) {
         index_->AddWithoutIds(base_dataset, milvus::knowhere::Config());
 
         if (index_mode_ == milvus::knowhere::IndexMode::MODE_GPU) {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
             // cpu to gpu
             index_ = std::dynamic_pointer_cast<milvus::knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICEID, conf));
 #endif
@@ -187,7 +187,7 @@ TEST_P(IDMAPTest, idmap_slice) {
         index_->AddWithoutIds(base_dataset, milvus::knowhere::Config());
 
         if (index_mode_ == milvus::knowhere::IndexMode::MODE_GPU) {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
             // cpu to gpu
             index_ = std::dynamic_pointer_cast<milvus::knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICEID, conf));
 #endif
@@ -447,7 +447,7 @@ TEST_P(IDMAPTest, idmap_dynamic_result_set) {
     }
 }
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 TEST_P(IDMAPTest, idmap_copy) {
     ASSERT_TRUE(!xb.empty());
 

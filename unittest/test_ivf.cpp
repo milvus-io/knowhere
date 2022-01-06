@@ -13,7 +13,7 @@
 #include <iostream>
 #include <thread>
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 #include <faiss/gpu/GpuIndexIVFFlat.h>
 #endif
 
@@ -25,7 +25,7 @@
 #include "knowhere/index/vector_index/IndexIVFSQ.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 #include "knowhere/index/vector_index/gpu/IndexGPUIVF.h"
 #include "knowhere/index/vector_index/gpu/IndexGPUIVFPQ.h"
 #include "knowhere/index/vector_index/gpu/IndexGPUIVFSQ.h"
@@ -46,7 +46,7 @@ class IVFTest : public DataGen,
  protected:
     void
     SetUp() override {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         milvus::knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
 #endif
         std::tie(index_type_, index_mode_) = GetParam();
@@ -62,7 +62,7 @@ class IVFTest : public DataGen,
 
     void
     TearDown() override {
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         milvus::knowhere::FaissGpuResourceMgr::GetInstance().Free();
 #endif
     }
@@ -78,7 +78,7 @@ INSTANTIATE_TEST_CASE_P(
     IVFParameters,
     IVFTest,
     Values(
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
         std::make_tuple(milvus::knowhere::IndexEnum::INDEX_FAISS_IVFPQ, milvus::knowhere::IndexMode::MODE_GPU),
         std::make_tuple(milvus::knowhere::IndexEnum::INDEX_FAISS_IVFSQ8, milvus::knowhere::IndexMode::MODE_GPU),
         std::make_tuple(milvus::knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H, milvus::knowhere::IndexMode::MODE_GPU),
@@ -139,7 +139,7 @@ TEST_P(IVFTest, ivf_basic_cpu) {
 #endif
     }
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
     milvus::knowhere::FaissGpuResourceMgr::GetInstance().Dump();
 #endif
 }
@@ -171,7 +171,7 @@ TEST_P(IVFTest, ivf_basic_gpu) {
     AssertAnns(result_bs_1, nq, k, CheckMode::CHECK_NOT_EQUAL);
     // PrintResult(result, nq, k);
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
     milvus::knowhere::FaissGpuResourceMgr::GetInstance().Dump();
 #endif
 }
@@ -224,7 +224,7 @@ TEST_P(IVFTest, ivf_slice) {
 }
 
 // TODO(linxj): deprecated
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 TEST_P(IVFTest, clone_test) {
     assert(!xb.empty());
 
@@ -285,7 +285,7 @@ TEST_P(IVFTest, clone_test) {
 }
 #endif
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 TEST_P(IVFTest, gpu_seal_test) {
     if (index_mode_ != milvus::knowhere::IndexMode::MODE_GPU) {
         return;

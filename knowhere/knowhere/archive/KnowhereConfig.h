@@ -75,7 +75,7 @@ class KnowhereConfig {
     static void
     SetLogHandler();
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
     // todo: move to ohter file?
     /**
      * init GPU Resource

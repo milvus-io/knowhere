@@ -22,7 +22,7 @@
 namespace milvus {
 namespace knowhere {
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
 
 struct FaissIVFQuantizer {
     faiss::gpu::GpuIndexFlat* quantizer = nullptr;

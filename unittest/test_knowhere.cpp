@@ -41,7 +41,7 @@ TEST_F(KnowhereTest, KNOWHERE_RESOURCE_TEST) {
 
     KnowhereConfig::SetLogHandler();
 
-#ifdef MILVUS_GPU_VERSION
+#ifdef KNOWHERE_GPU_VERSION
     std::vector<int64_t> gpu_ids = {0};
     KnowhereConfig::InitGPUResource(gpu_ids);
 
