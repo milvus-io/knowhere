@@ -86,6 +86,10 @@ CMAKE_CMD="cmake -DBUILD_UNIT_TEST=${BUILD_UNITTEST} \
 -DCMAKE_CUDA_COMPILER=${CUDA_COMPILER} \
 -DMILVUS_ENABLE_PROFILING=${SUPPORT_PROFILING} \
 -DMILVUS_GPU_VERSION=${SUPPORT_GPU} \
+-DCMAKE_CROSSCOMPILING=true \
+-DRUN_HAVE_GNU_POSIX_REGEX=0 \
+-DCMAKE_C_COMPILER=/usr/local/opt/llvm/bin/clang \
+-DCMAKE_CXX_COMPILER=/usr/local/opt/llvm/bin/clang++ \
 ../"
 echo ${CMAKE_CMD}
 ${CMAKE_CMD}
@@ -118,4 +122,3 @@ else
   # compile and build
   make -j 8 install || exit 1
 fi
-
