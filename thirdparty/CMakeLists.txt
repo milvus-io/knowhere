@@ -20,7 +20,7 @@ endif ()
 set( MAKE_BUILD_ARGS "-j6" )
 
 include( FetchContent )
-set( FETCHCONTENT_BASE_DIR  ${KNOWHERE_BINARY_DIR}/3rdparty_download )
+set( FETCHCONTENT_BASE_DIR  ${INDEX_BINARY_DIR}/3rdparty_download )
 set( FETCHCONTENT_QUIET     OFF )
 
 if( CUSTOM_THIRDPARTY_DOWNLOAD_PATH )
@@ -58,7 +58,7 @@ set(FAISS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/faiss)
 
 macro(build_faiss)
     message(STATUS "Building FAISS-${FAISS_VERSION} from source")
-    set(FAISS_PREFIX "${KNOWHERE_BINARY_DIR}/thirdparty/faiss_ep-prefix")
+    set(FAISS_PREFIX "${INDEX_BINARY_DIR}/thirdparty/faiss_ep-prefix")
     set(FAISS_INCLUDE_DIR "${FAISS_PREFIX}/include")
     set(FAISS_STATIC_LIB
             "${FAISS_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}faiss${CMAKE_STATIC_LIBRARY_SUFFIX}")
@@ -82,7 +82,7 @@ macro(build_faiss)
             "CXX=${FAISS_CXX_COMPILER}"
             "NVCC=${FAISS_CUDA_COMPILER}"
             "CFLAGS=${EP_C_FLAGS}"
-            "CXXFLAGS=${EP_CXX_FLAGS} -msse4.2 -O3 -fpermissive -I ${KNOWHERE_SOURCE_DIR}/knowhere"
+            "CXXFLAGS=${EP_CXX_FLAGS} -msse4.2 -O3 -fpermissive -I ${INDEX_SOURCE_DIR}/knowhere"
             --without-python)
 
     message(STATUS "${FAISS_CONFIGURE_ARGS}")
@@ -190,32 +190,32 @@ if (LINUX)
         link_directories(SYSTEM ${FAISS_PREFIX}/lib/)
     endif ()
 
-    install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/annoy/"
+    install(DIRECTORY "${INDEX_SOURCE_DIR}/thirdparty/annoy/"
             DESTINATION "include/annoy"
             FILES_MATCHING
             PATTERN "*.h"
             )
 
-    install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/faiss/"
+    install(DIRECTORY "${INDEX_SOURCE_DIR}/thirdparty/faiss/"
             DESTINATION "include/faiss"
             FILES_MATCHING
             PATTERN "*.h"
             )
 
-    install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/hnswlib/"
+    install(DIRECTORY "${INDEX_SOURCE_DIR}/thirdparty/hnswlib/"
             DESTINATION "include/hnswlib"
             FILES_MATCHING
             PATTERN "*.h"
             )
 
-    install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib/NGT/"
+    install(DIRECTORY "${INDEX_SOURCE_DIR}/thirdparty/NGT/lib/NGT/"
             DESTINATION "include/NGT"
             FILES_MATCHING
             PATTERN "*.h"
             )
 endif()
 
-install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/easyloggingpp/"
+install(DIRECTORY "${INDEX_SOURCE_DIR}/thirdparty/easyloggingpp/" 
         DESTINATION "include/easyloggingpp"
         FILES_MATCHING 
         PATTERN "*.h" 

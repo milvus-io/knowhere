@@ -5,7 +5,7 @@ else ()
             "https://github.com.cnpmjs.org/xianyi/OpenBLAS/archive/v${OPENBLAS_VERSION}.tar.gz")
 endif ()
 
-set(OPENBLAS_PREFIX "${KNOWHERE_BINARY_DIR}/openblas_ep-prefix/src/openblas_ep")
+set(OPENBLAS_PREFIX "${INDEX_BINARY_DIR}/openblas_ep-prefix/src/openblas_ep")
 
 macro(build_openblas)
     message(STATUS "Building OpenBLAS-${OPENBLAS_VERSION} from source")
