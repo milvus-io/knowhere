@@ -16,8 +16,7 @@ message( STATUS "------------------------------KNOWHERE-------------------------
 message( STATUS "Building using CMake version: ${CMAKE_VERSION}" )
 
 set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
-include( Utils )
-
+include( KnowhereUtils )
 
 #******************* Build time, type and code version *****************
 get_current_time( BUILD_TIME )
