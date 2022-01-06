@@ -125,12 +125,11 @@ append_flags( CMAKE_CXX_FLAGS
                     "-fPIC"
                     "-DELPP_THREAD_SAFE"
                     "-fopenmp"
-                    "-Werror"
                     )
 
 # option "-rdynamic" is to print out detailed backtrace info for debug-ease
 if ( LINUX )
-    append_flags( CMAKE_CXX_FLAGS FLAGS "-rdynamic" )
+    append_flags( CMAKE_CXX_FLAGS FLAGS "-Werror" "-rdynamic" )
 endif ()
 
 #*********************** Coding style check tools **********************
