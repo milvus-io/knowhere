@@ -35,17 +35,13 @@ toplevel=$(dirname "$(cd "$(dirname "${0}")"; pwd)")
 lib_file="cmake_build/knowhere/libknowhere.a"
 
 pushd "${toplevel}"
- 
+    ./build.sh -t Release -u && cmake_build/unittest/test_knowhere
     if [[ "${MACHINE}" == "Mac"  ]]; then
-        ./build.sh -t Release
      if [ ! -f "${lib_file}" ]; then
         echo "There's no ${lib_file}, please check if build failed"
         exit 1
       else 
         ls -lah  "${lib_file}"
      fi
-    else
-        ./build.sh -t Release -u && cmake_build/unittest/test_knowhere
     fi
-
 popd
