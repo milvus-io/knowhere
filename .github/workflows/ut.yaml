@@ -34,6 +34,6 @@ jobs:
       - name: Install Dependency
         run: |
           ./build/install_deps.sh         
-      - name: Run UT
+      - name: Run Unittest
         run: |
-          ./build.sh -u && cmake_build/unittest/test_knowhere
+          ./build.sh -t Release -u && cmake_build/unittest/test_knowhere
