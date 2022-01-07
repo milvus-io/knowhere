@@ -1,5 +1,18 @@
 #!/bin/bash
 
+# Exit immediately for non zero status
+set -e
+
+UNAME="$(uname -s)"
+
+case "${UNAME}" in
+    Linux*)     MACHINE=Linux;;
+    Darwin*)    MACHINE=Mac;;
+    CYGWIN*)    MACHINE=Cygwin;;
+    MINGW*)     MACHINE=MinGw;;
+    *)          MACHINE="UNKNOWN:${UNAME}"
+esac
+
 BUILD_OUTPUT_DIR="cmake_build"
 BUILD_TYPE="Debug"
 BUILD_UNITTEST="OFF"
@@ -79,18 +92,28 @@ if [[ ${MAKE_CLEAN} == "ON" ]]; then
   exit 0
 fi
 
+if [[ "${MACHINE}" == "Mac"  ]]; then
+    CMAKE_CMD="cmake -DBUILD_UNIT_TEST=${BUILD_UNITTEST} \
+    -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX}
+    -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+    -DCMAKE_CUDA_COMPILER=${CUDA_COMPILER} \
+    -DMILVUS_ENABLE_PROFILING=${SUPPORT_PROFILING} \
+    -DKNOWHERE_GPU_VERSION=${SUPPORT_GPU} \
+    -DCMAKE_CROSSCOMPILING=true \
+    -DRUN_HAVE_GNU_POSIX_REGEX=0 \
+    -DCMAKE_C_COMPILER=/usr/local/opt/llvm/bin/clang \
+    -DCMAKE_CXX_COMPILER=/usr/local/opt/llvm/bin/clang++ \
+    ../"
+else
+    CMAKE_CMD="cmake -DBUILD_UNIT_TEST=${BUILD_UNITTEST} \
+    -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX}
+    -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+    -DCMAKE_CUDA_COMPILER=${CUDA_COMPILER} \
+    -DMILVUS_ENABLE_PROFILING=${SUPPORT_PROFILING} \
+    -DKNOWHERE_GPU_VERSION=${SUPPORT_GPU} \
+    ../"
+fi
 
-CMAKE_CMD="cmake -DBUILD_UNIT_TEST=${BUILD_UNITTEST} \
--DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX}
--DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
--DCMAKE_CUDA_COMPILER=${CUDA_COMPILER} \
--DMILVUS_ENABLE_PROFILING=${SUPPORT_PROFILING} \
--DKNOWHERE_GPU_VERSION=${SUPPORT_GPU} \
--DCMAKE_CROSSCOMPILING=true \
--DRUN_HAVE_GNU_POSIX_REGEX=0 \
--DCMAKE_C_COMPILER=/usr/local/opt/llvm/bin/clang \
--DCMAKE_CXX_COMPILER=/usr/local/opt/llvm/bin/clang++ \
-../"
 echo ${CMAKE_CMD}
 ${CMAKE_CMD}
 
@@ -122,4 +145,3 @@ else
   # compile and build
   make -j 8 install || exit 1
 fi
-

@@ -40,7 +40,7 @@ pushd "${toplevel}"
      if [ ! -f "${lib_file}" ]; then
         echo "There's no ${lib_file}, please check if build failed"
         exit 1
-      else 
+      else
         ls -lah  "${lib_file}"
      fi
     fi
