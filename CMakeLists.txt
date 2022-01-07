@@ -16,7 +16,7 @@ message( STATUS "------------------------------KNOWHERE-------------------------
 message( STATUS "Building using CMake version: ${CMAKE_VERSION}" )
 
 set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
-include( KnowhereUtils )
+include( UtilsKw )
 
 #******************* Build time, type and code version *****************
 get_current_time( BUILD_TIME )
@@ -94,12 +94,12 @@ endif ()
 
 #***************************** Dependencies ****************************
 include( GNUInstallDirs )
-include( DefineOptionsCore )
-include( BuildUtilsCore )
+include( DefineOptionsKw )
+include( BuildUtilsKw )
 include( ExternalProject )
 
 if ( LINUX )
-    include( ThirdPartyPackagesCore )
+    include( ThirdPartyPackagesKw )
 endif ()
 
 using_ccache_if_defined( KNOWHERE_USE_CCACHE )
@@ -148,7 +148,7 @@ endif ()
 
 #*********************** Coding style check tools **********************
 find_package( Python COMPONENTS Interpreter Development )
-find_package( ClangTools )
+find_package( ClangToolsKw )
 set( BUILD_SUPPORT_DIR "${CMAKE_SOURCE_DIR}/build-support" )
 
 if ( "$ENV{CMAKE_EXPORT_COMPILE_COMMANDS}" STREQUAL "1" OR CLANG_TIDY_FOUND )

@@ -1,0 +1,39 @@
+name: Unit Test
+
+# This workflow is triggered on pushes or pull request to the repository.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    # File paths to consider in the event. Optional; defaults to all.
+    paths:
+      - 'knowhere/**'
+      - 'unittest/**'
+      - 'thirdparty/**'
+      - 'build/**'
+      - 'build-support/**'
+      - '.github/workflows/ut.yaml'
+      - 'build.sh'
+      - 'CMakeLists.txt'
+      - 'Makefile'
+      - '!**.md'
+
+jobs:
+  ut:
+    name: Unit Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ ubuntu-18.04, macos-11]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Dependency
+        run: |
+          ./build/install_deps.sh         
+      - name: Run Unittest
+        run: |
+          ./build/run_ut.sh
