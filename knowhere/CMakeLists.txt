@@ -67,7 +67,7 @@ if (LINUX)
             knowhere/index/vector_index/helpers/FaissIO.cpp
             knowhere/index/vector_index/helpers/IndexParameter.cpp
             knowhere/index/vector_index/helpers/DynamicResultSet.cpp
-            knowhere/index/vector_index/impl/bruteforce/distances/BruteForce.cpp
+            knowhere/index/vector_index/impl/bruteforce/BruteForce.cpp
             knowhere/index/vector_index/impl/nsg/Distance.cpp
             knowhere/index/vector_index/impl/nsg/NSG.cpp
             knowhere/index/vector_index/impl/nsg/NSGHelper.cpp
@@ -180,7 +180,7 @@ endif()
 
 if (MACOS)
     set(vector_index_srcs
-            knowhere/index/vector_index/impl/bruteforce/distances/BruteForce.cpp
+            knowhere/index/vector_index/impl/bruteforce/BruteForce.cpp
             knowhere/index/IndexType.cpp
             knowhere/index/vector_index/adapter/VectorAdapter.cpp
             knowhere/index/vector_index/helpers/IndexParameter.cpp
