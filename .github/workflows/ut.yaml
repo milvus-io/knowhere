@@ -25,9 +25,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
-        os: [ ubuntu-18.04 ]
+        os: [ ubuntu-18.04, macos-11]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -36,4 +36,4 @@ jobs:
           ./build/install_deps.sh         
       - name: Run Unittest
         run: |
-          ./build.sh -t Release -u && cmake_build/unittest/test_knowhere
+          ./build/run_ut.sh
