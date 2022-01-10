@@ -260,5 +260,3 @@ if ( KNOWHERE_BUILD_TESTS )
 
     add_subdirectory( unittest )
 endif ()
-
-

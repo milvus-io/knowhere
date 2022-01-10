@@ -35,7 +35,7 @@ protected:
 };
 
 auto fvecs_read(const char *fname,
-                    size_t *d_out, size_t *n_out) -> float *
+                size_t *d_out, size_t *n_out) -> float *
 {
     FILE *f = fopen(fname, "r");
     if(!f) {
@@ -45,7 +45,8 @@ auto fvecs_read(const char *fname,
     }
 
     int d;
-    fread(&d, 1, sizeof(int), f);
+    size_t elements_read = fread(&d, 1, sizeof(int), f);
+    assert(elements_read > 0 || !"failed to read");
     assert((d > 0 && d < 1000000) || !"unreasonable dimension");
     fseek(f, 0, SEEK_SET);
     struct stat st;
@@ -119,7 +120,6 @@ TEST_F(BruteForceTest, testDemo) {
     index.train(nb, xb);
     printf("is_trained = %s\n", index.is_trained ? "true" : "false");
     index.add(nb, xb);                     // add vectors to the index
-    printf("ntotal = %lld\n", index.ntotal);
 
     size_t nq;
     float *xq;
@@ -148,7 +148,7 @@ TEST_F(BruteForceTest, testDemo) {
     delete [] gt_int;
 
     {
-        auto *I = new long long[k * nq];
+        auto *I = new knowhere::SimpleIndexFlat::idx_t[k * nq];
         auto *D = new float[k * nq];
         index.search(nq, xq, k, D, I);
 
