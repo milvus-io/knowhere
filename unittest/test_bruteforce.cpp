@@ -148,7 +148,11 @@ TEST_F(BruteForceTest, testDemo) {
     delete [] gt_int;
 
     {
+#ifdef __APPLE_
+        auto *I = new long long[k * nq];
+#else
         auto *I = new knowhere::SimpleIndexFlat::idx_t[k * nq];
+#endif
         auto *D = new float[k * nq];
         index.search(nq, xq, k, D, I);
 
