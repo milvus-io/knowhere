@@ -50,6 +50,8 @@ if (APPLE)
             ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/common/Timer.cpp
             ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/common/Utils.cpp
             ${KNOWHERE_SOURCE_DIR}/unittest/utils.cpp
+            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/impl/bruteforce/SimpleIndexFlat.cpp
+            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/impl/bruteforce/BruteForce.cpp
             )
 else()
     set(UTIL_SRCS
@@ -63,6 +65,8 @@ else()
             ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/common/Timer.cpp
             ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/common/Utils.cpp
             ${KNOWHERE_SOURCE_DIR}/unittest/utils.cpp
+            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/impl/bruteforce/SimpleIndexFlat.cpp
+            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/impl/bruteforce/BruteForce.cpp
             )
 endif()
 
@@ -123,6 +127,7 @@ endif ()
 if (APPLE)
     set(ALL_INDEXING_SRCS
             ${UTIL_SRCS}
+            test_bruteforce.cpp
             test_common.cpp
             test_customized_index.cpp
             test_structured_index_sort.cpp
@@ -131,6 +136,7 @@ if (APPLE)
 else()
     set(ALL_INDEXING_SRCS
             ${UTIL_SRCS}
+            test_bruteforce.cpp
             test_instructionset.cpp
             test_common.cpp
             test_customized_index.cpp
