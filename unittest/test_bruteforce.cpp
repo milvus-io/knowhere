@@ -45,8 +45,12 @@ auto fvecs_read(const char *fname,
     }
 
     int d;
+#ifdef __APPLE_
+    fread(&d, 1, sizeof(int), f);
+#else
     size_t elements_read = fread(&d, 1, sizeof(int), f);
     assert(elements_read > 0 || !"failed to read");
+#endif
     assert((d > 0 && d < 1000000) || !"unreasonable dimension");
     fseek(f, 0, SEEK_SET);
     struct stat st;
