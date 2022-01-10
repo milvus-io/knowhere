@@ -1,0 +1,20 @@
+filters:
+  ".*":
+    reviewers:
+      - cydrain
+      - jaime0815
+      - soothing-rain
+      - xiaofan-luan
+
+    approvers:
+      - cydrain
+      - jaime0815
+      - soothing-rain
+      - xiaofan-luan
+
+  "tests":
+    reviewers:
+      - yanliang567
+
+    approvers:
+      - yanliang567
