@@ -14,8 +14,6 @@
 #include <vector>
 #include <string>
 
-#include "knowhere/common/Status.h"
-
 namespace milvus {
 namespace engine {
 

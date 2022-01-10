@@ -18,7 +18,6 @@ include_directories(${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/utils)
 set(KNOWHERE_THIRDPARTY_SRC ${KNOWHERE_SOURCE_DIR}/thirdparty)
 set(external_srcs
         knowhere/common/Exception.cpp
-        knowhere/common/Status.cpp
         knowhere/common/Timer.cpp
         knowhere/common/Utils.cpp
         knowhere/common/Heap.cpp
