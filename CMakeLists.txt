@@ -15,6 +15,13 @@ cmake_minimum_required(VERSION 3.18)
 message( STATUS "------------------------------KNOWHERE-----------------------------------" )
 message( STATUS "Building using CMake version: ${CMAKE_VERSION}" )
 
+if ( APPLE )
+    set( CMAKE_CROSSCOMPILING TRUE )
+    set( RUN_HAVE_GNU_POSIX_REGEX 0 )
+    set( CMAKE_C_COMPILER "/usr/local/opt/llvm/bin/clang" )
+    set( CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++" )
+endif ()
+
 set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 include( UtilsKw )
 
@@ -22,12 +29,12 @@ include( UtilsKw )
 get_current_time( BUILD_TIME )
 message( STATUS "Build time = ${BUILD_TIME}" )
 
-get_build_type( TARGET  BUILD_TYPE 
+get_build_type( TARGET  BUILD_TYPE
                         DEFAULT "Release" )
 message( STATUS "Build type = ${BUILD_TYPE}" )
 
-get_knowhere_version( TARGET  KNOWHERE_VERSION 
-                              DEFAULT "0.1.0" )
+get_knowhere_version( TARGET KNOWHERE_VERSION
+                             DEFAULT "0.1.0" )
 message( STATUS "Build version = ${KNOWHERE_VERSION}" )
 
 get_last_commit_id( LAST_COMMIT_ID )
@@ -36,7 +43,7 @@ message( STATUS "LAST_COMMIT_ID = ${LAST_COMMIT_ID}" )
 #configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in
 #                ${CMAKE_CURRENT_SOURCE_DIR}/src/version.h @ONLY )
 
-# unset(CMAKE_EXPORT_COMPILE_COMMANDS CACHE)
+# unset( CMAKE_EXPORT_COMPILE_COMMANDS CACHE)
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 
 
@@ -59,19 +66,33 @@ set( CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE )
 set( CMAKE_CUDA_COMPILER  "/usr/local/cuda/bin/nvcc" )
 include( CheckCXXCompilerFlag )
 
-if ( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
-    message( STATUS "============== OSX Environment ================" )
+if ( APPLE )
+    message(STATUS "==============Darwin Environment==============")
     set( MACOS TRUE )
-    # Adjust accordingly if libomp is not install here.
-    set( CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++" )
-    set( CMAKE_CXX_FLAGS "-I/usr/local/opt/libomp/include" )
+    set( CMAKE_CXX_FLAGS "-L/usr/local/opt/libomp/lib -I/usr/local/opt/llvm/include -I/usr/local/include -I/usr/local/opt/openblas/include -I/usr/local/opt/libomp/include -DBOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED=1" )
     check_cxx_compiler_flag( -std=c++11 HAS_STD_CPP11_FLAG )
     if ( HAS_STD_CPP11_FLAG )
-        add_compile_options( -std=c++11 )
+        add_compile_options(-std=c++11)
     endif ()
-elseif ( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
-    message( STATUS "============== Linux Environment ===============" )
-    set( LINUX TRUE )
+    if ( CMAKE_C_COMPILER_ID MATCHES "Clang" )
+        set( OpenMP_C "${CMAKE_C_COMPILER}" CACHE STRING "" FORCE )
+        set( OpenMP_C_FLAGS "-fopenmp=libomp -Wno-unused-command-line-argument" CACHE STRING "" FORCE )
+        set( OpenMP_C_LIB_NAMES "libomp" "libgomp" "libiomp5" CACHE STRING "" FORCE )
+        set( OpenMP_libomp_LIBRARY ${OpenMP_C_LIB_NAMES} CACHE STRING "" FORCE )
+        set( OpenMP_libgomp_LIBRARY ${OpenMP_C_LIB_NAMES} CACHE STRING "" FORCE )
+        set( OpenMP_libiomp5_LIBRARY ${OpenMP_C_LIB_NAMES} CACHE STRING "" FORCE )
+    endif ()
+    if ( CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
+        set( OpenMP_CXX "${CMAKE_CXX_COMPILER}" CACHE STRING "" FORCE)
+        set( OpenMP_CXX_FLAGS "-fopenmp=libomp -Wno-unused-command-line-argument" CACHE STRING "" FORCE )
+        set( OpenMP_CXX_LIB_NAMES "libomp" "libgomp" "libiomp5" CACHE STRING "" FORCE )
+        set( OpenMP_libomp_LIBRARY ${OpenMP_CXX_LIB_NAMES} CACHE STRING "" FORCE )
+        set( OpenMP_libgomp_LIBRARY ${OpenMP_CXX_LIB_NAMES} CACHE STRING "" FORCE )
+        set( OpenMP_libiomp5_LIBRARY ${OpenMP_CXX_LIB_NAMES} CACHE STRING "" FORCE )
+    endif ()
+elseif ( "${CMAKE_SYSTEM}" MATCHES "Linux" )
+    message( STATUS "==============Linux Environment===============" )
+    set ( LINUX TRUE )
 else ()
     message( FATAL_ERROR "Unsupported platform!" )
 endif ()
@@ -245,5 +266,3 @@ if ( KNOWHERE_BUILD_TESTS )
 
     add_subdirectory( unittest )
 endif ()
-
-
