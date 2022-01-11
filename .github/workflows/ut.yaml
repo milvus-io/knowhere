@@ -36,4 +36,4 @@ jobs:
           ./build/install_deps.sh         
       - name: Run Unittest
         run: |
-          ./build/run_ut.sh
+          ./build.sh -t Release -u && cmake_build/unittest/test_knowhere
