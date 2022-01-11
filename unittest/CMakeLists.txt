@@ -11,10 +11,6 @@
 
 include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty)
 
-if ( "${CMAKE_SYSTEM}" MATCHES "Linux" )
-    set (LINUX TRUE)
-endif()
-
 if ( LINUX )
     include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService)
     include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib)
@@ -55,7 +51,7 @@ set( UTIL_SRCS
         )
 
 if ( LINUX )
-    set(UTIL_SRCS
+    set( UTIL_SRCS
             ${UTIL_SRCS}
             ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/FaissIO.cpp
             ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/DynamicResultSet.cpp
@@ -63,20 +59,20 @@ if ( LINUX )
 endif ()
 
 if ( LINUX AND KNOWHERE_GPU_VERSION )
-    include_directories(${CUDA_INCLUDE_DIRS})
-    link_directories("${CUDA_TOOLKIT_ROOT_DIR}/lib64")
-    set(CUDA_LIB
+    include_directories( ${CUDA_INCLUDE_DIRS} )
+    link_directories( "${CUDA_TOOLKIT_ROOT_DIR}/lib64" )
+    set( CUDA_LIB
             cudart
             cublas
             )
-    set(BASIC_LIBS ${basic_libs} ${cuda_lib})
-    set(UTIL_SRCS ${util_srcs}
+    set( BASIC_LIBS ${basic_libs} ${cuda_lib} )
+    set( UTIL_SRCS ${util_srcs}
             ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/FaissGpuResourceMgr.cpp
             )
 endif ()
 
 if ( LINUX )
-    set(FAISS_SRCS
+    set( FAISS_SRCS
             ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/FaissBaseIndex.cpp
             ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/FaissBaseBinaryIndex.cpp
             ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/IndexBinaryIDMAP.cpp
@@ -90,8 +86,8 @@ if ( LINUX )
             ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_offset_index/IndexIVF_NM.cpp
             )
 
-    if (KNOWHERE_GPU_VERSION)
-        set(FAISS_SRCS ${faiss_srcs}
+    if ( KNOWHERE_GPU_VERSION )
+        set( FAISS_SRCS ${faiss_srcs}
                 ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/ConfAdapter.cpp
                 ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/Cloner.cpp
                 ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/gpu/IndexGPUIDMAP.cpp
@@ -105,15 +101,15 @@ if ( LINUX )
 
     ###############################################################################
     #<NSG-TEST>
-    add_definitions(-std=c++11 -O3 -march=native -Werror -DINFO)
+    add_definitions( -std=c++11 -O3 -march=native -Werror -DINFO )
 endif ()
 
-find_package(OpenMP REQUIRED)
+find_package( OpenMP REQUIRED )
 if ( OpenMP_FOUND )
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}" )
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}" )
 else ()
-    message(FATAL_ERROR "no OpenMP supprot")
+    message( FATAL_ERROR "no OpenMP supprot" )
 endif ()
 
 set( ALL_INDEXING_SRCS
@@ -143,23 +139,22 @@ if ( LINUX )
             test_ngtpanng.cpp
             test_ngtonng.cpp
             )
+    if ( KNOWHERE_GPU_VERSION )
+        set(ALL_INDEXING_SRCS
+                ${ALL_INDEXING_SRCS}
+                test_ivf_gpu_nm.cpp
+                test_gpuresource.cpp
+                )
+    endif ()
 endif ()
 
-if ( LINUX AND KNOWHERE_GPU_VERSION)
-    set(ALL_INDEXING_SRCS
-            ${ALL_INDEXING_SRCS}
-            test_ivf_gpu_nm.cpp
-            test_gpuresource.cpp
-            )
-endif ()
-
-if ( LINUX AND KNOWHERE_GPU_VERSION )
-    set(ALL_INDEXING_SRCS
+if ( KNOWHERE_SUPPORT_SPTAG )
+    set( ALL_INDEXING_SRCS
             test_sptag.cpp
             )
 endif ()
 
-add_executable(test_knowhere ${ALL_INDEXING_SRCS})
-target_link_libraries(test_knowhere knowhere ${DEPEND_LIBS})
+add_executable( test_knowhere ${ALL_INDEXING_SRCS} )
+target_link_libraries( test_knowhere knowhere ${DEPEND_LIBS} )
 
 install(TARGETS test_knowhere)

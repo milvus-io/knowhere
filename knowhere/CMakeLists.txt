@@ -37,10 +37,6 @@ set(config_srcs
         knowhere/archive/KnowhereConfig.cpp
         )
 
-if ( "${CMAKE_SYSTEM}" MATCHES "Linux" )
-    set (LINUX TRUE)
-endif()
-
 if ( LINUX )
     include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib)
     if (KNOWHERE_SUPPORT_SPTAG)
