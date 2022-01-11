@@ -55,6 +55,9 @@ if ( KNOWHERE_BUILD_TESTS )
     endif()
 endif()
 
+if ( "${CMAKE_SYSTEM}" MATCHES "Linux" )
+    set (LINUX TRUE)
+endif()
 
 # ****************************** Thirdparty NGT ***************************************
 if ( LINUX )

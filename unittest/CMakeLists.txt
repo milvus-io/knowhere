@@ -10,6 +10,11 @@
 # or implied. See the License for the specific language governing permissions and limitations under the License
 
 include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty)
+
+if ( "${CMAKE_SYSTEM}" MATCHES "Linux" )
+    set (LINUX TRUE)
+endif()
+
 if ( LINUX )
     include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService)
     include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib)
