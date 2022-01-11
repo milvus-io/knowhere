@@ -37,7 +37,7 @@ set(config_srcs
         knowhere/archive/KnowhereConfig.cpp
         )
 
-if (LINUX)
+if ( LINUX )
     include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib)
     if (KNOWHERE_SUPPORT_SPTAG)
         include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService)

@@ -10,67 +10,54 @@
 # or implied. See the License for the specific language governing permissions and limitations under the License
 
 include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty)
-if (NOT APPLE)
+if ( LINUX )
     include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService)
     include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib)
-endif()
+endif ()
 include_directories(${KNOWHERE_SOURCE_DIR}/knowhere)
 include_directories(${KNOWHERE_SOURCE_DIR})
 
-if (APPLE)
-    set(DEPEND_LIBS
-            gtest
-            gmock
-            gtest_main
-            gmock_main
-            knowhere_log
-            )
-else()
-    set(DEPEND_LIBS
-            gtest
-            gmock
-            gtest_main
-            gmock_main
+set( DEPEND_LIBS
+        gtest
+        gmock
+        gtest_main
+        gmock_main
+        knowhere_log
+        )
+
+if ( LINUX )
+    set( DEPEND_LIBS
+            ${DEPEND_LIBS}
             faiss
             ngt
-            knowhere_log
             openblas
             )
-endif()
+endif ()
 
-set(BASIC_LIBS gomp gfortran pthread)
+set( BASIC_LIBS gomp gfortran pthread )
 
-if (APPLE)
+set( UTIL_SRCS
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/adapter/VectorAdapter.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/IndexParameter.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/Statistics.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/IndexType.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/common/Exception.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/common/Timer.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/common/Utils.cpp
+        ${KNOWHERE_SOURCE_DIR}/unittest/utils.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/impl/bruteforce/SimpleIndexFlat.cpp
+        ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/impl/bruteforce/BruteForce.cpp
+        )
+
+if ( LINUX )
     set(UTIL_SRCS
-            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/adapter/VectorAdapter.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/IndexParameter.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/Statistics.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/IndexType.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/common/Exception.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/common/Timer.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/common/Utils.cpp
-            ${KNOWHERE_SOURCE_DIR}/unittest/utils.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/impl/bruteforce/SimpleIndexFlat.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/impl/bruteforce/BruteForce.cpp
-            )
-else()
-    set(UTIL_SRCS
-            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/adapter/VectorAdapter.cpp
+            ${UTIL_SRCS}
             ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/FaissIO.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/IndexParameter.cpp
             ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/helpers/DynamicResultSet.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/Statistics.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/IndexType.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/common/Exception.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/common/Timer.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/common/Utils.cpp
-            ${KNOWHERE_SOURCE_DIR}/unittest/utils.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/impl/bruteforce/SimpleIndexFlat.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/impl/bruteforce/BruteForce.cpp
             )
-endif()
+endif ()
 
-if (NOT APPLE AND KNOWHERE_GPU_VERSION)
+if ( LINUX AND KNOWHERE_GPU_VERSION )
     include_directories(${CUDA_INCLUDE_DIRS})
     link_directories("${CUDA_TOOLKIT_ROOT_DIR}/lib64")
     set(CUDA_LIB
@@ -83,7 +70,7 @@ if (NOT APPLE AND KNOWHERE_GPU_VERSION)
             )
 endif ()
 
-if (NOT APPLE)
+if ( LINUX )
     set(FAISS_SRCS
             ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/FaissBaseIndex.cpp
             ${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/index/vector_index/FaissBaseBinaryIndex.cpp
@@ -114,32 +101,29 @@ if (NOT APPLE)
     ###############################################################################
     #<NSG-TEST>
     add_definitions(-std=c++11 -O3 -march=native -Werror -DINFO)
-endif()
+endif ()
 
 find_package(OpenMP REQUIRED)
-if (OpenMP_FOUND)
+if ( OpenMP_FOUND )
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 else ()
     message(FATAL_ERROR "no OpenMP supprot")
 endif ()
 
-if (APPLE)
+set( ALL_INDEXING_SRCS
+        ${UTIL_SRCS}
+        test_bruteforce.cpp
+        test_common.cpp
+        test_customized_index.cpp
+        test_structured_index_sort.cpp
+        test_structured_index_flat.cpp
+        )
+
+if ( LINUX )
     set(ALL_INDEXING_SRCS
-            ${UTIL_SRCS}
-            test_bruteforce.cpp
-            test_common.cpp
-            test_customized_index.cpp
-            test_structured_index_sort.cpp
-            test_structured_index_flat.cpp
-            )
-else()
-    set(ALL_INDEXING_SRCS
-            ${UTIL_SRCS}
-            test_bruteforce.cpp
+            ${ALL_INDEXING_SRCS}
             test_instructionset.cpp
-            test_common.cpp
-            test_customized_index.cpp
             test_idmap.cpp
             test_ivf.cpp
             test_ivf_hnsw.cpp
@@ -151,14 +135,12 @@ else()
             test_rhnsw_flat.cpp
             test_rhnsw_pq.cpp
             test_rhnsw_sq8.cpp
-            test_structured_index_sort.cpp
-            test_structured_index_flat.cpp
             test_ngtpanng.cpp
             test_ngtonng.cpp
             )
-endif()
+endif ()
 
-if (NOT APPLE AND KNOWHERE_GPU_VERSION)
+if ( LINUX AND KNOWHERE_GPU_VERSION)
     set(ALL_INDEXING_SRCS
             ${ALL_INDEXING_SRCS}
             test_ivf_gpu_nm.cpp
@@ -166,11 +148,11 @@ if (NOT APPLE AND KNOWHERE_GPU_VERSION)
             )
 endif ()
 
-if (NOT APPLE AND KNOWHERE_GPU_VERSION)
+if ( LINUX AND KNOWHERE_GPU_VERSION )
     set(ALL_INDEXING_SRCS
             test_sptag.cpp
             )
-endif()
+endif ()
 
 add_executable(test_knowhere ${ALL_INDEXING_SRCS})
 target_link_libraries(test_knowhere knowhere ${DEPEND_LIBS})
