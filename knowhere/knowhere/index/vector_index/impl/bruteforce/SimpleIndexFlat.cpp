@@ -20,10 +20,8 @@
 
 namespace knowhere {
 
-SimpleIndexFlat::SimpleIndexFlat(idx_t d, MetricType metric) {
-    this->d = d;
-    this->metric_type = metric;
-}
+SimpleIndexFlat::SimpleIndexFlat(idx_t d, MetricType metric) :
+    d(d), metric_type(metric), ntotal(0) {}
 
 void SimpleIndexFlat::add(idx_t n, const float *x) {
     xb.insert(xb.end(), x, x + n * d);
