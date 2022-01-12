@@ -60,11 +60,13 @@ class BinaryIVF : public VecIndex, public FaissBaseBinaryIndex {
     void
     UpdateIndexSize() override;
 
+#if 0
     StatisticsPtr
     GetStatistics() override;
 
     void
     ClearStatistics() override;
+#endif
 
  protected:
     virtual std::shared_ptr<faiss::IVFSearchParameters>

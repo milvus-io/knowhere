@@ -183,7 +183,9 @@ class TestBinaryIVF(unittest.TestCase):
         index.add(self.xb)
         Divfflat, _ = index.search(self.xq, 10)
 
-        self.assertEqual((self.Dref == Divfflat).sum(), 4122)
+        # Some centroids are equidistant from the query points.
+        # So the answer will depend on the implementation of the heap.
+        self.assertGreater((self.Dref == Divfflat).sum(), 4100)
 
     def test_ivf_range(self):
         d = self.xq.shape[1] * 8
@@ -241,7 +243,7 @@ class TestBinaryIVF(unittest.TestCase):
         # try w/ hashtable
         index = faiss.IndexBinaryIVF(quantizer, d, 8)
         rs = np.random.RandomState(123)
-        ids = rs.choice(10000, size=len(self.xb), replace=False)
+        ids = rs.choice(10000, size=len(self.xb), replace=False).astype(np.int64)
         index.add_with_ids(self.xb, ids)
         index.set_direct_map_type(faiss.DirectMap.Hashtable)
 

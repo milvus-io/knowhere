@@ -69,10 +69,7 @@ done
 
 if [[ ${MAKE_CLEAN} == "ON" ]]; then
   echo "Remove ${BUILD_OUTPUT_DIR} ..."
-  rm -rf ${BUILD_OUTPUT_DIR}
-  echo "Running make clean in thirdparty/faiss ..."
-  cd thirdparty/faiss
-  make clean
+  rm -rf ${BUILD_OUTPUT_DIR} output
   exit 0
 fi
 

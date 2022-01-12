@@ -9,13 +9,14 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
+#include <boost/dynamic_bitset.hpp>
 #include <gtest/gtest.h>
+
 #include "knowhere/common/Dataset.h"
 #include "knowhere/common/Timer.h"
 #include "knowhere/common/Exception.h"
 #include "knowhere/utils/BitsetView.h"
 #include "unittest/utils.h"
-#include <boost/dynamic_bitset.hpp>
 
 /*Some unittest for knowhere/common, mainly for improve code coverage.*/
 

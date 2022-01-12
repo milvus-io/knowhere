@@ -52,8 +52,10 @@ class IndexHNSW : public VecIndex {
     void
     UpdateIndexSize() override;
 
+#if 0
     void
     ClearStatistics() override;
+#endif
 
  private:
     std::shared_ptr<hnswlib::HierarchicalNSW<float>> index_;

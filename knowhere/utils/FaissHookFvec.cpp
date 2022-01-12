@@ -1,6 +1,7 @@
 
 // -*- c++ -*-
 
+#include <iostream>
 #include <mutex>
 
 #include "FaissHookFvec.h"
@@ -44,8 +45,9 @@ void hook_fvec(std::string& simd_type) {
     static std::mutex hook_mutex;
     std::lock_guard<std::mutex> lock(hook_mutex);
 
-    // fvec hook can be controlled outside
+    // fvec hook can be set outside
     if (faiss_use_avx512 && cpu_support_avx512()) {
+        /* for IVFFLAT */
         fvec_inner_product = fvec_inner_product_avx512;
         fvec_L2sqr = fvec_L2sqr_avx512;
         fvec_L1 = fvec_L1_avx512;
@@ -53,6 +55,7 @@ void hook_fvec(std::string& simd_type) {
 
         simd_type = "AVX512";
     } else if (faiss_use_avx2 && cpu_support_avx2()) {
+        /* for IVFFLAT */
         fvec_inner_product = fvec_inner_product_avx;
         fvec_L2sqr = fvec_L2sqr_avx;
         fvec_L1 = fvec_L1_avx;
@@ -60,6 +63,7 @@ void hook_fvec(std::string& simd_type) {
 
         simd_type = "AVX2";
     } else if (faiss_use_sse4_2 && cpu_support_sse4_2()) {
+        /* for IVFFLAT */
         fvec_inner_product = fvec_inner_product_sse;
         fvec_L2sqr = fvec_L2sqr_sse;
         fvec_L1 = fvec_L1_sse;
@@ -67,6 +71,7 @@ void hook_fvec(std::string& simd_type) {
 
         simd_type = "SSE4_2";
     } else {
+        /* for IVFFLAT */
         fvec_inner_product = fvec_inner_product_ref;
         fvec_L2sqr = fvec_L2sqr_ref;
         fvec_L1 = fvec_L1_ref;
@@ -74,6 +79,7 @@ void hook_fvec(std::string& simd_type) {
 
         simd_type = "REF";
     }
+    std::cout << "FAISS hook " << simd_type << std::endl;
 }
 
 } // namespace faiss

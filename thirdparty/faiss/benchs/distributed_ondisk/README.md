@@ -1,4 +1,3 @@
-
 # Distributed on-disk index for 1T-scale datasets 
 
 This is code corresponding to the description in [Indexing 1T vectors](https://github.com/facebookresearch/faiss/wiki/Indexing-1T-vectors). 
@@ -11,7 +10,7 @@ Hopefully, changing to another type of scheduler should be quite straightforward
 
 ## Distributed k-means
 
-To cluster 500M vectors to 10M centroids, it is useful to have a distributed k-means implementation. 
+To cluster 500M vectors to 10M centroids, it is useful to have a distriubuted k-means implementation. 
 The distribution simply consists in splitting the training vectors across machines (servers) and have them do the assignment. 
 The master/client then synthesizes the results and updates the centroids.
 
@@ -22,7 +21,7 @@ It exposes the methods of an object on the server side so that they can be calle
 
 - [`distributed_kmeans.py`](distributed_kmeans.py) contains the k-means implementation. 
 The main loop of k-means is re-implemented in python but follows closely the Faiss C++ implementation, and should not be significantly less efficient. 
-It relies on a `DatasetAssign` object that does the assignment to centrtoids, which is the bulk of the computation. 
+It relies on a `DatasetAssign` object that does the assignement to centrtoids, which is the bulk of the computation. 
 The object can be a Faiss CPU index, a GPU index or a set of remote GPU or CPU indexes.
 
 - [`run_on_cluster.bash`](run_on_cluster.bash) contains the shell code to run the distributed k-means on a cluster. 
@@ -71,7 +70,7 @@ The output should look like [this gist](https://gist.github.com/mdouze/5b2dc69b7
 ### Distributed run
 
 The way the script can be distributed depends on the cluster's scheduling system. 
-Here we use Slurm, but it should be relatively easy to adapt to any scheduler that can allocate a set of matchines and start the same executable on all of them. 
+Here we use Slurm, but it should be relatively easy to adapt to any scheduler that can allocate a set of matchines and start the same exectuable on all of them. 
 
 The command 
 ```
@@ -125,7 +124,7 @@ This is performed by the script [`make_trained_index.py`](make_trained_index.py)
 
 ## Building the index by slices
 
-We call the slices "vslisces" as they are vertical slices of the big matrix, see explanation in the wiki section [Split across database partitions](https://github.com/facebookresearch/faiss/wiki/Indexing-1T-vectors#split-across-database-partitions).
+We call the slices "vslisces" as they are vertical slices of the big matrix, see explanation in the wiki section [Split across datanbase partitions](https://github.com/facebookresearch/faiss/wiki/Indexing-1T-vectors#split-across-database-partitions).
 
 The script [make_index_vslice.py](make_index_vslice.py) makes an index for a subset of the vectors of the input data and stores it as an independent index. 
 There are 200 slices of 5M vectors each for Deep1B.
@@ -137,7 +136,7 @@ bash run_on_cluster.bash make_index_vslices
 For a real dataset, the data would be read from a DBMS. 
 In that case, reading the data and indexing it in parallel is worthwhile because reading is very slow.
 
-## Splitting across inverted lists
+## Splitting accross inverted lists
 
 The 200 slices need to be merged together. 
 This is done with the script [merge_to_ondisk.py](merge_to_ondisk.py), that memory maps the 200 vertical slice indexes, extracts a subset of the inverted lists and writes them to a contiguous horizontal slice. 
@@ -173,7 +172,7 @@ ie. searching is a lot slower than from RAM.
 
 ## Distributed query
 
-To reduce the bandwidth required from the machine that does the queries, it is possible to split the search across several search servers. 
+To reduce the bandwidth required from the machine that does the queries, it is possible to split the search accross several search servers. 
 This way, only the effective results are returned to the main machine.
 
 The search client and server are implemented in [`search_server.py`](search_server.py). 

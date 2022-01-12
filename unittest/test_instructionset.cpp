@@ -15,10 +15,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#include "knowhere/utils/instruction_set.h"
-
 #include <gtest/gtest.h>
 #include <iostream>
+
+#include "knowhere/utils/instruction_set.h"
 
 void
 ShowInstructionSet() {

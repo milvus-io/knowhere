@@ -56,7 +56,7 @@ if ( KNOWHERE_BUILD_TESTS )
 endif()
 
 # ****************************** Thirdparty NGT ***************************************
-if ( LINUX )
+if ( LINUX AND KNOWHERE_SUPPORT_NGT )
     add_subdirectory( NGT )
 endif()
 
@@ -65,7 +65,7 @@ set( FAISS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/faiss )
 
 macro(build_faiss)
     message( STATUS "Building FAISS-${FAISS_VERSION} from source" )
-    set( FAISS_PREFIX "${KNOWHERE_BINARY_DIR}/thirdparty/faiss_ep-prefix" )
+    set( FAISS_PREFIX "${CMAKE_INSTALL_PREFIX}" )
     set( FAISS_INCLUDE_DIR "${FAISS_PREFIX}/include" )
     set( FAISS_STATIC_LIB
             "${FAISS_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}faiss${CMAKE_STATIC_LIBRARY_SUFFIX}" )
@@ -83,14 +83,19 @@ macro(build_faiss)
         set( FAISS_CXX_COMPILER "${CMAKE_CXX_COMPILER}" )
     endif ()
 
-    set( FAISS_CONFIGURE_ARGS
-            "--prefix=${FAISS_PREFIX}"
-            "CC=${FAISS_C_COMPILER}"
-            "CXX=${FAISS_CXX_COMPILER}"
-            "NVCC=${FAISS_CUDA_COMPILER}"
-            "CFLAGS=${EP_C_FLAGS}"
-            "CXXFLAGS=${EP_CXX_FLAGS} -msse4.2 -O3 -fpermissive -I ${KNOWHERE_SOURCE_DIR}"
-            --without-python )
+    set( FAISS_CMAKE_ARGS
+            "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
+            "-DCMAKE_BUILD_TYPE=Release"
+            "-DFAISS_ENABLE_PYTHON=OFF"
+            "-DFAISS_C_COMPILER=${FAISS_C_COMPILER}"
+            "-DFAISS_CXX_COMPILER=${FAISS_CXX_COMPILER}"
+            "-DFAISS_CUDA_COMPILER=${FAISS_CUDA_COMPILER}"
+            "-DFAISS_CFLAGS=${EP_C_FLAGS}"
+            "-DFAISS_CXXFLAGS=${EP_CXX_FLAGS}"
+            "-DFAISS_CPPFLAGS=-O3 -fpermissive -I ${KNOWHERE_SOURCE_DIR}"
+            "-DFAISS_ENABLE_GPU=OFF"
+            "-DBUILD_TESTING=${BUILD_UNIT_TEST}"
+            )
 
     message( STATUS "${FAISS_CONFIGURE_ARGS}" )
 
@@ -121,44 +126,19 @@ macro(build_faiss)
     message( STATUS "Building FAISS with configure args -${FAISS_CONFIGURE_ARGS}" )
 
     #Notice: there will not set LDFLAGS value
-    if ( DEFINED ENV{FAISS_SOURCE_URL} )
-        set( FAISS_SOURCE_URL "$ENV{FAISS_SOURCE_URL}" )
-        externalproject_add( faiss_ep
-                URL
-                ${FAISS_SOURCE_URL}
-                ${EP_LOG_OPTIONS}
-                CONFIGURE_COMMAND
-                "./configure"
-                ${FAISS_CONFIGURE_ARGS}
-                BUILD_COMMAND
-                ${MAKE} ${MAKE_BUILD_ARGS} all
-                BUILD_IN_SOURCE
-                1
-                INSTALL_COMMAND
-                ${MAKE} install
-                BUILD_BYPRODUCTS
-                ${FAISS_STATIC_LIB} )
-    else ()
-        externalproject_add( faiss_ep
-                DOWNLOAD_COMMAND
-                ""
-                SOURCE_DIR
-                ${FAISS_SOURCE_DIR}
-                ${EP_LOG_OPTIONS}
-                CONFIGURE_COMMAND
-                "./configure"
-                ${FAISS_CONFIGURE_ARGS}
-                BUILD_COMMAND
-                ${MAKE} ${MAKE_BUILD_ARGS} all
-                BUILD_IN_SOURCE
-                1
-                INSTALL_COMMAND
-                ${MAKE} install
-                BUILD_BYPRODUCTS
-                ${FAISS_STATIC_LIB} )
-    endif ()
-
-    ExternalProject_Add_StepDependencies( faiss_ep configure knowhere_utils )
+    externalproject_add( faiss_ep
+            SOURCE_DIR
+            ${FAISS_SOURCE_DIR}
+            ${EP_LOG_OPTIONS}
+            CMAKE_ARGS ${FAISS_CMAKE_ARGS}
+            BUILD_COMMAND
+            ${MAKE} ${MAKE_BUILD_ARGS} all
+            BUILD_IN_SOURCE
+            1
+            INSTALL_COMMAND
+            ${MAKE} install
+            BUILD_BYPRODUCTS
+            ${FAISS_STATIC_LIB} )
 
     if ( NOT BLAS_FOUND )
         message( STATUS "OpenBLAS BOUNDED" )

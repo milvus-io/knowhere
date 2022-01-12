@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-#!/usr/bin/env python3
-
 import numpy as np
 import unittest
 import faiss
@@ -12,7 +10,6 @@ import tempfile
 import os
 import io
 import sys
-import warnings
 from multiprocessing.dummy import Pool as ThreadPool
 
 from common import get_dataset, get_dataset_2
@@ -25,17 +22,19 @@ class TestIOVariants(unittest.TestCase):
         x = np.random.uniform(size=(n, d)).astype('float32')
         index = faiss.IndexFlatL2(d)
         index.add(x)
-        _, fname = tempfile.mkstemp()
+        fd, fname = tempfile.mkstemp()
+        os.close(fd)
         try:
             faiss.write_index(index, fname)
 
             # should be fine
             faiss.read_index(fname)
 
+            with open(fname, 'rb') as f:
+                data = f.read()
             # now damage file
-            data = open(fname, 'rb').read()
-            data = data[:int(len(data) / 2)]
-            open(fname, 'wb').write(data)
+            with open(fname, 'wb') as f:
+                f.write(data[:int(len(data) / 2)])
 
             # should make a nice readable exception that mentions the filename
             try:
@@ -91,19 +90,20 @@ class TestCallbacks(unittest.TestCase):
     def test_buf_read(self):
         x = np.random.uniform(size=20)
 
-        _, fname = tempfile.mkstemp()
+        fd, fname = tempfile.mkstemp()
+        os.close(fd)
         try:
             x.tofile(fname)
 
-            f = open(fname, 'rb')
-            reader = faiss.PyCallbackIOReader(f.read, 1234)
+            with open(fname, 'rb') as f:
+                reader = faiss.PyCallbackIOReader(f.read, 1234)
 
-            bsz = 123
-            reader = faiss.BufferedIOReader(reader, bsz)
+                bsz = 123
+                reader = faiss.BufferedIOReader(reader, bsz)
 
-            y = np.zeros_like(x)
-            print('nbytes=', y.nbytes)
-            reader(faiss.swig_ptr(y), y.nbytes, 1)
+                y = np.zeros_like(x)
+                print('nbytes=', y.nbytes)
+                reader(faiss.swig_ptr(y), y.nbytes, 1)
 
             np.testing.assert_array_equal(x, y)
         finally:
@@ -116,18 +116,18 @@ class TestCallbacks(unittest.TestCase):
         index = faiss.IndexFlatL2(d)
         index.add(x)
 
-        _, fname = tempfile.mkstemp()
+        fd, fname = tempfile.mkstemp()
+        os.close(fd)
         try:
             faiss.write_index(index, fname)
 
-            f = open(fname, 'rb')
+            with open(fname, 'rb') as f:
+                reader = faiss.PyCallbackIOReader(f.read, 1234)
 
-            reader = faiss.PyCallbackIOReader(f.read, 1234)
+                if bsz > 0:
+                    reader = faiss.BufferedIOReader(reader, bsz)
 
-            if bsz > 0:
-                reader = faiss.BufferedIOReader(reader, bsz)
-
-            index2 = faiss.read_index(reader)
+                index2 = faiss.read_index(reader)
 
             self.assertEqual(index.d, index2.d)
             np.testing.assert_array_equal(
@@ -165,7 +165,8 @@ class TestCallbacks(unittest.TestCase):
         index = faiss.IndexFlatL2(d)
         index.add(x)
 
-        _, fname = tempfile.mkstemp()
+        fd, fname = tempfile.mkstemp()
+        os.close(fd)
         try:
             faiss.write_index(index, fname)
 
@@ -181,6 +182,7 @@ class TestCallbacks(unittest.TestCase):
             )
 
         finally:
+            del reader
             if os.path.exists(fname):
                 os.unlink(fname)
 
@@ -202,19 +204,46 @@ class TestCallbacks(unittest.TestCase):
             reader = faiss.PyCallbackIOReader(lambda size: os.read(rf, size))
             return faiss.read_index(reader)
 
-        fut = ThreadPool(1).apply_async(index_from_pipe, ())
+        with ThreadPool(1) as pool:
+            fut = pool.apply_async(index_from_pipe, ())
 
-        # write to pipe
-        writer = faiss.PyCallbackIOWriter(lambda b: os.write(wf, b))
-        faiss.write_index(index, writer)
+            # write to pipe
+            writer = faiss.PyCallbackIOWriter(lambda b: os.write(wf, b))
+            faiss.write_index(index, writer)
 
-        index2 = fut.get()
+            index2 = fut.get()
 
-        # closing is not really useful but it does not hurt
-        os.close(wf)
-        os.close(rf)
+            # closing is not really useful but it does not hurt
+            os.close(wf)
+            os.close(rf)
 
         Dnew, Inew = index2.search(x, 10)
 
         np.testing.assert_array_equal(Iref, Inew)
         np.testing.assert_array_equal(Dref, Dnew)
+
+
+class PyOndiskInvertedLists:
+    """ wraps an OnDisk object for use from C++ """
+
+    def __init__(self, oil):
+        self.oil = oil
+
+    def list_size(self, list_no):
+        return self.oil.list_size(list_no)
+
+    def get_codes(self, list_no):
+        oil = self.oil
+        assert 0 <= list_no < oil.lists.size()
+        l = oil.lists.at(list_no)
+        with open(oil.filename, 'rb') as f:
+            f.seek(l.offset)
+            return f.read(l.size * oil.code_size)
+
+    def get_ids(self, list_no):
+        oil = self.oil
+        assert 0 <= list_no < oil.lists.size()
+        l = oil.lists.at(list_no)
+        with open(oil.filename, 'rb') as f:
+            f.seek(l.offset + l.capacity * oil.code_size)
+            return f.read(l.size * 8)

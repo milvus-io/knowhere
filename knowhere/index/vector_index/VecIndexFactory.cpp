@@ -22,16 +22,22 @@
 #include "IndexIVF.h"
 #include "IndexIVFPQ.h"
 #include "IndexIVFSQ.h"
-#include "IndexNGTONNG.h"
-#include "IndexNGTPANNG.h"
 #include "IndexRHNSWFlat.h"
 #include "IndexRHNSWPQ.h"
 #include "IndexRHNSWSQ.h"
 #include "index/vector_offset_index/IndexIVF_NM.h"
-#include "index/vector_offset_index/IndexNSG_NM.h"
 
 #ifdef KNOWHERE_SUPPORT_SPTAG
 #include "knowhere/index/vector_index/IndexSPTAG.h"
+#endif
+
+#ifdef KNOWHERE_SUPPORT_NGT
+#include "IndexNGTONNG.h"
+#include "IndexNGTPANNG.h"
+#endif
+
+#ifdef KNOWHERE_SUPPORT_NSG
+#include "index/vector_offset_index/IndexNSG_NM.h"
 #endif
 
 #ifdef KNOWHERE_GPU_VERSION
@@ -86,8 +92,10 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
         return std::make_shared<knowhere::BinaryIDMAP>();
     } else if (type == IndexEnum::INDEX_FAISS_BIN_IVFFLAT) {
         return std::make_shared<knowhere::BinaryIVF>();
+#ifdef KNOWHERE_SUPPORT_NSG
     } else if (type == IndexEnum::INDEX_NSG) {
         return std::make_shared<knowhere::NSG_NM>(-1);
+#endif
 #ifdef KNOWHERE_SUPPORT_SPTAG
     } else if (type == IndexEnum::INDEX_SPTAG_KDT_RNT) {
         return std::make_shared<knowhere::CPUSPTAGRNG>("KDT");
@@ -104,10 +112,12 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
         return std::make_shared<knowhere::IndexRHNSWPQ>();
     } else if (type == IndexEnum::INDEX_RHNSWSQ) {
         return std::make_shared<knowhere::IndexRHNSWSQ>();
+#ifdef KNOWHERE_SUPPORT_SPTAG
     } else if (type == IndexEnum::INDEX_NGTPANNG) {
         return std::make_shared<knowhere::IndexNGTPANNG>();
     } else if (type == IndexEnum::INDEX_NGTONNG) {
         return std::make_shared<knowhere::IndexNGTONNG>();
+#endif
     } else {
         return nullptr;
     }

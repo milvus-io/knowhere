@@ -19,3 +19,14 @@ depend
 /tests/test
 /tests/gtest/
 include/
+
+**/CMakeFiles/*
+/CMakeCache.txt
+Makefile
+install_manifest.txt
+faiss.cbp
+*.cmake
+DartConfiguration.tcl
+_deps/*
+tests/faiss_test
+

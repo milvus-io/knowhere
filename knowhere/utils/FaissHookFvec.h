@@ -22,6 +22,6 @@ bool cpu_support_avx512();
 bool cpu_support_avx2();
 bool cpu_support_sse4_2();
 
-void hook_fvec(std::string& simd_type);
+void hook_fvec(std::string&);
 
 } // namespace faiss

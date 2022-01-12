@@ -22,7 +22,7 @@
 #include "index/Index.h"
 #include "index/IndexType.h"
 #include "index/vector_index/Statistics.h"
-#include "utils/BitsetView.h"
+#include "knowhere/utils/BitsetView.h"
 
 #ifdef __linux__
 #include "index/vector_index/helpers/DynamicResultSet.h"

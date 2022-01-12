@@ -37,7 +37,9 @@ TEST_F(KnowhereTest, KNOWHERE_RESOURCE_TEST) {
     KnowhereConfig::SetClusteringType(KnowhereConfig::ClusteringType::K_MEANS);
     KnowhereConfig::SetClusteringType(KnowhereConfig::ClusteringType::K_MEANS_PLUS_PLUS);
 
+#if 0
     KnowhereConfig::SetStatisticsLevel(0);
+#endif
 
     KnowhereConfig::SetLogHandler();
 

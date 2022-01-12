@@ -25,8 +25,8 @@
 
 #include <cstdio>
 #include "common/Heap.h"
-#include "utils/BitsetView.h"
-#include "utils/distances_simd.h"
+#include "knowhere/utils/BitsetView.h"
+#include "knowhere/utils/distances_simd.h"
 
 namespace knowhere {
 

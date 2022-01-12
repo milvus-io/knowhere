@@ -7,7 +7,9 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <random>
 
+#include <unistd.h>
 #include <omp.h>
 
 #include <unordered_map>
@@ -15,7 +17,7 @@
 
 #include <gtest/gtest.h>
 
-#include <faiss/OnDiskInvertedLists.h>
+#include <faiss/invlists/OnDiskInvertedLists.h>
 #include <faiss/IndexIVFFlat.h>
 #include <faiss/IndexFlat.h>
 #include <faiss/utils/random.h>
@@ -28,13 +30,12 @@ struct Tempfilename {
 
     static pthread_mutex_t mutex;
 
-    std::string filename;
+    std::string filename = "faiss_tmp_XXXXXX";
 
-    Tempfilename (const char *prefix = nullptr) {
+    Tempfilename () {
         pthread_mutex_lock (&mutex);
-        char *cfname = tempnam (nullptr, prefix);
-        filename = cfname;
-        free(cfname);
+        int fd = mkstemp (&filename[0]);
+        close(fd);
         pthread_mutex_unlock (&mutex);
     }
 
@@ -69,8 +70,10 @@ TEST(ONDISK, make_invlists) {
 
     {
         std::vector<uint8_t> code(32);
+        std::mt19937 rng;
+        std::uniform_real_distribution<> distrib;
         for (int i = 0; i < nadd; i++) {
-            double d = drand48();
+            double d = distrib(rng);
             int list_no = int(nlist * d * d); // skewed distribution
             int * ar = (int*)code.data();
             ar[0] = i;
@@ -183,8 +186,10 @@ TEST(ONDISK, make_invlists_threaded) {
 
     std::vector<int> list_nos (nadd);
 
+    std::mt19937 rng;
+    std::uniform_real_distribution<> distrib;
     for (int i = 0; i < nadd; i++) {
-        double d = drand48();
+        double d = distrib(rng);
         list_nos[i] = int(nlist * d * d); // skewed distribution
     }
 

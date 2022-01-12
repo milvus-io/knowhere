@@ -8,6 +8,7 @@
 #include <faiss/impl/ThreadedIndex.h>
 #include <faiss/IndexReplicas.h>
 #include <faiss/IndexShards.h>
+#include <knowhere/utils/BitsetView.h>
 
 #include <chrono>
 #include <gtest/gtest.h>
@@ -43,7 +44,8 @@ struct MockIndex : public faiss::Index {
               const float* x,
               idx_t k,
               float* distances,
-              idx_t* labels) const override {
+              idx_t* labels,
+              faiss::BitsetView bitset = nullptr) const override {
     nCalled = n;
     xCalled = x;
     kCalled = k;
@@ -71,7 +73,7 @@ struct MockThreadedIndex : public faiss::ThreadedIndex<IndexT> {
   }
 
   void add(idx_t, const float*) override { }
-  void search(idx_t, const float*, idx_t, float*, idx_t*) const override {}
+  void search(idx_t, const float*, idx_t, float*, idx_t*, faiss::BitsetView) const override {}
   void reset() override {}
 };
 

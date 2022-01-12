@@ -7,6 +7,9 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <random>
+
+#include <unistd.h>
 
 #include <gtest/gtest.h>
 
@@ -15,7 +18,7 @@
 #include <faiss/IndexFlat.h>
 #include <faiss/MetaIndexes.h>
 #include <faiss/IndexPreTransform.h>
-#include <faiss/OnDiskInvertedLists.h>
+#include <faiss/invlists/OnDiskInvertedLists.h>
 #include <faiss/IVFlib.h>
 
 
@@ -26,13 +29,12 @@ struct Tempfilename {
 
     static pthread_mutex_t mutex;
 
-    std::string filename;
+    std::string filename = "faiss_tmp_XXXXXX";
 
-    Tempfilename (const char *prefix = nullptr) {
+    Tempfilename () {
         pthread_mutex_lock (&mutex);
-        char *cfname = tempnam (nullptr, prefix);
-        filename = cfname;
-        free(cfname);
+        int fd = mkstemp (&filename[0]);
+        close(fd);
         pthread_mutex_unlock (&mutex);
     }
 
@@ -70,11 +72,13 @@ struct CommonData {
 
     CommonData(): database (nb * d), queries (nq * d), ids(nb), quantizer (d) {
 
+        std::mt19937 rng;
+        std::uniform_real_distribution<> distrib;
         for (size_t i = 0; i < nb * d; i++) {
-            database[i] = drand48();
+            database[i] = distrib(rng);
         }
         for (size_t i = 0; i < nq * d; i++) {
-            queries[i] = drand48();
+            queries[i] = distrib(rng);
         }
         for (int i = 0; i < nb; i++) {
             ids[i] = 123 + 456 * i;
@@ -111,7 +115,7 @@ int compare_merged (faiss::IndexShards *index_shards, bool shift_ids,
                    shift_ids);
         }
 
-        index_shards->sync_with_shard_indexes();
+        index_shards->syncWithSubIndexes();
     } else {
         std::vector<const faiss::InvertedLists *> lists;
         faiss::IndexIVF *index0 = nullptr;
