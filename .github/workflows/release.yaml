@@ -2,6 +2,9 @@ name: Release Build
 
 # This workflow is triggered on pushes or pull request to the repository.
 on:
+  push:
+    tags:
+      - 'v*.*.*'
   workflow_dispatch:
 
 jobs:
@@ -16,9 +19,30 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Install Dependency
-        run: |
-          ./build/install_deps.sh         
-      - name: Run Unittest
-        run: |
-          ./build.sh -t Release -u && cmake_build/unittest/test_knowhere
+      - name: Set env
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+      - name: Test Tag
+        run: 
+          echo ${{ matrix.os }}-$RELEASE_VERSION
+          echo ${{ matrix.os }}-${{ env.RELEASE_VERSION }}
+      # - name: Install Dependency
+      #   run: |
+      #     ./build/install_deps.sh         
+      # - name: Build
+      #   run: |
+      #     ./build.sh -t Release -p release_build
+      #     tar -zcvf knowhere-cmake_build/release_build/
+
+      # - name: Create a Release
+      #   uses: actions/create-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     body: "Release for ${{ matrix.os }}: ${{ env.IMAGE_REPO}}/${{ env.DAILY }}:${{ env.tag }}"
+      #     artifacts: "*.tar.gz"
+      #     prerelease: true
+      #     tag_name: "v2.0.0-testing-${{ env.build }}"
+      #     release_name: "knowhere-${{}}-${{ env.build }}"
+      #     commitish: "${{ env.sha }}"
+
+
