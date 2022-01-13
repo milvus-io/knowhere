@@ -1,5 +1,7 @@
 name: Release Build
 
+# [TODO] Running action on ubuntu , it will generate the files under share & lib/pkgconfig that are not needed, so remove them manually.
+# Need to figure out why they exists after build.
 # This workflow is triggered on pushes or pull request to the repository.
 on:
   workflow_dispatch:
@@ -32,8 +34,6 @@ jobs:
         run: |
           ./build.sh -t Release -p tmp
           mkdir -p artifacts && mv cmake_build/tmp artifacts/${{ env.ARTIFACT_NAME }}
-# Running action on ubuntu , it will generate the files under share & lib/pkgconfig that are not needed, so remove them manually.
-# Need to figure out why they exists after build.
           rm -rf artifacts/${{ env.ARTIFACT_NAME }}/share
           rm -rf artifacts/${{ env.ARTIFACT_NAME }}/lib/pkgconfig
           cd artifacts && tar -zcvf ${{ env.ARTIFACT_NAME }}.tar.gz ${{ env.ARTIFACT_NAME }}/
