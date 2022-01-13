@@ -5,12 +5,8 @@
 **/cmake_build_release/*
 **/cmake_build/*
 
-internal/core/output/*
-internal/core/build/*
-internal/kv/rocksdb/cwrapper/output/*
 **/.idea/*
-internal/msgstream/pulsarms/client-cpp/build/
-internal/msgstream/pulsarms/client-cpp/build/*
+**/build/*
 
 # vscode generated files
 .vscode
@@ -42,8 +38,6 @@ lib/
 .DS_Store
 *.sw[po]
 cwrapper_build
-**/cwrapper_rocksdb_build/
-**/.clangd/*
 **/compile_commands.json
 **/.lint
 typescript
@@ -54,12 +48,6 @@ gtags.conf
 # Delve generated file
 **/__debug_bin
 
-# codecov-go generated files
-*coverage.txt
-profile.out
-*coverage.html
-cover.out
-
 # codecov-cpp generated files
 lcov_*.info
 cpp_coverage/
@@ -67,5 +55,3 @@ cpp_coverage/
 # virtualenv
 venv/
 
-# docker compose volumes
-deployments/docker/*/volumes
