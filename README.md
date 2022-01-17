@@ -10,12 +10,11 @@ If you wish to only use Knowhere within Milvus without changing any of the Knowh
 
 ## System Requirements
 
-All Linux distributions are available for Knowhere development. However a majority of our contributor worked with Ubuntu or CentOS systems, with a small portion of Mac (both x86_64 and Apple Silicon) contributors. If you would like Knowhere to build and run on other distributions, you are more than welcome to file an issue and contribute!
+All Linux distributions are available for Knowhere development. However, a majority of our contributor worked with Ubuntu or CentOS systems, with a small portion of Mac (both x86_64 and Apple Silicon) contributors. If you would like Knowhere to build and run on other distributions, you are more than welcome to file an issue and contribute!
 
 Here's a list of verified OS types where Knowhere can successfully build and run:
 
-- Debian/Ubuntu
-- CentOS
+- Ubuntu 18.04
 - MacOS (x86_64)
 - MacOS (Apple Silicon)
 
@@ -24,8 +23,7 @@ Here's a list of verified OS types where Knowhere can successfully build and run
 #### Install Dependencies
 
 ```bash
-$ wget https://raw.githubusercontent.com/milvus-io/milvus/master/scripts/install_deps.sh
-$ ./install_deps.sh
+$ .build//install_deps.sh
 ```
 
 #### Build From Source Code
