@@ -23,7 +23,6 @@ set( DEPEND_LIBS
         gmock
         gtest_main
         gmock_main
-        knowhere_log
         )
 
 if ( LINUX )

@@ -21,16 +21,9 @@ set(external_srcs
         knowhere/common/Timer.cpp
         knowhere/common/Utils.cpp
         knowhere/common/Heap.cpp
-        )
-
-set (LOG_SRC
         knowhere/common/Log.cpp
         ${KNOWHERE_THIRDPARTY_SRC}/easyloggingpp/easylogging++.cc
         )
-
-add_library(knowhere_log STATIC ${LOG_SRC})
-set_target_properties(knowhere_log PROPERTIES RULE_LAUNCH_COMPILE "")
-set_target_properties(knowhere_log PROPERTIES RULE_LAUNCH_LINK "")
 
 set(config_srcs
         knowhere/archive/KnowhereConfig.cpp
@@ -120,7 +113,6 @@ if ( LINUX )
             gfortran
             pthread
             ngt
-            knowhere_log
             knowhere_utils
             )
 
@@ -197,12 +189,11 @@ if (MACOS)
         )
     endif ()
 
-    target_link_libraries(knowhere pthread knowhere_log knowhere_utils)
+    target_link_libraries(knowhere pthread knowhere_utils)
     set(KNOWHERE_INCLUDE_DIRS ${KNOWHERE_SOURCE_DIR}/knowhere)
 endif()
 
 target_include_directories(knowhere PUBLIC ${KNOWHERE_INCLUDE_DIRS})
-install(TARGETS knowhere_log DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 install(TARGETS knowhere DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/knowhere/cache/"
         DESTINATION "include/knowhere/cache"
