@@ -38,7 +38,7 @@ if( ${UNIX} )
 
 	install(TARGETS
 		ngt
-		ngtstatic
+		# ngtstatic
 		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib)
