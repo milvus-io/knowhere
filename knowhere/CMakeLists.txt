@@ -152,7 +152,7 @@ if ( LINUX )
 
     if (NOT TARGET knowhere)
         add_library(
-                knowhere STATIC
+                knowhere SHARED
                 ${external_srcs}
                 ${config_srcs}
                 ${vector_index_srcs}
@@ -182,7 +182,7 @@ if (MACOS)
             )
     if (NOT TARGET knowhere)
         add_library(
-                knowhere STATIC
+                knowhere SHARED
                 ${external_srcs}
                 ${config_srcs}
                 ${vector_index_srcs}
