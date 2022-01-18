@@ -23,7 +23,7 @@ Here's a list of verified OS types where Knowhere can successfully build and run
 #### Install Dependencies
 
 ```bash
-$ .build//install_deps.sh
+$ ./build/install_deps.sh
 ```
 
 #### Build From Source Code
