@@ -15,13 +15,17 @@ cmake_minimum_required(VERSION 3.18)
 message( STATUS "------------------------------KNOWHERE-----------------------------------" )
 message( STATUS "Building using CMake version: ${CMAKE_VERSION}" )
 
+project( knowhere VERSION "${KNOWHERE_VERSION}" )
+project( knowhere LANGUAGES C CXX )
+
 add_definitions( -DAUTO_INITIALIZE_EASYLOGGINGPP )
 
-if ( APPLE )
-    set( CMAKE_CROSSCOMPILING TRUE )
-    set( RUN_HAVE_GNU_POSIX_REGEX 0 )
-    set( CMAKE_C_COMPILER "/usr/local/opt/llvm/bin/clang" )
-    set( CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++" )
+if ( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
+    set ( MACOS TRUE )
+    set ( CMAKE_CROSSCOMPILING TRUE )
+    set ( RUN_HAVE_GNU_POSIX_REGEX 0 )
+    set ( CMAKE_C_COMPILER "/usr/local/opt/llvm/bin/clang" )
+    set ( CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++" )
 endif ()
 
 set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
@@ -49,10 +53,9 @@ message( STATUS "LAST_COMMIT_ID = ${LAST_COMMIT_ID}" )
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 
 
-#******************************* Project *******************************
-project( knowhere VERSION "${KNOWHERE_VERSION}" )
+#************************** Project Settings ***************************
 
-project( knowhere LANGUAGES C CXX )
+
 set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_STANDARD_REQUIRED on )
 
@@ -68,7 +71,7 @@ set( CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE )
 set( CMAKE_CUDA_COMPILER  "/usr/local/cuda/bin/nvcc" )
 include( CheckCXXCompilerFlag )
 
-if ( APPLE )
+if ( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
     message(STATUS "==============Darwin Environment==============")
     set( MACOS TRUE )
     set( CMAKE_CXX_FLAGS "-L/usr/local/opt/libomp/lib -I/usr/local/opt/llvm/include -I/usr/local/include -I/usr/local/opt/openblas/include -I/usr/local/opt/libomp/include -DBOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED=1" )
