@@ -15,12 +15,11 @@ cmake_minimum_required(VERSION 3.18)
 message( STATUS "------------------------------KNOWHERE-----------------------------------" )
 message( STATUS "Building using CMake version: ${CMAKE_VERSION}" )
 
-project( knowhere VERSION "${KNOWHERE_VERSION}" )
-project( knowhere LANGUAGES C CXX )
-
 add_definitions( -DAUTO_INITIALIZE_EASYLOGGINGPP )
 
-if ( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
+# Note: Cross compiling arguments must be set before project annotation, when ${CMAKE_SYSTEM_NAME} is not available.
+# We have to use the "APPLE" variable here as a result.
+if ( APPLE )
     set ( MACOS TRUE )
     set ( CMAKE_CROSSCOMPILING TRUE )
     set ( RUN_HAVE_GNU_POSIX_REGEX 0 )
@@ -54,7 +53,8 @@ set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 
 
 #************************** Project Settings ***************************
-
+project( knowhere VERSION "${KNOWHERE_VERSION}" )
+project( knowhere LANGUAGES C CXX )
 
 set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_STANDARD_REQUIRED on )
