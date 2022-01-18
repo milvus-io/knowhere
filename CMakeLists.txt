@@ -15,6 +15,8 @@ cmake_minimum_required(VERSION 3.18)
 message( STATUS "------------------------------KNOWHERE-----------------------------------" )
 message( STATUS "Building using CMake version: ${CMAKE_VERSION}" )
 
+add_definitions( -DAUTO_INITIALIZE_EASYLOGGINGPP )
+
 if ( APPLE )
     set( CMAKE_CROSSCOMPILING TRUE )
     set( RUN_HAVE_GNU_POSIX_REGEX 0 )
