@@ -8,7 +8,7 @@ if( ${UNIX} )
 	file(GLOB HEADER_FILES *.h *.hpp)
 	file(GLOB NGTQ_HEADER_FILES NGTQ/*.h NGTQ/*.hpp)
 
-	set(BITSET_DIR ${PROJECT_SOURCE_DIR}/../../knowhere)
+	set(BITSET_DIR ${PROJECT_SOURCE_DIR}/../../)
 	message(STATUS "-- bitsetView dir:" ${BITSET_DIR})
 
 	add_library(ngtstatic STATIC ${NGT_SOURCES})
