@@ -13,7 +13,7 @@
 
 #include <memory>
 
-#include "cache/DataObj.h"
+#include "knowhere/cache/DataObj.h"
 #include "knowhere/common/BinarySet.h"
 #include "knowhere/common/Config.h"
 
