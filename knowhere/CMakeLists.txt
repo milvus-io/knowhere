@@ -194,15 +194,11 @@ if (MACOS)
 endif()
 
 target_include_directories(knowhere PUBLIC ${KNOWHERE_INCLUDE_DIRS})
+
 install(TARGETS knowhere DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/knowhere/cache/"
-        DESTINATION "include/knowhere/cache"
-        FILES_MATCHING 
-        PATTERN "*.h" 
-)
 
 install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/"
-        DESTINATION "include/knowhere"
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/include/knowhere"
         FILES_MATCHING 
         PATTERN "*.h" 
 )
