@@ -16,7 +16,7 @@ esac
 BUILD_OUTPUT_DIR="cmake_build"
 BUILD_TYPE="Debug"
 BUILD_UNITTEST="OFF"
-INSTALL_PREFIX=$(pwd)/knowhere
+INSTALL_PREFIX=$(pwd)/output
 MAKE_CLEAN="OFF"
 BUILD_COVERAGE="OFF"
 SUPPORT_PROFILING="OFF"
@@ -77,20 +77,20 @@ usage:
     esac
 done
 
+if [[ ${MAKE_CLEAN} == "ON" ]]; then
+  echo "Remove ${BUILD_OUTPUT_DIR} ..."
+  rm -rf ${BUILD_OUTPUT_DIR}
+  echo "Running make clean in thirdparty/faiss ..."
+  cd thirdparty/faiss
+  make clean
+  exit 0
+fi
+
 if [[ ! -d ${BUILD_OUTPUT_DIR} ]]; then
     mkdir ${BUILD_OUTPUT_DIR}
 fi
 
 cd ${BUILD_OUTPUT_DIR}
-
-if [[ ${MAKE_CLEAN} == "ON" ]]; then
-  echo "Running make clean in ${BUILD_OUTPUT_DIR} ..."
-  make clean
-  echo "Running make clean in thirdparty/faiss ..."
-  cd ../thirdparty/faiss
-  make clean
-  exit 0
-fi
 
 CMAKE_CMD="cmake -DBUILD_UNIT_TEST=${BUILD_UNITTEST} \
 -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX}
