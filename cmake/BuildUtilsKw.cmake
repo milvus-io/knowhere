@@ -204,7 +204,7 @@ function(ADD_THIRDPARTY_LIB LIB_NAME)
 endfunction()
 
 MACRO(using_ccache_if_defined KNOWHERE_USE_CCACHE)
-    if (MILVUS_USE_CCACHE)
+    if (KNOWHERE_USE_CCACHE)
         find_program(CCACHE_FOUND ccache)
         if (CCACHE_FOUND)
             message(STATUS "Using ccache: ${CCACHE_FOUND}")
