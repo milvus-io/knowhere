@@ -34,7 +34,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Install Dependency
         run: |
-          ./build/install_deps.sh         
+          ./scripts/install_deps.sh
       - name: Run Unittest
         run: |
           ./build.sh -t Release -u && cmake_build/unittest/test_knowhere

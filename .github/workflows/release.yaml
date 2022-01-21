@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Install Dependency
         run: |
-          ./build/install_deps.sh         
+          ./scripts/install_deps.sh
       - name: Build
         env:
           ARTIFACT_NAME: ${{ env.RELEASE_NAME }}-${{ matrix.os }}
