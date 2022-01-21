@@ -17,11 +17,14 @@ message( STATUS "Building using CMake version: ${CMAKE_VERSION}" )
 
 add_definitions( -DAUTO_INITIALIZE_EASYLOGGINGPP )
 
+# Note: Cross compiling arguments must be set before project annotation, when ${CMAKE_SYSTEM_NAME} is not available.
+# We have to use the "APPLE" variable here as a result.
 if ( APPLE )
-    set( CMAKE_CROSSCOMPILING TRUE )
-    set( RUN_HAVE_GNU_POSIX_REGEX 0 )
-    set( CMAKE_C_COMPILER "/usr/local/opt/llvm/bin/clang" )
-    set( CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++" )
+    set ( MACOS TRUE )
+    set ( CMAKE_CROSSCOMPILING TRUE )
+    set ( RUN_HAVE_GNU_POSIX_REGEX 0 )
+    set ( CMAKE_C_COMPILER "/usr/local/opt/llvm/bin/clang" )
+    set ( CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++" )
 endif ()
 
 set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
@@ -36,7 +39,7 @@ get_build_type( TARGET  BUILD_TYPE
 message( STATUS "Build type = ${BUILD_TYPE}" )
 
 get_knowhere_version( TARGET KNOWHERE_VERSION
-                             DEFAULT "0.1.0" )
+                             DEFAULT "1.0.0" )
 message( STATUS "Build version = ${KNOWHERE_VERSION}" )
 
 get_last_commit_id( LAST_COMMIT_ID )
@@ -49,10 +52,10 @@ message( STATUS "LAST_COMMIT_ID = ${LAST_COMMIT_ID}" )
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 
 
-#******************************* Project *******************************
+#************************** Project Settings ***************************
 project( knowhere VERSION "${KNOWHERE_VERSION}" )
-
 project( knowhere LANGUAGES C CXX )
+
 set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_STANDARD_REQUIRED on )
 
@@ -68,7 +71,7 @@ set( CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE )
 set( CMAKE_CUDA_COMPILER  "/usr/local/cuda/bin/nvcc" )
 include( CheckCXXCompilerFlag )
 
-if ( APPLE )
+if ( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
     message(STATUS "==============Darwin Environment==============")
     set( MACOS TRUE )
     set( CMAKE_CXX_FLAGS "-L/usr/local/opt/libomp/lib -I/usr/local/opt/llvm/include -I/usr/local/include -I/usr/local/opt/openblas/include -I/usr/local/opt/libomp/include -DBOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED=1" )

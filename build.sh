@@ -16,7 +16,7 @@ esac
 BUILD_OUTPUT_DIR="cmake_build"
 BUILD_TYPE="Debug"
 BUILD_UNITTEST="OFF"
-INSTALL_PREFIX=$(pwd)/knowhere
+INSTALL_PREFIX=$(pwd)/output
 MAKE_CLEAN="OFF"
 BUILD_COVERAGE="OFF"
 SUPPORT_PROFILING="OFF"
@@ -27,30 +27,22 @@ SUPPORT_GPU="OFF" #defaults to CPU version
 while getopts "p:t:cglruzh" arg; do
     case $arg in
         c)
-            BUILD_COVERAGE="ON"
-            ;;
+            BUILD_COVERAGE="ON" ;;
         g)
-            SUPPORT_GPU="ON"
-            ;;
+            SUPPORT_GPU="ON" ;;
         l)
-            RUN_CPPLINT="ON"
-            ;;
+            RUN_CPPLINT="ON" ;;
         p)
-            INSTALL_PREFIX=$OPTARG
-            ;;
+            INSTALL_PREFIX=$OPTARG ;;
         r)
-            MAKE_CLEAN="ON"
-            ;;
+            MAKE_CLEAN="ON" ;;
         t)
-            BUILD_TYPE=$OPTARG # BUILD_TYPE
-            ;;
+            BUILD_TYPE=$OPTARG ;;
         u)
-            echo "Build and run unittest cases" ;
-            BUILD_UNITTEST="ON";
-            ;;
+            echo "Build and run unittest cases"
+            BUILD_UNITTEST="ON" ;;
         z)
-            SUPPORT_PROFILING="ON"
-            ;;
+            SUPPORT_PROFILING="ON" ;;
         h) # help
             echo "
 
@@ -68,14 +60,21 @@ parameter:
 usage:
 ./build.sh -t \${BUILD_TYPE} [-c] [-g] [-l] [-r] [-u] [-z]
             "
-            exit 0
-            ;;
+            exit 0 ;;
         ?)
             echo "unknown argument"
-            exit 1
-            ;;
+            exit 1 ;;
     esac
 done
+
+if [[ ${MAKE_CLEAN} == "ON" ]]; then
+  echo "Remove ${BUILD_OUTPUT_DIR} ..."
+  rm -rf ${BUILD_OUTPUT_DIR}
+  echo "Running make clean in thirdparty/faiss ..."
+  cd thirdparty/faiss
+  make clean
+  exit 0
+fi
 
 if [[ ! -d ${BUILD_OUTPUT_DIR} ]]; then
     mkdir ${BUILD_OUTPUT_DIR}
@@ -83,18 +82,10 @@ fi
 
 cd ${BUILD_OUTPUT_DIR}
 
-if [[ ${MAKE_CLEAN} == "ON" ]]; then
-  echo "Running make clean in ${BUILD_OUTPUT_DIR} ..."
-  make clean
-  echo "Running make clean in thirdparty/faiss ..."
-  cd ../thirdparty/faiss
-  make clean
-  exit 0
-fi
-
 CMAKE_CMD="cmake -DBUILD_UNIT_TEST=${BUILD_UNITTEST} \
 -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX}
 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+-DBUILD_COVERAGE=${BUILD_COVERAGE} \
 -DCMAKE_CUDA_COMPILER=${CUDA_COMPILER} \
 -DMILVUS_ENABLE_PROFILING=${SUPPORT_PROFILING} \
 -DKNOWHERE_GPU_VERSION=${SUPPORT_GPU} \
