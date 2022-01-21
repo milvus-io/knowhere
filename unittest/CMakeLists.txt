@@ -123,20 +123,21 @@ set( ALL_INDEXING_SRCS
 if ( LINUX )
     set(ALL_INDEXING_SRCS
             ${ALL_INDEXING_SRCS}
-            test_instructionset.cpp
-            test_idmap.cpp
-            test_ivf.cpp
-            test_ivf_hnsw.cpp
-            test_ivf_cpu_nm.cpp
+            test_annoy.cpp
             test_binaryidmap.cpp
             test_binaryivf.cpp
-            test_nsg.cpp
             test_hnsw.cpp
+            test_idmap.cpp
+            test_instructionset.cpp
+            test_ivf.cpp
+            test_ivf_cpu_nm.cpp
+            test_ivf_hnsw.cpp
+            test_ngtonng.cpp
+            test_ngtpanng.cpp
+            test_nsg.cpp
             test_rhnsw_flat.cpp
             test_rhnsw_pq.cpp
             test_rhnsw_sq8.cpp
-            test_ngtpanng.cpp
-            test_ngtonng.cpp
             )
     if ( KNOWHERE_GPU_VERSION )
         set(ALL_INDEXING_SRCS
@@ -156,4 +157,4 @@ endif ()
 add_executable( test_knowhere ${ALL_INDEXING_SRCS} )
 target_link_libraries( test_knowhere knowhere ${DEPEND_LIBS} )
 
-install(TARGETS test_knowhere)
+install(TARGETS test_knowhere DESTINATION unittest)
