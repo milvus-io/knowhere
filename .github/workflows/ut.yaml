@@ -39,7 +39,7 @@ jobs:
       - name: Cache CCache Volumes
         uses: actions/cache@v2
         with:
-          path: .ccache/amd64-${{ matrix.os }}-ccache
+          path: ~/.ccache
           key: ${{ matrix.os }}-ccache-${{ hashFiles('knowhere/**') }}
           restore-keys: ${{ matrix.os }}-ccache-
       - name: Run Unittest
