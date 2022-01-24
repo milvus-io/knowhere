@@ -89,7 +89,7 @@ macro(build_faiss)
             "CXX=${FAISS_CXX_COMPILER}"
             "NVCC=${FAISS_CUDA_COMPILER}"
             "CFLAGS=${EP_C_FLAGS}"
-            "CXXFLAGS=${EP_CXX_FLAGS} -msse4.2 -O3 -fpermissive -I ${KNOWHERE_SOURCE_DIR}/knowhere"
+            "CXXFLAGS=${EP_CXX_FLAGS} -msse4.2 -O3 -fpermissive -I ${KNOWHERE_SOURCE_DIR}"
             --without-python )
 
     message( STATUS "${FAISS_CONFIGURE_ARGS}" )
