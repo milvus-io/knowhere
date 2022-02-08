@@ -13,20 +13,19 @@
 
 include_directories(${KNOWHERE_SOURCE_DIR}/knowhere)
 include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty)
-include_directories(${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/utils)
 
 set(KNOWHERE_THIRDPARTY_SRC ${KNOWHERE_SOURCE_DIR}/thirdparty)
 set(external_srcs
-        knowhere/common/Exception.cpp
-        knowhere/common/Timer.cpp
-        knowhere/common/Utils.cpp
-        knowhere/common/Heap.cpp
-        knowhere/common/Log.cpp
+        common/Exception.cpp
+        common/Timer.cpp
+        common/Utils.cpp
+        common/Heap.cpp
+        common/Log.cpp
         ${KNOWHERE_THIRDPARTY_SRC}/easyloggingpp/easylogging++.cc
         )
 
 set(config_srcs
-        knowhere/archive/KnowhereConfig.cpp
+        archive/KnowhereConfig.cpp
         )
 
 if ( LINUX )
@@ -54,51 +53,51 @@ if ( LINUX )
     endif ()
 
     set(vector_index_srcs
-            knowhere/index/IndexType.cpp
-            knowhere/index/vector_index/adapter/VectorAdapter.cpp
-            knowhere/index/vector_index/helpers/FaissIO.cpp
-            knowhere/index/vector_index/helpers/IndexParameter.cpp
-            knowhere/index/vector_index/helpers/DynamicResultSet.cpp
-            knowhere/index/vector_index/impl/bruteforce/BruteForce.cpp
-            knowhere/index/vector_index/impl/nsg/Distance.cpp
-            knowhere/index/vector_index/impl/nsg/NSG.cpp
-            knowhere/index/vector_index/impl/nsg/NSGHelper.cpp
-            knowhere/index/vector_index/impl/nsg/NSGIO.cpp
-            knowhere/index/vector_index/ConfAdapter.cpp
-            knowhere/index/vector_index/ConfAdapterMgr.cpp
-            knowhere/index/vector_index/FaissBaseBinaryIndex.cpp
-            knowhere/index/vector_index/FaissBaseIndex.cpp
-            knowhere/index/vector_index/IndexBinaryIDMAP.cpp
-            knowhere/index/vector_index/IndexBinaryIVF.cpp
-            knowhere/index/vector_index/IndexIDMAP.cpp
-            knowhere/index/vector_index/IndexIVF.cpp
-            knowhere/index/vector_index/IndexIVFPQ.cpp
-            knowhere/index/vector_index/IndexIVFSQ.cpp
-            knowhere/index/vector_index/IndexIVFHNSW.cpp
-            knowhere/index/vector_index/IndexAnnoy.cpp
-            knowhere/index/vector_index/IndexRHNSW.cpp
-            knowhere/index/vector_index/IndexHNSW.cpp
-            knowhere/index/vector_index/IndexRHNSWFlat.cpp
-            knowhere/index/vector_index/IndexRHNSWSQ.cpp
-            knowhere/index/vector_index/IndexRHNSWPQ.cpp
-            knowhere/index/vector_index/IndexNGT.cpp
-            knowhere/index/vector_index/IndexNGTPANNG.cpp
-            knowhere/index/vector_index/IndexNGTONNG.cpp
-            knowhere/index/vector_index/Statistics.cpp
-            knowhere/index/vector_index/VecIndexFactory.cpp
+            index/IndexType.cpp
+            index/vector_index/adapter/VectorAdapter.cpp
+            index/vector_index/helpers/FaissIO.cpp
+            index/vector_index/helpers/IndexParameter.cpp
+            index/vector_index/helpers/DynamicResultSet.cpp
+            index/vector_index/impl/bruteforce/BruteForce.cpp
+            index/vector_index/impl/nsg/Distance.cpp
+            index/vector_index/impl/nsg/NSG.cpp
+            index/vector_index/impl/nsg/NSGHelper.cpp
+            index/vector_index/impl/nsg/NSGIO.cpp
+            index/vector_index/ConfAdapter.cpp
+            index/vector_index/ConfAdapterMgr.cpp
+            index/vector_index/FaissBaseBinaryIndex.cpp
+            index/vector_index/FaissBaseIndex.cpp
+            index/vector_index/IndexBinaryIDMAP.cpp
+            index/vector_index/IndexBinaryIVF.cpp
+            index/vector_index/IndexIDMAP.cpp
+            index/vector_index/IndexIVF.cpp
+            index/vector_index/IndexIVFPQ.cpp
+            index/vector_index/IndexIVFSQ.cpp
+            index/vector_index/IndexIVFHNSW.cpp
+            index/vector_index/IndexAnnoy.cpp
+            index/vector_index/IndexRHNSW.cpp
+            index/vector_index/IndexHNSW.cpp
+            index/vector_index/IndexRHNSWFlat.cpp
+            index/vector_index/IndexRHNSWSQ.cpp
+            index/vector_index/IndexRHNSWPQ.cpp
+            index/vector_index/IndexNGT.cpp
+            index/vector_index/IndexNGTPANNG.cpp
+            index/vector_index/IndexNGTONNG.cpp
+            index/vector_index/Statistics.cpp
+            index/vector_index/VecIndexFactory.cpp
             )
 
     set(vector_offset_index_srcs
-            knowhere/index/vector_offset_index/OffsetBaseIndex.cpp
-            knowhere/index/vector_offset_index/IndexIVF_NM.cpp
-            knowhere/index/vector_offset_index/IndexNSG_NM.cpp
+            index/vector_offset_index/OffsetBaseIndex.cpp
+            index/vector_offset_index/IndexIVF_NM.cpp
+            index/vector_offset_index/IndexNSG_NM.cpp
             )
 
     if (KNOWHERE_SUPPORT_SPTAG)
         set(vector_index_srcs
-                knowhere/index/vector_index/adapter/SptagAdapter.cpp
-                knowhere/index/vector_index/helpers/SPTAGParameterMgr.cpp
-                knowhere/index/vector_index/IndexSPTAG.cpp
+                index/vector_index/adapter/SptagAdapter.cpp
+                index/vector_index/helpers/SPTAGParameterMgr.cpp
+                index/vector_index/IndexSPTAG.cpp
                 ${vector_index_srcs}
                 )
         set(KNOWHERE_INCLUDE_DIRS
@@ -136,17 +135,17 @@ if ( LINUX )
                 )
 
         set(vector_index_srcs ${vector_index_srcs}
-                knowhere/index/vector_index/gpu/IndexGPUIDMAP.cpp
-                knowhere/index/vector_index/gpu/IndexGPUIVF.cpp
-                knowhere/index/vector_index/gpu/IndexGPUIVFPQ.cpp
-                knowhere/index/vector_index/gpu/IndexGPUIVFSQ.cpp
-                knowhere/index/vector_index/gpu/IndexIVFSQHybrid.cpp
-                knowhere/index/vector_index/helpers/Cloner.cpp
-                knowhere/index/vector_index/helpers/FaissGpuResourceMgr.cpp
+                index/vector_index/gpu/IndexGPUIDMAP.cpp
+                index/vector_index/gpu/IndexGPUIVF.cpp
+                index/vector_index/gpu/IndexGPUIVFPQ.cpp
+                index/vector_index/gpu/IndexGPUIVFSQ.cpp
+                index/vector_index/gpu/IndexIVFSQHybrid.cpp
+                index/vector_index/helpers/Cloner.cpp
+                index/vector_index/helpers/FaissGpuResourceMgr.cpp
                 )
 
         set(vector_offset_index_srcs ${vector_offset_index_srcs}
-                knowhere/index/vector_offset_index/gpu/IndexGPUIVF_NM.cpp
+                index/vector_offset_index/gpu/IndexGPUIVF_NM.cpp
                 )
     endif ()
 
@@ -161,7 +160,7 @@ if ( LINUX )
     endif ()
     target_link_libraries(knowhere ${depend_libs})
     set(KNOWHERE_INCLUDE_DIRS
-        ${KNOWHERE_SOURCE_DIR}/knowhere
+        ${KNOWHERE_SOURCE_DIR}
         ${KNOWHERE_SOURCE_DIR}/thirdparty
         ${FAISS_INCLUDE_DIR}
         ${OpenBLAS_INCLUDE_DIR}
@@ -171,14 +170,14 @@ endif()
 
 if (MACOS)
     set(vector_index_srcs
-            knowhere/index/vector_index/impl/bruteforce/BruteForce.cpp
-            knowhere/index/IndexType.cpp
-            knowhere/index/vector_index/adapter/VectorAdapter.cpp
-            knowhere/index/vector_index/helpers/IndexParameter.cpp
-            knowhere/index/vector_index/ConfAdapter.cpp
-            knowhere/index/vector_index/ConfAdapterMgr.cpp
-            knowhere/index/vector_index/Statistics.cpp
-            knowhere/index/vector_index/VecIndexFactory.cpp
+            index/vector_index/impl/bruteforce/BruteForce.cpp
+            index/IndexType.cpp
+            index/vector_index/adapter/VectorAdapter.cpp
+            index/vector_index/helpers/IndexParameter.cpp
+            index/vector_index/ConfAdapter.cpp
+            index/vector_index/ConfAdapterMgr.cpp
+            index/vector_index/Statistics.cpp
+            index/vector_index/VecIndexFactory.cpp
             )
     if (NOT TARGET knowhere)
         add_library(
@@ -190,15 +189,15 @@ if (MACOS)
     endif ()
 
     target_link_libraries(knowhere pthread knowhere_utils)
-    set(KNOWHERE_INCLUDE_DIRS ${KNOWHERE_SOURCE_DIR}/knowhere)
+    set(KNOWHERE_INCLUDE_DIRS ${KNOWHERE_SOURCE_DIR})
 endif()
 
 target_include_directories(knowhere PUBLIC ${KNOWHERE_INCLUDE_DIRS})
 
 install(TARGETS knowhere DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
-install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/knowhere/knowhere/"
+install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/knowhere/"
         DESTINATION "${CMAKE_INSTALL_PREFIX}/include/knowhere"
-        FILES_MATCHING 
-        PATTERN "*.h" 
+        FILES_MATCHING
+        PATTERN "*.h"
 )

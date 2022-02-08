@@ -23,6 +23,7 @@ docker-compose-devcontainer.yml.tmp
 # Compiled source
 bin/
 lib/
+output/
 *.a
 *.so
 *.so.*
@@ -50,7 +51,7 @@ gtags.conf
 
 # codecov-cpp generated files
 lcov_*.info
-cpp_coverage/
+coverage/
 
 # virtualenv
 venv/

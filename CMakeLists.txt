@@ -255,7 +255,7 @@ config_summary()
 
 
 #***************************** Source files ****************************
-add_subdirectory( knowhere/knowhere/utils )
+add_subdirectory( knowhere/utils )
 add_subdirectory( thirdparty )
 add_subdirectory( knowhere )
 
