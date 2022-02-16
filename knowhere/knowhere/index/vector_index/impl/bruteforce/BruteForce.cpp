@@ -14,8 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <omp.h>
-#include "knowhere/index/vector_index/impl/bruteforce/BruteForce.h"
+// TODO: Add back the omp include when issue #15585 is resolved.
+// https://github.com/milvus-io/milvus/issues/15585
+//#include <omp.h>
+#include "index/vector_index/impl/bruteforce/BruteForce.h"
 
 namespace knowhere {
 
@@ -30,7 +32,9 @@ void knn_L2sqr_sse(
     float *value = res->val;
     int64_t *labels = res->ids;
 
-#pragma omp parallel for
+// TODO: Re-enable parallel run when issue #15585 is resolved.
+// https://github.com/milvus-io/milvus/issues/15585
+//#pragma omp parallel for
     for (size_t i = 0; i < nx; i++) {
         const float *x_i = x + i * d;
         const float *y_j = y;
@@ -66,7 +70,9 @@ void knn_inner_product_sse(const float * x,
     float * value = res->val;
     int64_t * labels = res->ids;
 
-#pragma omp parallel for
+// TODO: Re-enable parallel run when issue #15585 is resolved.
+// https://github.com/milvus-io/milvus/issues/15585
+//#pragma omp parallel for
     for (size_t i = 0; i < nx; i++) {
         const float *x_i = x + i * d;
         const float *y_j = y;
