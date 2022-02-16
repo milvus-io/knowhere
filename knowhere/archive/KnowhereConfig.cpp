@@ -19,7 +19,6 @@
 #include "NGT/lib/NGT/defines.h"
 #include "faiss/Clustering.h"
 #include "faiss/FaissHook.h"
-#include "faiss/common.h"
 #include "faiss/utils/distances.h"
 #include "faiss/utils/utils.h"
 #endif
@@ -110,6 +109,7 @@ KnowhereConfig::SetClusteringType(const ClusteringType clustering_type) {
 #endif
 }
 
+#if 0
 void
 KnowhereConfig::SetStatisticsLevel(const int64_t stat_level) {
 #ifdef __APPLE__
@@ -121,6 +121,7 @@ KnowhereConfig::SetStatisticsLevel(const int64_t stat_level) {
     KNOWHERE_THROW_MSG("Unsupported SetStatisticsLevel on current platform!");
 #endif
 }
+#endif
 
 void
 KnowhereConfig::SetLogHandler() {
@@ -129,8 +130,10 @@ KnowhereConfig::SetLogHandler() {
 #elif __linux__
     faiss::LOG_ERROR_ = &knowhere::log_error_;
     faiss::LOG_WARNING_ = &knowhere::log_warning_;
+#ifdef KNOWHERE_SUPPORT_NGT
     NGT_LOG_ERROR_ = &knowhere::log_error_;
     NGT_LOG_WARNING_ = &knowhere::log_warning_;
+#endif
 #else
     KNOWHERE_THROW_MSG("Unsupported SetLogHandler on current platform!");
 #endif

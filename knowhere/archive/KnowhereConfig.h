@@ -63,8 +63,10 @@ class KnowhereConfig {
     /**
      * set Statistics Level [0, 3]
      */
+#if 0
     static void
     SetStatisticsLevel(const int64_t stat_level);
+#endif
 
     // todo: add log level?
     /**

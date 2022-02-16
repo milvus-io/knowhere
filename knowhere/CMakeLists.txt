@@ -13,6 +13,7 @@
 
 include_directories(${KNOWHERE_SOURCE_DIR}/knowhere)
 include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty)
+include_directories(${KNOWHERE_SOURCE_DIR}/knowhere/utils)
 
 set(KNOWHERE_THIRDPARTY_SRC ${KNOWHERE_SOURCE_DIR}/thirdparty)
 set(external_srcs
@@ -29,7 +30,10 @@ set(config_srcs
         )
 
 if ( LINUX )
-    include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib)
+    if (KNOWHERE_SUPPORT_NGT)
+        include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib)
+    endif ()
+
     if (KNOWHERE_SUPPORT_SPTAG)
         include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService)
 
@@ -59,10 +63,6 @@ if ( LINUX )
             index/vector_index/helpers/IndexParameter.cpp
             index/vector_index/helpers/DynamicResultSet.cpp
             index/vector_index/impl/bruteforce/BruteForce.cpp
-            index/vector_index/impl/nsg/Distance.cpp
-            index/vector_index/impl/nsg/NSG.cpp
-            index/vector_index/impl/nsg/NSGHelper.cpp
-            index/vector_index/impl/nsg/NSGIO.cpp
             index/vector_index/ConfAdapter.cpp
             index/vector_index/ConfAdapterMgr.cpp
             index/vector_index/FaissBaseBinaryIndex.cpp
@@ -80,9 +80,6 @@ if ( LINUX )
             index/vector_index/IndexRHNSWFlat.cpp
             index/vector_index/IndexRHNSWSQ.cpp
             index/vector_index/IndexRHNSWPQ.cpp
-            index/vector_index/IndexNGT.cpp
-            index/vector_index/IndexNGTPANNG.cpp
-            index/vector_index/IndexNGTONNG.cpp
             index/vector_index/Statistics.cpp
             index/vector_index/VecIndexFactory.cpp
             )
@@ -90,7 +87,6 @@ if ( LINUX )
     set(vector_offset_index_srcs
             index/vector_offset_index/OffsetBaseIndex.cpp
             index/vector_offset_index/IndexIVF_NM.cpp
-            index/vector_offset_index/IndexNSG_NM.cpp
             )
 
     if (KNOWHERE_SUPPORT_SPTAG)
@@ -106,12 +102,34 @@ if ( LINUX )
                 )
     endif ()
 
+    if (KNOWHERE_SUPPORT_NGT)
+        set(vector_index_srcs
+                index/vector_index/IndexNGT.cpp
+                index/vector_index/IndexNGTPANNG.cpp
+                index/vector_index/IndexNGTONNG.cpp
+                ${vector_index_srcs}
+                )
+    endif ()
+
+    if (KNOWHERE_SUPPORT_NSG)
+        set(vector_index_srcs
+                index/vector_index/impl/nsg/Distance.cpp
+                index/vector_index/impl/nsg/NSG.cpp
+                index/vector_index/impl/nsg/NSGHelper.cpp
+                index/vector_index/impl/nsg/NSGIO.cpp
+                ${vector_index_srcs}
+                )
+        set(vector_offset_index_srcs
+                index/vector_offset_index/IndexNSG_NM.cpp
+                ${vector_offset_index_srcs}
+                )
+    endif ()
+
     set(depend_libs
             faiss
             gomp
             gfortran
             pthread
-            ngt
             knowhere_utils
             )
 
@@ -122,6 +140,12 @@ if ( LINUX )
                 )
     endif ()
 
+    if (KNOWHERE_SUPPORT_NGT)
+        set(depend_libs
+                ngt
+                ${depend_libs}
+                )
+    endif ()
 
     if (KNOWHERE_GPU_VERSION)
         include_directories(${CUDA_INCLUDE_DIRS})
@@ -157,7 +181,9 @@ if ( LINUX )
                 ${vector_index_srcs}
                 ${vector_offset_index_srcs}
         )
+        target_include_directories(knowhere PUBLIC ${KNOWHERE_SOURCE_DIR}/knowere)
     endif ()
+
     target_link_libraries(knowhere ${depend_libs})
     set(KNOWHERE_INCLUDE_DIRS
         ${KNOWHERE_SOURCE_DIR}
@@ -188,7 +214,7 @@ if (MACOS)
         )
     endif ()
 
-    target_link_libraries(knowhere pthread knowhere_utils)
+    target_link_libraries(knowhere pthread)
     set(KNOWHERE_INCLUDE_DIRS ${KNOWHERE_SOURCE_DIR})
 endif()
 

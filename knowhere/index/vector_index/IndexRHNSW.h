@@ -62,11 +62,13 @@ class IndexRHNSW : public VecIndex, public FaissBaseIndex {
     void
     UpdateIndexSize() override;
 
+#if 0
     StatisticsPtr
     GetStatistics() override;
 
     void
     ClearStatistics() override;
+#endif
 };
 }  // namespace knowhere
 }  // namespace milvus

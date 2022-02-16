@@ -5,8 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-// -*- c++ -*-
-
 #pragma once
 
 #include <stdint.h>
@@ -37,17 +35,20 @@ float fvec_Linf_ref (
         const float * y,
         size_t d);
 
-#ifdef __SSE__
+
+/// Squared L2 distance between two vectors
 float fvec_L2sqr_sse (
         const float * x,
         const float * y,
         size_t d);
 
+/// inner product
 float  fvec_inner_product_sse (
         const float * x,
         const float * y,
         size_t d);
 
+/// L1 distance
 float fvec_L1_sse (
         const float * x,
         const float * y,
@@ -57,18 +58,5 @@ float fvec_Linf_sse (
         const float * x,
         const float * y,
         size_t d);
-#endif
-
-/* compute ny square L2 distance bewteen x and a set of contiguous y vectors */
-void fvec_L2sqr_ny (
-        float * dis,
-        const float * x,
-        const float * y,
-        size_t d, size_t ny);
-
-
-/** squared norm of a vector */
-float fvec_norm_L2sqr (const float * x,
-                       size_t d);
 
 } // namespace faiss

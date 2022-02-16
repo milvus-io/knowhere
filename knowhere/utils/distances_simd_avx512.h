@@ -1,9 +1,6 @@
 
 // -*- c++ -*-
 
-/* All distance functions for L2 and IP distances.
- * The actual functions are implemented in distances_simd_avx512.cpp */
-
 #pragma once
 
 #include <stddef.h>
@@ -45,6 +42,6 @@ int
 and_popcnt_AVX512VBMI_lookup(const uint8_t* data1, const uint8_t* data2, const size_t n);
 
 float
-jaccard__AVX512(const uint8_t * a, const uint8_t * b, size_t n);
+jaccard_AVX512(const uint8_t * a, const uint8_t * b, size_t n);
 
 } // namespace faiss

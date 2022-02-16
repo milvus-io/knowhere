@@ -270,7 +270,7 @@ class BitsetView {
     // return sizeof bitmap in bytes
     int64_t
     u8size() const {
-        return (size_ + 8 - 1) / 8;
+        return (size_ + 8 - 1) >> 3;
     }
 
     const uint8_t*
@@ -290,8 +290,8 @@ class BitsetView {
     bool
     test(int64_t index) const {
         // assert(index < size_);
-        auto block_id = index / 8;
-        auto block_offset = index % 8;
+        auto block_id = index >> 3;
+        auto block_offset = index & 0x7;
         return (blocks_[block_id] >> block_offset) & 0x1;
     }
 

@@ -98,10 +98,12 @@ IVFPQ::UpdateIndexSize() {
     auto capacity = nb * code_size + nb * sizeof(int64_t) + nlist * d * sizeof(float);
     auto centroid_table = pq.M * pq.ksub * pq.dsub * sizeof(float);
     auto precomputed_table = nlist * pq.M * pq.ksub * sizeof(float);
+#if 0
     if (precomputed_table > ivfpq_index->precomputed_table_max_bytes) {
         // will not precompute table
         precomputed_table = 0;
     }
+#endif
     index_size_ = capacity + centroid_table + precomputed_table;
 }
 

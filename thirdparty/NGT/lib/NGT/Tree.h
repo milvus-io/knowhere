@@ -19,7 +19,7 @@
 #include "NGT/Common.h"
 #include "NGT/Node.h"
 #include "NGT/defines.h"
-#include "knowhere/utils/BitsetView.h"
+#include "faiss/utils/BitsetView.h"
 
 #include <sstream>
 #include <string>

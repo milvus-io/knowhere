@@ -57,6 +57,7 @@ IndexRHNSW::Load(const BinarySet& index_binary) {
         reader.data_ = binary->data.get();
 
         auto idx = faiss::read_index(&reader);
+#if 0
         auto hnsw_stats = std::static_pointer_cast<RHNSWStatistics>(stats);
         if (STATISTICS_LEVEL >= 3) {
             auto real_idx = static_cast<faiss::IndexRHNSW*>(idx);
@@ -66,6 +67,7 @@ IndexRHNSW::Load(const BinarySet& index_binary) {
             //             LOG_KNOWHERE_DEBUG_ << "IndexRHNSW::Load finished, show statistics:";
             //             LOG_KNOWHERE_DEBUG_ << hnsw_stats->ToString();
         }
+#endif
         index_.reset(idx);
     } catch (std::exception& e) {
         KNOWHERE_THROW_MSG(e.what());
@@ -85,6 +87,7 @@ IndexRHNSW::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA(dataset_ptr)
 
     index_->add(rows, reinterpret_cast<const float*>(p_data));
+#if 0
     auto hnsw_stats = std::static_pointer_cast<RHNSWStatistics>(stats);
     if (STATISTICS_LEVEL >= 3) {
         auto real_idx = static_cast<faiss::IndexRHNSW*>(index_.get());
@@ -92,6 +95,7 @@ IndexRHNSW::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) {
         hnsw_stats->update_level_distribution(real_idx->hnsw.max_level, real_idx->hnsw.level_stats);
         real_idx->set_target_level(hnsw_stats->target_level);
     }
+#endif
     //     LOG_KNOWHERE_DEBUG_ << "IndexRHNSW::Load finished, show statistics:";
     //     LOG_KNOWHERE_DEBUG_ << GetStatistics()->ToString();
 }
@@ -120,6 +124,7 @@ IndexRHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fai
     query_start = std::chrono::high_resolution_clock::now();
     real_index->search(rows, reinterpret_cast<const float*>(p_data), k, p_dist, p_id, bitset);
     query_end = std::chrono::high_resolution_clock::now();
+#if 0
     if (STATISTICS_LEVEL) {
         auto hnsw_stats = std::dynamic_pointer_cast<RHNSWStatistics>(stats);
         auto lock = hnsw_stats->Lock();
@@ -133,6 +138,7 @@ IndexRHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fai
             hnsw_stats->update_filter_percentage(bitset);
         }
     }
+#endif
     //     LOG_KNOWHERE_DEBUG_ << "IndexRHNSW::Load finished, show statistics:";
     //     LOG_KNOWHERE_DEBUG_ << GetStatistics()->ToString();
 
@@ -160,6 +166,7 @@ IndexRHNSW::Dim() {
     return index_->d;
 }
 
+#if 0
 StatisticsPtr
 IndexRHNSW::GetStatistics() {
     if (!STATISTICS_LEVEL) {
@@ -183,6 +190,7 @@ IndexRHNSW::ClearStatistics() {
     auto lock = hnsw_stats->Lock();
     hnsw_stats->clear();
 }
+#endif
 
 void
 IndexRHNSW::UpdateIndexSize() {

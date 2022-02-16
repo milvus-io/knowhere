@@ -62,10 +62,12 @@ IVF::Load(const BinarySet& binary_set) {
     Assemble(const_cast<BinarySet&>(binary_set));
     LoadImpl(binary_set, index_type_);
 
+#if 0
     if (IndexMode() == IndexMode::MODE_CPU && STATISTICS_LEVEL >= 3) {
         auto ivf_index = static_cast<faiss::IndexIVFFlat*>(index_.get());
         ivf_index->nprobe_statistics.resize(ivf_index->nlist, 0);
     }
+#endif
 }
 
 void
@@ -327,6 +329,7 @@ IVF::QueryImpl(int64_t n,
     }
     auto ivf_stats = std::dynamic_pointer_cast<IVFStatistics>(stats);
     ivf_index->search(n, data, k, distances, labels, bitset);
+#if 0
     stdclock::time_point after = stdclock::now();
     double search_cost = (std::chrono::duration<double, std::micro>(after - before)).count();
     if (STATISTICS_LEVEL) {
@@ -347,6 +350,7 @@ IVF::QueryImpl(int64_t n,
             ivf_stats->update_filter_percentage(bitset);
         }
     }
+#endif
     //     LOG_KNOWHERE_DEBUG_ << "IndexIVF::QueryImpl finished, show statistics:";
     //     LOG_KNOWHERE_DEBUG_ << GetStatistics()->ToString();
 }
@@ -362,6 +366,7 @@ IVF::SealImpl() {
 #endif
 }
 
+#if 0
 StatisticsPtr
 IVF::GetStatistics() {
     if (IndexMode() != IndexMode::MODE_CPU || !STATISTICS_LEVEL) {
@@ -386,6 +391,7 @@ IVF::ClearStatistics() {
     auto lock = ivf_stats->Lock();
     ivf_stats->clear();
 }
+#endif
 
 }  // namespace knowhere
 }  // namespace milvus

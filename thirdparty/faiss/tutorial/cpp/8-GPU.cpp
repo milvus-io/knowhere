@@ -12,36 +12,36 @@
 
 #include <iostream>
 
-#include "faiss/IndexIVF.h"
-#include "faiss/IndexFlat.h"
-#include "faiss/index_io.h"
-#include "faiss/gpu/GpuIndexFlat.h"
-#include "faiss/gpu/StandardGpuResources.h"
-#include "faiss/gpu/GpuAutoTune.h"
-#include "faiss/gpu/GpuClonerOptions.h"
-#include "faiss/gpu/GpuCloner.h"
-#include "faiss/gpu/GpuIndexIVF.h"
-#include "faiss/gpu/GpuIndexIVFSQHybrid.h"
+#include <faiss/IndexIVF.h>
+#include <faiss/IndexFlat.h>
+#include <faiss/index_io.h>
+#include <faiss/gpu/GpuIndexFlat.h>
+#include <faiss/gpu/StandardGpuResources.h>
+#include <faiss/gpu/GpuAutoTune.h>
+#include <faiss/gpu/GpuClonerOptions.h>
+#include <faiss/gpu/GpuCloner.h>
+#include <faiss/gpu/GpuIndexIVF.h>
+#include <faiss/gpu/GpuIndexIVFSQHybrid.h>
 
-#include "faiss/IndexFlat.h"
-#include "faiss/VectorTransform.h"
-#include "faiss/IndexLSH.h"
-#include "faiss/IndexPQ.h"
+#include <faiss/IndexFlat.h>
+#include <faiss/VectorTransform.h>
+#include <faiss/IndexLSH.h>
+#include <faiss/IndexPQ.h>
 
-#include "faiss/IndexIVFPQ.h"
-#include "faiss/IndexIVFFlat.h"
-#include "faiss/IndexIVFSpectralHash.h"
-#include "faiss/MetaIndexes.h"
-#include "faiss/IndexSQHybrid.h"
-#include "faiss/IndexHNSW.h"
-#include "faiss/OnDiskInvertedLists.h"
-#include "faiss/IndexBinaryFlat.h"
-#include "faiss/IndexBinaryFromFloat.h"
-#include "faiss/IndexBinaryHNSW.h"
-#include "faiss/IndexBinaryIVF.h"
-#include "faiss/utils/distances.h"
-#include "faiss/clone_index.h"
-#include "faiss/index_factory.h"
+#include <faiss/IndexIVFPQ.h>
+#include <faiss/IndexIVFFlat.h>
+#include <faiss/IndexIVFSpectralHash.h>
+#include <faiss/MetaIndexes.h>
+#include <faiss/IndexSQHybrid.h>
+#include <faiss/IndexHNSW.h>
+#include <faiss/invlists/OnDiskInvertedLists.h>
+#include <faiss/IndexBinaryFlat.h>
+#include <faiss/IndexBinaryFromFloat.h>
+#include <faiss/IndexBinaryHNSW.h>
+#include <faiss/IndexBinaryIVF.h>
+#include <faiss/utils/distances.h>
+#include <faiss/clone_index.h>
+#include <faiss/index_factory.h>
 
 using namespace faiss;
 

@@ -20,10 +20,12 @@
  *
  *  This library does *not* dependent on Faiss.
  */
+
 #include <cstdio>
 #include <typeinfo>
 #include <string>
 #include <vector>
+
 #include "knowhere/utils/BitsetView.h"
 
 namespace knowhere {

@@ -26,7 +26,6 @@ static inline __m128 masked_read (int d, const float *x) {
     // cannot use AVX2 _mm_mask_set1_epi32
 }
 
-
 extern uint8_t lookup8bit[256];
 
 float
@@ -215,22 +214,20 @@ fvec_Linf_avx512(const float* x, const float* y, size_t d) {
     return  _mm_cvtss_f32 (msum2);
 }
 
-std::uint64_t
+uint64_t
 _mm256_hsum_epi64(__m256i v) {
-    return _mm256_extract_epi64(v, 0)
-    + _mm256_extract_epi64(v, 1)
-    + _mm256_extract_epi64(v, 2)
-    + _mm256_extract_epi64(v, 3);
+    return _mm256_extract_epi64(v, 0) +
+           _mm256_extract_epi64(v, 1) +
+           _mm256_extract_epi64(v, 2) +
+           _mm256_extract_epi64(v, 3);
 }
 
-std::uint64_t _mm512_hsum_epi64(__m512i v) {
+uint64_t _mm512_hsum_epi64(__m512i v) {
     const __m256i t0 = _mm512_extracti64x4_epi64(v, 0);
     const __m256i t1 = _mm512_extracti64x4_epi64(v, 1);
 
-    return _mm256_hsum_epi64(t0)
-    + _mm256_hsum_epi64(t1);
+    return _mm256_hsum_epi64(t0) + _mm256_hsum_epi64(t1);
 }
-
 
 int
 popcnt_AVX512VBMI_lookup(const uint8_t* data, const size_t n) {
@@ -415,7 +412,7 @@ and_popcnt_AVX512VBMI_lookup(const uint8_t* data1, const uint8_t* data2, const s
 }
 
 float
-jaccard__AVX512(const uint8_t * a, const uint8_t * b, size_t n) {
+jaccard_AVX512(const uint8_t * a, const uint8_t * b, size_t n) {
     int accu_num = and_popcnt_AVX512VBMI_lookup(a,b,n);
     int accu_den = or_popcnt_AVX512VBMI_lookup(a,b,n);
     return (accu_den == 0) ? 1.0 : ((float)(accu_den - accu_num) / (float)(accu_den));

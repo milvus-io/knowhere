@@ -73,11 +73,13 @@ IndexHNSW::Load(const BinarySet& index_binary) {
         index_ = std::make_shared<hnswlib::HierarchicalNSW<float>>(space);
         index_->stats_enable = (STATISTICS_LEVEL >= 3);
         index_->loadIndex(reader);
+#if 0
         auto hnsw_stats = std::static_pointer_cast<LibHNSWStatistics>(stats);
         if (STATISTICS_LEVEL >= 3) {
             auto lock = hnsw_stats->Lock();
             hnsw_stats->update_level_distribution(index_->maxlevel_, index_->level_stats_);
         }
+#endif
         //         LOG_KNOWHERE_DEBUG_ << "IndexHNSW::Load finished, show statistics:";
         //         LOG_KNOWHERE_DEBUG_ << hnsw_stats->ToString();
     } catch (std::exception& e) {
@@ -121,11 +123,13 @@ IndexHNSW::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) {
     for (int i = 1; i < rows; ++i) {
         index_->addPoint((reinterpret_cast<const float*>(p_data) + Dim() * i), i);
     }
+#if 0
     if (STATISTICS_LEVEL >= 3) {
         auto hnsw_stats = std::static_pointer_cast<LibHNSWStatistics>(stats);
         auto lock = hnsw_stats->Lock();
         hnsw_stats->update_level_distribution(index_->maxlevel_, index_->level_stats_);
     }
+#endif
     //     LOG_KNOWHERE_DEBUG_ << "IndexHNSW::Train finished, show statistics:";
     //     LOG_KNOWHERE_DEBUG_ << GetStatistics()->ToString();
 }
@@ -188,6 +192,7 @@ IndexHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fais
     }
     query_end = std::chrono::high_resolution_clock::now();
 
+#if 0
     if (STATISTICS_LEVEL) {
         auto lock = hnsw_stats->Lock();
         if (STATISTICS_LEVEL >= 1) {
@@ -211,6 +216,7 @@ IndexHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fais
             }
         }
     }
+#endif
     //     LOG_KNOWHERE_DEBUG_ << "IndexHNSW::Query finished, show statistics:";
     //     LOG_KNOWHERE_DEBUG_ << GetStatistics()->ToString();
 
@@ -244,6 +250,7 @@ IndexHNSW::UpdateIndexSize() {
     index_size_ = index_->cal_size();
 }
 
+#if 0
 void
 IndexHNSW::ClearStatistics() {
     if (!STATISTICS_LEVEL)
@@ -252,6 +259,7 @@ IndexHNSW::ClearStatistics() {
     auto lock = hnsw_stats->Lock();
     hnsw_stats->clear();
 }
+#endif
 
 }  // namespace knowhere
 }  // namespace milvus

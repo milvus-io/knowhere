@@ -29,9 +29,15 @@ if ( LINUX )
     set( DEPEND_LIBS
             ${DEPEND_LIBS}
             faiss
-            ngt
             openblas
             )
+
+    if ( KNOWHERE_SUPPORT_NGT )
+        set( DEPEND_LIBS
+                ${DEPEND_LIBS}
+                ngt
+                )
+    endif ()
 endif ()
 
 set( BASIC_LIBS gomp gfortran pthread )
@@ -132,9 +138,6 @@ if ( LINUX )
             test_ivf.cpp
             test_ivf_cpu_nm.cpp
             test_ivf_hnsw.cpp
-            test_ngtonng.cpp
-            test_ngtpanng.cpp
-            test_nsg.cpp
             test_rhnsw_flat.cpp
             test_rhnsw_pq.cpp
             test_rhnsw_sq8.cpp
@@ -151,6 +154,19 @@ endif ()
 if ( KNOWHERE_SUPPORT_SPTAG )
     set( ALL_INDEXING_SRCS
             test_sptag.cpp
+            )
+endif ()
+
+if ( KNOWHERE_SUPPORT_NGT )
+    set( ALL_INDEXING_SRCS
+            test_ngtonng.cpp
+            test_ngtpanng.cpp
+            )
+endif ()
+
+if ( KNOWHERE_SUPPORT_NSG )
+    set( ALL_INDEXING_SRCS
+            test_nsg.cpp
             )
 endif ()
 

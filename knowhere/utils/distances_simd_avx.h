@@ -1,9 +1,6 @@
 
 // -*- c++ -*-
 
-/* All distance functions for L2 and IP distances.
- * The actual functions are implemented in distances_simd_avx512.cpp */
-
 #pragma once
 
 #include <stddef.h>
