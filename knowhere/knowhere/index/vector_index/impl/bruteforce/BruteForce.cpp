@@ -17,7 +17,7 @@
 // TODO: Add back the omp include when issue #15585 is resolved.
 // https://github.com/milvus-io/milvus/issues/15585
 //#include <omp.h>
-#include "index/vector_index/impl/bruteforce/BruteForce.h"
+#include "knowhere/index/vector_index/impl/bruteforce/BruteForce.h"
 
 namespace knowhere {
 
