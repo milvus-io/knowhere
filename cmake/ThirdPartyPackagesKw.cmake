@@ -165,7 +165,7 @@ if (DEFINED ENV{KNOWHERE_OPENBLAS_URL})
     set(OPENBLAS_SOURCE_URL "$ENV{KNOWHERE_OPENBLAS_URL}")
 else ()
     set(OPENBLAS_SOURCE_URL
-            "https://github.com.cnpmjs.org/xianyi/OpenBLAS/archive/v${OPENBLAS_VERSION}.tar.gz")
+            "https://github.com/xianyi/OpenBLAS/releases/download/v${OPENBLAS_VERSION}/OpenBLAS-${OPENBLAS_VERSION}.tar.gz")
 endif ()
 
 # ----------------------------------------------------------------------
@@ -194,13 +194,13 @@ macro(build_openblas)
             )
 
     externalproject_add(openblas_ep
-            URL ${OPENBLAS_SOURCE_URL}
-            URL_MD5 "28cc19a6acbf636f5aab5f10b9a0dfe1"
-            CMAKE_ARGS ${OPENBLAS_CMAKE_ARGS}
-            BUILD_COMMAND ${MAKE} ${MAKE_BUILD_ARGS}
-            PREFIX              ${CMAKE_BINARY_DIR}/3rdparty_download/openblas-subbuild
-            BINARY_DIR          openblas-bin
-            INSTALL_DIR         ${KNOWHERE_INSTALL_PREFIX}
+            URL             ${OPENBLAS_SOURCE_URL}
+            URL_MD5         "9721d04d72a7d601c81eafb54520ba2c"
+            CMAKE_ARGS      ${OPENBLAS_CMAKE_ARGS}
+            BUILD_COMMAND   ${MAKE} ${MAKE_BUILD_ARGS}
+            PREFIX          ${CMAKE_BINARY_DIR}/3rdparty_download/openblas-subbuild
+            BINARY_DIR      openblas-bin
+            INSTALL_DIR     ${KNOWHERE_INSTALL_PREFIX}
             )
 
     ExternalProject_Get_Property(openblas_ep INSTALL_DIR)
@@ -208,7 +208,6 @@ macro(build_openblas)
     if( NOT IS_DIRECTORY ${INSTALL_DIR}/include )
         file( MAKE_DIRECTORY "${INSTALL_DIR}/include" )
     endif()
-
 
     add_library(openblas SHARED IMPORTED)
     set_target_properties( openblas
