@@ -7,7 +7,7 @@
 cmake_minimum_required(VERSION 3.17 FATAL_ERROR)
 
 project(faiss
-  VERSION 1.7.0
+  VERSION 1.7.2
   DESCRIPTION "A library for efficient similarity search and clustering of dense vectors."
   HOMEPAGE_URL "https://github.com/facebookresearch/faiss"
   LANGUAGES CXX)
@@ -17,23 +17,11 @@ set(CMAKE_CXX_STANDARD 11)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
-# Valid values are "generic", "sse4", "avx2", "avx512".
+# Valid values are "generic", "avx2".
 option(FAISS_OPT_LEVEL "" "generic")
 option(FAISS_ENABLE_GPU "Enable support for GPU indexes." ON)
 option(FAISS_ENABLE_PYTHON "Build Python extension." ON)
-option(FAISS_ENABLE_CCACHE "Build with ccache." ON)
-
-if (FAISS_ENABLE_CCACHE)
-    find_program(CCACHE_FOUND ccache)
-    if (CCACHE_FOUND)
-        message(STATUS "Using ccache: ${CCACHE_FOUND}")
-        set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${CCACHE_FOUND})
-        set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ${CCACHE_FOUND})
-        # let ccache preserve C++ comments, because some of them may be
-        # meaningful to the compiler
-        set(ENV{CCACHE_COMMENTS} "1")
-    endif (CCACHE_FOUND)
-endif()
+option(FAISS_ENABLE_C_API "Build C API." OFF)
 
 if (FAISS_CFLAGS)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FAISS_CFLAGS} ${FAISS_CPPFLAGS}")
@@ -43,7 +31,7 @@ if (FAISS_CXXFLAGS)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FAISS_CXXFLAGS} ${FAISS_CPPFLAGS}")
 endif()
 
-if (FAISS_ENABLE_GPU)
+if(FAISS_ENABLE_GPU)
   # externalproject_add use semicolon to separate commands, revert to desired format
   if (CMAKE_CUDA_ARCHITECTURES)
     string(REPLACE ":" ";" CMAKE_CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
@@ -62,6 +50,10 @@ endif()
 
 if(FAISS_ENABLE_PYTHON)
   add_subdirectory(faiss/python)
+endif()
+
+if(FAISS_ENABLE_C_API)
+  add_subdirectory(c_api)
 endif()
 
 add_subdirectory(demos)

@@ -11,11 +11,13 @@ import platform
 from faiss.contrib import datasets
 from faiss.contrib import inspect_tools
 from faiss.contrib import evaluation
+from faiss.contrib import ivf_tools
 
-from common import get_dataset_2
+from common_faiss_tests import get_dataset_2
 try:
-    from faiss.contrib.exhaustive_search import knn_ground_truth, knn, range_ground_truth
-    from faiss.contrib.exhaustive_search import range_search_max_results
+    from faiss.contrib.exhaustive_search import \
+        knn_ground_truth, knn, range_ground_truth, \
+        range_search_max_results, exponential_query_iterator
 
 except:
     pass  # Submodule import broken in python 2.
@@ -101,7 +103,7 @@ class TestExhaustiveSearch(unittest.TestCase):
         index.add(xb)
         Dref, Iref = index.search(xq, 10)
 
-        Dnew, Inew = knn(xq, xb, 10, distance_type=faiss.METRIC_INNER_PRODUCT)
+        Dnew, Inew = knn(xq, xb, 10, metric=faiss.METRIC_INNER_PRODUCT)
 
         assert np.all(Inew == Iref)
         assert np.allclose(Dref, Dnew)
@@ -110,7 +112,7 @@ class TestExhaustiveSearch(unittest.TestCase):
         ds = datasets.SyntheticDataset(32, 0, 1000, 10)
         xq = ds.get_queries()
         xb = ds.get_database()
-        D, I = faiss.knn(xq, xb, 10, distance_type=metric)
+        D, I = faiss.knn(xq, xb, 10, metric=metric)
         threshold = float(D[:, -1].mean())
 
         index = faiss.IndexFlat(32, metric)
@@ -136,7 +138,7 @@ class TestExhaustiveSearch(unittest.TestCase):
         ds = datasets.SyntheticDataset(32, 0, 1000, 1000)
         xq = ds.get_queries()
         xb = ds.get_database()
-        D, I = faiss.knn(xq, xb, 10, distance_type=metric)
+        D, I = faiss.knn(xq, xb, 10, metric=metric)
         threshold = float(D[:, -1].mean())
         print(threshold)
 
@@ -150,7 +152,7 @@ class TestExhaustiveSearch(unittest.TestCase):
 
         # check repro OK
         _, new_lims, new_D, new_I = range_search_max_results(
-            index, matrix_iterator(xq, 100), threshold)
+            index, matrix_iterator(xq, 100), threshold, max_results=1e10)
 
         evaluation.test_ref_range_results(
             ref_lims, ref_D, ref_I,
@@ -172,7 +174,6 @@ class TestExhaustiveSearch(unittest.TestCase):
         )
 
 
-
 class TestInspect(unittest.TestCase):
 
     def test_LinearTransform(self):
@@ -191,6 +192,14 @@ class TestInspect(unittest.TestCase):
         # verify
         ynew = x @ A.T + b
         np.testing.assert_array_almost_equal(yref, ynew)
+
+    def test_IndexFlat(self):
+        xb = np.random.rand(13, 20).astype('float32')
+        index = faiss.IndexFlatL2(20)
+        index.add(xb)
+        np.testing.assert_array_equal(
+            xb, inspect_tools.get_flat_data(index)
+        )
 
 
 class TestRangeEval(unittest.TestCase):
@@ -265,3 +274,153 @@ class TestRangeEval(unittest.TestCase):
 
             np.testing.assert_array_almost_equal(ref_precisions, precisions)
             np.testing.assert_array_almost_equal(ref_recalls, recalls)
+
+
+class TestPreassigned(unittest.TestCase):
+
+    def test_float(self):
+        ds = datasets.SyntheticDataset(128, 2000, 2000, 200)
+
+        d = ds.d
+        xt = ds.get_train()
+        xq = ds.get_queries()
+        xb = ds.get_database()
+
+        # define alternative quantizer on the 20 first dims of vectors
+        km = faiss.Kmeans(20, 50)
+        km.train(xt[:, :20].copy())
+        alt_quantizer = km.index
+
+        index = faiss.index_factory(d, "IVF50,PQ16np")
+        index.by_residual = False
+
+        # (optional) fake coarse quantizer
+        fake_centroids = np.zeros((index.nlist, index.d), dtype="float32")
+        index.quantizer.add(fake_centroids)
+
+        # train the PQ part
+        index.train(xt)
+
+        # add elements xb
+        a = alt_quantizer.search(xb[:, :20].copy(), 1)[1].ravel()
+        ivf_tools.add_preassigned(index, xb, a)
+
+        # search elements xq, increase nprobe, check 4 first results w/ groundtruth
+        prev_inter_perf = 0
+        for nprobe in 1, 10, 20:
+
+            index.nprobe = nprobe
+            a = alt_quantizer.search(xq[:, :20].copy(), index.nprobe)[1]
+            D, I = ivf_tools.search_preassigned(index, xq, 4, a)
+            inter_perf = (I == ds.get_groundtruth()[:, :4]).sum() / I.size
+            self.assertTrue(inter_perf >= prev_inter_perf)
+            prev_inter_perf = inter_perf
+
+        # test range search
+
+        index.nprobe = 20
+
+        a = alt_quantizer.search(xq[:, :20].copy(), index.nprobe)[1]
+
+        # just to find a reasonable radius
+        D, I = ivf_tools.search_preassigned(index, xq, 4, a)
+        radius = D.max() * 1.01
+
+        lims, DR, IR = ivf_tools.range_search_preassigned(index, xq, radius, a)
+
+        # with that radius the k-NN results are a subset of the range search results
+        for q in range(len(xq)):
+            l0, l1 = lims[q], lims[q + 1]
+            self.assertTrue(set(I[q]) <= set(IR[l0:l1]))
+
+    def test_binary(self):
+        ds = datasets.SyntheticDataset(128, 2000, 2000, 200)
+
+        d = ds.d
+        xt = ds.get_train()
+        xq = ds.get_queries()
+        xb = ds.get_database()
+
+        # define alternative quantizer on the 20 first dims of vectors (will be in float)
+        km = faiss.Kmeans(20, 50)
+        km.train(xt[:, :20].copy())
+        alt_quantizer = km.index
+
+        binarizer = faiss.index_factory(d, "ITQ,LSHt")
+        binarizer.train(xt)
+
+        xb_bin = binarizer.sa_encode(xb)
+        xq_bin = binarizer.sa_encode(xq)
+
+        index = faiss.index_binary_factory(d, "BIVF200")
+
+        fake_centroids = np.zeros((index.nlist, index.d // 8), dtype="uint8")
+        index.quantizer.add(fake_centroids)
+        index.is_trained = True
+
+        # add elements xb
+        a = alt_quantizer.search(xb[:, :20].copy(), 1)[1].ravel()
+        ivf_tools.add_preassigned(index, xb_bin, a)
+
+        # search elements xq, increase nprobe, check 4 first results w/ groundtruth
+        prev_inter_perf = 0
+        for nprobe in 1, 10, 20:
+
+            index.nprobe = nprobe
+            a = alt_quantizer.search(xq[:, :20].copy(), index.nprobe)[1]
+            D, I = ivf_tools.search_preassigned(index, xq_bin, 4, a)
+            inter_perf = (I == ds.get_groundtruth()[:, :4]).sum() / I.size
+            self.assertTrue(inter_perf >= prev_inter_perf)
+            prev_inter_perf = inter_perf
+
+        # test range search
+
+        index.nprobe = 20
+
+        a = alt_quantizer.search(xq[:, :20].copy(), index.nprobe)[1]
+
+        # just to find a reasonable radius
+        D, I = ivf_tools.search_preassigned(index, xq_bin, 4, a)
+        radius = int(D.max() + 1)
+
+        lims, DR, IR = ivf_tools.range_search_preassigned(index, xq_bin, radius, a)
+
+        # with that radius the k-NN results are a subset of the range search results
+        for q in range(len(xq)):
+            l0, l1 = lims[q], lims[q + 1]
+            self.assertTrue(set(I[q]) <= set(IR[l0:l1]))
+
+
+class TestRangeSearchMaxResults(unittest.TestCase):
+
+    def do_test(self, metric_type):
+        ds = datasets.SyntheticDataset(32, 0, 1000, 200)
+        index = faiss.IndexFlat(ds.d, metric_type)
+        index.add(ds.get_database())
+
+        # find a reasonable radius
+        D, _ = index.search(ds.get_queries(), 10)
+        radius0 = float(np.median(D[:, -1]))
+
+        # baseline = search with that radius
+        lims_ref, Dref, Iref = index.range_search(ds.get_queries(), radius0)
+
+        # now see if using just the total number of results, we can get back the same
+        # result table
+        query_iterator = exponential_query_iterator(ds.get_queries())
+
+        init_radius = 1e10 if metric_type == faiss.METRIC_L2 else -1e10
+        radius1, lims_new, Dnew, Inew = range_search_max_results(
+            index, query_iterator, init_radius, min_results=Dref.size, clip_to_min=True
+        )
+
+        evaluation.test_ref_range_results(
+            lims_ref, Dref, Iref,
+            lims_new, Dnew, Inew
+        )
+
+    def test_L2(self):
+        self.do_test(faiss.METRIC_L2)
+
+    def test_IP(self):
+        self.do_test(faiss.METRIC_INNER_PRODUCT)

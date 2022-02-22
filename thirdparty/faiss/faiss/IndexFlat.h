@@ -12,51 +12,44 @@
 
 #include <vector>
 
-#include <faiss/Index.h>
+#include <faiss/IndexFlatCodes.h>
 #include <faiss/impl/AuxIndexStructures.h>
 
 namespace faiss {
 
 /** Index that stores the full vectors and performs exhaustive search */
-struct IndexFlat: Index {
+struct IndexFlat : IndexFlatCodes {
 
-    /// database vectors, size ntotal * d
-    std::vector<float> xb;
-
-    explicit IndexFlat (idx_t d, MetricType metric = METRIC_L2);
-
-    void add(idx_t n, const float* x) override;
-
-    void reset() override;
+    explicit IndexFlat(idx_t d, MetricType metric = METRIC_L2);
 
     void search(
-        idx_t n,
-        const float* x,
-        idx_t k,
-        float* distances,
-        idx_t* labels,
-        const BitsetView bitset = nullptr) const override;
+            idx_t n,
+            const float* x,
+            idx_t k,
+            float* distances,
+            idx_t* labels,
+            const BitsetView bitset = nullptr) const override;
 
     void assign (
-        idx_t n,
-        const float * x,
-        idx_t * labels,
-        float* distances = nullptr) const override;
+            idx_t n,
+            const float* x,
+            idx_t* labels,
+            float* distances) const override;
 
     void range_search(
-        idx_t n,
-        const float* x,
-        float radius,
-        RangeSearchResult* result,
-        const BitsetView bitset = nullptr) const override;
+            idx_t n,
+            const float* x,
+            float radius,
+            RangeSearchResult* result,
+            const BitsetView bitset = nullptr) const override;
 
     void range_search(
-        idx_t n,
-        const float* x,
-        float radius,
-        std::vector<RangeSearchPartialResult*> &result,
-        size_t buffer_size,
-        const BitsetView bitset = nullptr); // const override
+            idx_t n,
+            const float* x,
+            float radius,
+            std::vector<RangeSearchPartialResult*>& result,
+            size_t buffer_size,
+            const BitsetView bitset = nullptr); // const override
 
     void reconstruct(idx_t key, float* recons) const override;
 
@@ -68,62 +61,56 @@ struct IndexFlat: Index {
      * @param distances
      *                corresponding output distances, size n * k
      */
-    void compute_distance_subset (
+    void compute_distance_subset(
             idx_t n,
-            const float *x,
+            const float* x,
             idx_t k,
-            float *distances,
-            const idx_t *labels) const;
+            float* distances,
+            const idx_t* labels) const;
 
-    /** remove some ids. NB that Because of the structure of the
-     * indexing structure, the semantics of this operation are
-     * different from the usual ones: the new ids are shifted */
-    size_t remove_ids(const IDSelector& sel) override;
+    // get pointer to the floating point data
+    float* get_xb() {
+        return (float*)codes.data();
+    }
+    const float* get_xb() const {
+        return (const float*)codes.data();
+    }
 
-    IndexFlat () {}
+    IndexFlat() {}
 
-    DistanceComputer * get_distance_computer() const override;
+    DistanceComputer* get_distance_computer() const override;
 
     /* The stanadlone codec interface (just memcopies in this case) */
-    size_t sa_code_size () const override;
+    void sa_encode(idx_t n, const float* x, uint8_t* bytes) const override;
 
-    void sa_encode (idx_t n, const float *x,
-                          uint8_t *bytes) const override;
-
-    void sa_decode (idx_t n, const uint8_t *bytes,
-                            float *x) const override;
+    void sa_decode(idx_t n, const uint8_t* bytes, float* x) const override;
 
     size_t cal_size() {
-        return xb.size() * sizeof(float);
+        return this->sa_code_size();
     }
 };
 
-
-
-struct IndexFlatIP:IndexFlat {
-    explicit IndexFlatIP (idx_t d): IndexFlat (d, METRIC_INNER_PRODUCT) {}
-    IndexFlatIP () {}
+struct IndexFlatIP : IndexFlat {
+    explicit IndexFlatIP(idx_t d) : IndexFlat(d, METRIC_INNER_PRODUCT) {}
+    IndexFlatIP() {}
 };
 
-
-struct IndexFlatL2:IndexFlat {
-    explicit IndexFlatL2 (idx_t d): IndexFlat (d, METRIC_L2) {}
-    IndexFlatL2 () {}
+struct IndexFlatL2 : IndexFlat {
+    explicit IndexFlatL2(idx_t d) : IndexFlat(d, METRIC_L2) {}
+    IndexFlatL2() {}
 };
-
-
 
 /// optimized version for 1D "vectors".
-struct IndexFlat1D:IndexFlatL2 {
+struct IndexFlat1D : IndexFlatL2 {
     bool continuous_update; ///< is the permutation updated continuously?
 
     std::vector<idx_t> perm; ///< sorted database indices
 
-    explicit IndexFlat1D (bool continuous_update=true);
+    explicit IndexFlat1D(bool continuous_update = true);
 
     /// if not continuous_update, call this between the last add and
     /// the first search
-    void update_permutation ();
+    void update_permutation();
 
     void add(idx_t n, const float* x) override;
 
@@ -131,15 +118,14 @@ struct IndexFlat1D:IndexFlatL2 {
 
     /// Warn: the distances returned are L1 not L2
     void search(
-        idx_t n,
-        const float* x,
-        idx_t k,
-        float* distances,
-        idx_t* labels,
-        const BitsetView bitset = nullptr) const override;
+            idx_t n,
+            const float* x,
+            idx_t k,
+            float* distances,
+            idx_t* labels,
+            const BitsetView bitset = nullptr) const override;
 };
 
-
-}
+} // namespace faiss
 
 #endif

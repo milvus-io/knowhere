@@ -5,12 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-// -*- c++ -*-
-
 #include <cstdio>
 #include <algorithm>
-
-#include <omp.h>
 
 #ifdef __SSE__
 #include <immintrin.h>
@@ -22,25 +18,19 @@
 
 namespace faiss {
 
-#ifdef __AVX__
-#define USE_AVX
-#endif
+#ifdef USE_F16C
 
-
-#ifdef USE_AVX
-
-uint16_t encode_fp16 (float x) {
-    __m128 xf = _mm_set1_ps (x);
-    __m128i xi = _mm_cvtps_ph (
-         xf, _MM_FROUND_TO_NEAREST_INT |_MM_FROUND_NO_EXC);
-    return _mm_cvtsi128_si32 (xi) & 0xffff;
+uint16_t encode_fp16(float x) {
+    __m128 xf = _mm_set1_ps(x);
+    __m128i xi =
+            _mm_cvtps_ph(xf, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
+    return _mm_cvtsi128_si32(xi) & 0xffff;
 }
 
-
-float decode_fp16 (uint16_t x) {
-    __m128i xi = _mm_set1_epi16 (x);
-    __m128 xf = _mm_cvtph_ps (xi);
-    return _mm_cvtss_f32 (xf);
+float decode_fp16(uint16_t x) {
+    __m128i xi = _mm_set1_epi16(x);
+    __m128 xf = _mm_cvtph_ps(xi);
+    return _mm_cvtss_f32(xf);
 }
 
 #else
@@ -48,18 +38,17 @@ float decode_fp16 (uint16_t x) {
 // non-intrinsic FP16 <-> FP32 code adapted from
 // https://github.com/ispc/ispc/blob/master/stdlib.ispc
 
-float floatbits (uint32_t x) {
-    void *xptr = &x;
+float floatbits(uint32_t x) {
+    void* xptr = &x;
     return *(float*)xptr;
 }
 
-uint32_t intbits (float f) {
-    void *fptr = &f;
+uint32_t intbits(float f) {
+    void* fptr = &f;
     return *(uint32_t*)fptr;
 }
 
-
-uint16_t encode_fp16 (float f) {
+uint16_t encode_fp16(float f) {
     // via Fabian "ryg" Giesen.
     // https://gist.github.com/2156668
     uint32_t sign_mask = 0x80000000u;
@@ -116,19 +105,19 @@ uint16_t encode_fp16 (float f) {
     return (o | (sign >> 16));
 }
 
-float decode_fp16 (uint16_t h) {
+float decode_fp16(uint16_t h) {
     // https://gist.github.com/2144712
     // Fabian "ryg" Giesen.
 
     const uint32_t shifted_exp = 0x7c00u << 13; // exponent mask after shift
 
-    int32_t o = ((int32_t)(h & 0x7fffu)) << 13;     // exponent/mantissa bits
-    int32_t exp = shifted_exp & o;   // just the exponent
-    o += (int32_t)(127 - 15) << 23;        // exponent adjust
+    int32_t o = ((int32_t)(h & 0x7fffu)) << 13; // exponent/mantissa bits
+    int32_t exp = shifted_exp & o;              // just the exponent
+    o += (int32_t)(127 - 15) << 23;             // exponent adjust
 
     int32_t infnan_val = o + ((int32_t)(128 - 16) << 23);
-    int32_t zerodenorm_val = intbits(
-                 floatbits(o + (1u<<23)) - floatbits(113u << 23));
+    int32_t zerodenorm_val =
+            intbits(floatbits(o + (1u << 23)) - floatbits(113u << 23));
     int32_t reg_val = (exp == 0) ? zerodenorm_val : o;
 
     int32_t sign_bit = ((int32_t)(h & 0x8000u)) << 16;
@@ -137,29 +126,33 @@ float decode_fp16 (uint16_t h) {
 
 #endif
 
-
 /*******************************************************************
  * Quantizer range training
  */
 
-static float sqr (float x) {
+static float sqr(float x) {
     return x * x;
 }
 
-
-void train_Uniform(RangeStat rs, float rs_arg,
-                   idx_t n, int k, const float *x,
-                   std::vector<float> & trained)
-{
-    trained.resize (2);
-    float & vmin = trained[0];
-    float & vmax = trained[1];
+void train_Uniform(
+        RangeStat rs,
+        float rs_arg,
+        idx_t n,
+        int k,
+        const float* x,
+        std::vector<float>& trained) {
+    trained.resize(2);
+    float& vmin = trained[0];
+    float& vmax = trained[1];
 
     if (rs == RangeStat::RS_minmax) {
-        vmin = HUGE_VAL; vmax = -HUGE_VAL;
+        vmin = HUGE_VAL;
+        vmax = -HUGE_VAL;
         for (size_t i = 0; i < n; i++) {
-            if (x[i] < vmin) vmin = x[i];
-            if (x[i] > vmax) vmax = x[i];
+            if (x[i] < vmin)
+                vmin = x[i];
+            if (x[i] > vmax)
+                vmax = x[i];
         }
         float vexp = (vmax - vmin) * rs_arg;
         vmin -= vexp;
@@ -174,16 +167,18 @@ void train_Uniform(RangeStat rs, float rs_arg,
         float var = sum2 / n - mean * mean;
         float std = var <= 0 ? 1.0 : sqrt(var);
 
-        vmin = mean - std * rs_arg ;
-        vmax = mean + std * rs_arg ;
+        vmin = mean - std * rs_arg;
+        vmax = mean + std * rs_arg;
     } else if (rs == RangeStat::RS_quantiles) {
         std::vector<float> x_copy(n);
         memcpy(x_copy.data(), x, n * sizeof(*x));
         // TODO just do a qucikselect
         std::sort(x_copy.begin(), x_copy.end());
         int o = int(rs_arg * n);
-        if (o < 0) o = 0;
-        if (o > n - o) o = n / 2;
+        if (o < 0)
+            o = 0;
+        if (o > n - o)
+            o = n / 2;
         vmin = x_copy[o];
         vmax = x_copy[n - 1 - o];
 
@@ -193,8 +188,10 @@ void train_Uniform(RangeStat rs, float rs_arg,
         {
             vmin = HUGE_VAL, vmax = -HUGE_VAL;
             for (size_t i = 0; i < n; i++) {
-                if (x[i] < vmin) vmin = x[i];
-                if (x[i] > vmax) vmax = x[i];
+                if (x[i] < vmin)
+                    vmin = x[i];
+                if (x[i] > vmax)
+                    vmax = x[i];
                 sx += x[i];
             }
             b = vmin;
@@ -209,87 +206,94 @@ void train_Uniform(RangeStat rs, float rs_arg,
 
             for (idx_t i = 0; i < n; i++) {
                 float xi = x[i];
-                float ni = floor ((xi - b) / a + 0.5);
-                if (ni < 0) ni = 0;
-                if (ni >= k) ni = k - 1;
-                err1 += sqr (xi - (ni * a + b));
-                sn  += ni;
+                float ni = floor((xi - b) / a + 0.5);
+                if (ni < 0)
+                    ni = 0;
+                if (ni >= k)
+                    ni = k - 1;
+                err1 += sqr(xi - (ni * a + b));
+                sn += ni;
                 sn2 += ni * ni;
                 sxn += ni * xi;
             }
 
             if (err1 == last_err) {
-                iter_last_err ++;
-                if (iter_last_err == 16) break;
+                iter_last_err++;
+                if (iter_last_err == 16)
+                    break;
             } else {
                 last_err = err1;
                 iter_last_err = 0;
             }
 
-            float det = sqr (sn) - sn2 * n;
+            float det = sqr(sn) - sn2 * n;
 
             b = (sn * sxn - sn2 * sx) / det;
             a = (sn * sx - n * sxn) / det;
             if (verbose) {
-                printf ("it %d, err1=%g            \r", it, err1);
+                printf("it %d, err1=%g            \r", it, err1);
                 fflush(stdout);
             }
         }
-        if (verbose) printf("\n");
+        if (verbose)
+            printf("\n");
 
         vmin = b;
         vmax = b + a * (k - 1);
 
     } else {
-        FAISS_THROW_MSG ("Invalid qtype");
+        FAISS_THROW_MSG("Invalid qtype");
     }
     vmax -= vmin;
 }
 
-void train_NonUniform(RangeStat rs, float rs_arg,
-                      idx_t n, int d, int k, const float *x,
-                      std::vector<float> & trained)
-{
-    trained.resize (2 * d);
-    float * vmin = trained.data();
-    float * vmax = trained.data() + d;
+void train_NonUniform(
+        RangeStat rs,
+        float rs_arg,
+        idx_t n,
+        int d,
+        int k,
+        const float* x,
+        std::vector<float>& trained) {
+    trained.resize(2 * d);
+    float* vmin = trained.data();
+    float* vmax = trained.data() + d;
     if (rs == RangeStat::RS_minmax) {
-        memcpy (vmin, x, sizeof(*x) * d);
-        memcpy (vmax, x, sizeof(*x) * d);
+        memcpy(vmin, x, sizeof(*x) * d);
+        memcpy(vmax, x, sizeof(*x) * d);
         for (size_t i = 1; i < n; i++) {
-            const float *xi = x + i * d;
+            const float* xi = x + i * d;
             for (size_t j = 0; j < d; j++) {
-                if (xi[j] < vmin[j]) vmin[j] = xi[j];
-                if (xi[j] > vmax[j]) vmax[j] = xi[j];
+                if (xi[j] < vmin[j])
+                    vmin[j] = xi[j];
+                if (xi[j] > vmax[j])
+                    vmax[j] = xi[j];
             }
         }
-        float *vdiff = vmax;
+        float* vdiff = vmax;
         for (size_t j = 0; j < d; j++) {
             float vexp = (vmax[j] - vmin[j]) * rs_arg;
             vmin[j] -= vexp;
             vmax[j] += vexp;
-            vdiff [j] = vmax[j] - vmin[j];
+            vdiff[j] = vmax[j] - vmin[j];
         }
     } else {
         // transpose
         std::vector<float> xt(n * d);
         for (size_t i = 1; i < n; i++) {
-            const float *xi = x + i * d;
+            const float* xi = x + i * d;
             for (size_t j = 0; j < d; j++) {
                 xt[j * n + i] = xi[j];
             }
         }
         std::vector<float> trained_d(2);
 #pragma omp parallel for
-        for (size_t j = 0; j < d; j++) {
-            train_Uniform(rs, rs_arg,
-                          n, k, xt.data() + j * n,
-                          trained_d);
+        for (int j = 0; j < d; j++) {
+            train_Uniform(rs, rs_arg, n, k, xt.data() + j * n, trained_d);
             vmin[j] = trained_d[0];
             vmax[j] = trained_d[1];
         }
     }
 }
-
 
 } // namespace faiss

@@ -7,8 +7,6 @@
 
 #pragma once
 
-
-
 /** Abstractions for 256-bit registers
  *
  * The objective is to separate the different interpretations of the same
@@ -19,6 +17,10 @@
 #ifdef __AVX2__
 
 #include <faiss/utils/simdlib_avx2.h>
+
+#elif defined(__aarch64__)
+
+#include <faiss/utils/simdlib_neon.h>
 
 #else
 

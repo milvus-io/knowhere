@@ -11,8 +11,6 @@
 
 #pragma once
 
-
-
 namespace faiss {
 
 struct Index;
@@ -24,7 +22,7 @@ namespace gpu {
 }
 
 /* cloning functions */
-Index *clone_index (const Index *);
+Index* clone_index(const Index*);
 
 struct IndexComposition {
     Index *index = nullptr;
@@ -36,13 +34,11 @@ struct IndexComposition {
  * functions. The cloning function above just calls
  * Cloner::clone_Index. */
 struct Cloner {
-    virtual VectorTransform *clone_VectorTransform (const VectorTransform *);
-    virtual Index *clone_Index (const Index *);
-    virtual Index *clone_Index (IndexComposition* index_composition);
-    virtual IndexIVF *clone_IndexIVF (const IndexIVF *);
+    virtual VectorTransform* clone_VectorTransform(const VectorTransform*);
+    virtual Index* clone_Index(const Index*);
+    virtual Index* clone_Index(IndexComposition* index_composition);
+    virtual IndexIVF* clone_IndexIVF(const IndexIVF*);
     virtual ~Cloner() {}
 };
-
-
 
 } // namespace faiss

@@ -1,10 +1,12 @@
+/**
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
 
-// -*- c++ -*-
-
-#include <cstdio>
 #include <cassert>
 #include <immintrin.h>
-#include <string>
 
 #include "distances_simd_avx.h"
 
@@ -45,10 +47,12 @@ uint8_t lookup8bit[256] = {
     /* f8 */ 5, /* f9 */ 6, /* fa */ 6, /* fb */ 7, /* fc */ 6, /* fd */ 7, /* fe */ 7, /* ff */ 8
 };
 
+#define ALIGNED(x) __attribute__((aligned(x)))
+
 // reads 0 <= d < 4 floats as __m128
-static inline __m128 masked_read (int d, const float *x) {
-    assert (0 <= d && d < 4);
-    __attribute__((__aligned__(16))) float buf[4] = {0, 0, 0, 0};
+static inline __m128 masked_read(int d, const float* x) {
+    assert(0 <= d && d < 4);
+    ALIGNED(16) float buf[4] = {0, 0, 0, 0};
     switch (d) {
         case 3:
             buf[2] = x[2];
@@ -61,158 +65,172 @@ static inline __m128 masked_read (int d, const float *x) {
     // cannot use AVX2 _mm_mask_set1_epi32
 }
 
-
 // reads 0 <= d < 8 floats as __m256
-static inline __m256 masked_read_8 (int d, const float* x) {
-    assert (0 <= d && d < 8);
+static inline __m256 masked_read_8(int d, const float* x) {
+    assert(0 <= d && d < 8);
     if (d < 4) {
-        __m256 res = _mm256_setzero_ps ();
-        res = _mm256_insertf128_ps (res, masked_read (d, x), 0);
+        __m256 res = _mm256_setzero_ps();
+        res = _mm256_insertf128_ps(res, masked_read(d, x), 0);
         return res;
     } else {
-        __m256 res = _mm256_setzero_ps ();
-        res = _mm256_insertf128_ps (res, _mm_loadu_ps (x), 0);
-        res = _mm256_insertf128_ps (res, masked_read (d - 4, x + 4), 1);
+        __m256 res = _mm256_setzero_ps();
+        res = _mm256_insertf128_ps(res, _mm_loadu_ps(x), 0);
+        res = _mm256_insertf128_ps(res, masked_read(d - 4, x + 4), 1);
         return res;
     }
 }
 
-float fvec_inner_product_avx (const float* x, const float* y, size_t d) {
+float fvec_inner_product_avx(const float* x, const float* y, size_t d) {
     __m256 msum1 = _mm256_setzero_ps();
 
     while (d >= 8) {
-        __m256 mx = _mm256_loadu_ps (x); x += 8;
-        __m256 my = _mm256_loadu_ps (y); y += 8;
-        msum1 = _mm256_add_ps (msum1, _mm256_mul_ps (mx, my));
+        __m256 mx = _mm256_loadu_ps(x);
+        x += 8;
+        __m256 my = _mm256_loadu_ps(y);
+        y += 8;
+        msum1 = _mm256_add_ps(msum1, _mm256_mul_ps(mx, my));
         d -= 8;
     }
 
     __m128 msum2 = _mm256_extractf128_ps(msum1, 1);
-    msum2 +=       _mm256_extractf128_ps(msum1, 0);
+    msum2 = _mm_add_ps(msum2, _mm256_extractf128_ps(msum1, 0));
 
     if (d >= 4) {
-        __m128 mx = _mm_loadu_ps (x); x += 4;
-        __m128 my = _mm_loadu_ps (y); y += 4;
-        msum2 = _mm_add_ps (msum2, _mm_mul_ps (mx, my));
+        __m128 mx = _mm_loadu_ps(x);
+        x += 4;
+        __m128 my = _mm_loadu_ps(y);
+        y += 4;
+        msum2 = _mm_add_ps(msum2, _mm_mul_ps(mx, my));
         d -= 4;
     }
 
     if (d > 0) {
-        __m128 mx = masked_read (d, x);
-        __m128 my = masked_read (d, y);
-        msum2 = _mm_add_ps (msum2, _mm_mul_ps (mx, my));
+        __m128 mx = masked_read(d, x);
+        __m128 my = masked_read(d, y);
+        msum2 = _mm_add_ps(msum2, _mm_mul_ps(mx, my));
     }
 
-    msum2 = _mm_hadd_ps (msum2, msum2);
-    msum2 = _mm_hadd_ps (msum2, msum2);
-    return  _mm_cvtss_f32 (msum2);
+    msum2 = _mm_hadd_ps(msum2, msum2);
+    msum2 = _mm_hadd_ps(msum2, msum2);
+    return _mm_cvtss_f32(msum2);
 }
 
-float fvec_L2sqr_avx (const float* x, const float* y, size_t d) {
+float fvec_L2sqr_avx(const float* x, const float* y, size_t d) {
     __m256 msum1 = _mm256_setzero_ps();
 
     while (d >= 8) {
-        __m256 mx = _mm256_loadu_ps (x); x += 8;
-        __m256 my = _mm256_loadu_ps (y); y += 8;
-        const __m256 a_m_b1 = mx - my;
-        msum1 += a_m_b1 * a_m_b1;
+        __m256 mx = _mm256_loadu_ps(x);
+        x += 8;
+        __m256 my = _mm256_loadu_ps(y);
+        y += 8;
+        const __m256 a_m_b1 = _mm256_sub_ps(mx, my);
+        msum1 = _mm256_add_ps(msum1, _mm256_mul_ps(a_m_b1, a_m_b1));
         d -= 8;
     }
 
     __m128 msum2 = _mm256_extractf128_ps(msum1, 1);
-    msum2 +=       _mm256_extractf128_ps(msum1, 0);
+    msum2 = _mm_add_ps(msum2, _mm256_extractf128_ps(msum1, 0));
 
     if (d >= 4) {
-        __m128 mx = _mm_loadu_ps (x); x += 4;
-        __m128 my = _mm_loadu_ps (y); y += 4;
-        const __m128 a_m_b1 = mx - my;
-        msum2 += a_m_b1 * a_m_b1;
+        __m128 mx = _mm_loadu_ps(x);
+        x += 4;
+        __m128 my = _mm_loadu_ps(y);
+        y += 4;
+        const __m128 a_m_b1 = _mm_sub_ps(mx, my);
+        msum2 = _mm_add_ps(msum2, _mm_mul_ps(a_m_b1, a_m_b1));
         d -= 4;
     }
 
     if (d > 0) {
-        __m128 mx = masked_read (d, x);
-        __m128 my = masked_read (d, y);
-        __m128 a_m_b1 = mx - my;
-        msum2 += a_m_b1 * a_m_b1;
+        __m128 mx = masked_read(d, x);
+        __m128 my = masked_read(d, y);
+        __m128 a_m_b1 = _mm_sub_ps(mx, my);
+        msum2 = _mm_add_ps(msum2, _mm_mul_ps(a_m_b1, a_m_b1));
     }
 
-    msum2 = _mm_hadd_ps (msum2, msum2);
-    msum2 = _mm_hadd_ps (msum2, msum2);
-    return  _mm_cvtss_f32 (msum2);
+    msum2 = _mm_hadd_ps(msum2, msum2);
+    msum2 = _mm_hadd_ps(msum2, msum2);
+    return _mm_cvtss_f32(msum2);
 }
 
-float fvec_L1_avx (const float * x, const float * y, size_t d)
-{
+float fvec_L1_avx(const float* x, const float* y, size_t d) {
     __m256 msum1 = _mm256_setzero_ps();
-    __m256 signmask = __m256(_mm256_set1_epi32 (0x7fffffffUL));
+    __m256 signmask = _mm256_castsi256_ps(_mm256_set1_epi32(0x7fffffffUL));
 
     while (d >= 8) {
-        __m256 mx = _mm256_loadu_ps (x); x += 8;
-        __m256 my = _mm256_loadu_ps (y); y += 8;
-        const __m256 a_m_b = mx - my;
-        msum1 += _mm256_and_ps(signmask, a_m_b);
+        __m256 mx = _mm256_loadu_ps(x);
+        x += 8;
+        __m256 my = _mm256_loadu_ps(y);
+        y += 8;
+        const __m256 a_m_b = _mm256_sub_ps(mx, my);
+        msum1 = _mm256_add_ps(msum1, _mm256_and_ps(signmask, a_m_b));
         d -= 8;
     }
 
     __m128 msum2 = _mm256_extractf128_ps(msum1, 1);
-    msum2 +=       _mm256_extractf128_ps(msum1, 0);
-    __m128 signmask2 = __m128(_mm_set1_epi32 (0x7fffffffUL));
+    msum2 = _mm_add_ps(msum2, _mm256_extractf128_ps(msum1, 0));
+    __m128 signmask2 = _mm_castsi128_ps(_mm_set1_epi32(0x7fffffffUL));
 
     if (d >= 4) {
-        __m128 mx = _mm_loadu_ps (x); x += 4;
-        __m128 my = _mm_loadu_ps (y); y += 4;
-        const __m128 a_m_b = mx - my;
-        msum2 += _mm_and_ps(signmask2, a_m_b);
+        __m128 mx = _mm_loadu_ps(x);
+        x += 4;
+        __m128 my = _mm_loadu_ps(y);
+        y += 4;
+        const __m128 a_m_b = _mm_sub_ps(mx, my);
+        msum2 = _mm_add_ps(msum2, _mm_and_ps(signmask2, a_m_b));
         d -= 4;
     }
 
     if (d > 0) {
-        __m128 mx = masked_read (d, x);
-        __m128 my = masked_read (d, y);
-        __m128 a_m_b = mx - my;
-        msum2 += _mm_and_ps(signmask2, a_m_b);
+        __m128 mx = masked_read(d, x);
+        __m128 my = masked_read(d, y);
+        __m128 a_m_b = _mm_sub_ps(mx, my);
+        msum2 = _mm_add_ps(msum2, _mm_and_ps(signmask2, a_m_b));
     }
 
-    msum2 = _mm_hadd_ps (msum2, msum2);
-    msum2 = _mm_hadd_ps (msum2, msum2);
-    return  _mm_cvtss_f32 (msum2);
+    msum2 = _mm_hadd_ps(msum2, msum2);
+    msum2 = _mm_hadd_ps(msum2, msum2);
+    return _mm_cvtss_f32(msum2);
 }
 
-float fvec_Linf_avx (const float* x, const float* y, size_t d) {
+float fvec_Linf_avx(const float* x, const float* y, size_t d) {
     __m256 msum1 = _mm256_setzero_ps();
-    __m256 signmask = __m256(_mm256_set1_epi32 (0x7fffffffUL));
+    __m256 signmask = _mm256_castsi256_ps(_mm256_set1_epi32(0x7fffffffUL));
 
     while (d >= 8) {
-        __m256 mx = _mm256_loadu_ps (x); x += 8;
-        __m256 my = _mm256_loadu_ps (y); y += 8;
-        const __m256 a_m_b = mx - my;
+        __m256 mx = _mm256_loadu_ps(x);
+        x += 8;
+        __m256 my = _mm256_loadu_ps(y);
+        y += 8;
+        const __m256 a_m_b = _mm256_sub_ps(mx, my);
         msum1 = _mm256_max_ps(msum1, _mm256_and_ps(signmask, a_m_b));
         d -= 8;
     }
 
     __m128 msum2 = _mm256_extractf128_ps(msum1, 1);
-    msum2 = _mm_max_ps (msum2, _mm256_extractf128_ps(msum1, 0));
-    __m128 signmask2 = __m128(_mm_set1_epi32 (0x7fffffffUL));
+    msum2 = _mm_max_ps(msum2, _mm256_extractf128_ps(msum1, 0));
+    __m128 signmask2 = _mm_castsi128_ps(_mm_set1_epi32(0x7fffffffUL));
 
     if (d >= 4) {
-        __m128 mx = _mm_loadu_ps (x); x += 4;
-        __m128 my = _mm_loadu_ps (y); y += 4;
-        const __m128 a_m_b = mx - my;
+        __m128 mx = _mm_loadu_ps(x);
+        x += 4;
+        __m128 my = _mm_loadu_ps(y);
+        y += 4;
+        const __m128 a_m_b = _mm_sub_ps(mx, my);
         msum2 = _mm_max_ps(msum2, _mm_and_ps(signmask2, a_m_b));
         d -= 4;
     }
 
     if (d > 0) {
-        __m128 mx = masked_read (d, x);
-        __m128 my = masked_read (d, y);
-        __m128 a_m_b = mx - my;
+        __m128 mx = masked_read(d, x);
+        __m128 my = masked_read(d, y);
+        __m128 a_m_b = _mm_sub_ps(mx, my);
         msum2 = _mm_max_ps(msum2, _mm_and_ps(signmask2, a_m_b));
     }
 
     msum2 = _mm_max_ps(_mm_movehl_ps(msum2, msum2), msum2);
-    msum2 = _mm_max_ps(msum2, _mm_shuffle_ps (msum2, msum2, 1));
-    return  _mm_cvtss_f32 (msum2);
+    msum2 = _mm_max_ps(msum2, _mm_shuffle_ps(msum2, msum2, 1));
+    return _mm_cvtss_f32(msum2);
 }
 
 #define DECLARE_LOOKUP \
@@ -443,157 +461,5 @@ jaccard_AVX2(const uint8_t * a, const uint8_t * b, size_t n) {
     int accu_den = or_popcnt_AVX2_lookup(a,b,n);
     return (accu_den == 0) ? 1.0 : ((float)(accu_den - accu_num) / (float)(accu_den));
 }
-
-
-/***************************************************************************
- * PQ tables computations
- ***************************************************************************/
-
-#if 0 // caiyd, disable compute_PQ_dis_tables_dsub2 temporally
-//#ifdef __AVX2__
-namespace {
-
-
-// get even float32's of a and b, interleaved
-simd8float32 geteven(simd8float32 a, simd8float32 b) {
-    return simd8float32(
-        _mm256_shuffle_ps(a.f, b.f, 0 << 0 | 2 << 2 | 0 << 4 | 2 << 6)
-    );
-}
-
-// get odd float32's of a and b, interleaved
-simd8float32 getodd(simd8float32 a, simd8float32 b) {
-    return simd8float32(
-        _mm256_shuffle_ps(a.f, b.f, 1 << 0 | 3 << 2 | 1 << 4 | 3 << 6)
-    );
-}
-
-// 3 cycles
-// if the lanes are a = [a0 a1] and b = [b0 b1], return [a0 b0]
-simd8float32 getlow128(simd8float32 a, simd8float32 b) {
-    return simd8float32(
-        _mm256_permute2f128_ps(a.f, b.f, 0 | 2 << 4)
-    );
-}
-
-simd8float32 gethigh128(simd8float32 a, simd8float32 b) {
-    return simd8float32(
-        _mm256_permute2f128_ps(a.f, b.f, 1 | 3 << 4)
-    );
-}
-
-/// compute the IP for dsub = 2 for 8 centroids and 4 sub-vectors at a time
-template<bool is_inner_product>
-void pq2_8cents_table(
-        const simd8float32 centroids[8],
-        const simd8float32 x,
-        float *out, size_t ldo, size_t nout = 4
-) {
-
-    simd8float32 ips[4];
-
-    for(int i = 0; i < 4; i++) {
-        simd8float32 p1, p2;
-        if (is_inner_product) {
-            p1 = x * centroids[2 * i];
-            p2 = x * centroids[2 * i + 1];
-        } else {
-            p1 = (x - centroids[2 * i]);
-            p1 = p1 * p1;
-            p2 = (x - centroids[2 * i + 1]);
-            p2 = p2 * p2;
-        }
-        ips[i] = hadd(p1, p2);
-    }
-
-    simd8float32 ip02a = geteven(ips[0], ips[1]);
-    simd8float32 ip02b = geteven(ips[2], ips[3]);
-    simd8float32 ip0 = getlow128(ip02a, ip02b);
-    simd8float32 ip2 = gethigh128(ip02a, ip02b);
-
-    simd8float32 ip13a = getodd(ips[0], ips[1]);
-    simd8float32 ip13b = getodd(ips[2], ips[3]);
-    simd8float32 ip1 = getlow128(ip13a, ip13b);
-    simd8float32 ip3 = gethigh128(ip13a, ip13b);
-
-    switch(nout) {
-    case 4:
-        ip3.storeu(out + 3 * ldo);
-    case 3:
-        ip2.storeu(out + 2 * ldo);
-    case 2:
-        ip1.storeu(out + 1 * ldo);
-    case 1:
-        ip0.storeu(out);
-    }
-}
-
-simd8float32 load_simd8float32_partial(const float *x, int n) {
-    ALIGNED(32) float tmp[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-    float *wp = tmp;
-    for (int i = 0; i < n; i++) {
-        *wp++ = *x++;
-    }
-    return simd8float32(tmp);
-}
-
-} // anonymous namespace
-
-
-
-
-void compute_PQ_dis_tables_dsub2(
-        size_t d, size_t ksub, const float *all_centroids,
-        size_t nx, const float * x,
-        bool is_inner_product,
-        float * dis_tables)
-{
-    size_t M = d / 2;
-    FAISS_THROW_IF_NOT(ksub % 8 == 0);
-
-    for(size_t m0 = 0; m0 < M; m0 += 4) {
-        int m1 = std::min(M, m0 + 4);
-        for(int k0 = 0; k0 < ksub; k0 += 8) {
-
-            simd8float32 centroids[8];
-            for (int k = 0; k < 8; k++) {
-                float centroid[8] __attribute__((aligned(32)));
-                size_t wp = 0;
-                size_t rp = (m0 * ksub + k + k0) * 2;
-                for (int m = m0; m < m1; m++) {
-                    centroid[wp++] = all_centroids[rp];
-                    centroid[wp++] = all_centroids[rp + 1];
-                    rp += 2 * ksub;
-                }
-                centroids[k] = simd8float32(centroid);
-            }
-            for(size_t i = 0; i < nx; i++) {
-                simd8float32 xi;
-                if (m1 == m0 + 4) {
-                    xi.loadu(x + i * d + m0 * 2);
-                } else {
-                    xi = load_simd8float32_partial(x + i * d + m0 * 2, 2 * (m1 - m0));
-                }
-
-                if(is_inner_product) {
-                    pq2_8cents_table<true>(
-                        centroids, xi,
-                        dis_tables + (i * M + m0) * ksub + k0,
-                        ksub, m1 - m0
-                    );
-                } else {
-                    pq2_8cents_table<false>(
-                        centroids, xi,
-                        dis_tables + (i * M + m0) * ksub + k0,
-                        ksub, m1 - m0
-                    );
-                }
-            }
-        }
-    }
-
-}
-
-#endif
 
 } // namespace faiss
