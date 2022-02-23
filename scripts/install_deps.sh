@@ -30,13 +30,19 @@ case "${UNAME}" in
 esac
 
 
-if [[ "${MACHINE}" == "Linux"  ]]; then
+if [[ "${MACHINE}" == "Linux" ]]; then
     if [[ -x "$(command -v apt)" ]]; then
         # for Ubuntu 18.04
         sudo apt install -y g++ gcc make ccache libssl-dev zlib1g-dev libboost-regex-dev \
             libboost-program-options-dev libboost-system-dev libboost-filesystem-dev \
             libboost-serialization-dev python3-dev libboost-python-dev libcurl4-openssl-dev \
-            gfortran libtbb-dev libopenblas-dev
+            gfortran libtbb-dev
+        # Pre-installation of openblas can save about 15 minutes of openblas building time.
+        # But the apt-installed openblas version is 0.2.20, while the latest openblas version is 0.3.19.
+        # So we only pre-install openblas in Unittest, and compile openblas-0.3.19 when release.
+        if [[ "${INSTALL_OPENBLAS}" == "true" ]]; then
+          sudo apt install -y libopenblas-dev
+        fi
     fi
 fi
 

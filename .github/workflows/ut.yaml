@@ -30,6 +30,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-18.04, macos-11]
+    env:
+      INSTALL_OPENBLAS: true
     steps:
       - name: Checkout
         uses: actions/checkout@v2
