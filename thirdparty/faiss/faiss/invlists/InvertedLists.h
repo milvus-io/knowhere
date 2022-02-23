@@ -19,7 +19,6 @@
 #include <vector>
 #include <faiss/Index.h>
 
-#ifndef USE_CPU
 namespace faiss {
 
 struct PageLockMemory {
@@ -43,7 +42,6 @@ public:
 };
 using PageLockMemoryPtr = std::shared_ptr<PageLockMemory>;
 }
-#endif
 
 namespace faiss {
 
@@ -276,16 +274,16 @@ struct ArrayInvertedLists : InvertedLists {
 };
 
 struct ReadOnlyArrayInvertedLists: InvertedLists {
-#ifdef USE_CPU
-    std::vector <uint8_t> readonly_codes;
-    std::vector <idx_t> readonly_ids;
-#else
+#ifdef USE_GPU
     PageLockMemoryPtr pin_readonly_codes;
     PageLockMemoryPtr pin_readonly_ids;
+#else
+    std::vector<uint8_t> readonly_codes;
+    std::vector<idx_t> readonly_ids;
 #endif
 
-    std::vector <size_t> readonly_length;
-    std::vector <size_t> readonly_offset;
+    std::vector<size_t> readonly_length;
+    std::vector<size_t> readonly_offset;
     bool valid;
 
     ReadOnlyArrayInvertedLists(

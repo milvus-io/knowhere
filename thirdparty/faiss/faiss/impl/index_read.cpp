@@ -203,16 +203,16 @@ InvertedLists* read_InvertedLists(IOReader* f, int io_flags) {
         auto ails = new ReadOnlyArrayInvertedLists(nlist, code_size, list_length);
         size_t n;
         READ1(n);
-#ifdef USE_CPU
-        ails->readonly_ids.resize(n);
-        ails->readonly_codes.resize(n*code_size);
-        READANDCHECK(ails->readonly_ids.data(), n);
-        READANDCHECK(ails->readonly_codes.data(), n * code_size);
-#else
+#ifdef USE_GPU
         ails->pin_readonly_ids = std::make_shared<PageLockMemory>(n * sizeof(InvertedLists::idx_t));
         ails->pin_readonly_codes = std::make_shared<PageLockMemory>(n * code_size * sizeof(uint8_t));
         READANDCHECK((InvertedLists::idx_t *) ails->pin_readonly_ids->data, n);
         READANDCHECK((uint8_t *) ails->pin_readonly_codes->data, n * code_size);
+#else
+        ails->readonly_ids.resize(n);
+        ails->readonly_codes.resize(n*code_size);
+        READANDCHECK(ails->readonly_ids.data(), n);
+        READANDCHECK(ails->readonly_codes.data(), n * code_size);
 #endif
         return ails;
     } else if (h == fourcc("ilar") && !(io_flags & IO_FLAG_SKIP_IVF_DATA)) {

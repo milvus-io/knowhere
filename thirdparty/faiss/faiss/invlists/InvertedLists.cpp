@@ -16,7 +16,7 @@
 #include <faiss/utils/utils.h>
 
 //TODO: refactor to decouple dependency between CPU and Cuda, or upgrade faiss
-#ifndef USE_CPU
+#ifdef USE_GPU
 #include "faiss/gpu/utils/DeviceUtils.h"
 #include "cuda.h"
 #include "cuda_runtime.h"
@@ -290,7 +290,7 @@ ReadOnlyArrayInvertedLists::ReadOnlyArrayInvertedLists(
     auto total_size = std::accumulate(readonly_length.begin(), readonly_length.end(), 0);
     readonly_offset.reserve(nlist);
 
-#ifdef USE_CPU
+#ifndef USE_GPU
     readonly_codes.reserve(total_size * code_size);
     readonly_ids.reserve(total_size);
 #endif
@@ -315,15 +315,7 @@ ReadOnlyArrayInvertedLists::ReadOnlyArrayInvertedLists(
         offset += list_ids.size();
     }
 
-#ifdef USE_CPU
-    for (auto i = 0; i < other.ids.size(); i++) {
-        auto& list_ids = other.ids[i];
-        readonly_ids.insert(readonly_ids.end(), list_ids.begin(), list_ids.end());
-
-        auto& list_codes = other.codes[i];
-        readonly_codes.insert(readonly_codes.end(), list_codes.begin(), list_codes.end());
-    }
-#else
+#ifdef USE_GPU
     size_t ids_size = offset * sizeof(idx_t);
     size_t codes_size = offset * (this->code_size) * sizeof(uint8_t);
     pin_readonly_codes = std::make_shared<PageLockMemory>(codes_size);
@@ -341,6 +333,14 @@ ReadOnlyArrayInvertedLists::ReadOnlyArrayInvertedLists(
         memcpy(codes_ptr, list_codes.data(), list_codes.size() * sizeof(uint8_t));
 
         offset += list_ids.size();
+    }
+#else
+    for (auto i = 0; i < other.ids.size(); i++) {
+        auto& list_ids = other.ids[i];
+        readonly_ids.insert(readonly_ids.end(), list_ids.begin(), list_ids.end());
+
+        auto& list_codes = other.codes[i];
+        readonly_codes.insert(readonly_codes.end(), list_codes.begin(), list_codes.end());
     }
 #endif
 
@@ -361,12 +361,7 @@ ReadOnlyArrayInvertedLists::ReadOnlyArrayInvertedLists(
         offset += list_ids.size();
     }
 
-#ifdef USE_CPU
-    for (auto i = 0; i < other.ids.size(); i++) {
-        auto& list_ids = other.ids[i];
-        readonly_ids.insert(readonly_ids.end(), list_ids.begin(), list_ids.end());
-    }
-#else
+#ifdef USE_GPU
     size_t ids_size = offset * sizeof(idx_t);
     size_t codes_size = offset * (this->code_size) * sizeof(uint8_t);
     pin_readonly_codes = std::make_shared<PageLockMemory>(codes_size);
@@ -380,6 +375,11 @@ ReadOnlyArrayInvertedLists::ReadOnlyArrayInvertedLists(
         memcpy(ids_ptr, list_ids.data(), list_ids.size() * sizeof(idx_t));
 
         offset += list_ids.size();
+    }
+#else
+    for (auto i = 0; i < other.ids.size(); i++) {
+        auto& list_ids = other.ids[i];
+        readonly_ids.insert(readonly_ids.end(), list_ids.begin(), list_ids.end());
     }
 #endif
 
@@ -430,43 +430,43 @@ size_t ReadOnlyArrayInvertedLists::list_size(
     return readonly_length[list_no];
 }
 
-const uint8_t * ReadOnlyArrayInvertedLists::get_codes(
+const uint8_t* ReadOnlyArrayInvertedLists::get_codes(
         size_t list_no) const {
     FAISS_ASSERT(list_no < nlist && valid);
-#ifdef USE_CPU
-    return readonly_codes.data() + readonly_offset[list_no] * code_size;
-#else
-    uint8_t *pcodes = (uint8_t *)(pin_readonly_codes->data);
+#ifdef USE_GPU
+    uint8_t* pcodes = (uint8_t*)(pin_readonly_codes->data);
     return pcodes + readonly_offset[list_no] * code_size;
+#else
+    return readonly_codes.data() + readonly_offset[list_no] * code_size;
 #endif
 }
 
 const InvertedLists::idx_t* ReadOnlyArrayInvertedLists::get_ids(
         size_t list_no) const {
     FAISS_ASSERT(list_no < nlist && valid);
-#ifdef USE_CPU
-    return readonly_ids.data() + readonly_offset[list_no];
-#else
-    idx_t *pids = (idx_t *)pin_readonly_ids->data;
+#ifdef USE_GPU
+    idx_t* pids = (idx_t*)pin_readonly_ids->data;
     return pids + readonly_offset[list_no];
+#else
+    return readonly_ids.data() + readonly_offset[list_no];
 #endif
 }
 
 const InvertedLists::idx_t* ReadOnlyArrayInvertedLists::get_all_ids() const {
     FAISS_ASSERT(valid);
-#ifdef USE_CPU
-    return readonly_ids.data();
+#ifdef USE_GPU
+    return (idx_t*)(pin_readonly_ids->data);
 #else
-    return (idx_t *)(pin_readonly_ids->data);
+    return readonly_ids.data();
 #endif
 }
 
 const uint8_t* ReadOnlyArrayInvertedLists::get_all_codes() const {
     FAISS_ASSERT(valid);
-#ifdef USE_CPU
-    return readonly_codes.data();
+#ifdef USE_GPU
+    return (uint8_t*)(pin_readonly_codes->data);
 #else
-    return (uint8_t *)(pin_readonly_codes->data);
+    return readonly_codes.data();
 #endif
 }
 
