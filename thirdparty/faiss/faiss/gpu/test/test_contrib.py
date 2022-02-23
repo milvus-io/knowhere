@@ -12,7 +12,7 @@ from faiss.contrib.exhaustive_search import knn_ground_truth, range_ground_truth
 from faiss.contrib import evaluation
 
 
-from common import get_dataset_2
+from common_faiss_tests import get_dataset_2
 
 
 class TestComputeGT(unittest.TestCase):
@@ -40,7 +40,7 @@ class TestComputeGT(unittest.TestCase):
         ds = datasets.SyntheticDataset(32, 0, 1000, 10)
         xq = ds.get_queries()
         xb = ds.get_database()
-        D, I = faiss.knn(xq, xb, 10, distance_type=metric)
+        D, I = faiss.knn(xq, xb, 10, metric=metric)
         threshold = float(D[:, -1].mean())
 
         index = faiss.IndexFlat(32, metric)

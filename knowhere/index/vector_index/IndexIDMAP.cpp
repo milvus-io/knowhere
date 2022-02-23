@@ -171,7 +171,7 @@ const float*
 IDMAP::GetRawVectors() {
     try {
         auto flat_index = dynamic_cast<faiss::IndexFlat*>(index_.get());
-        return flat_index->xb.data();
+        return reinterpret_cast<const float*>(flat_index->codes.data());
     } catch (std::exception& e) {
         KNOWHERE_THROW_MSG(e.what());
     }

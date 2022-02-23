@@ -6,9 +6,10 @@
 *.so
 *.dylib
 *.pyc
+*.cmake
+*.cbp
+*.tcl
 *~
-.DS_Store
-depend
 /config.*
 /aclocal.m4
 /autom4te.cache/
@@ -18,15 +19,10 @@ depend
 /c_api/gpu/bin/
 /tests/test
 /tests/gtest/
-include/
+/tests/faiss_test
 
 **/CMakeFiles/*
-/CMakeCache.txt
+CMakeCache.txt
 Makefile
 install_manifest.txt
-faiss.cbp
-*.cmake
-DartConfiguration.tcl
 _deps/*
-tests/faiss_test
-

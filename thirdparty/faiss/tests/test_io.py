@@ -10,9 +10,8 @@ import tempfile
 import os
 import io
 import sys
+import pickle
 from multiprocessing.dummy import Pool as ThreadPool
-
-from common import get_dataset, get_dataset_2
 
 
 class TestIOVariants(unittest.TestCase):
@@ -76,9 +75,10 @@ class TestCallbacks(unittest.TestCase):
         index2 = faiss.deserialize_index(np.frombuffer(buf, dtype='uint8'))
 
         self.assertEqual(index.d, index2.d)
-        self.assertTrue(np.all(
-            faiss.vector_to_array(index.xb) == faiss.vector_to_array(index2.xb)
-        ))
+        np.testing.assert_array_equal(
+            faiss.vector_to_array(index.codes),
+            faiss.vector_to_array(index2.codes)
+        )
 
         # This is not a callable function: shoudl raise an exception
         writer = faiss.PyCallbackIOWriter("blabla")
@@ -131,8 +131,8 @@ class TestCallbacks(unittest.TestCase):
 
             self.assertEqual(index.d, index2.d)
             np.testing.assert_array_equal(
-                faiss.vector_to_array(index.xb),
-                faiss.vector_to_array(index2.xb)
+                faiss.vector_to_array(index.codes),
+                faiss.vector_to_array(index2.codes)
             )
 
             # This is not a callable function: should raise an exception
@@ -177,8 +177,8 @@ class TestCallbacks(unittest.TestCase):
 
             self.assertEqual(index.d, index2.d)
             np.testing.assert_array_equal(
-                faiss.vector_to_array(index.xb),
-                faiss.vector_to_array(index2.xb)
+                faiss.vector_to_array(index.codes),
+                faiss.vector_to_array(index2.codes)
             )
 
         finally:
@@ -247,3 +247,34 @@ class PyOndiskInvertedLists:
         with open(oil.filename, 'rb') as f:
             f.seek(l.offset + l.capacity * oil.code_size)
             return f.read(l.size * 8)
+
+
+class TestPickle(unittest.TestCase):
+
+    def dump_load_factory(self, fs):
+        xq = faiss.randn((25, 10), 123)
+        xb = faiss.randn((25, 10), 124)
+
+        index = faiss.index_factory(10, fs)
+        index.train(xb)
+        index.add(xb)
+        Dref, Iref = index.search(xq, 4)
+
+        buf = io.BytesIO()
+        pickle.dump(index, buf)
+        buf.seek(0)
+        index2 = pickle.load(buf)
+
+        Dnew, Inew = index2.search(xq, 4)
+
+        np.testing.assert_array_equal(Iref, Inew)
+        np.testing.assert_array_equal(Dref, Dnew)
+
+    def test_flat(self):
+        self.dump_load_factory("Flat")
+
+    def test_hnsw(self):
+        self.dump_load_factory("HNSW32")
+
+    def test_ivf(self):
+        self.dump_load_factory("IVF5,Flat")

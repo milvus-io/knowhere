@@ -359,7 +359,6 @@ class TestIVFImplem13(TestIVFImplem12):
     IMPLEM = 13
 
 
-@unittest.skipIf(platform.system() == "Windows", "heap corruption on windows")
 class TestAdd(unittest.TestCase):
 
     def do_test(self, by_residual=False, metric=faiss.METRIC_L2, d=32, bbs=32):
@@ -474,3 +473,14 @@ class TestTraining(unittest.TestCase):
 
     def test_by_residual_odd_dim(self):
         self.do_test(by_residual=True, d=30)
+
+
+class TestIsTrained(unittest.TestCase):
+
+    def test_issue_2019(self):
+        index = faiss.index_factory(
+            32,
+            "PCAR16,IVF200(IVF10,PQ2x4fs,RFlat),PQ4x4fsr"
+        )
+        des = faiss.rand((1000, 32))
+        index.train(des)

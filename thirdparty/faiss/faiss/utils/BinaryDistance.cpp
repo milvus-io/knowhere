@@ -135,7 +135,7 @@ void binary_distance_knn_mc(
         const BitsetView bitset)
 {
     int thread_max_num = omp_get_max_threads();
-    size_t l3_size = get_L3_Size();
+    size_t l3_size = get_l3_size();
 
     /*
      * Later we may propose a more reasonable strategy.
@@ -313,7 +313,7 @@ void binary_distance_knn_hc (
     typedef typename C::T T;
     size_t k = ha->k;
 
-    size_t l3_size = get_L3_Size();
+    size_t l3_size = get_l3_size();
     size_t thread_max_num = omp_get_max_threads();
 
     /*

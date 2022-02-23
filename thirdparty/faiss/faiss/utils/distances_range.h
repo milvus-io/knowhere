@@ -5,6 +5,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+/* All distance functions for L2 and IP distances.
+ * The actual functions are implemented in distances.cpp and distances_simd.cpp
+ */
+
 #pragma once
 
 #include <stdint.h>
@@ -18,9 +22,6 @@ namespace faiss {
  * Range search
  ***************************************************************************/
 
-/// Forward declaration, see AuxIndexStructures.h
-struct RangeSearchResult;
-
 /** Return the k nearest neighors of each of the nx vectors x among the ny
  *  vector y, w.r.t to max inner product
  *
@@ -29,23 +30,27 @@ struct RangeSearchResult;
  * @param radius search radius around the x vectors
  * @param result result structure
  */
-void range_search_L2sqr (
-        const float * x,
-        const float * y,
-        size_t d, size_t nx, size_t ny,
+void range_search_L2sqr(
+        const float* x,
+        const float* y,
+        size_t d,
+        size_t nx,
+        size_t ny,
         float radius,
         std::vector<RangeSearchPartialResult*> &result,
         size_t buffer_size,
-        const BitsetView &bitset = nullptr);
+        const BitsetView bitset = nullptr);
 
 /// same as range_search_L2sqr for the inner product similarity
-void range_search_inner_product (
-        const float * x,
-        const float * y,
-        size_t d, size_t nx, size_t ny,
+void range_search_inner_product(
+        const float* x,
+        const float* y,
+        size_t d,
+        size_t nx,
+        size_t ny,
         float radius,
-        std::vector<RangeSearchPartialResult*> &result,
+        std::vector<RangeSearchPartialResult*>& result,
         size_t buffer_size,
-        const BitsetView &bitset = nullptr);
+        const BitsetView bitset = nullptr);
 
 } // namespace faiss

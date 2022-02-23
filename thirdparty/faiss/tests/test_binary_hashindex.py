@@ -7,7 +7,7 @@ import unittest
 import numpy as np
 import faiss
 
-from common import make_binary_dataset
+from common_faiss_tests import make_binary_dataset
 
 
 def bitvec_shuffle(a, order):
@@ -179,6 +179,36 @@ class TestKnn(unittest.TestCase):
         self.assertGreater(3, abs(nfound[(0, 7)] - nfound[(1, 7)]))
         self.assertGreater(nfound[(3, 7)], nfound[(1, 7)])
         self.assertGreater(nfound[(5, 7)], nfound[(3, 7)])
+
+    def subtest_result_order(self, nh):
+
+        d = 128
+        nq = 10
+        nb = 200
+
+        (_, xb, xq) = make_binary_dataset(d, 0, nb, nq)
+
+        nbit = 10
+        if nh == 0:
+            index = faiss.IndexBinaryHash(d, nbit)
+        else:
+            index = faiss.IndexBinaryMultiHash(d, nh, nbit)
+        index.add(xb)
+        index.nflip = 5
+        k = 10
+        Do, Io = index.search(xq, k)
+        self.assertTrue(
+            np.all(Do[:, 1:] >= Do[:, :-1])
+        )
+
+    def test_result_order_binhash(self):
+        self.subtest_result_order(0)
+
+    def test_result_order_miltihash(self):
+        self.subtest_result_order(3)
+
+
+
 
 """
 I suspect this test crashes CircleCI on Linux

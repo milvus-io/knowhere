@@ -12,8 +12,8 @@
 #ifndef FAISS_BINARY_DISTANCE_H
 #define FAISS_BINARY_DISTANCE_H
 
-#include "faiss/MetricType.h"
 #include <stdint.h>
+#include <faiss/MetricType.h>
 #include <faiss/utils/Heap.h>
 #include <faiss/impl/AuxIndexStructures.h>
 #include <knowhere/utils/BitsetView.h>
