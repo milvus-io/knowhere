@@ -119,7 +119,6 @@ macro(build_faiss)
         endif ()
     else ()
         set( FAISS_CONFIGURE_ARGS ${FAISS_CONFIGURE_ARGS}
-                 "CPPFLAGS=-DUSE_CPU"
                  --without-cuda )
     endif ()
 
