@@ -68,7 +68,7 @@ macro(build_faiss)
     set( FAISS_PREFIX "${CMAKE_INSTALL_PREFIX}" )
     set( FAISS_INCLUDE_DIR "${FAISS_PREFIX}/include" )
     set( FAISS_STATIC_LIB
-            "${FAISS_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}faiss${CMAKE_STATIC_LIBRARY_SUFFIX}" )
+            "${FAISS_PREFIX}/${CMAKE_INSTALL_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}faiss${CMAKE_STATIC_LIBRARY_SUFFIX}" )
 
     if ( CCACHE_FOUND )
         set( FAISS_C_COMPILER "${CCACHE_FOUND} ${CMAKE_C_COMPILER}" )
@@ -173,7 +173,7 @@ if ( LINUX )
 
         get_target_property( FAISS_INCLUDE_DIR faiss INTERFACE_INCLUDE_DIRECTORIES )
         include_directories( SYSTEM "${FAISS_INCLUDE_DIR}" )
-        link_directories( SYSTEM ${FAISS_PREFIX}/lib/ )
+        link_directories( SYSTEM ${FAISS_PREFIX}/${CMAKE_INSTALL_LIBDIR}/ )
     endif ()
 
     install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/annoy/"

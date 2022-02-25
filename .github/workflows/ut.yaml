@@ -29,9 +29,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-18.04, macos-11,centos7 ]
+        os: [ ubuntu-18.04, macos-11, centos7 ]
     env:
       INSTALL_OPENBLAS: true
+      LD_LIBRARY_PATH: "${LD_LIBRARY_PATH}:/usr/lib"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
