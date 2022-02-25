@@ -165,7 +165,7 @@ if (DEFINED ENV{KNOWHERE_OPENBLAS_URL})
     set(OPENBLAS_SOURCE_URL "$ENV{KNOWHERE_OPENBLAS_URL}")
 else ()
     set(OPENBLAS_SOURCE_URL
-            "https://github.com/xianyi/OpenBLAS/releases/download/v${OPENBLAS_VERSION}/OpenBLAS-${OPENBLAS_VERSION}.tar.gz")
+            "https://github.com/xianyi/OpenBLAS/archive/refs/tags/v${OPENBLAS_VERSION}.tar.gz")
 endif ()
 
 # ----------------------------------------------------------------------
@@ -195,7 +195,7 @@ macro(build_openblas)
 
     externalproject_add(openblas_ep
             URL             ${OPENBLAS_SOURCE_URL}
-            URL_MD5         "9721d04d72a7d601c81eafb54520ba2c"
+            URL_MD5         "4727a1333a380b67c8d7c7787a3d9c9a"
             CMAKE_ARGS      ${OPENBLAS_CMAKE_ARGS}
             BUILD_COMMAND   ${MAKE} ${MAKE_BUILD_ARGS}
             PREFIX          ${CMAKE_BINARY_DIR}/3rdparty_download/openblas-subbuild
