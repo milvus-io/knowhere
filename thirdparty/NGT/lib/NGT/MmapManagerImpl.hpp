@@ -20,7 +20,11 @@
 #include "MmapManagerDefs.h"
 #include "MmapManagerException.h"
 
+#ifndef __MINGW64__
 #include <sys/mman.h>
+#else
+#include "../../annoy/src/mman.h"
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

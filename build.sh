@@ -92,7 +92,12 @@ CMAKE_CMD="cmake -DBUILD_UNIT_TEST=${BUILD_UNITTEST} \
 ../"
 
 echo ${CMAKE_CMD}
-${CMAKE_CMD}
+if [[ "$MACHINE" == "MinGw" ]] ; then
+    # force makefile for MinGW
+    ${CMAKE_CMD} -G "MSYS Makefiles"
+else
+    ${CMAKE_CMD}
+fi
 
 if [[ ${RUN_CPPLINT} == "ON" ]]; then
   # cpplint check

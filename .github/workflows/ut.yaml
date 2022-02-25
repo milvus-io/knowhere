@@ -38,3 +38,25 @@ jobs:
       - name: Run Unittest
         run: |
           ./build.sh -t Release -u && cmake_build/unittest/test_knowhere
+  ut-msys:
+    name: Unit Test on MSYS
+    runs-on: windows-2019
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Configure Toolchain
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+      - name: Install Dependency
+        shell: msys2 {0}
+        run: |
+          ./scripts/install_deps.sh
+      - name: Run Unittest
+        shell: msys2 {0}
+        run: |
+          ./build.sh -t Release -u
+          cp -fr output/bin/*.dll output/unittest/
+          cp -fr output/lib/*.dll output/unittest/
+          ./output/unittest/test_knowhere

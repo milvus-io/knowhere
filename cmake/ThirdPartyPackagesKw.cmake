@@ -165,7 +165,7 @@ if (DEFINED ENV{KNOWHERE_OPENBLAS_URL})
     set(OPENBLAS_SOURCE_URL "$ENV{KNOWHERE_OPENBLAS_URL}")
 else ()
     set(OPENBLAS_SOURCE_URL
-            "https://github.com.cnpmjs.org/xianyi/OpenBLAS/archive/v${OPENBLAS_VERSION}.tar.gz")
+            "https://github.com/xianyi/OpenBLAS/archive/v${OPENBLAS_VERSION}.tar.gz")
 endif ()
 
 # ----------------------------------------------------------------------

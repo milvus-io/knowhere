@@ -145,8 +145,8 @@ TEST_P(RHNSWFlatTest, HNSW_serialize) {
         auto bin_idx = binaryset.GetByName(idx_name);
         auto bin_met = binaryset.GetByName(met_name);
 
-        std::string filename_idx = "/tmp/RHNSWFlat_test_serialize_idx.bin";
-        std::string filename_met = "/tmp/RHNSWFlat_test_serialize_met.bin";
+        std::string filename_idx = temp_path("/tmp/RHNSWFlat_test_serialize_idx.bin");
+        std::string filename_met = temp_path("/tmp/RHNSWFlat_test_serialize_met.bin");
         auto load_idx = new uint8_t[bin_idx->size];
         auto load_met = new uint8_t[bin_met->size];
         serialize(filename_idx, bin_idx, load_idx);

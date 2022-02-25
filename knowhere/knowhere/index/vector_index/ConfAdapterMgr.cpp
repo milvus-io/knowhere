@@ -17,6 +17,12 @@
 namespace milvus {
 namespace knowhere {
 
+AdapterMgr&
+AdapterMgr::GetInstance() {
+    static AdapterMgr instance;
+    return instance;
+}
+
 ConfAdapterPtr
 AdapterMgr::GetAdapter(const IndexType type) {
     auto register_wrapper = [&, this]() { RegisterAdapter(); };

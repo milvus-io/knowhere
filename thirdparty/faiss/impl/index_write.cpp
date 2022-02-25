@@ -12,7 +12,13 @@
 #include <cstdio>
 #include <cstdlib>
 
+#ifndef __MINGW64__
 #include <sys/mman.h>
+#else
+// workaround for mmap https://github.com/alitrack/mman-win32
+// which already exist in annoy/src
+#include "../annoy/src/mman.h"
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -278,12 +284,12 @@ void write_InvertedLists (const InvertedLists *ils, IOWriter *f) {
             WRITEVECTOR(x);
         }
         WRITE1(od->totsize);
-
     } else {
         fprintf(stderr, "WARN! write_InvertedLists: unsupported invlist type, "
                 "saving null invlist\n");
         uint32_t h = fourcc ("il00");
         WRITE1 (h);
+
     }
 }
 

@@ -83,12 +83,12 @@ TEST(STRUCTUREDINDEXSORT_TEST, test_serialize_and_load) {
     auto binaryset = structuredIndexSort.Serialize();
 
     auto bin_data = binaryset.GetByName("index_data");
-    std::string data_file = "/tmp/sort_test_data_serialize.bin";
+    std::string data_file = temp_path("/tmp/sort_test_data_serialize.bin");
     auto load_data = new uint8_t[bin_data->size];
     serialize(data_file, bin_data, load_data);
 
     auto bin_length = binaryset.GetByName("index_length");
-    std::string length_file = "/tmp/sort_test_length_serialize.bin";
+    std::string length_file = temp_path("/tmp/sort_test_length_serialize.bin");
     auto load_length = new uint8_t[bin_length->size];
     serialize(length_file, bin_length, load_length);
 

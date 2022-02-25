@@ -14,7 +14,7 @@
 #include "knowhere/archive/KnowhereConfig.h"
 #include "knowhere/common/Log.h"
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__MINGW64__)
 #include "knowhere/index/vector_index/Statistics.h"
 #include "NGT/lib/NGT/defines.h"
 #include "faiss/Clustering.h"
@@ -37,7 +37,7 @@ KnowhereConfig::SetSimdType(const SimdType simd_type) {
 #ifdef __APPLE__
     // return emtpy string if running on macos
     return "";
-#elif __linux__
+#elif defined(__linux__) || defined(__MINGW64__)
     if (simd_type == SimdType::AUTO) {
         faiss::faiss_use_avx512 = true;
         faiss::faiss_use_avx2 = true;
@@ -73,7 +73,7 @@ void
 KnowhereConfig::SetBlasThreshold(const int64_t use_blas_threshold) {
 #ifdef __APPLE__
     // do nothing
-#elif __linux__
+#elif defined(__linux__) || defined(__MINGW64__)
     faiss::distance_compute_blas_threshold = static_cast<int>(use_blas_threshold);
 #else
     KNOWHERE_THROW_MSG("Unsupported SetBlasThreshold on current platform!");
@@ -84,7 +84,7 @@ void
 KnowhereConfig::SetEarlyStopThreshold(const double early_stop_threshold) {
 #ifdef __APPLE__
     // do nothing
-#elif __linux__
+#elif defined(__linux__) || defined(__MINGW64__)
     faiss::early_stop_threshold = early_stop_threshold;
 #else
     KNOWHERE_THROW_MSG("Unsupported SetEarlyStopThreshold on current platform!");
@@ -95,7 +95,7 @@ void
 KnowhereConfig::SetClusteringType(const ClusteringType clustering_type) {
 #ifdef __APPLE__
     // do nothing
-#elif __linux__
+#elif defined(__linux__) || defined(__MINGW64__)
     switch (clustering_type) {
         case ClusteringType::K_MEANS:
         default:
@@ -114,7 +114,7 @@ void
 KnowhereConfig::SetStatisticsLevel(const int64_t stat_level) {
 #ifdef __APPLE__
     // do nothing
-#elif __linux__
+#elif defined(__linux__) || defined(__MINGW64__)
     milvus::knowhere::STATISTICS_LEVEL = stat_level;
     faiss::STATISTICS_LEVEL = stat_level;
 #else
@@ -126,7 +126,7 @@ void
 KnowhereConfig::SetLogHandler() {
 #ifdef __APPLE__
     // do nothing
-#elif __linux__
+#elif defined(__linux__) || defined(__MINGW64__)
     faiss::LOG_ERROR_ = &knowhere::log_error_;
     faiss::LOG_WARNING_ = &knowhere::log_warning_;
     NGT_LOG_ERROR_ = &knowhere::log_error_;

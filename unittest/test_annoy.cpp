@@ -172,17 +172,17 @@ TEST_P(AnnoyTest, annoy_serialize) {
         auto binaryset = index_->Serialize(milvus::knowhere::Config());
 
         auto bin_data = binaryset.GetByName("annoy_index_data");
-        std::string filename1 = "/tmp/annoy_test_data_serialize.bin";
+        std::string filename1 = temp_path("/tmp/annoy_test_data_serialize.bin");
         auto load_data1 = new uint8_t[bin_data->size];
         serialize(filename1, bin_data, load_data1);
 
         auto bin_metric_type = binaryset.GetByName("annoy_metric_type");
-        std::string filename2 = "/tmp/annoy_test_metric_type_serialize.bin";
+        std::string filename2 = temp_path("/tmp/annoy_test_metric_type_serialize.bin");
         auto load_data2 = new uint8_t[bin_metric_type->size];
         serialize(filename2, bin_metric_type, load_data2);
 
         auto bin_dim = binaryset.GetByName("annoy_dim");
-        std::string filename3 = "/tmp/annoy_test_dim_serialize.bin";
+        std::string filename3 = temp_path("/tmp/annoy_test_dim_serialize.bin");
         auto load_data3 = new uint8_t[bin_dim->size];
         serialize(filename3, bin_dim, load_data3);
 

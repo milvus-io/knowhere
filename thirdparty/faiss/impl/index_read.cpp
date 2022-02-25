@@ -11,8 +11,13 @@
 
 #include <cstdio>
 #include <cstdlib>
-
+#ifndef __MINGW64__
 #include <sys/mman.h>
+#else
+// workaround for mmap https://github.com/alitrack/mman-win32
+// which already exist in annoy/src
+#include "../annoy/src/mman.h"
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -70,9 +75,9 @@ namespace faiss {
 
 // will fail if we write 256G of data at once...
 #define READVECTOR(vec) {                       \
-        long size;                            \
+        size_t size;                            \
         READANDCHECK (&size, 1);                \
-        FAISS_THROW_IF_NOT (size >= 0 && size < (1L << 40));  \
+        FAISS_THROW_IF_NOT (size >= 0 && size < (1LL << 40));  \
         (vec).resize (size);                    \
         READANDCHECK ((vec).data (), size);     \
     }

@@ -37,7 +37,7 @@ void
 SetThreadName(const std::string& name) {
     #ifdef __APPLE__
         pthread_setname_np(name.c_str());
-    #elif __linux__
+    #elif defined(__linux__) || defined(__MINGW64__)
         pthread_setname_np(pthread_self(), name.c_str());
     #endif
 }

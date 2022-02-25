@@ -166,7 +166,7 @@ TEST_P(HNSWTest, HNSW_serialize) {
         auto binaryset = index_->Serialize();
         auto bin = binaryset.GetByName("HNSW");
 
-        std::string filename = "/tmp/HNSW_test_serialize.bin";
+        std::string filename = temp_path("/tmp/HNSW_test_serialize.bin");
         auto load_data = new uint8_t[bin->size];
         serialize(filename, bin, load_data);
 

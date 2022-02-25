@@ -29,7 +29,7 @@ set(config_srcs
         knowhere/archive/KnowhereConfig.cpp
         )
 
-if ( LINUX )
+if ( LINUX OR MSYS )
     include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib)
     if (KNOWHERE_SUPPORT_SPTAG)
         include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService)
@@ -159,7 +159,7 @@ if ( LINUX )
                 ${vector_offset_index_srcs}
         )
     endif ()
-    target_link_libraries(knowhere ${depend_libs})
+    target_link_libraries(knowhere PRIVATE ${depend_libs})
     set(KNOWHERE_INCLUDE_DIRS
         ${KNOWHERE_SOURCE_DIR}/knowhere
         ${KNOWHERE_SOURCE_DIR}/thirdparty

@@ -42,3 +42,14 @@ fi
 if [[ "${MACHINE}" == "Mac"  ]]; then
     brew install boost libomp llvm ninja tbb
 fi
+
+if [[ "${MACHINE}" == "MinGw"  ]]; then
+    pacman -Su --noconfirm --needed \
+    git make tar dos2unix zip unzip patch \
+    mingw-w64-x86_64-toolchain \
+    mingw-w64-x86_64-make \
+    mingw-w64-x86_64-cmake \
+    mingw-w64-x86_64-boost \
+    mingw-w64-x86_64-intel-tbb \
+    mingw-w64-x86_64-openblas
+fi

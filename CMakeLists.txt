@@ -98,6 +98,8 @@ if ( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
 elseif ( "${CMAKE_SYSTEM}" MATCHES "Linux" )
     message( STATUS "==============Linux Environment===============" )
     set ( LINUX TRUE )
+elseif ( MSYS )
+    message( STATUS "==============MSYS Environment===============" )
 else ()
     message( FATAL_ERROR "Unsupported platform!" )
 endif ()
@@ -109,7 +111,7 @@ include( DefineOptionsKw )
 include( BuildUtilsKw )
 include( ExternalProject )
 
-if ( LINUX )
+if ( LINUX OR MSYS )
     include( ThirdPartyPackagesKw )
 endif ()
 
@@ -155,6 +157,10 @@ append_flags( CMAKE_CXX_FLAGS
 # option "-rdynamic" is to print out detailed backtrace info for debug-ease
 if ( LINUX )
     append_flags( CMAKE_CXX_FLAGS FLAGS "-Werror" "-rdynamic" )
+endif ()
+
+if ( MSYS )
+    append_flags( CMAKE_CXX_FLAGS FLAGS "-Werror" )
 endif ()
 
 #*********************** Coding style check tools **********************

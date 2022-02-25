@@ -56,7 +56,7 @@ if ( KNOWHERE_BUILD_TESTS )
 endif()
 
 # ****************************** Thirdparty NGT ***************************************
-if ( LINUX )
+if (LINUX OR MSYS)
     add_subdirectory( NGT )
 endif()
 
@@ -68,7 +68,7 @@ macro(build_faiss)
     set( FAISS_PREFIX "${KNOWHERE_BINARY_DIR}/thirdparty/faiss_ep-prefix" )
     set( FAISS_INCLUDE_DIR "${FAISS_PREFIX}/include" )
     set( FAISS_STATIC_LIB
-            "${FAISS_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}faiss${CMAKE_STATIC_LIBRARY_SUFFIX}" )
+            "${FAISS_PREFIX}/${CMAKE_INSTALL_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}faiss${CMAKE_STATIC_LIBRARY_SUFFIX}" )
 
     if ( CCACHE_FOUND )
         set( FAISS_C_COMPILER "${CCACHE_FOUND} ${CMAKE_C_COMPILER}" )
@@ -117,6 +117,14 @@ macro(build_faiss)
                  "CPPFLAGS=-DUSE_CPU"
                  --without-cuda )
     endif ()
+
+    if (MSYS)
+        # patch for folder faiss/faiss, symlink not work for msys
+        execute_process(
+            COMMAND bash -c "test -f faiss/faiss/Index.h || (rm -fr faiss/faiss && cp -fr faiss faiss.tmp && mv faiss.tmp faiss/faiss)"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        )
+    endif (MSYS)
 
     message( STATUS "Building FAISS with configure args -${FAISS_CONFIGURE_ARGS}" )
 
@@ -179,7 +187,7 @@ macro(build_faiss)
 
 endmacro()
 
-if ( LINUX )
+if ( LINUX OR MSYS )
     if ( KNOWHERE_WITH_FAISS AND NOT TARGET faiss_ep )
         if ( FAISS_SOURCE STREQUAL "AUTO" )
             # find_package(FAISS MODULE)
@@ -194,7 +202,7 @@ if ( LINUX )
 
         get_target_property( FAISS_INCLUDE_DIR faiss INTERFACE_INCLUDE_DIRECTORIES )
         include_directories( SYSTEM "${FAISS_INCLUDE_DIR}" )
-        link_directories( SYSTEM ${FAISS_PREFIX}/lib/ )
+        link_directories( SYSTEM ${FAISS_PREFIX}/${CMAKE_INSTALL_LIBDIR}/ )
     endif ()
 
     install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/annoy/"

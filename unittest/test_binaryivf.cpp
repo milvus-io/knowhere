@@ -108,7 +108,7 @@ TEST_P(BinaryIVFTest, binaryivf_serialize) {
     //     auto binaryset = model->Serialize();
     //     auto bin = binaryset.GetByName("BinaryIVF");
     //
-    //     std::string filename = "/tmp/binaryivf_test_model_serialize.bin";
+    //     std::string filename = temp_path("/tmp/binaryivf_test_model_serialize.bin");
     //     auto load_data = new uint8_t[bin->size];
     //     serialize(filename, bin, load_data);
     //
@@ -133,7 +133,7 @@ TEST_P(BinaryIVFTest, binaryivf_serialize) {
         auto binaryset = index_->Serialize(conf);
         auto bin = binaryset.GetByName("BinaryIVF");
 
-        std::string filename = "/tmp/binaryivf_test_serialize.bin";
+        std::string filename = temp_path("/tmp/binaryivf_test_serialize.bin");
         auto load_data = new uint8_t[bin->size];
         serialize(filename, bin, load_data);
 

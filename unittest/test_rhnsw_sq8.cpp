@@ -129,8 +129,8 @@ TEST_P(RHNSWSQ8Test, HNSW_serialize) {
         auto bin_idx = binaryset.GetByName(index_->index_type() + "_Index");
         auto bin_dat = binaryset.GetByName(QUANTIZATION_DATA);
 
-        std::string filename_idx = "/tmp/RHNSWSQ_test_serialize_idx.bin";
-        std::string filename_dat = "/tmp/RHNSWSQ_test_serialize_dat.bin";
+        std::string filename_idx = temp_path("/tmp/RHNSWSQ_test_serialize_idx.bin");
+        std::string filename_dat = temp_path("/tmp/RHNSWSQ_test_serialize_dat.bin");
         auto load_idx = new uint8_t[bin_idx->size];
         auto load_dat = new uint8_t[bin_dat->size];
         serialize(filename_idx, bin_idx, load_idx);

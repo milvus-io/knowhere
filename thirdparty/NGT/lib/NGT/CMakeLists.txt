@@ -1,4 +1,4 @@
-if( ${UNIX} )
+if( UNIX OR MSYS )
 	option(NGT_SHARED_MEMORY_ALLOCATOR "enable shared memory" OFF)
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/defines.h.in ${CMAKE_CURRENT_BINARY_DIR}/defines.h)
 	include_directories("${CMAKE_CURRENT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/lib" "${PROJECT_BINARY_DIR}/lib/")
@@ -33,7 +33,11 @@ if( ${UNIX} )
 			target_link_libraries(ngt gomp)
 		endif()
 	else(${APPLE})
-		target_link_libraries(ngt gomp rt)
+		if(MSYS)
+			target_link_libraries(ngt gomp)
+		else(MSYS)
+			target_link_libraries(ngt gomp rt)
+		endif(MSYS)
 	endif(${APPLE})
 
 	install(TARGETS

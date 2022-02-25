@@ -15,6 +15,7 @@
 #include <gtest/gtest.h>
 #include <math.h>
 #include <memory>
+#include <random>
 #include <string>
 #include <utility>
 
@@ -325,4 +326,43 @@ int*  // not very clean, but works as long as sizeof(int) == sizeof(float)
 ivecs_read(const char* fname, size_t* d_out, size_t* n_out) {
     return (int*)fvecs_read(fname, d_out, n_out);
 }
+#endif
+
+// path like /tmp may not work for windows
+std::string
+temp_path(const char* path)
+{
+    std::string new_path{path};
+#ifdef WIN32
+    for (auto &ch : new_path) {
+        if (ch == '/') {
+            ch = '_';
+        }
+    }
+    new_path = std::string("tmp/") + new_path;
+    mkdir("tmp/");
+#endif
+    return new_path;
+}
+
+#ifdef __MINGW64__
+
+static std::random_device rd;
+static std::mt19937 gen(rd());
+
+uint32_t lrand48 () {
+    std::uniform_int_distribution<uint32_t> distrib(0, (1 << 31));
+    return distrib(gen);
+}
+
+float drand48 () {
+    std::uniform_real_distribution<float> distrib(0.0, 1.0);
+    return distrib(gen);
+}
+
+int64_t random() {
+    std::uniform_int_distribution<int64_t> distrib(0, (1LL << 63));
+    return distrib(gen);
+}
+
 #endif

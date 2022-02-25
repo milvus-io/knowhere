@@ -148,3 +148,19 @@ fvecs_read(const char* fname, size_t* d_out, size_t* n_out);
 
 int*
 ivecs_read(const char* fname, size_t* d_out, size_t* n_out);
+
+std::string
+temp_path(const char* path);
+
+#ifdef __MINGW64__
+
+uint32_t
+lrand48();
+
+float
+drand48();
+
+int64_t
+random();
+
+#endif
