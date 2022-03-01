@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "common/Config.h"
-#include "faiss/utils/BitsetView.h"
+#include "knowhere/utils/BitsetView.h"
 #include "index/vector_index/helpers/IndexParameter.h"
 #include "index/vector_index/impl/nsg/Distance.h"
 #include "index/vector_index/impl/nsg/Neighbor.h"

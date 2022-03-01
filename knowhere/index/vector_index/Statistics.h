@@ -22,7 +22,7 @@
 
 #include "common/Log.h"
 #include "index/IndexType.h"
-#include "knowhere/utils/BitsetView.h"
+#include "utils/BitsetView.h"
 
 namespace milvus {
 namespace knowhere {

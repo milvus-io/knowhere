@@ -1,14 +1,15 @@
 
 // -*- c++ -*-
 
+#include "FaissHookFvec.h"
+
 #include <iostream>
 #include <mutex>
 
-#include "FaissHookFvec.h"
+#include "cpuinfo_x86.h"
 #include "distances_simd.h"
 #include "distances_simd_avx.h"
 #include "distances_simd_avx512.h"
-#include "instruction_set.h"
 
 namespace faiss {
 
@@ -23,25 +24,25 @@ fvec_func_ptr fvec_L1 = fvec_L1_avx;
 fvec_func_ptr fvec_Linf = fvec_Linf_avx;
 
 /*****************************************************************************/
-
-bool cpu_support_avx512() {
-    InstructionSet& instruction_set_inst = InstructionSet::GetInstance();
-    return (instruction_set_inst.AVX512F() &&
-            instruction_set_inst.AVX512DQ() &&
-            instruction_set_inst.AVX512BW());
+static const cpu_features::X86Features features = cpu_features::GetX86Info().features;
+bool
+cpu_support_avx512() {
+    std::cout << (features.avx512f && features.avx512dq && features.avx512bw) << std::endl;
+    return (features.avx512f && features.avx512dq && features.avx512bw);
 }
 
-bool cpu_support_avx2() {
-    InstructionSet& instruction_set_inst = InstructionSet::GetInstance();
-    return (instruction_set_inst.AVX2());
+bool
+cpu_support_avx2() {
+    return (features.avx2);
 }
 
-bool cpu_support_sse4_2() {
-    InstructionSet& instruction_set_inst = InstructionSet::GetInstance();
-    return (instruction_set_inst.SSE42());
+bool
+cpu_support_sse4_2() {
+    return (features.sse4_2);
 }
 
-void hook_fvec(std::string& simd_type) {
+void
+hook_fvec(std::string& simd_type) {
     static std::mutex hook_mutex;
     std::lock_guard<std::mutex> lock(hook_mutex);
 
@@ -82,4 +83,4 @@ void hook_fvec(std::string& simd_type) {
     std::cout << "FAISS hook " << simd_type << std::endl;
 }
 
-} // namespace faiss
+}  // namespace faiss

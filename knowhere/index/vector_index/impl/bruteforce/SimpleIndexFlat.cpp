@@ -17,6 +17,7 @@
 #include "knowhere/common/Heap.h"
 #include "knowhere/index/vector_index/impl/bruteforce/BruteForce.h"
 #include "knowhere/index/vector_index/impl/bruteforce/SimpleIndexFlat.h"
+#include <iostream>
 
 namespace knowhere {
 

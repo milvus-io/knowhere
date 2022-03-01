@@ -1,0 +1,6 @@
+[submodule "thirdparty/nlohmann_json"]
+	path = thirdparty/nlohmann_json
+	url = https://github.com/nlohmann/json.git
+[submodule "thirdparty/cpu_features"]
+	path = thirdparty/cpu_features
+	url = https://github.com/google/cpu_features.git
