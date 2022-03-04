@@ -13,10 +13,11 @@ case "${UNAME}" in
     *)          MACHINE="UNKNOWN:${UNAME}"
 esac
 
-BUILD_OUTPUT_DIR="cmake_build"
+BUILD_DIR="cmake_build"
+OUTPUT_DIR="output"
 BUILD_TYPE="Debug"
 BUILD_UNITTEST="OFF"
-INSTALL_PREFIX=$(pwd)/output
+INSTALL_PREFIX=$(pwd)/${OUTPUT_DIR}
 MAKE_CLEAN="OFF"
 BUILD_COVERAGE="OFF"
 SUPPORT_PROFILING="OFF"
@@ -68,16 +69,16 @@ usage:
 done
 
 if [[ ${MAKE_CLEAN} == "ON" ]]; then
-  echo "Remove ${BUILD_OUTPUT_DIR} ..."
-  rm -rf ${BUILD_OUTPUT_DIR} output
+  echo "Remove ${BUILD_DIR} ${OUTPUT_DIR} ..."
+  rm -rf ${BUILD_DIR} ${OUTPUT_DIR}
   exit 0
 fi
 
-if [[ ! -d ${BUILD_OUTPUT_DIR} ]]; then
-    mkdir ${BUILD_OUTPUT_DIR}
+if [[ ! -d ${BUILD_DIR} ]]; then
+    mkdir ${BUILD_DIR}
 fi
 
-cd ${BUILD_OUTPUT_DIR}
+cd ${BUILD_DIR}
 
 CMAKE_CMD="cmake -DBUILD_UNIT_TEST=${BUILD_UNITTEST} \
 -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX}
