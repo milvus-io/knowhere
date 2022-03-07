@@ -181,3 +181,5 @@ add_executable( test_knowhere ${ALL_INDEXING_SRCS} )
 target_link_libraries( test_knowhere knowhere ${DEPEND_LIBS} )
 
 install(TARGETS test_knowhere DESTINATION unittest)
+
+#add_subdirectory(knowhere_benchmark)
