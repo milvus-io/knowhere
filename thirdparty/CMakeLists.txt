@@ -55,6 +55,10 @@ if ( KNOWHERE_BUILD_TESTS )
     endif()
 endif()
 
+if ( LINUX AND ENABLE_PROFILING )
+    add_subdirectory( profiler )
+endif()
+
 # ****************************** Thirdparty NGT ***************************************
 if ( LINUX AND KNOWHERE_SUPPORT_NGT )
     add_subdirectory( NGT )
