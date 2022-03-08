@@ -40,7 +40,7 @@ NSG_NM::Serialize(const Config& config) {
 
         MemoryIOWriter writer;
         impl::write_index(index, writer);
-        std::shared_ptr<uint8_t[]> data(writer.data_);
+        std::shared_ptr<uint8_t> data(writer.data_);
 
         BinarySet res_set;
         res_set.Append("NSG_NM", data, writer.rp);

@@ -47,7 +47,7 @@ IndexRHNSWFlat::Serialize(const Config& config) {
         int64_t meta_info[3] = {real_idx->storage->metric_type, real_idx->storage->d, real_idx->storage->ntotal};
         auto meta_space = new uint8_t[sizeof(meta_info)];
         memcpy(meta_space, meta_info, sizeof(meta_info));
-        std::shared_ptr<uint8_t[]> space_sp(meta_space, std::default_delete<uint8_t[]>());
+        std::shared_ptr<uint8_t> space_sp(meta_space, std::default_delete<uint8_t[]>());
         res_set.Append("META", space_sp, sizeof(meta_info));
 
         if (config.contains(INDEX_FILE_SLICE_SIZE_IN_MEGABYTE)) {

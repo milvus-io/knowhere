@@ -14,6 +14,7 @@ namespace faiss {
 /*********************************************************
  * Optimized distance/norm/inner prod computations
  *********************************************************/
+extern uint8_t lookup8bit[256];
 
 float fvec_L2sqr_ref(
         const float* x,

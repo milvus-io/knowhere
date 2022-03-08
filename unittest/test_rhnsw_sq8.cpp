@@ -138,8 +138,8 @@ TEST_P(RHNSWSQ8Test, HNSW_serialize) {
 
         binaryset.clear();
         auto new_idx = std::make_shared<milvus::knowhere::IndexRHNSWSQ>();
-        std::shared_ptr<uint8_t[]> dat(load_dat);
-        std::shared_ptr<uint8_t[]> idx(load_idx);
+        std::shared_ptr<uint8_t> dat(load_dat);
+        std::shared_ptr<uint8_t> idx(load_idx);
         binaryset.Append(new_idx->index_type() + "_Index", idx, bin_idx->size);
         binaryset.Append(QUANTIZATION_DATA, dat, bin_dat->size);
 

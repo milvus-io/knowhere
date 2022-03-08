@@ -13,9 +13,12 @@
 #define FAISS_JACCARD_INL_H
 
 #include <faiss/utils/BinaryDistance.h>
+
+#include <knowhere/utils/distances_simd.h>
+#if defined(__x86_64__)
 #include <knowhere/utils/distances_simd_avx.h>
 #include <knowhere/utils/distances_simd_avx512.h>
-
+#endif
 namespace faiss {
 
     struct JaccardComputer8 {
@@ -357,6 +360,8 @@ struct JaccardComputer256 {
         }
     };
 
+    #if defined(__x86_64__)
+
     struct JaccardComputerAVX2 {
         const uint8_t *a;
         int n;
@@ -396,6 +401,8 @@ struct JaccardComputer256 {
             return jaccard_AVX512(a, b8, n);
         }
     };
+
+#endif()
 
 // default template
     template<int CODE_SIZE>

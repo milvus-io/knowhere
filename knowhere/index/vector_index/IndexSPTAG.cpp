@@ -60,19 +60,19 @@ CPUSPTAGRNG::Serialize(const Config& config) {
     snprintf(cstr, length, "%s", index_config.c_str());
 
     BinarySet binary_set;
-    std::shared_ptr<uint8_t[]> sample;
+    std::shared_ptr<uint8_t> sample;
     sample.reset(static_cast<uint8_t*>(index_blobs[0].Data()));
-    std::shared_ptr<uint8_t[]> tree;
+    std::shared_ptr<uint8_t> tree;
     tree.reset(static_cast<uint8_t*>(index_blobs[1].Data()));
-    std::shared_ptr<uint8_t[]> graph;
+    std::shared_ptr<uint8_t> graph;
     graph.reset(static_cast<uint8_t*>(index_blobs[2].Data()));
-    std::shared_ptr<uint8_t[]> deleteid;
+    std::shared_ptr<uint8_t> deleteid;
     deleteid.reset(static_cast<uint8_t*>(index_blobs[3].Data()));
-    std::shared_ptr<uint8_t[]> metadata1;
+    std::shared_ptr<uint8_t> metadata1;
     metadata1.reset(static_cast<uint8_t*>(index_blobs[4].Data()));
-    std::shared_ptr<uint8_t[]> metadata2;
+    std::shared_ptr<uint8_t> metadata2;
     metadata2.reset(static_cast<uint8_t*>(index_blobs[5].Data()));
-    std::shared_ptr<uint8_t[]> x_cfg;
+    std::shared_ptr<uint8_t> x_cfg;
     x_cfg.reset(static_cast<uint8_t*>((void*)cstr));
 
     binary_set.Append("samples", sample, index_blobs[0].Length());

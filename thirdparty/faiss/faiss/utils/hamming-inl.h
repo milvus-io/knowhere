@@ -6,8 +6,11 @@
  */
 
 #include <faiss/utils/BinaryDistance.h>
+#include <knowhere/utils/distances_simd.h>
+#if defined(__x86_64__)
 #include <knowhere/utils/distances_simd_avx.h>
 #include <knowhere/utils/distances_simd_avx512.h>
+#endif
 
 namespace faiss {
 
@@ -240,6 +243,8 @@ struct HammingComputerDefault {
     }
 };
 
+#if defined(__x86_64__)
+
 struct HammingComputerAVX2 {
     const uint8_t* a8;
     int n;
@@ -279,6 +284,7 @@ struct HammingComputerAVX512 {
         return xor_popcnt_AVX512VBMI_lookup(a8, b8, n);
     }
 };
+#endif
 
 /***************************************************************************
  * Equivalence with a template class when code size is known at compile time

@@ -28,8 +28,8 @@ DynamicResultSet::AlloctionImpl() {
     if (count <= 0) {
         KNOWHERE_THROW_MSG("DynamicResultSet::do_alloction failed because of count <= 0");
     }
-    labels = std::shared_ptr<idx_t[]>(new idx_t[count], std::default_delete<idx_t[]>());
-    distances = std::shared_ptr<float[]>(new float[count], std::default_delete<float[]>());
+    labels = std::shared_ptr<idx_t>(new idx_t[count]);
+    distances = std::shared_ptr<float>(new float[count]);
     //    labels = std::make_shared<idx_t []>(new idx_t[count], std::default_delete<idx_t[]>());
     //    distances = std::make_shared<float []>(new float[count], std::default_delete<float[]>());
 }

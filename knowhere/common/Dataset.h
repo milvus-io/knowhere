@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include <any>
+#include <boost/any.hpp>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -22,7 +22,7 @@
 namespace milvus {
 namespace knowhere {
 
-using Value = std::any;
+using Value = boost::any;
 using ValuePtr = std::shared_ptr<Value>;
 
 class Dataset {
@@ -54,7 +54,7 @@ class Dataset {
     Get(const std::string& k) {
         std::lock_guard<std::mutex> lk(mutex_);
         try {
-            return std::any_cast<T>(*(data_.at(k)));
+            return boost::any_cast<T>(*(data_.at(k)));
         } catch (...) {
             throw std::logic_error("Can't find this key");
         }

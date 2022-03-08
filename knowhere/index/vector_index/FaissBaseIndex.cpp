@@ -26,7 +26,7 @@ FaissBaseIndex::SerializeImpl(const IndexType& type) {
 
         MemoryIOWriter writer;
         faiss::write_index(index, &writer);
-        std::shared_ptr<uint8_t[]> data(writer.data_);
+        std::shared_ptr<uint8_t> data(writer.data_);
 
         BinarySet res_set;
         // TODO(linxj): use virtual func Name() instead of raw string.

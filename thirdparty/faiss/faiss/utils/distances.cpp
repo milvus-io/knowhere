@@ -147,7 +147,7 @@ void exhaustive_parallel_on_ny(
     size_t thread_max_num = omp_get_max_threads();
 
     size_t block_x =
-        std::min(get_l3_size() / (d * sizeof(float) + thread_max_num * k * (sizeof(float) + sizeof(int64_t))), nx);
+        std::min<int64_t>(get_l3_size() / (d * sizeof(float) + thread_max_num * k * (sizeof(float) + sizeof(int64_t))), nx);
     if (block_x == 0) {
         block_x = 1;
     }

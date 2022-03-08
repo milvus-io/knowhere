@@ -46,7 +46,7 @@ IVFHNSW::Serialize(const Config& config) {
 
         MemoryIOWriter writer;
         faiss::write_index(real_idx->storage, &writer);
-        std::shared_ptr<uint8_t[]> data(writer.data_);
+        std::shared_ptr<uint8_t> data(writer.data_);
         res_set.Append("HNSW_STORAGE", data, writer.rp);
 
         if (config.contains(INDEX_FILE_SLICE_SIZE_IN_MEGABYTE)) {

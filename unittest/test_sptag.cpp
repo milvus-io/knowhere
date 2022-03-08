@@ -129,7 +129,7 @@ TEST_P(SPTAGTest, sptag_serialize) {
 
             auto load_data = new uint8_t[bin_size];
             reader(load_data, bin_size);
-            std::shared_ptr<uint8_t[]> data(load_data);
+            std::shared_ptr<uint8_t> data(load_data);
             load_data_list.Append(meta_list[i].first, data, bin_size);
         }
 
@@ -177,7 +177,7 @@ TEST_P(SPTAGTest, sptag_slice) {
 
             auto load_data = new uint8_t[bin_size];
             reader(load_data, bin_size);
-            std::shared_ptr<uint8_t[]> data(load_data);
+            std::shared_ptr<uint8_t> data(load_data);
             load_data_list.Append(meta_list[i].first, data, bin_size);
         }
 

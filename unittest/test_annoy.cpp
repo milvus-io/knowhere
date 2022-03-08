@@ -187,13 +187,13 @@ TEST_P(AnnoyTest, annoy_serialize) {
         serialize(filename3, bin_dim, load_data3);
 
         binaryset.clear();
-        std::shared_ptr<uint8_t[]> index_data(load_data1);
+        std::shared_ptr<uint8_t> index_data(load_data1);
         binaryset.Append("annoy_index_data", index_data, bin_data->size);
 
-        std::shared_ptr<uint8_t[]> metric_data(load_data2);
+        std::shared_ptr<uint8_t> metric_data(load_data2);
         binaryset.Append("annoy_metric_type", metric_data, bin_metric_type->size);
 
-        std::shared_ptr<uint8_t[]> dim_data(load_data3);
+        std::shared_ptr<uint8_t> dim_data(load_data3);
         binaryset.Append("annoy_dim", dim_data, bin_dim->size);
 
         index_->Load(binaryset);

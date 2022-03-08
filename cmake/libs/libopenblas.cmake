@@ -14,6 +14,14 @@ ExternalProject_Add(
              -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
              -DCMAKE_INSTALL_PREFIX=${OPENBLAS_DIR}
              -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+             -DNO_LAPACKE=0
+             -DBUILD_STATIC_LIBS=ON
+             -DBUILD_SHARED_LIBS=ON
+             -DDYNAMIC_ARCH=1
+             -DINTERFACE64=0
+             -DNUM_THREADS=128
+             -DUSE_THREAD=0
+             -DUSE_OPENMP=0
   BUILD_COMMAND ${MAKE_COMMAND}
   BUILD_BYPRODUCTS ${OPENBLAS_LIB})
 
