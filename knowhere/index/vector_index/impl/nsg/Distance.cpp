@@ -1,13 +1,14 @@
 // Copyright (C) 2019-2020 Zilliz. All rights reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance
-// with the License. You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License. You may obtain a copy of the License at
 //
 // http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software distributed under the License
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-// or implied. See the License for the specific language governing permissions and limitations under the License
+// or implied. See the License for the specific language governing permissions and limitations under
+// the License
 
 #include <faiss/FaissHook.h>
 #if defined(__x86_64__)
@@ -30,11 +31,11 @@ DistanceL2::Compare(const float* a, const float* b, unsigned size) const {
 #ifdef __AVX__
 
 #define AVX_L2SQR(addr1, addr2, dest, tmp1, tmp2) \
-    tmp1 = _mm256_loadu_ps(addr1);                \
-    tmp2 = _mm256_loadu_ps(addr2);                \
-    tmp1 = _mm256_sub_ps(tmp1, tmp2);             \
-    tmp1 = _mm256_mul_ps(tmp1, tmp1);             \
-    dest = _mm256_add_ps(dest, tmp1);
+  tmp1 = _mm256_loadu_ps(addr1);                  \
+  tmp2 = _mm256_loadu_ps(addr2);                  \
+  tmp1 = _mm256_sub_ps(tmp1, tmp2);               \
+  tmp1 = _mm256_mul_ps(tmp1, tmp1);               \
+  dest = _mm256_add_ps(dest, tmp1);
 
     __m256 sum;
     __m256 l0, l1;
@@ -63,11 +64,11 @@ DistanceL2::Compare(const float* a, const float* b, unsigned size) const {
 #else
 #ifdef __SSE2__
 #define SSE_L2SQR(addr1, addr2, dest, tmp1, tmp2) \
-    tmp1 = _mm_load_ps(addr1);                    \
-    tmp2 = _mm_load_ps(addr2);                    \
-    tmp1 = _mm_sub_ps(tmp1, tmp2);                \
-    tmp1 = _mm_mul_ps(tmp1, tmp1);                \
-    dest = _mm_add_ps(dest, tmp1);
+  tmp1 = _mm_load_ps(addr1);                      \
+  tmp2 = _mm_load_ps(addr2);                      \
+  tmp1 = _mm_sub_ps(tmp1, tmp2);                  \
+  tmp1 = _mm_mul_ps(tmp1, tmp1);                  \
+  dest = _mm_add_ps(dest, tmp1);
 
     __m128 sum;
     __m128 l0, l1, l2, l3;
@@ -137,10 +138,10 @@ DistanceIP::Compare(const float* a, const float* b, unsigned size) const {
 #ifdef __GNUC__
 #ifdef __AVX__
 #define AVX_DOT(addr1, addr2, dest, tmp1, tmp2) \
-    tmp1 = _mm256_loadu_ps(addr1);              \
-    tmp2 = _mm256_loadu_ps(addr2);              \
-    tmp1 = _mm256_mul_ps(tmp1, tmp2);           \
-    dest = _mm256_add_ps(dest, tmp1);
+  tmp1 = _mm256_loadu_ps(addr1);                \
+  tmp2 = _mm256_loadu_ps(addr2);                \
+  tmp1 = _mm256_mul_ps(tmp1, tmp2);             \
+  dest = _mm256_add_ps(dest, tmp1);
 
     __m256 sum;
     __m256 l0, l1;
@@ -169,10 +170,10 @@ DistanceIP::Compare(const float* a, const float* b, unsigned size) const {
 #else
 #ifdef __SSE2__
 #define SSE_DOT(addr1, addr2, dest, tmp1, tmp2) \
-    tmp1 = _mm128_loadu_ps(addr1);              \
-    tmp2 = _mm128_loadu_ps(addr2);              \
-    tmp1 = _mm128_mul_ps(tmp1, tmp2);           \
-    dest = _mm128_add_ps(dest, tmp1);
+  tmp1 = _mm128_loadu_ps(addr1);                \
+  tmp2 = _mm128_loadu_ps(addr2);                \
+  tmp1 = _mm128_mul_ps(tmp1, tmp2);             \
+  dest = _mm128_add_ps(dest, tmp1);
     __m128 sum;
     __m128 l0, l1, l2, l3;
     __m128 r0, r1, r2, r3;
@@ -232,14 +233,12 @@ DistanceIP::Compare(const float* a, const float* b, unsigned size) const {
 
 #else
 
-float
-DistanceL2::Compare(const float* a, const float* b, unsigned size) const {
-    return faiss::fvec_L2sqr(a, b, static_cast<size_t>(size));
+float DistanceL2::Compare(const float* a, const float* b, unsigned size) const {
+  return faiss::fvec_L2sqr(a, b, static_cast<size_t>(size));
 }
 
-float
-DistanceIP::Compare(const float* a, const float* b, unsigned size) const {
-    return -(faiss::fvec_inner_product(a, b, static_cast<size_t>(size)));
+float DistanceIP::Compare(const float* a, const float* b, unsigned size) const {
+  return -(faiss::fvec_inner_product(a, b, static_cast<size_t>(size)));
 }
 
 #endif

@@ -24,4 +24,4 @@ bool cpu_support_sse4_2();
 
 void hook_fvec(std::string&);
 
-} // namespace faiss
+}  // namespace faiss

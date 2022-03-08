@@ -1,18 +1,18 @@
 
 // -*- c++ -*-
 
-#include <iostream>
-#include <mutex>
-
 #include <faiss/FaissHook.h>
 #include <faiss/impl/ScalarQuantizerDC.h>
-#if defined(__aarch64__)
+
+#include <iostream>
+#include <mutex>
+#if defined(__x86_64__)
 #include <faiss/impl/ScalarQuantizerDC_avx.h>
 #include <faiss/impl/ScalarQuantizerDC_avx512.h>
 #endif
 namespace faiss {
 
-    uint8_t lookup8bit[256] = {
+uint8_t lookup8bit[256] = {
     /*  0 */ 0, /*  1 */ 1, /*  2 */ 1, /*  3 */ 2, /*  4 */ 1, /*  5 */ 2, /*  6 */ 2, /*  7 */ 3,
     /*  8 */ 1, /*  9 */ 2, /*  a */ 2, /*  b */ 3, /*  c */ 2, /*  d */ 3, /*  e */ 3, /*  f */ 4,
     /* 10 */ 1, /* 11 */ 2, /* 12 */ 2, /* 13 */ 3, /* 14 */ 2, /* 15 */ 3, /* 16 */ 3, /* 17 */ 4,
@@ -44,9 +44,7 @@ namespace faiss {
     /* e0 */ 3, /* e1 */ 4, /* e2 */ 4, /* e3 */ 5, /* e4 */ 4, /* e5 */ 5, /* e6 */ 5, /* e7 */ 6,
     /* e8 */ 4, /* e9 */ 5, /* ea */ 5, /* eb */ 6, /* ec */ 5, /* ed */ 6, /* ee */ 6, /* ef */ 7,
     /* f0 */ 4, /* f1 */ 5, /* f2 */ 5, /* f3 */ 6, /* f4 */ 5, /* f5 */ 6, /* f6 */ 6, /* f7 */ 7,
-    /* f8 */ 5, /* f9 */ 6, /* fa */ 6, /* fb */ 7, /* fc */ 6, /* fd */ 7, /* fe */ 7, /* ff */ 8
-};
-
+    /* f8 */ 5, /* f9 */ 6, /* fa */ 6, /* fb */ 7, /* fc */ 6, /* fd */ 7, /* fe */ 7, /* ff */ 8};
 
 /* set default to AVX */
 sq_get_distance_computer_func_ptr sq_get_distance_computer = sq_get_distance_computer_ref;
@@ -55,13 +53,14 @@ sq_sel_inv_list_scanner_func_ptr sq_sel_inv_list_scanner = sq_select_inverted_li
 
 /*****************************************************************************/
 
-void hook_init(std::string& simd_type) {
+void
+hook_init(std::string& simd_type) {
     static std::mutex hook_mutex;
     std::lock_guard<std::mutex> lock(hook_mutex);
-   
+
     // SQ8 always hook best SIMD
     std::string type = "REF";
-     #if defined(__x86_64__)
+#if defined(__x86_64__)
     if (faiss_use_avx512 && cpu_support_avx512()) {
         /* for IVFSQ */
         sq_get_distance_computer = sq_get_distance_computer_avx512;
@@ -91,10 +90,10 @@ void hook_init(std::string& simd_type) {
 
         type = "REF";
     }
-    #endif
+#endif
     std::cout << "FAISS SQ8 hook " << type << std::endl;
 
     hook_fvec(simd_type);
 }
 
-} // namespace faiss
+}  // namespace faiss
