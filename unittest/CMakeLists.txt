@@ -32,6 +32,13 @@ if ( LINUX )
             openblas
             )
 
+    if ( ENABLE_PROFILING )
+        set( DEPEND_LIBS
+                ${DEPEND_LIBS}
+                gperftools
+                )
+    endif ()
+
     if ( KNOWHERE_SUPPORT_NGT )
         set( DEPEND_LIBS
                 ${DEPEND_LIBS}
