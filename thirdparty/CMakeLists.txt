@@ -198,11 +198,13 @@ if ( LINUX )
             PATTERN "*.h"
             )
 
-    install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib/NGT/"
-            DESTINATION "include/NGT"
-            FILES_MATCHING
-            PATTERN "*.h"
-            )
+    if (KNOWHERE_SUPPORT_NGT)
+        install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib/NGT/"
+                DESTINATION "include/NGT"
+                FILES_MATCHING
+                PATTERN "*.h"
+                )
+    endif()
 endif ()
 
 install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/easyloggingpp/"
