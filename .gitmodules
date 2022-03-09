@@ -7,3 +7,6 @@
 [submodule "thirdparty/any"]
 	path = thirdparty/any
 	url = https://github.com/boostorg/any.git
+[submodule "thirdparty/easyloggingpp"]
+	path = thirdparty/easyloggingpp
+	url = https://github.com/amrayn/easyloggingpp.git
