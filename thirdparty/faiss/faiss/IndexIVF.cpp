@@ -751,6 +751,10 @@ void IndexIVF::search_preassigned_without_codes(
     long nprobe = params ? params->nprobe : this->nprobe;
     long max_codes = params ? params->max_codes : this->max_codes;
 
+    if (prefix_sum.empty()) {
+        FAISS_ASSERT_MSG(false, "IVFFLAT_NM index need load RAW_DATA");
+    }
+
     size_t nlistv = 0, ndis = 0, nheap = 0;
 
     using HeapForIP = CMin<float, idx_t>;

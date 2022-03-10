@@ -123,20 +123,45 @@ struct FileIOWriter {
     std::fstream fs;
     std::string name;
 
-    explicit FileIOWriter(const std::string& fname);
-    ~FileIOWriter();
-    size_t
-    operator()(void* ptr, size_t size);
+    explicit FileIOWriter(const std::string& fname) {
+        name = fname;
+        fs = std::fstream(name, std::ios::out | std::ios::binary);
+    }
+
+    ~FileIOWriter() {
+        fs.close();
+    }
+
+    size_t operator()(void* ptr, size_t size) {
+        fs.write(reinterpret_cast<char*>(ptr), size);
+        return size;
+    }
 };
 
 struct FileIOReader {
     std::fstream fs;
     std::string name;
 
-    explicit FileIOReader(const std::string& fname);
-    ~FileIOReader();
-    size_t
-    operator()(void* ptr, size_t size);
+    explicit FileIOReader(const std::string& fname) {
+        name = fname;
+        fs = std::fstream(name, std::ios::in | std::ios::binary);
+    }
+
+    ~FileIOReader() {
+        fs.close();
+    }
+
+    size_t operator()(void* ptr, size_t size) {
+        fs.read(reinterpret_cast<char*>(ptr), size);
+        return size;
+    }
+
+    size_t size() {
+        fs.seekg(0, fs.end);
+        size_t len = fs.tellg();
+        fs.seekg(0, fs.beg);
+        return len;
+    }
 };
 
 void

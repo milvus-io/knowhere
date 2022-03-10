@@ -129,36 +129,6 @@ GenBase(const int64_t dim,
     xids[0] = 3;  // pseudo random
 }
 
-FileIOReader::FileIOReader(const std::string& fname) {
-    name = fname;
-    fs = std::fstream(name, std::ios::in | std::ios::binary);
-}
-
-FileIOReader::~FileIOReader() {
-    fs.close();
-}
-
-size_t
-FileIOReader::operator()(void* ptr, size_t size) {
-    fs.read(reinterpret_cast<char*>(ptr), size);
-    return size;
-}
-
-FileIOWriter::FileIOWriter(const std::string& fname) {
-    name = fname;
-    fs = std::fstream(name, std::ios::out | std::ios::binary);
-}
-
-FileIOWriter::~FileIOWriter() {
-    fs.close();
-}
-
-size_t
-FileIOWriter::operator()(void* ptr, size_t size) {
-    fs.write(reinterpret_cast<char*>(ptr), size);
-    return size;
-}
-
 void
 AssertAnns(const milvus::knowhere::DatasetPtr& result, const int nq, const int k, const CheckMode check_mode) {
     auto ids = result->Get<int64_t*>(milvus::knowhere::meta::IDS);
