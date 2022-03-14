@@ -11,25 +11,9 @@
 
 #include <gtest/gtest.h>
 #include <hdf5.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <cassert>
-#include <cmath>
-#include <cstdio>
 #include <vector>
 
-#include <faiss/AutoTune.h>
-#include <faiss/Index.h>
-#include <faiss/IndexIVF.h>
-#include <faiss/index_factory.h>
-#include <faiss/index_io.h>
-#include <faiss/utils/distances.h>
-
 #include "knowhere/index/IndexType.h"
-#include "knowhere/index/vector_index/IndexIVF.h"
-#include "knowhere/index/vector_index/IndexIVFPQ.h"
-#include "knowhere/index/vector_index/IndexIVFSQ.h"
 #include "knowhere/index/vector_index/VecIndexFactory.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #include "unittest/utils.h"
@@ -461,6 +445,7 @@ TEST_F(Benchmark, TEST_IVFFLAT_NM) {
             {knowhere::meta::DIM, dim_},
             {knowhere::IndexParams::nlist, nlist},
         };
+
         create_cpu_index(index_file_name, cfg);
 
         // IVFFLAT_NM should load raw data
@@ -470,7 +455,6 @@ TEST_F(Benchmark, TEST_IVFFLAT_NM) {
         binary_set_.Append(RAW_DATA, bin);
 
         index_->Load(binary_set_);
-
         test_ivf(cfg, nqs, topks, nprobes);
     }
 }
@@ -492,15 +476,16 @@ TEST_F(Benchmark, TEST_IVFSQ8) {
             {knowhere::meta::DIM, dim_},
             {knowhere::IndexParams::nlist, nlist},
         };
-        create_cpu_index(index_file_name, cfg);
-        index_->Load(binary_set_);
 
+        create_cpu_index(index_file_name, cfg);
+
+        index_->Load(binary_set_);
         test_ivf(cfg, nqs, topks, nprobes);
     }
 }
 
 TEST_F(Benchmark, TEST_HNSW) {
-    const int32_t M = 16;
+    const std::vector<int32_t> ms = {8, 16};
     const std::vector<int32_t> efCons = {100, 200, 300};
     const std::vector<int32_t> nqs = {100};
     const std::vector<int32_t> topks = {10};
@@ -509,19 +494,22 @@ TEST_F(Benchmark, TEST_HNSW) {
     index_type_ = knowhere::IndexEnum::INDEX_HNSW;
     binary_header_ = "HNSW";
 
-    for (auto efc : efCons) {
-        std::string index_file_name = ann_test_name_ + "_" + index_type_ + "_" + std::to_string(M) + "_" +
-                                      std::to_string(efc) + ".index";
+    for (auto M : ms) {
+        for (auto efc : efCons) {
+            std::string index_file_name =
+                ann_test_name_ + "_" + index_type_ + "_" + std::to_string(M) + "_" + std::to_string(efc) + ".index";
 
-        auto cfg = knowhere::Config{
-            {knowhere::Metric::TYPE, metric_type_},
-            {knowhere::meta::DIM, dim_},
-            {knowhere::IndexParams::efConstruction, efc},
-            {knowhere::IndexParams::M, M},
-        };
-        create_cpu_index(index_file_name, cfg);
-        index_->Load(binary_set_);
+            auto cfg = knowhere::Config{
+                {knowhere::Metric::TYPE, metric_type_},
+                {knowhere::meta::DIM, dim_},
+                {knowhere::IndexParams::efConstruction, efc},
+                {knowhere::IndexParams::M, M},
+            };
 
-        test_hnsw(cfg, nqs, topks, efs);
+            create_cpu_index(index_file_name, cfg);
+
+            index_->Load(binary_set_);
+            test_hnsw(cfg, nqs, topks, efs);
+        }
     }
 }
