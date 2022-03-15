@@ -14,7 +14,7 @@
 #include <memory>
 #include <utility>
 
-#include "index/vector_index/IndexIVF.h"
+#include "knowhere/index/vector_index/IndexIVF.h"
 
 namespace milvus {
 namespace knowhere {

@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 #include "faiss/impl/AuxIndexStructures.h"
-#include "common/Typedef.h"
+#include "knowhere/common/Typedef.h"
 
 namespace milvus {
 namespace knowhere {

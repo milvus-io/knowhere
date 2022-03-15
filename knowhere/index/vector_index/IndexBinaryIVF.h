@@ -17,9 +17,9 @@
 
 #include <faiss/IndexIVF.h>
 
-#include "common/Exception.h"
-#include "index/vector_index/FaissBaseBinaryIndex.h"
-#include "index/vector_index/VecIndex.h"
+#include "knowhere/common/Exception.h"
+#include "knowhere/index/vector_index/FaissBaseBinaryIndex.h"
+#include "knowhere/index/vector_index/VecIndex.h"
 
 namespace milvus {
 namespace knowhere {

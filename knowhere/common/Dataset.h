@@ -17,7 +17,8 @@
 #include <mutex>
 #include <string>
 #include <utility>
-#include "index/vector_index/helpers/IndexParameter.h"
+
+#include "knowhere/index/vector_index/helpers/IndexParameter.h"
 
 namespace milvus {
 namespace knowhere {

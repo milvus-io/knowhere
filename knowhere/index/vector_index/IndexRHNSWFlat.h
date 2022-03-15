@@ -15,9 +15,9 @@
 #include <mutex>
 #include <utility>
 
-#include "common/Exception.h"
-#include "index/IndexType.h"
-#include "index/vector_index/IndexRHNSW.h"
+#include "knowhere/common/Exception.h"
+#include "knowhere/index/IndexType.h"
+#include "knowhere/index/vector_index/IndexRHNSW.h"
 
 namespace milvus {
 namespace knowhere {

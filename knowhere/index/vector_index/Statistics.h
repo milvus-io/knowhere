@@ -20,8 +20,8 @@
 #include <utility>
 #include <vector>
 
-#include "common/Log.h"
-#include "index/IndexType.h"
+#include "knowhere/common/Log.h"
+#include "knowhere/index/IndexType.h"
 #include "knowhere/utils/BitsetView.h"
 
 namespace milvus {

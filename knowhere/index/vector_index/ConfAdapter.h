@@ -15,8 +15,8 @@
 #include <memory>
 #include <vector>
 
-#include "common/Config.h"
-#include "index/IndexType.h"
+#include "knowhere/common/Config.h"
+#include "knowhere/index/IndexType.h"
 
 namespace milvus {
 namespace knowhere {

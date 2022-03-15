@@ -13,8 +13,8 @@
 
 #include <memory>
 
-#include "index/IndexType.h"
-#include "index/vector_index/VecIndex.h"
+#include "knowhere/index/IndexType.h"
+#include "knowhere/index/vector_index/VecIndex.h"
 
 namespace milvus {
 namespace knowhere {

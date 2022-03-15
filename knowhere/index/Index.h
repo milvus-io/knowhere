@@ -13,9 +13,9 @@
 
 #include <memory>
 
-#include "cache/DataObj.h"
-#include "common/BinarySet.h"
-#include "common/Config.h"
+#include "knowhere/cache/DataObj.h"
+#include "knowhere/common/BinarySet.h"
+#include "knowhere/common/Config.h"
 
 namespace milvus {
 namespace knowhere {

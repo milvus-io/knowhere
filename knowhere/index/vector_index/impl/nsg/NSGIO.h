@@ -11,8 +11,8 @@
 
 #pragma once
 
-#include "NSG.h"
-#include "index/vector_index/helpers/FaissIO.h"
+#include "knowhere/index/vector_index/helpers/FaissIO.h"
+#include "knowhere/index/vector_index/impl/nsg/NSG.h"
 
 namespace milvus {
 namespace knowhere {

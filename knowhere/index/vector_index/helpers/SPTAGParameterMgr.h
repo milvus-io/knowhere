@@ -17,8 +17,8 @@
 #include <vector>
 
 #include <SPTAG/AnnService/inc/Core/Common.h>
-#include "IndexParameter.h"
 #include "knowhere/common/Config.h"
+#include "knowhere/index/vector_index/helpers/IndexParameter.h"
 
 namespace milvus {
 namespace knowhere {
