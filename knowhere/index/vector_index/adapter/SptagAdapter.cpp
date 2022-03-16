@@ -12,7 +12,6 @@
 #include "knowhere/index/vector_index/adapter/SptagAdapter.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 
-namespace milvus {
 namespace knowhere {
 
 std::shared_ptr<SPTAG::MetadataSet>
@@ -89,4 +88,3 @@ ConvertToDataset(std::vector<SPTAG::QueryResult> query_results, std::shared_ptr<
 }
 
 }  // namespace knowhere
-}  // namespace milvus

@@ -13,7 +13,7 @@
 
 #include "nlohmann/json.hpp"
 
-namespace milvus {
+namespace knowhere {
 
 using json = nlohmann::json;
 
@@ -31,4 +31,4 @@ using json = nlohmann::json;
         }                                                                        \
     } while (false)
 
-}  // namespace milvus
+}  // namespace knowhere

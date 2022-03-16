@@ -15,7 +15,6 @@
 
 #include "common/Utils.h"
 
-namespace milvus {
 namespace knowhere {
 
 const char* INDEX_FILE_SLICE_SIZE_IN_MEGABYTE = "SLICE_SIZE";
@@ -31,7 +30,7 @@ Slice(const std::string& prefix,
       const BinaryPtr& data_src,
       const int64_t& slice_len,
       BinarySet& binarySet,
-      milvus::json& ret) {
+      json& ret) {
     if (!data_src) {
         return;
     }
@@ -57,8 +56,7 @@ Assemble(BinarySet& binarySet) {
         return;
     }
 
-    milvus::json meta_data =
-        milvus::json::parse(std::string(reinterpret_cast<char*>(slice_meta->data.get()), slice_meta->size));
+    json meta_data = json::parse(std::string(reinterpret_cast<char*>(slice_meta->data.get()), slice_meta->size));
 
     for (auto& item : meta_data[META]) {
         std::string prefix = item[NAME];
@@ -77,11 +75,11 @@ Assemble(BinarySet& binarySet) {
 
 void
 Disassemble(const int64_t& slice_size_in_byte, BinarySet& binarySet) {
-    milvus::json meta_info;
+    json meta_info;
     auto slice_meta = binarySet.Erase(INDEX_FILE_SLICE_META);
     if (slice_meta != nullptr) {
-        milvus::json last_meta_data =
-            milvus::json::parse(std::string(reinterpret_cast<char*>(slice_meta->data.get()), slice_meta->size));
+        json last_meta_data =
+            json::parse(std::string(reinterpret_cast<char*>(slice_meta->data.get()), slice_meta->size));
         for (auto& item : last_meta_data[META]) {
             meta_info[META].emplace_back(item);
         }
@@ -94,7 +92,7 @@ Disassemble(const int64_t& slice_size_in_byte, BinarySet& binarySet) {
         }
     }
     for (auto& key : slice_key_list) {
-        milvus::json slice_i;
+        json slice_i;
         Slice(key, binarySet.Erase(key), slice_size_in_byte, binarySet, slice_i);
         meta_info[META].emplace_back(slice_i);
     }
@@ -108,4 +106,3 @@ Disassemble(const int64_t& slice_size_in_byte, BinarySet& binarySet) {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

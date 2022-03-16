@@ -16,7 +16,6 @@
 
 #include "knowhere/common/Log.h"
 
-namespace milvus {
 namespace knowhere {
 
 std::string
@@ -86,4 +85,3 @@ log_fatal_(const std::string& s) {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

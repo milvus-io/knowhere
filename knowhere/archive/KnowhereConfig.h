@@ -14,8 +14,7 @@
 #include <vector>
 #include <string>
 
-namespace milvus {
-namespace engine {
+namespace knowhere {
 
 class KnowhereConfig {
  public:
@@ -91,5 +90,4 @@ class KnowhereConfig {
 #endif
 };
 
-}  // namespace engine
-}  // namespace milvus
+}  // namespace knowhere

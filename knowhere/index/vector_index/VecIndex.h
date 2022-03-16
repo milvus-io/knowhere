@@ -28,7 +28,6 @@
 #include "knowhere/index/vector_index/helpers/DynamicResultSet.h"
 #endif
 
-namespace milvus {
 namespace knowhere {
 
 #define RAW_DATA "RAW_DATA"
@@ -154,4 +153,3 @@ class VecIndex : public Index {
 using VecIndexPtr = std::shared_ptr<VecIndex>;
 
 }  // namespace knowhere
-}  // namespace milvus

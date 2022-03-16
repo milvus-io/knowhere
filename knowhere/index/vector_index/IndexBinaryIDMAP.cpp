@@ -17,7 +17,6 @@
 #include "index/vector_index/IndexBinaryIDMAP.h"
 #include "index/vector_index/adapter/VectorAdapter.h"
 
-namespace milvus {
 namespace knowhere {
 
 BinarySet
@@ -64,8 +63,8 @@ BinaryIDMAP::Query(const DatasetPtr& dataset_ptr, const Config& config, const fa
 }
 
 DynamicResultSegment
-BinaryIDMAP::QueryByDistance(const milvus::knowhere::DatasetPtr& dataset,
-                             const milvus::knowhere::Config& config,
+BinaryIDMAP::QueryByDistance(const DatasetPtr& dataset,
+                             const Config& config,
                              const faiss::BitsetView bitset) {
     if (!index_) {
         KNOWHERE_THROW_MSG("index not initialize");
@@ -172,4 +171,3 @@ BinaryIDMAP::QueryImpl(int64_t n,
 }
 
 }  // namespace knowhere
-}  // namespace milvus

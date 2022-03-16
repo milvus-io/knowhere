@@ -29,20 +29,20 @@ class AnnoyTest : public DataGen, public TestWithParam<std::string> {
     SetUp() override {
         IndexType = GetParam();
         Generate(128, 10000, 10);
-        index_ = std::make_shared<milvus::knowhere::IndexAnnoy>();
-        conf = milvus::knowhere::Config{
-            {milvus::knowhere::meta::DIM, dim},
-            {milvus::knowhere::meta::TOPK, 10},
-            {milvus::knowhere::IndexParams::n_trees, 4},
-            {milvus::knowhere::IndexParams::search_k, 100},
-            {milvus::knowhere::Metric::TYPE, milvus::knowhere::Metric::L2},
-            {milvus::knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
+        index_ = std::make_shared<knowhere::IndexAnnoy>();
+        conf = knowhere::Config{
+            {knowhere::meta::DIM, dim},
+            {knowhere::meta::TOPK, 10},
+            {knowhere::IndexParams::n_trees, 4},
+            {knowhere::IndexParams::search_k, 100},
+            {knowhere::Metric::TYPE, knowhere::Metric::L2},
+            {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
         };
     }
 
  protected:
-    milvus::knowhere::Config conf;
-    std::shared_ptr<milvus::knowhere::IndexAnnoy> index_ = nullptr;
+    knowhere::Config conf;
+    std::shared_ptr<knowhere::IndexAnnoy> index_ = nullptr;
     std::string IndexType;
 };
 
@@ -71,8 +71,8 @@ TEST_P(AnnoyTest, annoy_basic) {
     /*
      * output result to check by eyes
     {
-        auto ids = result->Get<int64_t*>(milvus::knowhere::meta::IDS);
-        auto dist = result->Get<float*>(milvus::knowhere::meta::DISTANCE);
+        auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
+        auto dist = result->Get<float*>(knowhere::meta::DISTANCE);
 
         std::stringstream ss_id;
         std::stringstream ss_dist;
@@ -112,8 +112,8 @@ TEST_P(AnnoyTest, annoy_delete) {
 
     /*
      * delete result checked by eyes
-    auto ids1 = result1->Get<int64_t*>(milvus::knowhere::meta::IDS);
-    auto ids2 = result2->Get<int64_t*>(milvus::knowhere::meta::IDS);
+    auto ids1 = result1->Get<int64_t*>(knowhere::meta::IDS);
+    auto ids2 = result2->Get<int64_t*>(knowhere::meta::IDS);
     std::cout << std::endl;
     for (int i = 0; i < nq; ++ i) {
         std::cout << "ids1: ";
@@ -133,8 +133,8 @@ TEST_P(AnnoyTest, annoy_delete) {
     /*
      * output result to check by eyes
     {
-        auto ids = result->Get<int64_t*>(milvus::knowhere::meta::IDS);
-        auto dist = result->Get<float*>(milvus::knowhere::meta::DISTANCE);
+        auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
+        auto dist = result->Get<float*>(knowhere::meta::DISTANCE);
 
         std::stringstream ss_id;
         std::stringstream ss_dist;
@@ -155,7 +155,7 @@ TEST_P(AnnoyTest, annoy_delete) {
 }
 
 TEST_P(AnnoyTest, annoy_serialize) {
-    auto serialize = [](const std::string& filename, milvus::knowhere::BinaryPtr& bin, uint8_t* ret) {
+    auto serialize = [](const std::string& filename, knowhere::BinaryPtr& bin, uint8_t* ret) {
         {
             // write and flush
             FileIOWriter writer(filename);
@@ -169,7 +169,7 @@ TEST_P(AnnoyTest, annoy_serialize) {
     {
         // serialize index
         index_->BuildAll(base_dataset, conf);
-        auto binaryset = index_->Serialize(milvus::knowhere::Config());
+        auto binaryset = index_->Serialize(knowhere::Config());
 
         auto bin_data = binaryset.GetByName("annoy_index_data");
         std::string filename1 = "/tmp/annoy_test_data_serialize.bin";
@@ -200,7 +200,7 @@ TEST_P(AnnoyTest, annoy_serialize) {
         ASSERT_EQ(index_->Count(), nb);
         ASSERT_EQ(index_->Dim(), dim);
         auto result = index_->Query(query_dataset, conf, nullptr);
-        AssertAnns(result, nq, conf[milvus::knowhere::meta::TOPK]);
+        AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
     }
 }
 
@@ -208,12 +208,12 @@ TEST_P(AnnoyTest, annoy_slice) {
     {
         // serialize index
         index_->BuildAll(base_dataset, conf);
-        auto binaryset = index_->Serialize(milvus::knowhere::Config());
+        auto binaryset = index_->Serialize(knowhere::Config());
         index_->Load(binaryset);
         ASSERT_EQ(index_->Count(), nb);
         ASSERT_EQ(index_->Dim(), dim);
         auto result = index_->Query(query_dataset, conf, nullptr);
-        AssertAnns(result, nq, conf[milvus::knowhere::meta::TOPK]);
+        AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
     }
 }
 
@@ -255,20 +255,20 @@ main() {
     int k = 4;
     int n_trees = 5;
     int search_k = 100;
-    milvus::knowhere::IndexAnnoy index;
-    milvus::knowhere::DatasetPtr base_dataset = generate_dataset(nb, d, (const void*)xb, ids);
+    knowhere::IndexAnnoy index;
+    knowhere::DatasetPtr base_dataset = generate_dataset(nb, d, (const void*)xb, ids);
 
-    milvus::knowhere::Config base_conf{
-        {milvus::knowhere::meta::DIM, d},
-        {milvus::knowhere::meta::TOPK, k},
-        {milvus::knowhere::IndexParams::n_trees, n_trees},
-        {milvus::knowhere::Metric::TYPE, milvus::knowhere::Metric::L2},
+    knowhere::Config base_conf{
+        {knowhere::meta::DIM, d},
+        {knowhere::meta::TOPK, k},
+        {knowhere::IndexParams::n_trees, n_trees},
+        {knowhere::Metric::TYPE, knowhere::Metric::L2},
     };
-    milvus::knowhere::DatasetPtr query_dataset = generate_query_dataset(nq, d, (const void*)xq);
-    milvus::knowhere::Config query_conf{
-        {milvus::knowhere::meta::DIM, d},
-        {milvus::knowhere::meta::TOPK, k},
-        {milvus::knowhere::IndexParams::search_k, search_k},
+    knowhere::DatasetPtr query_dataset = generate_query_dataset(nq, d, (const void*)xq);
+    knowhere::Config query_conf{
+        {knowhere::meta::DIM, d},
+        {knowhere::meta::TOPK, k},
+        {knowhere::IndexParams::search_k, search_k},
     };
 
     index.BuildAll(base_dataset, base_conf);
@@ -277,8 +277,8 @@ main() {
     {  // sanity check
         auto res = index.Query(query_dataset, query_conf);
         printf("Query done!\n");
-        const int64_t* I = res->Get<int64_t*>(milvus::knowhere::meta::IDS);
-        float* D = res->Get<float*>(milvus::knowhere::meta::DISTANCE);
+        const int64_t* I = res->Get<int64_t*>(knowhere::meta::IDS);
+        float* D = res->Get<float*>(knowhere::meta::DISTANCE);
 
         printf("I=\n");
         for (int i = 0; i < 5; i++) {
@@ -296,7 +296,7 @@ main() {
     printf("---------------search xq-------------\n");
     {  // search xq
         auto res = index.Query(query_dataset, query_conf);
-        const int64_t* I = res->Get<int64_t*>(milvus::knowhere::meta::IDS);
+        const int64_t* I = res->Get<int64_t*>(knowhere::meta::IDS);
 
         printf("I=\n");
         for (int i = 0; i < nq; i++) {
@@ -308,7 +308,7 @@ main() {
     printf("----------------search xq with delete------------\n");
     {  // search xq with delete
         auto res = index.Query(query_dataset, query_conf, bitset);
-        auto I = res->Get<int64_t*>(milvus::knowhere::meta::IDS);
+        auto I = res->Get<int64_t*>(knowhere::meta::IDS);
 
         printf("I=\n");
         for (int i = 0; i < nq; i++) {

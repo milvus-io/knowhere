@@ -11,9 +11,7 @@
 
 #pragma once
 
-namespace milvus {
-namespace knowhere {
-namespace impl {
+namespace knowhere::impl {
 
 struct Distance {
     virtual ~Distance() = default;
@@ -31,6 +29,4 @@ struct DistanceIP : public Distance {
     Compare(const float* a, const float* b, unsigned size) const override;
 };
 
-}  // namespace impl
-}  // namespace knowhere
-}  // namespace milvus
+}  // namespace knowhere::impl

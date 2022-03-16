@@ -39,7 +39,6 @@
 #include "index/vector_index/helpers/FaissGpuResourceMgr.h"
 #endif
 
-namespace milvus {
 namespace knowhere {
 
 using stdclock = std::chrono::high_resolution_clock;
@@ -394,4 +393,3 @@ IVF::ClearStatistics() {
 #endif
 
 }  // namespace knowhere
-}  // namespace milvus

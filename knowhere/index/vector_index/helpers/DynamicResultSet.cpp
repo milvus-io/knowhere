@@ -16,7 +16,6 @@
 #include "common/Exception.h"
 #include "index/vector_index/helpers/DynamicResultSet.h"
 
-namespace milvus {
 namespace knowhere {
 
 /***********************************************************************
@@ -168,7 +167,7 @@ DynamicResultCollector::Merge(size_t limit, ResultSetPostProcessType postProcess
 }
 
 void
-DynamicResultCollector::Append(milvus::knowhere::DynamicResultSegment&& seg_result) {
+DynamicResultCollector::Append(DynamicResultSegment&& seg_result) {
     seg_results.emplace_back(std::move(seg_result));
 }
 
@@ -191,4 +190,3 @@ ExchangeDataset(DynamicResultSegment& milvus_dataset, std::vector<faiss::RangeSe
 }
 
 }  // namespace knowhere
-}  // namespace milvus

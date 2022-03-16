@@ -52,7 +52,6 @@
 #endif
 #endif
 
-namespace milvus {
 namespace knowhere {
 
 VecIndexPtr
@@ -127,4 +126,3 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

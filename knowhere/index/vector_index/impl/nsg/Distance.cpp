@@ -14,9 +14,7 @@
 
 #include "index/vector_index/impl/nsg/Distance.h"
 
-namespace milvus {
-namespace knowhere {
-namespace impl {
+namespace knowhere::impl {
 
 #if 0 /* use FAISS distance calculation algorithm instead */
 
@@ -242,6 +240,4 @@ DistanceIP::Compare(const float* a, const float* b, unsigned size) const {
 
 #endif
 
-}  // namespace impl
-}  // namespace knowhere
-}  // namespace milvus
+}  // namespace knowhere::impl

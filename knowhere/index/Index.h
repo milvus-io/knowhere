@@ -17,10 +17,9 @@
 #include "knowhere/common/BinarySet.h"
 #include "knowhere/common/Config.h"
 
-namespace milvus {
 namespace knowhere {
 
-class Index : public milvus::cache::DataObj {
+class Index : public DataObj {
  public:
     virtual BinarySet
     Serialize(const Config& config) = 0;
@@ -32,4 +31,3 @@ class Index : public milvus::cache::DataObj {
 using IndexPtr = std::shared_ptr<Index>;
 
 }  // namespace knowhere
-}  // namespace milvus

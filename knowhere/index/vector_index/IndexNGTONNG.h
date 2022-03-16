@@ -13,7 +13,6 @@
 
 #include "knowhere/index/vector_index/IndexNGT.h"
 
-namespace milvus {
 namespace knowhere {
 
 class IndexNGTONNG : public IndexNGT {
@@ -30,4 +29,3 @@ class IndexNGTONNG : public IndexNGT {
 };
 
 }  // namespace knowhere
-}  // namespace milvus

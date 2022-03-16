@@ -31,44 +31,44 @@ using ::testing::Combine;
 using ::testing::TestWithParam;
 using ::testing::Values;
 
-class IDMAPTest : public DataGen, public TestWithParam<milvus::knowhere::IndexMode> {
+class IDMAPTest : public DataGen, public TestWithParam<knowhere::IndexMode> {
  protected:
     void
     SetUp() override {
 #ifdef KNOWHERE_GPU_VERSION
-        milvus::knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
+        knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
 #endif
         index_mode_ = GetParam();
         Init_with_default();
-        index_ = std::make_shared<milvus::knowhere::IDMAP>();
+        index_ = std::make_shared<knowhere::IDMAP>();
     }
 
     void
     TearDown() override {
 #ifdef KNOWHERE_GPU_VERSION
-        milvus::knowhere::FaissGpuResourceMgr::GetInstance().Free();
+        knowhere::FaissGpuResourceMgr::GetInstance().Free();
 #endif
     }
 
  protected:
-    milvus::knowhere::IDMAPPtr index_ = nullptr;
-    milvus::knowhere::IndexMode index_mode_;
+    knowhere::IDMAPPtr index_ = nullptr;
+    knowhere::IndexMode index_mode_;
 };
 
 INSTANTIATE_TEST_CASE_P(IDMAPParameters,
                         IDMAPTest,
                         Values(
 #ifdef KNOWHERE_GPU_VERSION
-                            milvus::knowhere::IndexMode::MODE_GPU,
+                            knowhere::IndexMode::MODE_GPU,
 #endif
-                            milvus::knowhere::IndexMode::MODE_CPU));
+                            knowhere::IndexMode::MODE_CPU));
 
 TEST_P(IDMAPTest, idmap_basic) {
     ASSERT_TRUE(!xb.empty());
 
-    milvus::knowhere::Config conf{{milvus::knowhere::meta::DIM, dim},
-                                  {milvus::knowhere::meta::TOPK, k},
-                                  {milvus::knowhere::Metric::TYPE, milvus::knowhere::Metric::L2}};
+    knowhere::Config conf{{knowhere::meta::DIM, dim},
+                          {knowhere::meta::TOPK, k},
+                          {knowhere::Metric::TYPE, knowhere::Metric::L2}};
 
     // null faiss index
     {
@@ -86,15 +86,15 @@ TEST_P(IDMAPTest, idmap_basic) {
     AssertAnns(result, nq, k);
     //    PrintResult(result, nq, k);
 
-    if (index_mode_ == milvus::knowhere::IndexMode::MODE_GPU) {
+    if (index_mode_ == knowhere::IndexMode::MODE_GPU) {
 #ifdef KNOWHERE_GPU_VERSION
         // cpu to gpu
-        index_ = std::dynamic_pointer_cast<milvus::knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICEID, conf));
+        index_ = std::dynamic_pointer_cast<knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICEID, conf));
 #endif
     }
 
     auto binaryset = index_->Serialize(conf);
-    auto new_index = std::make_shared<milvus::knowhere::IDMAP>();
+    auto new_index = std::make_shared<knowhere::IDMAP>();
     new_index->Load(binaryset);
     auto result2 = new_index->Query(query_dataset, conf, nullptr);
     AssertAnns(result2, nq, k);
@@ -126,7 +126,7 @@ TEST_P(IDMAPTest, idmap_basic) {
 }
 
 TEST_P(IDMAPTest, idmap_serialize) {
-    auto serialize = [](const std::string& filename, milvus::knowhere::BinaryPtr& bin, uint8_t* ret) {
+    auto serialize = [](const std::string& filename, knowhere::BinaryPtr& bin, uint8_t* ret) {
         FileIOWriter writer(filename);
         writer(static_cast<void*>(bin->data.get()), bin->size);
 
@@ -134,19 +134,19 @@ TEST_P(IDMAPTest, idmap_serialize) {
         reader(ret, bin->size);
     };
 
-    milvus::knowhere::Config conf{{milvus::knowhere::meta::DIM, dim},
-                                  {milvus::knowhere::meta::TOPK, k},
-                                  {milvus::knowhere::Metric::TYPE, milvus::knowhere::Metric::L2}};
+    knowhere::Config conf{{knowhere::meta::DIM, dim},
+                          {knowhere::meta::TOPK, k},
+                          {knowhere::Metric::TYPE, knowhere::Metric::L2}};
 
     {
         // serialize index
         index_->Train(base_dataset, conf);
-        index_->AddWithoutIds(base_dataset, milvus::knowhere::Config());
+        index_->AddWithoutIds(base_dataset, knowhere::Config());
 
-        if (index_mode_ == milvus::knowhere::IndexMode::MODE_GPU) {
+        if (index_mode_ == knowhere::IndexMode::MODE_GPU) {
 #ifdef KNOWHERE_GPU_VERSION
             // cpu to gpu
-            index_ = std::dynamic_pointer_cast<milvus::knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICEID, conf));
+            index_ = std::dynamic_pointer_cast<knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICEID, conf));
 #endif
         }
 
@@ -176,20 +176,20 @@ TEST_P(IDMAPTest, idmap_serialize) {
 }
 
 TEST_P(IDMAPTest, idmap_slice) {
-    milvus::knowhere::Config conf{{milvus::knowhere::meta::DIM, dim},
-                                  {milvus::knowhere::meta::TOPK, k},
-                                  {milvus::knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
-                                  {milvus::knowhere::Metric::TYPE, milvus::knowhere::Metric::L2}};
+    knowhere::Config conf{{knowhere::meta::DIM, dim},
+                          {knowhere::meta::TOPK, k},
+                          {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
+                          {knowhere::Metric::TYPE, knowhere::Metric::L2}};
 
     {
         // serialize index
         index_->Train(base_dataset, conf);
-        index_->AddWithoutIds(base_dataset, milvus::knowhere::Config());
+        index_->AddWithoutIds(base_dataset, knowhere::Config());
 
-        if (index_mode_ == milvus::knowhere::IndexMode::MODE_GPU) {
+        if (index_mode_ == knowhere::IndexMode::MODE_GPU) {
 #ifdef KNOWHERE_GPU_VERSION
             // cpu to gpu
-            index_ = std::dynamic_pointer_cast<milvus::knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICEID, conf));
+            index_ = std::dynamic_pointer_cast<knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICEID, conf));
 #endif
         }
 
@@ -210,10 +210,10 @@ TEST_P(IDMAPTest, idmap_slice) {
 }
 
 TEST_P(IDMAPTest, idmap_range_search_l2) {
-    milvus::knowhere::Config conf{{milvus::knowhere::meta::DIM, dim},
-                                  {milvus::knowhere::IndexParams::range_search_radius, radius},
-                                  {milvus::knowhere::IndexParams::range_search_buffer_size, buffer_size},
-                                  {milvus::knowhere::Metric::TYPE, milvus::knowhere::Metric::L2}};
+    knowhere::Config conf{{knowhere::meta::DIM, dim},
+                          {knowhere::IndexParams::range_search_radius, radius},
+                          {knowhere::IndexParams::range_search_buffer_size, buffer_size},
+                          {knowhere::Metric::TYPE, knowhere::Metric::L2}};
 
     auto l2dis = [](const float* pa, const float* pb, size_t dim) -> float {
         float ret = 0;
@@ -244,20 +244,20 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
 
     bruteforce();
 
-    auto compare_res = [&](std::vector<milvus::knowhere::DynamicResultSegment>& results) {
+    auto compare_res = [&](std::vector<knowhere::DynamicResultSegment>& results) {
         {  // compare the result
-            //            std::cout << "size of result: " << results.size() << std::endl;
+            // std::cout << "size of result: " << results.size() << std::endl;
             for (auto i = 0; i < nq; ++i) {
                 int correct_cnt = 0;
-                //                std::cout << "query id = " << i << ", result[i].size = " << results[i].size() <<
-                //                std::endl;
+                // std::cout << "query id = " << i << ", result[i].size = " << results[i].size() <<
+                // std::endl;
                 for (auto& res_space : results[i]) {
-                    //                    std::cout << "buffer size = " << res_space->buffer_size << ", wp = " <<
-                    //                    res_space->wp << ", size of buffers = " << res_space->buffers.size() <<
-                    //                    std::endl;
+                    // std::cout << "buffer size = " << res_space->buffer_size << ", wp = " <<
+                    // res_space->wp << ", size of buffers = " << res_space->buffers.size() <<
+                    // std::endl;
                     auto qnr =
                         res_space->buffer_size * res_space->buffers.size() - res_space->buffer_size + res_space->wp;
-                    //                    std::cout << "qnr = " << qnr << std::endl;
+                    // std::cout << "qnr = " << qnr << std::endl;
                     for (auto j = 0; j < qnr; ++j) {
                         auto bno = j / res_space->buffer_size;
                         auto pos = j % res_space->buffer_size;
@@ -274,11 +274,11 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
 
     {
         index_->Train(base_dataset, conf);
-        index_->AddWithoutIds(base_dataset, milvus::knowhere::Config());
+        index_->AddWithoutIds(base_dataset, knowhere::Config());
 
-        std::vector<milvus::knowhere::DynamicResultSegment> results;
+        std::vector<knowhere::DynamicResultSegment> results;
         for (auto i = 0; i < nq; ++i) {
-            auto qd = milvus::knowhere::GenDataset(1, dim, xq.data() + i * dim);
+            auto qd = knowhere::GenDataset(1, dim, xq.data() + i * dim);
             results.push_back(index_->QueryByDistance(qd, conf, nullptr));
         }
 
@@ -290,9 +290,9 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
         EXPECT_EQ(index_->Count(), nb);
         EXPECT_EQ(index_->Dim(), dim);
         {  // query again and compare the result
-            std::vector<milvus::knowhere::DynamicResultSegment> rresults;
+            std::vector<knowhere::DynamicResultSegment> rresults;
             for (auto i = 0; i < nq; ++i) {
-                auto qd = milvus::knowhere::GenDataset(1, dim, xq.data() + i * dim);
+                auto qd = knowhere::GenDataset(1, dim, xq.data() + i * dim);
                 rresults.push_back(index_->QueryByDistance(qd, conf, nullptr));
             }
 
@@ -302,10 +302,10 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
 }
 
 TEST_P(IDMAPTest, idmap_range_search_ip) {
-    milvus::knowhere::Config conf{{milvus::knowhere::meta::DIM, dim},
-                                  {milvus::knowhere::IndexParams::range_search_radius, radius},
-                                  {milvus::knowhere::IndexParams::range_search_buffer_size, buffer_size},
-                                  {milvus::knowhere::Metric::TYPE, milvus::knowhere::Metric::IP}};
+    knowhere::Config conf{{knowhere::meta::DIM, dim},
+                          {knowhere::IndexParams::range_search_radius, radius},
+                          {knowhere::IndexParams::range_search_buffer_size, buffer_size},
+                          {knowhere::Metric::TYPE, knowhere::Metric::IP}};
 
     auto ipdis = [](const float* pa, const float* pb, size_t dim) -> float {
         float ret = 0;
@@ -334,7 +334,7 @@ TEST_P(IDMAPTest, idmap_range_search_ip) {
 
     bruteforce();
 
-    auto compare_res = [&](std::vector<milvus::knowhere::DynamicResultSegment>& results) {
+    auto compare_res = [&](std::vector<knowhere::DynamicResultSegment>& results) {
         {  // compare the result
             for (auto i = 0; i < nq; ++i) {
                 int correct_cnt = 0;
@@ -357,11 +357,11 @@ TEST_P(IDMAPTest, idmap_range_search_ip) {
 
     {
         index_->Train(base_dataset, conf);
-        index_->AddWithoutIds(base_dataset, milvus::knowhere::Config());
+        index_->AddWithoutIds(base_dataset, knowhere::Config());
 
-        std::vector<milvus::knowhere::DynamicResultSegment> results;
+        std::vector<knowhere::DynamicResultSegment> results;
         for (auto i = 0; i < nq; ++i) {
-            auto qd = milvus::knowhere::GenDataset(1, dim, xq.data() + i * dim);
+            auto qd = knowhere::GenDataset(1, dim, xq.data() + i * dim);
             results.push_back(index_->QueryByDistance(qd, conf, nullptr));
         }
 
@@ -373,9 +373,9 @@ TEST_P(IDMAPTest, idmap_range_search_ip) {
         EXPECT_EQ(index_->Count(), nb);
         EXPECT_EQ(index_->Dim(), dim);
         {  // query again and compare the result
-            std::vector<milvus::knowhere::DynamicResultSegment> rresults;
+            std::vector<knowhere::DynamicResultSegment> rresults;
             for (auto i = 0; i < nq; ++i) {
-                auto qd = milvus::knowhere::GenDataset(1, dim, xq.data() + i * dim);
+                auto qd = knowhere::GenDataset(1, dim, xq.data() + i * dim);
                 rresults.push_back(index_->QueryByDistance(qd, conf, nullptr));
             }
 
@@ -385,10 +385,10 @@ TEST_P(IDMAPTest, idmap_range_search_ip) {
 }
 
 TEST_P(IDMAPTest, idmap_dynamic_result_set) {
-    milvus::knowhere::Config conf{{milvus::knowhere::meta::DIM, dim},
-                                  {milvus::knowhere::IndexParams::range_search_radius, radius},
-                                  {milvus::knowhere::IndexParams::range_search_buffer_size, buffer_size},
-                                  {milvus::knowhere::Metric::TYPE, milvus::knowhere::Metric::L2}};
+    knowhere::Config conf{{knowhere::meta::DIM, dim},
+                          {knowhere::IndexParams::range_search_radius, radius},
+                          {knowhere::IndexParams::range_search_buffer_size, buffer_size},
+                          {knowhere::Metric::TYPE, knowhere::Metric::L2}};
 
     auto l2dis = [](const float* pa, const float* pb, size_t dim) -> float {
         float ret = 0;
@@ -419,31 +419,31 @@ TEST_P(IDMAPTest, idmap_dynamic_result_set) {
 
     bruteforce();
 
-    auto check_rst = [&](milvus::knowhere::DynamicResultSet& rst, milvus::knowhere::ResultSetPostProcessType rspt) {
+    auto check_rst = [&](knowhere::DynamicResultSet& rst, knowhere::ResultSetPostProcessType rspt) {
         {  // compare the result
             for (auto i = 0; i < rst.count - 1; ++i) {
-                if (rspt == milvus::knowhere::ResultSetPostProcessType::SortAsc)
+                if (rspt == knowhere::ResultSetPostProcessType::SortAsc)
                     ASSERT_LE(rst.distances.get() + i, rst.distances.get() + i + 1);
-                else if (rspt == milvus::knowhere::ResultSetPostProcessType::SortDesc)
+                else if (rspt == knowhere::ResultSetPostProcessType::SortDesc)
                     ASSERT_GE(rst.distances.get() + i, rst.distances.get() + i + 1);
             }
         }
     };
 
     {
-        milvus::knowhere::DynamicResultCollector collector;
+        knowhere::DynamicResultCollector collector;
         index_->Train(base_dataset, conf);
-        index_->AddWithoutIds(base_dataset, milvus::knowhere::Config());
+        index_->AddWithoutIds(base_dataset, knowhere::Config());
 
         for (auto i = 0; i < 3; ++i) {
-            auto qd = milvus::knowhere::GenDataset(1, dim, xq.data());
+            auto qd = knowhere::GenDataset(1, dim, xq.data());
             collector.Append(index_->QueryByDistance(qd, conf, nullptr));
         }
 
-        auto rst = collector.Merge(1000, milvus::knowhere::ResultSetPostProcessType::SortAsc);
+        auto rst = collector.Merge(1000, knowhere::ResultSetPostProcessType::SortAsc);
         ASSERT_LE(rst.count, 1000);
 
-        check_rst(rst, milvus::knowhere::ResultSetPostProcessType::SortAsc);
+        check_rst(rst, knowhere::ResultSetPostProcessType::SortAsc);
     }
 }
 
@@ -451,9 +451,9 @@ TEST_P(IDMAPTest, idmap_dynamic_result_set) {
 TEST_P(IDMAPTest, idmap_copy) {
     ASSERT_TRUE(!xb.empty());
 
-    milvus::knowhere::Config conf{{milvus::knowhere::meta::DIM, dim},
-                                  {milvus::knowhere::meta::TOPK, k},
-                                  {milvus::knowhere::Metric::TYPE, milvus::knowhere::Metric::L2}};
+    knowhere::Config conf{{knowhere::meta::DIM, dim},
+                          {knowhere::meta::TOPK, k},
+                          {knowhere::Metric::TYPE, knowhere::Metric::L2}};
 
     index_->Train(base_dataset, conf);
     index_->AddWithoutIds(base_dataset, conf);
@@ -473,13 +473,13 @@ TEST_P(IDMAPTest, idmap_copy) {
 
     {
         // cpu to gpu
-        ASSERT_ANY_THROW(milvus::knowhere::cloner::CopyCpuToGpu(index_, -1, conf));
-        auto clone_index = milvus::knowhere::cloner::CopyCpuToGpu(index_, DEVICEID, conf);
+        ASSERT_ANY_THROW(knowhere::cloner::CopyCpuToGpu(index_, -1, conf));
+        auto clone_index = knowhere::cloner::CopyCpuToGpu(index_, DEVICEID, conf);
         auto clone_result = clone_index->Query(query_dataset, conf, nullptr);
 
         AssertAnns(clone_result, nq, k);
-        ASSERT_THROW({ std::static_pointer_cast<milvus::knowhere::GPUIDMAP>(clone_index)->GetRawVectors(); },
-                     milvus::knowhere::KnowhereException);
+        ASSERT_THROW({ std::static_pointer_cast<knowhere::GPUIDMAP>(clone_index)->GetRawVectors(); },
+                     knowhere::KnowhereException);
         ASSERT_ANY_THROW(clone_index->Serialize(conf));
 
         auto binary = clone_index->Serialize(conf);
@@ -492,15 +492,15 @@ TEST_P(IDMAPTest, idmap_copy) {
         //        AssertAnns(clone_gpu_res, nq, k);
 
         // gpu to cpu
-        auto host_index = milvus::knowhere::cloner::CopyGpuToCpu(clone_index, conf);
+        auto host_index = knowhere::cloner::CopyGpuToCpu(clone_index, conf);
         auto host_result = host_index->Query(query_dataset, conf, nullptr);
         AssertAnns(host_result, nq, k);
-        ASSERT_TRUE(std::static_pointer_cast<milvus::knowhere::IDMAP>(host_index)->GetRawVectors() != nullptr);
+        ASSERT_TRUE(std::static_pointer_cast<knowhere::IDMAP>(host_index)->GetRawVectors() != nullptr);
 
         // gpu to gpu
-        auto device_index = milvus::knowhere::cloner::CopyCpuToGpu(index_, DEVICEID, conf);
+        auto device_index = knowhere::cloner::CopyCpuToGpu(index_, DEVICEID, conf);
         auto new_device_index =
-            std::static_pointer_cast<milvus::knowhere::GPUIDMAP>(device_index)->CopyGpuToGpu(DEVICEID, conf);
+            std::static_pointer_cast<knowhere::GPUIDMAP>(device_index)->CopyGpuToGpu(DEVICEID, conf);
         auto device_result = new_device_index->Query(query_dataset, conf, nullptr);
         AssertAnns(device_result, nq, k);
     }

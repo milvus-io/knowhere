@@ -21,13 +21,12 @@
 #include "knowhere/index/vector_index/gpu/IndexGPUIVFPQ.h"
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
 
-namespace milvus {
 namespace knowhere {
 
 void
 GPUIVFPQ::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA_DIM(dataset_ptr)
-    gpu_id_ = config[knowhere::meta::DEVICEID];
+    gpu_id_ = config[meta::DEVICEID];
     auto gpu_res = FaissGpuResourceMgr::GetInstance().GetRes(gpu_id_);
     if (gpu_res != nullptr) {
         ResScope rs(gpu_res, gpu_id_, true);
@@ -68,4 +67,3 @@ GPUIVFPQ::GenParams(const Config& config) {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

@@ -17,7 +17,6 @@
 #include "knowhere/index/vector_index/IndexIVF.h"
 #include "knowhere/index/vector_index/gpu/GPUIndex.h"
 
-namespace milvus {
 namespace knowhere {
 
 class GPUIVF_NM : public IVF, public GPUIndex {
@@ -60,4 +59,3 @@ class GPUIVF_NM : public IVF, public GPUIndex {
 using GPUIVFNMPtr = std::shared_ptr<GPUIVF_NM>;
 
 }  // namespace knowhere
-}  // namespace milvus

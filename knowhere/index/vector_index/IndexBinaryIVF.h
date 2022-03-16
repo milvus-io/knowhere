@@ -21,19 +21,18 @@
 #include "knowhere/index/vector_index/FaissBaseBinaryIndex.h"
 #include "knowhere/index/vector_index/VecIndex.h"
 
-namespace milvus {
 namespace knowhere {
 
 class BinaryIVF : public VecIndex, public FaissBaseBinaryIndex {
  public:
     BinaryIVF() : FaissBaseBinaryIndex(nullptr) {
         index_type_ = IndexEnum::INDEX_FAISS_BIN_IVFFLAT;
-        stats = std::make_shared<milvus::knowhere::IVFStatistics>(index_type_);
+        stats = std::make_shared<IVFStatistics>(index_type_);
     }
 
     explicit BinaryIVF(std::shared_ptr<faiss::IndexBinary> index) : FaissBaseBinaryIndex(std::move(index)) {
         index_type_ = IndexEnum::INDEX_FAISS_BIN_IVFFLAT;
-        stats = std::make_shared<milvus::knowhere::IVFStatistics>(index_type_);
+        stats = std::make_shared<IVFStatistics>(index_type_);
     }
 
     BinarySet
@@ -85,4 +84,3 @@ class BinaryIVF : public VecIndex, public FaissBaseBinaryIndex {
 using BinaryIVFIndexPtr = std::shared_ptr<BinaryIVF>;
 
 }  // namespace knowhere
-}  // namespace milvus

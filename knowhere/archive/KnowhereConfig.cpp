@@ -26,8 +26,7 @@
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
 #endif
 
-namespace milvus {
-namespace engine {
+namespace knowhere {
 
 constexpr int64_t M_BYTE = 1024 * 1024;
 
@@ -115,7 +114,7 @@ KnowhereConfig::SetStatisticsLevel(const int64_t stat_level) {
 #ifdef __APPLE__
     // do nothing
 #elif __linux__
-    milvus::knowhere::STATISTICS_LEVEL = stat_level;
+    knowhere::STATISTICS_LEVEL = stat_level;
     faiss::STATISTICS_LEVEL = stat_level;
 #else
     KNOWHERE_THROW_MSG("Unsupported SetStatisticsLevel on current platform!");
@@ -154,5 +153,4 @@ KnowhereConfig::FreeGPUResource() {
 }
 #endif
 
-}  // namespace engine
-}  // namespace milvus
+}  // namespace knowhere

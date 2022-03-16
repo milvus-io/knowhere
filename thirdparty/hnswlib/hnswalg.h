@@ -512,7 +512,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
     }
 
-    void saveIndex(milvus::knowhere::MemoryIOWriter& output) {
+    void saveIndex(knowhere::MemoryIOWriter& output) {
         // write l2/ip calculator
         writeBinaryPOD(output, metric_type_);
         writeBinaryPOD(output, data_size_);
@@ -544,7 +544,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         // output.close();
     }
 
-    void loadIndex(milvus::knowhere::MemoryIOReader& input, size_t max_elements_i = 0) {
+    void loadIndex(knowhere::MemoryIOReader& input, size_t max_elements_i = 0) {
         // linxj: init with metrictype
         size_t dim = 100;
         readBinaryPOD(input, metric_type_);

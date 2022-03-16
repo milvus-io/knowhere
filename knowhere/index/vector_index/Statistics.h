@@ -24,7 +24,6 @@
 #include "knowhere/index/IndexType.h"
 #include "knowhere/utils/BitsetView.h"
 
-namespace milvus {
 namespace knowhere {
 
 extern int32_t STATISTICS_LEVEL;
@@ -374,4 +373,3 @@ class IVFStatistics : public Statistics {
 };
 
 }  // namespace knowhere
-}  // namespace milvus

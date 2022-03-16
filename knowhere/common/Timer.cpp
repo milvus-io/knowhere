@@ -15,7 +15,6 @@
 #include "common/Log.h"
 #include "common/Timer.h"
 
-namespace milvus {
 namespace knowhere {
 
 TimeRecorder::TimeRecorder(std::string hdr, int64_t log_level) : header_(std::move(hdr)), log_level_(log_level) {
@@ -71,4 +70,3 @@ TimeRecorder::ElapseFromBegin(const std::string& msg) {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

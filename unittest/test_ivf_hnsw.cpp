@@ -28,7 +28,7 @@ using ::testing::TestWithParam;
 using ::testing::Values;
 
 class IVFHNSWTest : public DataGen,
-                    public TestWithParam<::std::tuple<milvus::knowhere::IndexType, milvus::knowhere::IndexMode>> {
+                    public TestWithParam<::std::tuple<knowhere::IndexType, knowhere::IndexMode>> {
  protected:
     void
     SetUp() override {
@@ -41,26 +41,26 @@ class IVFHNSWTest : public DataGen,
     void
     TearDown() override {
 #ifdef KNOWHERE_GPU_VERSION
-        milvus::knowhere::FaissGpuResourceMgr::GetInstance().Free();
+        knowhere::FaissGpuResourceMgr::GetInstance().Free();
 #endif
     }
 
  protected:
-    milvus::knowhere::IndexType index_type_;
-    milvus::knowhere::IndexMode index_mode_;
-    milvus::knowhere::Config conf_;
-    milvus::knowhere::IVFPtr index_ = nullptr;
+    knowhere::IndexType index_type_;
+    knowhere::IndexMode index_mode_;
+    knowhere::Config conf_;
+    knowhere::IVFPtr index_ = nullptr;
 };
 
 INSTANTIATE_TEST_CASE_P(IVFParameters,
                         IVFHNSWTest,
-                        Values(std::make_tuple(milvus::knowhere::IndexEnum::INDEX_FAISS_IVFHNSW,
-                                               milvus::knowhere::IndexMode::MODE_CPU)));
+                        Values(std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFHNSW,
+                                               knowhere::IndexMode::MODE_CPU)));
 
 TEST_P(IVFHNSWTest, ivfhnsw_basic_cpu) {
     assert(!xb.empty());
 
-    if (index_mode_ != milvus::knowhere::IndexMode::MODE_CPU) {
+    if (index_mode_ != knowhere::IndexMode::MODE_CPU) {
         return;
     }
 

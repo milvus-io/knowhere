@@ -48,10 +48,10 @@ class DataGen {
     std::vector<uint8_t> xq_bin;
     std::vector<int64_t> ids;
     std::vector<int64_t> xids;
-    milvus::knowhere::DatasetPtr base_dataset = nullptr;
-    milvus::knowhere::DatasetPtr query_dataset = nullptr;
-    milvus::knowhere::DatasetPtr id_dataset = nullptr;
-    milvus::knowhere::DatasetPtr xid_dataset = nullptr;
+    knowhere::DatasetPtr base_dataset = nullptr;
+    knowhere::DatasetPtr query_dataset = nullptr;
+    knowhere::DatasetPtr id_dataset = nullptr;
+    knowhere::DatasetPtr xid_dataset = nullptr;
 };
 
 extern void
@@ -92,32 +92,32 @@ enum class CheckMode {
 };
 
 void
-AssertAnns(const milvus::knowhere::DatasetPtr& result,
+AssertAnns(const knowhere::DatasetPtr& result,
            const int nq,
            const int k,
            const CheckMode check_mode = CheckMode::CHECK_EQUAL);
 
 void
-AssertVec(const milvus::knowhere::DatasetPtr& result,
-          const milvus::knowhere::DatasetPtr& base_dataset,
-          const milvus::knowhere::DatasetPtr& id_dataset,
+AssertVec(const knowhere::DatasetPtr& result,
+          const knowhere::DatasetPtr& base_dataset,
+          const knowhere::DatasetPtr& id_dataset,
           const int n,
           const int dim,
           const CheckMode check_mode = CheckMode::CHECK_EQUAL);
 
 void
-AssertBinVec(const milvus::knowhere::DatasetPtr& result,
-             const milvus::knowhere::DatasetPtr& base_dataset,
-             const milvus::knowhere::DatasetPtr& id_dataset,
+AssertBinVec(const knowhere::DatasetPtr& result,
+             const knowhere::DatasetPtr& base_dataset,
+             const knowhere::DatasetPtr& id_dataset,
              const int n,
              const int dim,
              const CheckMode check_mode = CheckMode::CHECK_EQUAL);
 
 void
-PrintResult(const milvus::knowhere::DatasetPtr& result, const int& nq, const int& k);
+PrintResult(const knowhere::DatasetPtr& result, const int& nq, const int& k);
 
 void
-ReleaseQueryResult(const milvus::knowhere::DatasetPtr& result);
+ReleaseQueryResult(const knowhere::DatasetPtr& result);
 
 struct FileIOWriter {
     std::fstream fs;

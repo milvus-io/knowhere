@@ -19,7 +19,6 @@
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/IndexParameter.h"
 
-namespace milvus {
 namespace knowhere {
 
 void
@@ -74,4 +73,3 @@ IndexNGTONNG::UpdateIndexSize() {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

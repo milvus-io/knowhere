@@ -13,9 +13,7 @@
 
 #include <mutex>
 
-namespace milvus {
-namespace knowhere {
-namespace impl {
+namespace knowhere::impl {
 
 using node_t = int64_t;
 
@@ -41,6 +39,4 @@ struct Neighbor {
 
 typedef std::lock_guard<std::mutex> LockGuard;
 
-}  // namespace impl
-}  // namespace knowhere
-}  // namespace milvus
+}  // namespace knowhere::impl

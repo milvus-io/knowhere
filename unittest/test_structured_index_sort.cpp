@@ -55,9 +55,9 @@ TEST(STRUCTUREDINDEXSORT_TEST, test_build) {
     int range = 100, n = 1000, *p = nullptr;
     gen_rand_data(range, n, p);
 
-    milvus::knowhere::StructuredIndexSort<int> structuredIndexSort((size_t)n, p);  // Build default
+    knowhere::StructuredIndexSort<int> structuredIndexSort((size_t)n, p);  // Build default
     std::sort(p, p + n);
-    const std::vector<milvus::knowhere::IndexStructure<int>> index_data = structuredIndexSort.GetData();
+    const std::vector<knowhere::IndexStructure<int>> index_data = structuredIndexSort.GetData();
     for (auto i = 0; i < n; ++i) {
         ASSERT_EQ(*(p + i), index_data[i].a_);
     }
@@ -65,7 +65,7 @@ TEST(STRUCTUREDINDEXSORT_TEST, test_build) {
 }
 
 TEST(STRUCTUREDINDEXSORT_TEST, test_serialize_and_load) {
-    auto serialize = [](const std::string& filename, milvus::knowhere::BinaryPtr& bin, uint8_t* ret) {
+    auto serialize = [](const std::string& filename, knowhere::BinaryPtr& bin, uint8_t* ret) {
         {
             // write and flush
             FileIOWriter writer(filename);
@@ -79,7 +79,7 @@ TEST(STRUCTUREDINDEXSORT_TEST, test_serialize_and_load) {
     int range = 100, n = 1000, *p = nullptr;
     gen_rand_data(range, n, p);
 
-    milvus::knowhere::StructuredIndexSort<int> structuredIndexSort((size_t)n, p);  // Build default
+    knowhere::StructuredIndexSort<int> structuredIndexSort((size_t)n, p);  // Build default
     auto binaryset = structuredIndexSort.Serialize();
 
     auto bin_data = binaryset.GetByName("index_data");
@@ -100,10 +100,10 @@ TEST(STRUCTUREDINDEXSORT_TEST, test_serialize_and_load) {
     binaryset.Append("index_length", length_data, bin_length->size);
 
     structuredIndexSort.Load(binaryset);
-    EXPECT_EQ(n * sizeof(milvus::knowhere::IndexStructure<int>), (int)structuredIndexSort.Size());
+    EXPECT_EQ(n * sizeof(knowhere::IndexStructure<int>), (int)structuredIndexSort.Size());
     EXPECT_EQ(true, structuredIndexSort.IsBuilt());
     std::sort(p, p + n);
-    const std::vector<milvus::knowhere::IndexStructure<int>> const_index_data = structuredIndexSort.GetData();
+    const std::vector<knowhere::IndexStructure<int>> const_index_data = structuredIndexSort.GetData();
     for (auto i = 0; i < n; ++i) {
         ASSERT_EQ(*(p + i), const_index_data[i].a_);
     }
@@ -114,7 +114,7 @@ TEST(STRUCTUREDINDEXSORT_TEST, test_serialize_and_load) {
 TEST(STRUCTUREDINDEXSORT_TEST, test_in) {
     int range = 1000, n = 1000, *p = nullptr;
     gen_rand_data(range, n, p);
-    milvus::knowhere::StructuredIndexSort<int> structuredIndexSort((size_t)n, p);  // Build default
+    knowhere::StructuredIndexSort<int> structuredIndexSort((size_t)n, p);  // Build default
 
     int test_times = 10;
     std::vector<int> test_vals, test_off;
@@ -139,7 +139,7 @@ TEST(STRUCTUREDINDEXSORT_TEST, test_in) {
 TEST(STRUCTUREDINDEXSORT_TEST, test_not_in) {
     int range = 10000, n = 1000, *p = nullptr;
     gen_rand_data(range, n, p);
-    milvus::knowhere::StructuredIndexSort<int> structuredIndexSort((size_t)n, p);  // Build default
+    knowhere::StructuredIndexSort<int> structuredIndexSort((size_t)n, p);  // Build default
 
     int test_times = 10;
     std::vector<int> test_vals, test_off;
@@ -167,13 +167,13 @@ TEST(STRUCTUREDINDEXSORT_TEST, test_not_in) {
 TEST(STRUCTUREDINDEXSORT_TEST, test_single_border_range) {
     int range = 100, n = 1000, *p = nullptr;
     gen_rand_data(range, n, p);
-    milvus::knowhere::StructuredIndexSort<int> structuredIndexSort((size_t)n, p);  // Build default
+    knowhere::StructuredIndexSort<int> structuredIndexSort((size_t)n, p);  // Build default
 
     srand((unsigned int)time(nullptr));
     int val;
     // test LT
     val = (int)random() % 100;
-    auto lt_res = structuredIndexSort.Range(val, milvus::knowhere::OperatorType::LT);
+    auto lt_res = structuredIndexSort.Range(val, knowhere::OperatorType::LT);
     for (auto i = 0; i < n; ++i) {
         if (*(p + i) < val)
             ASSERT_EQ(true, lt_res->test(i));
@@ -182,7 +182,7 @@ TEST(STRUCTUREDINDEXSORT_TEST, test_single_border_range) {
     }
     // test LE
     val = (int)random() % 100;
-    auto le_res = structuredIndexSort.Range(val, milvus::knowhere::OperatorType::LE);
+    auto le_res = structuredIndexSort.Range(val, knowhere::OperatorType::LE);
     for (auto i = 0; i < n; ++i) {
         if (*(p + i) <= val)
             ASSERT_EQ(true, le_res->test(i));
@@ -191,7 +191,7 @@ TEST(STRUCTUREDINDEXSORT_TEST, test_single_border_range) {
     }
     // test GE
     val = (int)random() % 100;
-    auto ge_res = structuredIndexSort.Range(val, milvus::knowhere::OperatorType::GE);
+    auto ge_res = structuredIndexSort.Range(val, knowhere::OperatorType::GE);
     for (auto i = 0; i < n; ++i) {
         if (*(p + i) >= val)
             ASSERT_EQ(true, ge_res->test(i));
@@ -200,7 +200,7 @@ TEST(STRUCTUREDINDEXSORT_TEST, test_single_border_range) {
     }
     // test GT
     val = (int)random() % 100;
-    auto gt_res = structuredIndexSort.Range(val, milvus::knowhere::OperatorType::GT);
+    auto gt_res = structuredIndexSort.Range(val, knowhere::OperatorType::GT);
     for (auto i = 0; i < n; ++i) {
         if (*(p + i) > val)
             ASSERT_EQ(true, gt_res->test(i));
@@ -214,7 +214,7 @@ TEST(STRUCTUREDINDEXSORT_TEST, test_single_border_range) {
 TEST(STRUCTUREDINDEXSORT_TEST, test_double_border_range) {
     int range = 100, n = 1000, *p = nullptr;
     gen_rand_data(range, n, p);
-    milvus::knowhere::StructuredIndexSort<int> structuredIndexSort((size_t)n, p);  // Build default
+    knowhere::StructuredIndexSort<int> structuredIndexSort((size_t)n, p);  // Build default
 
     srand((unsigned int)time(nullptr));
     int lb, ub;

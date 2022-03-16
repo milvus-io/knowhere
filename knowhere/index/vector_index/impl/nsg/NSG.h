@@ -22,9 +22,7 @@
 #include "knowhere/index/vector_index/impl/nsg/Neighbor.h"
 #include "knowhere/utils/BitsetView.h"
 
-namespace milvus {
-namespace knowhere {
-namespace impl {
+namespace knowhere::impl {
 
 using node_t = int64_t;
 
@@ -164,6 +162,4 @@ class NsgIndex {
     FindUnconnectedNode(float* data, boost::dynamic_bitset<>& flags, int64_t& root);
 };
 
-}  // namespace impl
-}  // namespace knowhere
-}  // namespace milvus
+}  // namespace knowhere::impl

@@ -18,7 +18,6 @@
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/structured_index/StructuredIndex.h"
 
-namespace milvus {
 namespace knowhere {
 
 template <typename T>
@@ -74,7 +73,7 @@ class StructuredIndexSort : public StructuredIndex<T> {
 
 template <typename T>
 using StructuredIndexSortPtr = std::shared_ptr<StructuredIndexSort<T>>;
+
 }  // namespace knowhere
-}  // namespace milvus
 
 #include "knowhere/index/structured_index/StructuredIndexSort-inl.h"

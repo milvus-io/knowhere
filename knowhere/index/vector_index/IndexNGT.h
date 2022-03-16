@@ -20,7 +20,6 @@
 #include "knowhere/index/IndexType.h"
 #include "knowhere/index/vector_index/VecIndex.h"
 
-namespace milvus {
 namespace knowhere {
 
 class IndexNGT : public VecIndex {
@@ -65,4 +64,3 @@ class IndexNGT : public VecIndex {
 };
 
 }  // namespace knowhere
-}  // namespace milvus

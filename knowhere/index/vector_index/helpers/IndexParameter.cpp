@@ -12,7 +12,6 @@
 #include "common/Exception.h"
 #include "index/vector_index/helpers/IndexParameter.h"
 
-namespace milvus {
 namespace knowhere {
 
 faiss::MetricType
@@ -43,4 +42,3 @@ GetMetricType(const std::string& type) {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

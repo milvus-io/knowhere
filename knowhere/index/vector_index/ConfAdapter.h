@@ -18,7 +18,6 @@
 #include "knowhere/common/Config.h"
 #include "knowhere/index/IndexType.h"
 
-namespace milvus {
 namespace knowhere {
 
 class ConfAdapter {
@@ -155,4 +154,3 @@ class NGTONNGConfAdapter : public ConfAdapter {
 };
 
 }  // namespace knowhere
-}  // namespace milvus
