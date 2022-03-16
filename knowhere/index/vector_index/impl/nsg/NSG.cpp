@@ -23,9 +23,7 @@
 #include "index/vector_index/impl/nsg/NSG.h"
 #include "index/vector_index/impl/nsg/NSGHelper.h"
 
-namespace milvus {
-namespace knowhere {
-namespace impl {
+namespace knowhere::impl {
 
 unsigned int seed = 100;
 
@@ -925,6 +923,4 @@ NsgIndex::GetSize() {
     return ret;
 }
 
-}  // namespace impl
-}  // namespace knowhere
-}  // namespace milvus
+}  // namespace knowhere::impl

@@ -18,7 +18,6 @@
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/vector_index/IndexRHNSW.h"
 
-namespace milvus {
 namespace knowhere {
 
 class IndexRHNSWPQ : public IndexRHNSW {
@@ -49,4 +48,3 @@ class IndexRHNSWPQ : public IndexRHNSW {
 };
 
 }  // namespace knowhere
-}  // namespace milvus

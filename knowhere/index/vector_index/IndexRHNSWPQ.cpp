@@ -21,7 +21,6 @@
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/FaissIO.h"
 
-namespace milvus {
 namespace knowhere {
 
 IndexRHNSWPQ::IndexRHNSWPQ(int d, int pq_m, int M) {
@@ -102,4 +101,3 @@ IndexRHNSWPQ::UpdateIndexSize() {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

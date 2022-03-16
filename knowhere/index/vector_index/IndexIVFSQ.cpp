@@ -29,7 +29,6 @@
 #include "index/vector_index/helpers/FaissGpuResourceMgr.h"
 #endif
 
-namespace milvus {
 namespace knowhere {
 
 void
@@ -79,4 +78,3 @@ IVFSQ::UpdateIndexSize() {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

@@ -25,7 +25,6 @@
 #include "knowhere/index/vector_index/gpu/IndexGPUIDMAP.h"
 #include "knowhere/index/vector_index/helpers/FaissIO.h"
 
-namespace milvus {
 namespace knowhere {
 
 VecIndexPtr
@@ -144,4 +143,3 @@ GPUIDMAP::GenGraph(const float* data, const int64_t k, GraphType& graph, const C
 }
 
 }  // namespace knowhere
-}  // namespace milvus

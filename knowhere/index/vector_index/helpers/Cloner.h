@@ -13,9 +13,7 @@
 
 #include "knowhere/index/vector_index/VecIndex.h"
 
-namespace milvus {
-namespace knowhere {
-namespace cloner {
+namespace knowhere::cloner {
 
 extern VecIndexPtr
 CopyCpuToGpu(const VecIndexPtr& index, const int64_t device_id, const Config& config);
@@ -23,6 +21,4 @@ CopyCpuToGpu(const VecIndexPtr& index, const int64_t device_id, const Config& co
 extern VecIndexPtr
 CopyGpuToCpu(const VecIndexPtr& index, const Config& config);
 
-}  // namespace cloner
-}  // namespace knowhere
-}  // namespace milvus
+}  // namespace knowhere::cloner

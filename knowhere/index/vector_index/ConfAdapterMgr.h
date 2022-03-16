@@ -19,7 +19,6 @@
 #include "knowhere/index/IndexType.h"
 #include "knowhere/index/vector_index/ConfAdapter.h"
 
-namespace milvus {
 namespace knowhere {
 
 class AdapterMgr {
@@ -50,4 +49,3 @@ class AdapterMgr {
 };
 
 }  // namespace knowhere
-}  // namespace milvus

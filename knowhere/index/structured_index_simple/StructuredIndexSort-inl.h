@@ -15,7 +15,6 @@
 #include "knowhere/common/Log.h"
 #include "knowhere/index/structured_index_simple/StructuredIndexSort.h"
 
-namespace milvus {
 namespace knowhere::scalar {
 
 template <typename T>
@@ -57,7 +56,7 @@ StructuredIndexSort<T>::build() {
 
 template <typename T>
 BinarySet
-StructuredIndexSort<T>::Serialize(const milvus::knowhere::Config& config) {
+StructuredIndexSort<T>::Serialize(const Config& config) {
     if (!is_built_) {
         build();
     }
@@ -78,7 +77,7 @@ StructuredIndexSort<T>::Serialize(const milvus::knowhere::Config& config) {
 
 template <typename T>
 void
-StructuredIndexSort<T>::Load(const milvus::knowhere::BinarySet& index_binary) {
+StructuredIndexSort<T>::Load(const BinarySet& index_binary) {
     try {
         size_t index_size;
         auto index_length = index_binary.GetByName("index_length");
@@ -197,4 +196,3 @@ StructuredIndexSort<T>::Range(T lower_bound_value, bool lb_inclusive, T upper_bo
 }
 
 }  // namespace knowhere::scalar
-}  // namespace milvus

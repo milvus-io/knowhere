@@ -29,17 +29,17 @@ class HNSWTest : public DataGen, public TestWithParam<std::string> {
         IndexType = GetParam();
         std::cout << "IndexType from GetParam() is: " << IndexType << std::endl;
         Generate(64, 10000, 10);  // dim = 64, nb = 10000, nq = 10
-        index_ = std::make_shared<milvus::knowhere::IndexHNSW>();
-        conf = milvus::knowhere::Config{
-            {milvus::knowhere::meta::DIM, 64},        {milvus::knowhere::meta::TOPK, 10},
-            {milvus::knowhere::IndexParams::M, 16},   {milvus::knowhere::IndexParams::efConstruction, 200},
-            {milvus::knowhere::IndexParams::ef, 200}, {milvus::knowhere::Metric::TYPE, milvus::knowhere::Metric::L2},
+        index_ = std::make_shared<knowhere::IndexHNSW>();
+        conf = knowhere::Config{
+            {knowhere::meta::DIM, 64},        {knowhere::meta::TOPK, 10},
+            {knowhere::IndexParams::M, 16},   {knowhere::IndexParams::efConstruction, 200},
+            {knowhere::IndexParams::ef, 200}, {knowhere::Metric::TYPE, knowhere::Metric::L2},
         };
     }
 
  protected:
-    milvus::knowhere::Config conf;
-    std::shared_ptr<milvus::knowhere::IndexHNSW> index_ = nullptr;
+    knowhere::Config conf;
+    std::shared_ptr<knowhere::IndexHNSW> index_ = nullptr;
     std::string IndexType;
 };
 
@@ -65,12 +65,12 @@ TEST_P(HNSWTest, HNSW_basic) {
     EXPECT_EQ(index_->Dim(), dim);
 
     // Serialize and Load before Query
-    milvus::knowhere::BinarySet bs = index_->Serialize(conf);
+    knowhere::BinarySet bs = index_->Serialize(conf);
 
-    int64_t dim = base_dataset->Get<int64_t>(milvus::knowhere::meta::DIM);
-    int64_t rows = base_dataset->Get<int64_t>(milvus::knowhere::meta::ROWS);
-    auto raw_data = base_dataset->Get<const void*>(milvus::knowhere::meta::TENSOR);
-    milvus::knowhere::BinaryPtr bptr = std::make_shared<milvus::knowhere::Binary>();
+    int64_t dim = base_dataset->Get<int64_t>(knowhere::meta::DIM);
+    int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
+    auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
+    knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
     bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
     bs.Append(RAW_DATA, bptr);
@@ -82,11 +82,11 @@ TEST_P(HNSWTest, HNSW_basic) {
 
     // case: k > nb
     const int64_t new_rows = 6;
-    base_dataset->Set(milvus::knowhere::meta::ROWS, new_rows);
+    base_dataset->Set(knowhere::meta::ROWS, new_rows);
     index_->Train(base_dataset, conf);
     index_->AddWithoutIds(base_dataset, conf);
     auto result2 = index_->Query(query_dataset, conf, nullptr);
-    auto res_ids = result2->Get<int64_t*>(milvus::knowhere::meta::IDS);
+    auto res_ids = result2->Get<int64_t*>(knowhere::meta::IDS);
     for (int64_t i = 0; i < nq; i++) {
         for (int64_t j = new_rows; j < k; j++) {
             ASSERT_EQ(res_ids[i * k + j], -1);
@@ -108,12 +108,12 @@ TEST_P(HNSWTest, HNSW_delete) {
     }
 
     // Serialize and Load before Query
-    milvus::knowhere::BinarySet bs = index_->Serialize(conf);
+    knowhere::BinarySet bs = index_->Serialize(conf);
 
-    int64_t dim = base_dataset->Get<int64_t>(milvus::knowhere::meta::DIM);
-    int64_t rows = base_dataset->Get<int64_t>(milvus::knowhere::meta::ROWS);
-    auto raw_data = base_dataset->Get<const void*>(milvus::knowhere::meta::TENSOR);
-    milvus::knowhere::BinaryPtr bptr = std::make_shared<milvus::knowhere::Binary>();
+    int64_t dim = base_dataset->Get<int64_t>(knowhere::meta::DIM);
+    int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
+    auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
+    knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
     bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
     bs.Append(RAW_DATA, bptr);
@@ -128,8 +128,8 @@ TEST_P(HNSWTest, HNSW_delete) {
 
     /*
      * delete result checked by eyes
-    auto ids1 = result1->Get<int64_t*>(milvus::knowhere::meta::IDS);
-    auto ids2 = result2->Get<int64_t*>(milvus::knowhere::meta::IDS);
+    auto ids1 = result1->Get<int64_t*>(knowhere::meta::IDS);
+    auto ids2 = result2->Get<int64_t*>(knowhere::meta::IDS);
     std::cout << std::endl;
     for (int i = 0; i < nq; ++ i) {
         std::cout << "ids1: ";
@@ -150,7 +150,7 @@ TEST_P(HNSWTest, HNSW_delete) {
 
 /*
 TEST_P(HNSWTest, HNSW_serialize) {
-    auto serialize = [](const std::string& filename, milvus::knowhere::BinaryPtr& bin, uint8_t* ret) {
+    auto serialize = [](const std::string& filename, knowhere::BinaryPtr& bin, uint8_t* ret) {
         {
             FileIOWriter writer(filename);
             writer(static_cast<void*>(bin->data.get()), bin->size);
@@ -178,7 +178,7 @@ TEST_P(HNSWTest, HNSW_serialize) {
         EXPECT_EQ(index_->Count(), nb);
         EXPECT_EQ(index_->Dim(), dim);
         auto result = index_->Query(query_dataset, conf);
-        AssertAnns(result, nq, conf[milvus::knowhere::meta::TOPK]);
+        AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
     }
 }*/
 
@@ -223,27 +223,27 @@ main() {
     int k = 4;
     int m = 16;
     int ef = 200;
-    milvus::knowhere::IndexHNSW_NM index;
-    milvus::knowhere::DatasetPtr base_dataset = generate_dataset(nb, d, (const void*)xb, ids);
-//    base_dataset->Set(milvus::knowhere::meta::ROWS, nb);
-//    base_dataset->Set(milvus::knowhere::meta::DIM, d);
-//    base_dataset->Set(milvus::knowhere::meta::TENSOR, (const void*)xb);
-//    base_dataset->Set(milvus::knowhere::meta::IDS, (const int64_t*)ids);
+    knowhere::IndexHNSW_NM index;
+    knowhere::DatasetPtr base_dataset = generate_dataset(nb, d, (const void*)xb, ids);
+//    base_dataset->Set(knowhere::meta::ROWS, nb);
+//    base_dataset->Set(knowhere::meta::DIM, d);
+//    base_dataset->Set(knowhere::meta::TENSOR, (const void*)xb);
+//    base_dataset->Set(knowhere::meta::IDS, (const int64_t*)ids);
 
-    milvus::knowhere::Config base_conf{
-        {milvus::knowhere::meta::DIM, d},
-        {milvus::knowhere::meta::TOPK, k},
-        {milvus::knowhere::IndexParams::M, m},
-        {milvus::knowhere::IndexParams::efConstruction, ef},
-        {milvus::knowhere::Metric::TYPE, milvus::knowhere::Metric::L2},
+    knowhere::Config base_conf{
+        {knowhere::meta::DIM, d},
+        {knowhere::meta::TOPK, k},
+        {knowhere::IndexParams::M, m},
+        {knowhere::IndexParams::efConstruction, ef},
+        {knowhere::Metric::TYPE, knowhere::Metric::L2},
     };
-    milvus::knowhere::DatasetPtr query_dataset = generate_query_dataset(nq, d, (const void*)xq);
-    milvus::knowhere::Config query_conf{
-        {milvus::knowhere::meta::DIM, d},
-        {milvus::knowhere::meta::TOPK, k},
-        {milvus::knowhere::IndexParams::M, m},
-        {milvus::knowhere::IndexParams::ef, ef},
-        {milvus::knowhere::Metric::TYPE, milvus::knowhere::Metric::L2},
+    knowhere::DatasetPtr query_dataset = generate_query_dataset(nq, d, (const void*)xq);
+    knowhere::Config query_conf{
+        {knowhere::meta::DIM, d},
+        {knowhere::meta::TOPK, k},
+        {knowhere::IndexParams::M, m},
+        {knowhere::IndexParams::ef, ef},
+        {knowhere::Metric::TYPE, knowhere::Metric::L2},
     };
 
     index.Train(base_dataset, base_conf);
@@ -253,8 +253,8 @@ main() {
     {  // sanity check
         auto res = index.Query(query_dataset, query_conf);
 //        printf("Query done!\n");
-        const int64_t* I = res->Get<int64_t*>(milvus::knowhere::meta::IDS);
-//        float* D = res->Get<float*>(milvus::knowhere::meta::DISTANCE);
+        const int64_t* I = res->Get<int64_t*>(knowhere::meta::IDS);
+//        float* D = res->Get<float*>(knowhere::meta::DISTANCE);
 
 //        printf("I=\n");
 //        for (int i = 0; i < 5; i++) {
@@ -272,7 +272,7 @@ main() {
 //    printf("---------------search xq-------------\n");
     {  // search xq
         auto res = index.Query(query_dataset, query_conf);
-        const int64_t* I = res->Get<int64_t*>(milvus::knowhere::meta::IDS);
+        const int64_t* I = res->Get<int64_t*>(knowhere::meta::IDS);
 
         printf("I=\n");
         for (int i = 0; i < nq; i++) {
@@ -284,7 +284,7 @@ main() {
     printf("----------------search xq with delete------------\n");
     {  // search xq with delete
         auto res = index.Query(query_dataset, query_conf, bitset);
-        auto I = res->Get<int64_t*>(milvus::knowhere::meta::IDS);
+        auto I = res->Get<int64_t*>(knowhere::meta::IDS);
 
         printf("I=\n");
         for (int i = 0; i < nq; i++) {

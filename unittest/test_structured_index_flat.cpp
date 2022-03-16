@@ -55,8 +55,8 @@ TEST(STRUCTUREDINDEXFLAT_TEST, test_build) {
     int range = 100, n = 1000, *p = nullptr;
     gen_rand_data(range, n, p);
 
-    milvus::knowhere::StructuredIndexFlat<int> structuredIndexFlat((size_t)n, p);  // Build default
-    const std::vector<milvus::knowhere::IndexStructure<int>> index_data = structuredIndexFlat.GetData();
+    knowhere::StructuredIndexFlat<int> structuredIndexFlat((size_t)n, p);  // Build default
+    const std::vector<knowhere::IndexStructure<int>> index_data = structuredIndexFlat.GetData();
     for (auto i = 0; i < n; ++i) {
         ASSERT_EQ(*(p + i), index_data[i].a_);
     }
@@ -66,7 +66,7 @@ TEST(STRUCTUREDINDEXFLAT_TEST, test_build) {
 TEST(STRUCTUREDINDEXFLAT_TEST, test_in) {
     int range = 1000, n = 1000, *p = nullptr;
     gen_rand_data(range, n, p);
-    milvus::knowhere::StructuredIndexFlat<int> structuredIndexFlat((size_t)n, p);  // Build default
+    knowhere::StructuredIndexFlat<int> structuredIndexFlat((size_t)n, p);  // Build default
 
     int test_times = 10;
     std::vector<int> test_vals, test_off;
@@ -88,7 +88,7 @@ TEST(STRUCTUREDINDEXFLAT_TEST, test_in) {
 TEST(STRUCTUREDINDEXFLAT_TEST, test_not_in) {
     int range = 10000, n = 1000, *p = nullptr;
     gen_rand_data(range, n, p);
-    milvus::knowhere::StructuredIndexFlat<int> structuredIndexFlat((size_t)n, p);  // Build default
+    knowhere::StructuredIndexFlat<int> structuredIndexFlat((size_t)n, p);  // Build default
 
     int test_times = 10;
     std::vector<int> test_vals, test_off;
@@ -110,13 +110,13 @@ TEST(STRUCTUREDINDEXFLAT_TEST, test_not_in) {
 TEST(STRUCTUREDINDEXFLAT_TEST, test_single_border_range) {
     int range = 100, n = 1000, *p = nullptr;
     gen_rand_data(range, n, p);
-    milvus::knowhere::StructuredIndexFlat<int> structuredIndexFlat((size_t)n, p);  // Build default
+    knowhere::StructuredIndexFlat<int> structuredIndexFlat((size_t)n, p);  // Build default
 
     srand((unsigned int)time(nullptr));
     int val;
     // test LT
     val = 10000;
-    auto lt_res = structuredIndexFlat.Range(val, milvus::knowhere::OperatorType::LT);
+    auto lt_res = structuredIndexFlat.Range(val, knowhere::OperatorType::LT);
     for (auto i = 0; i < n; ++i) {
         if (*(p + i) < val)
             ASSERT_EQ(true, lt_res->test(i));
@@ -127,7 +127,7 @@ TEST(STRUCTUREDINDEXFLAT_TEST, test_single_border_range) {
     // test LE
     val = (int)random() % 100;
 
-    auto le_res = structuredIndexFlat.Range(val, milvus::knowhere::OperatorType::LE);
+    auto le_res = structuredIndexFlat.Range(val, knowhere::OperatorType::LE);
     for (auto i = 0; i < n; ++i) {
         if (*(p + i) <= val)
             ASSERT_EQ(true, le_res->test(i));
@@ -137,7 +137,7 @@ TEST(STRUCTUREDINDEXFLAT_TEST, test_single_border_range) {
     }
     // test GE
     val = (int)random() % 100;
-    auto ge_res = structuredIndexFlat.Range(val, milvus::knowhere::OperatorType::GE);
+    auto ge_res = structuredIndexFlat.Range(val, knowhere::OperatorType::GE);
     for (auto i = 0; i < n; ++i) {
         if (*(p + i) >= val)
             ASSERT_EQ(true, ge_res->test(i));
@@ -146,7 +146,7 @@ TEST(STRUCTUREDINDEXFLAT_TEST, test_single_border_range) {
     }
     // test GT
     val = (int)random() % 100;
-    auto gt_res = structuredIndexFlat.Range(val, milvus::knowhere::OperatorType::GT);
+    auto gt_res = structuredIndexFlat.Range(val, knowhere::OperatorType::GT);
     for (auto i = 0; i < n; ++i) {
         if (*(p + i) > val)
             ASSERT_EQ(true, gt_res->test(i));
@@ -160,7 +160,7 @@ TEST(STRUCTUREDINDEXFLAT_TEST, test_single_border_range) {
 TEST(STRUCTUREDINDEXFLAT_TEST, test_double_border_range) {
     int range = 100, n = 1000, *p = nullptr;
     gen_rand_data(range, n, p);
-    milvus::knowhere::StructuredIndexFlat<int> structuredIndexFlat((size_t)n, p);  // Build default
+    knowhere::StructuredIndexFlat<int> structuredIndexFlat((size_t)n, p);  // Build default
 
     srand((unsigned int)time(nullptr));
     int lb, ub;

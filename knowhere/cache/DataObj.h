@@ -13,8 +13,7 @@
 
 #include <memory>
 
-namespace milvus {
-namespace cache {
+namespace knowhere {
 
 class DataObj {
  public:
@@ -25,5 +24,4 @@ class DataObj {
 
 using DataObjPtr = std::shared_ptr<DataObj>;
 
-}  // namespace cache
-}  // namespace milvus
+}  // namespace knowhere

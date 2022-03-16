@@ -14,7 +14,6 @@
 #include "common/Exception.h"
 #include "index/IndexType.h"
 
-namespace milvus {
 namespace knowhere {
 
 /* used in 0.8.0 */
@@ -43,4 +42,3 @@ const char* INDEX_NGTONNG = "NGT_ONNG";
 }  // namespace IndexEnum
 
 }  // namespace knowhere
-}  // namespace milvus

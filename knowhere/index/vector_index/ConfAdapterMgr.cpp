@@ -13,7 +13,6 @@
 #include "common/Log.h"
 #include "index/vector_index/ConfAdapterMgr.h"
 
-namespace milvus {
 namespace knowhere {
 
 ConfAdapterPtr
@@ -58,4 +57,3 @@ AdapterMgr::RegisterAdapter() {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

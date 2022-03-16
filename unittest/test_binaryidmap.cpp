@@ -27,14 +27,14 @@ class BinaryIDMAPTest : public DataGen, public TestWithParam<std::string> {
     void
     SetUp() override {
         Init_with_default(true);
-        index_ = std::make_shared<milvus::knowhere::BinaryIDMAP>();
+        index_ = std::make_shared<knowhere::BinaryIDMAP>();
     }
 
     void
     TearDown() override{};
 
  protected:
-    milvus::knowhere::BinaryIDMAPPtr index_ = nullptr;
+    knowhere::BinaryIDMAPPtr index_ = nullptr;
 };
 
 INSTANTIATE_TEST_CASE_P(METRICParameters,
@@ -49,10 +49,10 @@ TEST_P(BinaryIDMAPTest, binaryidmap_basic) {
     ASSERT_TRUE(!xb_bin.empty());
 
     std::string MetricType = GetParam();
-    milvus::knowhere::Config conf{
-        {milvus::knowhere::meta::DIM, dim},
-        {milvus::knowhere::meta::TOPK, k},
-        {milvus::knowhere::Metric::TYPE, MetricType},
+    knowhere::Config conf{
+        {knowhere::meta::DIM, dim},
+        {knowhere::meta::TOPK, k},
+        {knowhere::Metric::TYPE, MetricType},
     };
 
     // null faiss index
@@ -72,7 +72,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_basic) {
     // PrintResult(result, nq, k);
 
     auto binaryset = index_->Serialize(conf);
-    auto new_index = std::make_shared<milvus::knowhere::BinaryIDMAP>();
+    auto new_index = std::make_shared<knowhere::BinaryIDMAP>();
     new_index->Load(binaryset);
     auto result2 = new_index->Query(query_dataset, conf, nullptr);
     AssertAnns(result2, nq, k);
@@ -91,7 +91,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_basic) {
 }
 
 TEST_P(BinaryIDMAPTest, binaryidmap_serialize) {
-    auto serialize = [](const std::string& filename, milvus::knowhere::BinaryPtr& bin, uint8_t* ret) {
+    auto serialize = [](const std::string& filename, knowhere::BinaryPtr& bin, uint8_t* ret) {
         FileIOWriter writer(filename);
         writer(static_cast<void*>(bin->data.get()), bin->size);
 
@@ -100,16 +100,16 @@ TEST_P(BinaryIDMAPTest, binaryidmap_serialize) {
     };
 
     std::string MetricType = GetParam();
-    milvus::knowhere::Config conf{
-        {milvus::knowhere::meta::DIM, dim},
-        {milvus::knowhere::meta::TOPK, k},
-        {milvus::knowhere::Metric::TYPE, MetricType},
+    knowhere::Config conf{
+        {knowhere::meta::DIM, dim},
+        {knowhere::meta::TOPK, k},
+        {knowhere::Metric::TYPE, MetricType},
     };
 
     {
         // serialize index
         index_->Train(base_dataset, conf);
-        index_->AddWithoutIds(base_dataset, milvus::knowhere::Config());
+        index_->AddWithoutIds(base_dataset, knowhere::Config());
         auto re_result = index_->Query(query_dataset, conf, nullptr);
         AssertAnns(re_result, nq, k);
         //        PrintResult(re_result, nq, k);
@@ -137,17 +137,17 @@ TEST_P(BinaryIDMAPTest, binaryidmap_serialize) {
 
 TEST_P(BinaryIDMAPTest, binaryidmap_slice) {
     std::string MetricType = GetParam();
-    milvus::knowhere::Config conf{
-        {milvus::knowhere::meta::DIM, dim},
-        {milvus::knowhere::meta::TOPK, k},
-        {milvus::knowhere::Metric::TYPE, MetricType},
-        {milvus::knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
+    knowhere::Config conf{
+        {knowhere::meta::DIM, dim},
+        {knowhere::meta::TOPK, k},
+        {knowhere::Metric::TYPE, MetricType},
+        {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
     };
 
     {
         // serialize index
         index_->Train(base_dataset, conf);
-        index_->AddWithoutIds(base_dataset, milvus::knowhere::Config());
+        index_->AddWithoutIds(base_dataset, knowhere::Config());
         auto re_result = index_->Query(query_dataset, conf, nullptr);
         AssertAnns(re_result, nq, k);
         //        PrintResult(re_result, nq, k);
@@ -166,11 +166,11 @@ TEST_P(BinaryIDMAPTest, binaryidmap_slice) {
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search) {
     std::string MetricType = GetParam();
-    milvus::knowhere::Config conf{
-        {milvus::knowhere::meta::DIM, dim},
-        {milvus::knowhere::IndexParams::range_search_radius, radius},
-        {milvus::knowhere::IndexParams::range_search_buffer_size, buffer_size},
-        {milvus::knowhere::Metric::TYPE, MetricType},
+    knowhere::Config conf{
+        {knowhere::meta::DIM, dim},
+        {knowhere::IndexParams::range_search_radius, radius},
+        {knowhere::IndexParams::range_search_buffer_size, buffer_size},
+        {knowhere::Metric::TYPE, MetricType},
     };
 
     std::vector<std::vector<bool>> idmap(nq, std::vector<bool>(nb, false));
@@ -273,7 +273,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search) {
         }
     };
 
-    auto mt = conf[milvus::knowhere::Metric::TYPE].get<std::string>();
+    auto mt = conf[knowhere::Metric::TYPE].get<std::string>();
     //    std::cout << "current metric_type = " << mt << std::endl;
     float set_radius = radius;
     if ("HAMMING" == mt) {
@@ -309,11 +309,11 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search) {
     } else {
         std::cout << "unsupport type of metric type" << std::endl;
     }
-    conf[milvus::knowhere::IndexParams::range_search_radius] = set_radius;
-    //    std::cout << "current radius = " << conf[milvus::knowhere::IndexParams::range_search_radius].get<float>() <<
+    conf[knowhere::IndexParams::range_search_radius] = set_radius;
+    //    std::cout << "current radius = " << conf[knowhere::IndexParams::range_search_radius].get<float>() <<
     //    std::endl;
 
-    auto compare_res = [&](std::vector<milvus::knowhere::DynamicResultSegment>& results) {
+    auto compare_res = [&](std::vector<knowhere::DynamicResultSegment>& results) {
         //        std::cout << "show faiss ans:" << std::endl;
         for (auto i = 0; i < nq; ++i) {
             int correct_cnt = 0;
@@ -338,13 +338,13 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search) {
     {
         // serialize index
         index_->Train(base_dataset, conf);
-        index_->AddWithoutIds(base_dataset, milvus::knowhere::Config());
+        index_->AddWithoutIds(base_dataset, knowhere::Config());
         EXPECT_EQ(index_->Count(), nb);
         EXPECT_EQ(index_->Dim(), dim);
 
-        std::vector<milvus::knowhere::DynamicResultSegment> results;
+        std::vector<knowhere::DynamicResultSegment> results;
         for (auto i = 0; i < nq; ++i) {
-            auto qd = milvus::knowhere::GenDataset(1, dim, xq_bin.data() + i * dim / 8);
+            auto qd = knowhere::GenDataset(1, dim, xq_bin.data() + i * dim / 8);
             results.push_back(index_->QueryByDistance(qd, conf, nullptr));
         }
 
@@ -356,9 +356,9 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search) {
         EXPECT_EQ(index_->Count(), nb);
         EXPECT_EQ(index_->Dim(), dim);
         {
-            std::vector<milvus::knowhere::DynamicResultSegment> rresults;
+            std::vector<knowhere::DynamicResultSegment> rresults;
             for (auto i = 0; i < nq; ++i) {
-                auto qd = milvus::knowhere::GenDataset(1, dim, xq_bin.data() + i * dim / 8);
+                auto qd = knowhere::GenDataset(1, dim, xq_bin.data() + i * dim / 8);
                 rresults.push_back(index_->QueryByDistance(qd, conf, nullptr));
             }
 

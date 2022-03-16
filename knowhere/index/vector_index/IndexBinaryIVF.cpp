@@ -20,7 +20,6 @@
 #include "index/vector_index/IndexBinaryIVF.h"
 #include "index/vector_index/adapter/VectorAdapter.h"
 
-namespace milvus {
 namespace knowhere {
 
 using stdclock = std::chrono::high_resolution_clock;
@@ -235,4 +234,3 @@ BinaryIVF::QueryImpl(int64_t n,
 }
 
 }  // namespace knowhere
-}  // namespace milvus

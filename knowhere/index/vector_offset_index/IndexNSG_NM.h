@@ -18,7 +18,6 @@
 #include "knowhere/common/Log.h"
 #include "knowhere/index/vector_index/VecIndex.h"
 
-namespace milvus {
 namespace knowhere {
 
 namespace impl {
@@ -74,4 +73,3 @@ class NSG_NM : public VecIndex {
 using NSG_NMIndexPtr = std::shared_ptr<NSG_NM>();
 
 }  // namespace knowhere
-}  // namespace milvus

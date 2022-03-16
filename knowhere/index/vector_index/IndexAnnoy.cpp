@@ -23,7 +23,6 @@
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/FaissIO.h"
 
-namespace milvus {
 namespace knowhere {
 
 BinarySet
@@ -175,4 +174,3 @@ IndexAnnoy::UpdateIndexSize() {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

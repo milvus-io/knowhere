@@ -20,7 +20,6 @@
 #include "knowhere/common/Config.h"
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
 
-namespace milvus {
 namespace knowhere {
 
 class SPTAGParameterMgr {
@@ -52,4 +51,3 @@ class SPTAGParameterMgr {
 };
 
 }  // namespace knowhere
-}  // namespace milvus

@@ -13,13 +13,9 @@
 
 #include "knowhere/index/vector_index/impl/nsg/Neighbor.h"
 
-namespace milvus {
-namespace knowhere {
-namespace impl {
+namespace knowhere::impl {
 
 extern int
 InsertIntoPool(Neighbor* addr, unsigned K, Neighbor nn);
 
-}  // namespace impl
-}  // namespace knowhere
-}  // namespace milvus
+}  // namespace knowhere::impl

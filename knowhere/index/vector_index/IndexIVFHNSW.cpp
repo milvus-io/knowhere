@@ -26,7 +26,6 @@
 #include "index/vector_index/helpers/FaissIO.h"
 #include "index/vector_index/helpers/IndexParameter.h"
 
-namespace milvus {
 namespace knowhere {
 
 BinarySet
@@ -134,4 +133,3 @@ IVFHNSW::QueryImpl(int64_t n,
 }
 
 }  // namespace knowhere
-}  // namespace milvus

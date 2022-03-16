@@ -38,12 +38,12 @@ using ::testing::TestWithParam;
 using ::testing::Values;
 
 class IVFNMCPUTest : public DataGen,
-                     public TestWithParam<::std::tuple<milvus::knowhere::IndexType, milvus::knowhere::IndexMode>> {
+                     public TestWithParam<::std::tuple<knowhere::IndexType, knowhere::IndexMode>> {
  protected:
     void
     SetUp() override {
 #ifdef KNOWHERE_GPU_VERSION
-        milvus::knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
+        knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
 #endif
         std::tie(index_type_, index_mode_) = GetParam();
         Generate(DIM, NB, NQ);
@@ -54,26 +54,26 @@ class IVFNMCPUTest : public DataGen,
     void
     TearDown() override {
 #ifdef KNOWHERE_GPU_VERSION
-        milvus::knowhere::FaissGpuResourceMgr::GetInstance().Free();
+        knowhere::FaissGpuResourceMgr::GetInstance().Free();
 #endif
     }
 
  protected:
-    milvus::knowhere::IndexType index_type_;
-    milvus::knowhere::IndexMode index_mode_;
-    milvus::knowhere::Config conf_;
-    milvus::knowhere::IVFNMPtr index_ = nullptr;
+    knowhere::IndexType index_type_;
+    knowhere::IndexMode index_mode_;
+    knowhere::Config conf_;
+    knowhere::IVFNMPtr index_ = nullptr;
 };
 
 INSTANTIATE_TEST_CASE_P(IVFParameters,
                         IVFNMCPUTest,
-                        Values(std::make_tuple(milvus::knowhere::IndexEnum::INDEX_FAISS_IVFFLAT,
-                                               milvus::knowhere::IndexMode::MODE_CPU)));
+                        Values(std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFFLAT,
+                                               knowhere::IndexMode::MODE_CPU)));
 
 TEST_P(IVFNMCPUTest, ivf_basic_cpu) {
     assert(!xb.empty());
 
-    if (index_mode_ != milvus::knowhere::IndexMode::MODE_CPU) {
+    if (index_mode_ != knowhere::IndexMode::MODE_CPU) {
         return;
     }
 
@@ -87,12 +87,12 @@ TEST_P(IVFNMCPUTest, ivf_basic_cpu) {
 
     index_->SetIndexSize(nq * dim * sizeof(float));
 
-    milvus::knowhere::BinarySet bs = index_->Serialize(conf_);
+    knowhere::BinarySet bs = index_->Serialize(conf_);
 
-    int64_t dim = base_dataset->Get<int64_t>(milvus::knowhere::meta::DIM);
-    int64_t rows = base_dataset->Get<int64_t>(milvus::knowhere::meta::ROWS);
-    auto raw_data = base_dataset->Get<const void*>(milvus::knowhere::meta::TENSOR);
-    milvus::knowhere::BinaryPtr bptr = std::make_shared<milvus::knowhere::Binary>();
+    int64_t dim = base_dataset->Get<int64_t>(knowhere::meta::DIM);
+    int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
+    auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
+    knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
     bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
     bs.Append(RAW_DATA, bptr);
@@ -105,12 +105,12 @@ TEST_P(IVFNMCPUTest, ivf_basic_cpu) {
     // copy from cpu to gpu
     {
         EXPECT_NO_THROW({
-            auto clone_index = milvus::knowhere::cloner::CopyCpuToGpu(index_, DEVICEID, conf_);
+            auto clone_index = knowhere::cloner::CopyCpuToGpu(index_, DEVICEID, conf_);
             auto clone_result = clone_index->Query(query_dataset, conf_, nullptr);
             AssertAnns(clone_result, nq, k);
             std::cout << "clone C <=> G [" << index_type_ << "] success" << std::endl;
         });
-        EXPECT_ANY_THROW(milvus::knowhere::cloner::CopyCpuToGpu(index_, -1, milvus::knowhere::Config()));
+        EXPECT_ANY_THROW(knowhere::cloner::CopyCpuToGpu(index_, -1, knowhere::Config()));
     }
 #endif
 
@@ -123,14 +123,14 @@ TEST_P(IVFNMCPUTest, ivf_basic_cpu) {
     AssertAnns(result_bs_1, nq, k, CheckMode::CHECK_NOT_EQUAL);
 
 #ifdef KNOWHERE_GPU_VERSION
-    milvus::knowhere::FaissGpuResourceMgr::GetInstance().Dump();
+    knowhere::FaissGpuResourceMgr::GetInstance().Dump();
 #endif
 }
 
 TEST_P(IVFNMCPUTest, ivf_slice) {
     assert(!xb.empty());
 
-    if (index_mode_ != milvus::knowhere::IndexMode::MODE_CPU) {
+    if (index_mode_ != knowhere::IndexMode::MODE_CPU) {
         return;
     }
 
@@ -144,12 +144,12 @@ TEST_P(IVFNMCPUTest, ivf_slice) {
 
     index_->SetIndexSize(nq * dim * sizeof(float));
 
-    milvus::knowhere::BinarySet bs = index_->Serialize(conf_);
+    knowhere::BinarySet bs = index_->Serialize(conf_);
 
-    int64_t dim = base_dataset->Get<int64_t>(milvus::knowhere::meta::DIM);
-    int64_t rows = base_dataset->Get<int64_t>(milvus::knowhere::meta::ROWS);
-    auto raw_data = base_dataset->Get<const void*>(milvus::knowhere::meta::TENSOR);
-    milvus::knowhere::BinaryPtr bptr = std::make_shared<milvus::knowhere::Binary>();
+    int64_t dim = base_dataset->Get<int64_t>(knowhere::meta::DIM);
+    int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
+    auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
+    knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
     bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
     bs.Append(RAW_DATA, bptr);

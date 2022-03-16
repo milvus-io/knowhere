@@ -15,7 +15,6 @@
 #include "knowhere/common/Log.h"
 #include "knowhere/index/structured_index/StructuredIndexFlat.h"
 
-namespace milvus {
 namespace knowhere {
 
 template <typename T>
@@ -33,14 +32,14 @@ StructuredIndexFlat<T>::~StructuredIndexFlat() {
 
 template <typename T>
 BinarySet
-StructuredIndexFlat<T>::Serialize(const milvus::knowhere::Config& config) {
+StructuredIndexFlat<T>::Serialize(const Config& config) {
     // TODO
     return BinarySet();
 }
 
 template <typename T>
 void
-StructuredIndexFlat<T>::Load(const milvus::knowhere::BinarySet& index_binary) {
+StructuredIndexFlat<T>::Load(const BinarySet& index_binary) {
 }
 
 template <typename T>
@@ -150,4 +149,3 @@ StructuredIndexFlat<T>::Range(T lower_bound_value, bool lb_inclusive, T upper_bo
 }
 
 }  // namespace knowhere
-}  // namespace milvus

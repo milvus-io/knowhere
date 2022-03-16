@@ -18,14 +18,13 @@
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/vector_index/VecIndex.h"
 
-namespace milvus {
 namespace knowhere {
 
 class IndexHNSW : public VecIndex {
  public:
     IndexHNSW() {
         index_type_ = IndexEnum::INDEX_HNSW;
-        stats = std::make_shared<milvus::knowhere::LibHNSWStatistics>(index_type_);
+        stats = std::make_shared<LibHNSWStatistics>(index_type_);
     }
 
     BinarySet
@@ -62,4 +61,3 @@ class IndexHNSW : public VecIndex {
 };
 
 }  // namespace knowhere
-}  // namespace milvus

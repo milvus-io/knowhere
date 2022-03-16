@@ -28,20 +28,20 @@ class RHNSWPQTest : public DataGen, public TestWithParam<std::string> {
         IndexType = GetParam();
         std::cout << "IndexType from GetParam() is: " << IndexType << std::endl;
         Generate(64, 10000, 10);  // dim = 64, nb = 10000, nq = 10
-        index_ = std::make_shared<milvus::knowhere::IndexRHNSWPQ>();
-        conf = milvus::knowhere::Config{{milvus::knowhere::meta::DIM, 64},
-                                        {milvus::knowhere::meta::TOPK, 10},
-                                        {milvus::knowhere::IndexParams::M, 16},
-                                        {milvus::knowhere::IndexParams::efConstruction, 200},
-                                        {milvus::knowhere::IndexParams::ef, 200},
-                                        {milvus::knowhere::Metric::TYPE, milvus::knowhere::Metric::L2},
-                                        {milvus::knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
-                                        {milvus::knowhere::IndexParams::PQM, 8}};
+        index_ = std::make_shared<knowhere::IndexRHNSWPQ>();
+        conf = knowhere::Config{{knowhere::meta::DIM, 64},
+                                {knowhere::meta::TOPK, 10},
+                                {knowhere::IndexParams::M, 16},
+                                {knowhere::IndexParams::efConstruction, 200},
+                                {knowhere::IndexParams::ef, 200},
+                                {knowhere::Metric::TYPE, knowhere::Metric::L2},
+                                {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
+                                {knowhere::IndexParams::PQM, 8}};
     }
 
  protected:
-    milvus::knowhere::Config conf;
-    std::shared_ptr<milvus::knowhere::IndexRHNSWPQ> index_ = nullptr;
+    knowhere::Config conf;
+    std::shared_ptr<knowhere::IndexRHNSWPQ> index_ = nullptr;
     std::string IndexType;
 };
 
@@ -56,11 +56,11 @@ TEST_P(RHNSWPQTest, HNSW_basic) {
     EXPECT_EQ(index_->Dim(), dim);
 
     // Serialize and Load before Query
-    milvus::knowhere::BinarySet bs = index_->Serialize(conf);
+    knowhere::BinarySet bs = index_->Serialize(conf);
     auto result1 = index_->Query(query_dataset, conf, nullptr);
     //    AssertAnns(result1, nq, k);
 
-    auto tmp_index = std::make_shared<milvus::knowhere::IndexRHNSWPQ>();
+    auto tmp_index = std::make_shared<knowhere::IndexRHNSWPQ>();
 
     tmp_index->Load(bs);
 
@@ -89,8 +89,8 @@ TEST_P(RHNSWPQTest, HNSW_delete) {
 
     /*
      * delete result checked by eyes
-    auto ids1 = result1->Get<int64_t*>(milvus::knowhere::meta::IDS);
-    auto ids2 = result2->Get<int64_t*>(milvus::knowhere::meta::IDS);
+    auto ids1 = result1->Get<int64_t*>(knowhere::meta::IDS);
+    auto ids2 = result2->Get<int64_t*>(knowhere::meta::IDS);
     std::cout << std::endl;
     for (int i = 0; i < nq; ++ i) {
         std::cout << "ids1: ";
@@ -110,7 +110,7 @@ TEST_P(RHNSWPQTest, HNSW_delete) {
 }
 
 TEST_P(RHNSWPQTest, HNSW_serialize) {
-    auto serialize = [](const std::string& filename, milvus::knowhere::BinaryPtr& bin, uint8_t* ret) {
+    auto serialize = [](const std::string& filename, knowhere::BinaryPtr& bin, uint8_t* ret) {
         {
             FileIOWriter writer(filename);
             writer(static_cast<void*>(bin->data.get()), bin->size);
@@ -135,7 +135,7 @@ TEST_P(RHNSWPQTest, HNSW_serialize) {
         serialize(filename_dat, bin_dat, load_dat);
 
         binaryset.clear();
-        auto new_idx = std::make_shared<milvus::knowhere::IndexRHNSWPQ>();
+        auto new_idx = std::make_shared<knowhere::IndexRHNSWPQ>();
         std::shared_ptr<uint8_t[]> dat(load_dat);
         std::shared_ptr<uint8_t[]> idx(load_idx);
         binaryset.Append(new_idx->index_type() + "_Index", idx, bin_idx->size);
@@ -145,7 +145,7 @@ TEST_P(RHNSWPQTest, HNSW_serialize) {
         EXPECT_EQ(new_idx->Count(), nb);
         EXPECT_EQ(new_idx->Dim(), dim);
         auto result = new_idx->Query(query_dataset, conf, nullptr);
-        //        AssertAnns(result, nq, conf[milvus::knowhere::meta::TOPK]);
+        //        AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
     }
 }
 
@@ -154,11 +154,11 @@ TEST_P(RHNSWPQTest, HNSW_slice) {
         index_->Train(base_dataset, conf);
         index_->AddWithoutIds(base_dataset, conf);
         auto binaryset = index_->Serialize(conf);
-        auto new_idx = std::make_shared<milvus::knowhere::IndexRHNSWPQ>();
+        auto new_idx = std::make_shared<knowhere::IndexRHNSWPQ>();
         new_idx->Load(binaryset);
         EXPECT_EQ(new_idx->Count(), nb);
         EXPECT_EQ(new_idx->Dim(), dim);
         auto result = new_idx->Query(query_dataset, conf, nullptr);
-        //        AssertAnns(result, nq, conf[milvus::knowhere::meta::TOPK]);
+        //        AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
     }
 }

@@ -19,7 +19,6 @@
 
 #include "knowhere/index/vector_index/gpu/IndexGPUIVFSQ.h"
 
-namespace milvus {
 namespace knowhere {
 
 #ifdef KNOWHERE_GPU_VERSION
@@ -102,4 +101,3 @@ using IVFSQHybridPtr = std::shared_ptr<IVFSQHybrid>;
 #endif
 
 }  // namespace knowhere
-}  // namespace milvus

@@ -38,32 +38,32 @@ constexpr int64_t PINMEM = 1024 * 1024 * 200;
 constexpr int64_t TEMPMEM = 1024 * 1024 * 300;
 constexpr int64_t RESNUM = 2;
 
-inline milvus::knowhere::IVFPtr
-IndexFactory(const milvus::knowhere::IndexType& type, const milvus::knowhere::IndexMode mode) {
-    if (mode == milvus::knowhere::IndexMode::MODE_CPU) {
-        if (type == milvus::knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
-            return std::make_shared<milvus::knowhere::IVF>();
-        } else if (type == milvus::knowhere::IndexEnum::INDEX_FAISS_IVFPQ) {
-            return std::make_shared<milvus::knowhere::IVFPQ>();
-        } else if (type == milvus::knowhere::IndexEnum::INDEX_FAISS_IVFSQ8) {
-            return std::make_shared<milvus::knowhere::IVFSQ>();
-        } else if (type == milvus::knowhere::IndexEnum::INDEX_FAISS_IVFHNSW) {
-            return std::make_shared<milvus::knowhere::IVFHNSW>();
-        } else if (type == milvus::knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
+inline knowhere::IVFPtr
+IndexFactory(const knowhere::IndexType& type, const knowhere::IndexMode mode) {
+    if (mode == knowhere::IndexMode::MODE_CPU) {
+        if (type == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
+            return std::make_shared<knowhere::IVF>();
+        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFPQ) {
+            return std::make_shared<knowhere::IVFPQ>();
+        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8) {
+            return std::make_shared<knowhere::IVFSQ>();
+        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFHNSW) {
+            return std::make_shared<knowhere::IVFHNSW>();
+        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
             std::cout << "IVFSQ8H does not support MODE_CPU" << std::endl;
         } else {
             std::cout << "Invalid IndexType " << type << std::endl;
         }
 #ifdef KNOWHERE_GPU_VERSION
     } else {
-        if (type == milvus::knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
-            return std::make_shared<milvus::knowhere::GPUIVF>(DEVICEID);
-        } else if (type == milvus::knowhere::IndexEnum::INDEX_FAISS_IVFPQ) {
-            return std::make_shared<milvus::knowhere::GPUIVFPQ>(DEVICEID);
-        } else if (type == milvus::knowhere::IndexEnum::INDEX_FAISS_IVFSQ8) {
-            return std::make_shared<milvus::knowhere::GPUIVFSQ>(DEVICEID);
-        } else if (type == milvus::knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
-            return std::make_shared<milvus::knowhere::IVFSQHybrid>(DEVICEID);
+        if (type == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
+            return std::make_shared<knowhere::GPUIVF>(DEVICEID);
+        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFPQ) {
+            return std::make_shared<knowhere::GPUIVFPQ>(DEVICEID);
+        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8) {
+            return std::make_shared<knowhere::GPUIVFSQ>(DEVICEID);
+        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
+            return std::make_shared<knowhere::IVFSQHybrid>(DEVICEID);
         } else {
             std::cout << "Invalid IndexType " << type << std::endl;
         }
@@ -72,11 +72,11 @@ IndexFactory(const milvus::knowhere::IndexType& type, const milvus::knowhere::In
     return nullptr;
 }
 
-inline milvus::knowhere::IVFNMPtr
-IndexFactoryNM(const milvus::knowhere::IndexType& type, const milvus::knowhere::IndexMode mode) {
-    if (mode == milvus::knowhere::IndexMode::MODE_CPU) {
-        if (type == milvus::knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
-            return std::make_shared<milvus::knowhere::IVF_NM>();
+inline knowhere::IVFNMPtr
+IndexFactoryNM(const knowhere::IndexType& type, const knowhere::IndexMode mode) {
+    if (mode == knowhere::IndexMode::MODE_CPU) {
+        if (type == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
+            return std::make_shared<knowhere::IVF_NM>();
         } else {
             std::cout << "Invalid IndexType " << type << std::endl;
         }
@@ -92,59 +92,59 @@ class ParamGenerator {
         return instance;
     }
 
-    milvus::knowhere::Config
-    Gen(const milvus::knowhere::IndexType& type) {
-        if (type == milvus::knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
-            return milvus::knowhere::Config{
-                {milvus::knowhere::meta::DIM, DIM},
-                {milvus::knowhere::meta::TOPK, K},
-                {milvus::knowhere::IndexParams::nlist, 100},
-                {milvus::knowhere::IndexParams::nprobe, 4},
-                {milvus::knowhere::Metric::TYPE, milvus::knowhere::Metric::L2},
-                {milvus::knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
-                {milvus::knowhere::meta::DEVICEID, DEVICEID},
+    knowhere::Config
+    Gen(const knowhere::IndexType& type) {
+        if (type == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
+            return knowhere::Config{
+                {knowhere::meta::DIM, DIM},
+                {knowhere::meta::TOPK, K},
+                {knowhere::IndexParams::nlist, 100},
+                {knowhere::IndexParams::nprobe, 4},
+                {knowhere::Metric::TYPE, knowhere::Metric::L2},
+                {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
+                {knowhere::meta::DEVICEID, DEVICEID},
             };
-        } else if (type == milvus::knowhere::IndexEnum::INDEX_FAISS_IVFPQ) {
-            return milvus::knowhere::Config{
-                {milvus::knowhere::meta::DIM, DIM},
-                {milvus::knowhere::meta::TOPK, K},
-                {milvus::knowhere::IndexParams::nlist, 100},
-                {milvus::knowhere::IndexParams::nprobe, 4},
-                {milvus::knowhere::IndexParams::m, 4},
-                {milvus::knowhere::IndexParams::nbits, 8},
-                {milvus::knowhere::Metric::TYPE, milvus::knowhere::Metric::L2},
-                {milvus::knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
-                {milvus::knowhere::meta::DEVICEID, DEVICEID},
+        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFPQ) {
+            return knowhere::Config{
+                {knowhere::meta::DIM, DIM},
+                {knowhere::meta::TOPK, K},
+                {knowhere::IndexParams::nlist, 100},
+                {knowhere::IndexParams::nprobe, 4},
+                {knowhere::IndexParams::m, 4},
+                {knowhere::IndexParams::nbits, 8},
+                {knowhere::Metric::TYPE, knowhere::Metric::L2},
+                {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
+                {knowhere::meta::DEVICEID, DEVICEID},
             };
-        } else if (type == milvus::knowhere::IndexEnum::INDEX_FAISS_IVFSQ8 ||
-                   type == milvus::knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
-            return milvus::knowhere::Config{
-                {milvus::knowhere::meta::DIM, DIM},
-                {milvus::knowhere::meta::TOPK, K},
-                {milvus::knowhere::IndexParams::nlist, 100},
-                {milvus::knowhere::IndexParams::nprobe, 4},
-                {milvus::knowhere::IndexParams::nbits, 8},
-                {milvus::knowhere::Metric::TYPE, milvus::knowhere::Metric::L2},
-                {milvus::knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
-                {milvus::knowhere::meta::DEVICEID, DEVICEID},
+        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8 ||
+                   type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
+            return knowhere::Config{
+                {knowhere::meta::DIM, DIM},
+                {knowhere::meta::TOPK, K},
+                {knowhere::IndexParams::nlist, 100},
+                {knowhere::IndexParams::nprobe, 4},
+                {knowhere::IndexParams::nbits, 8},
+                {knowhere::Metric::TYPE, knowhere::Metric::L2},
+                {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
+                {knowhere::meta::DEVICEID, DEVICEID},
             };
-        } else if (type == milvus::knowhere::IndexEnum::INDEX_FAISS_IVFHNSW) {
-            return milvus::knowhere::Config{
-                {milvus::knowhere::meta::DIM, DIM},
-                {milvus::knowhere::meta::TOPK, K},
-                {milvus::knowhere::IndexParams::nlist, 100},
-                {milvus::knowhere::IndexParams::nprobe, 4},
-                {milvus::knowhere::IndexParams::M, 16},
-                {milvus::knowhere::IndexParams::efConstruction, 200},
-                {milvus::knowhere::IndexParams::ef, 200},
-                {milvus::knowhere::Metric::TYPE, milvus::knowhere::Metric::L2},
-                {milvus::knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
-                {milvus::knowhere::meta::DEVICEID, DEVICEID},
+        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFHNSW) {
+            return knowhere::Config{
+                {knowhere::meta::DIM, DIM},
+                {knowhere::meta::TOPK, K},
+                {knowhere::IndexParams::nlist, 100},
+                {knowhere::IndexParams::nprobe, 4},
+                {knowhere::IndexParams::M, 16},
+                {knowhere::IndexParams::efConstruction, 200},
+                {knowhere::IndexParams::ef, 200},
+                {knowhere::Metric::TYPE, knowhere::Metric::L2},
+                {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
+                {knowhere::meta::DEVICEID, DEVICEID},
             };
         } else {
             std::cout << "Invalid index type " << type << std::endl;
         }
-        return milvus::knowhere::Config();
+        return knowhere::Config();
     }
 };
 
@@ -155,14 +155,14 @@ class TestGpuIndexBase : public ::testing::Test {
     void
     SetUp() override {
 #ifdef KNOWHERE_GPU_VERSION
-        milvus::knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
+        knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
 #endif
     }
 
     void
     TearDown() override {
 #ifdef KNOWHERE_GPU_VERSION
-        milvus::knowhere::FaissGpuResourceMgr::GetInstance().Free();
+        knowhere::FaissGpuResourceMgr::GetInstance().Free();
 #endif
     }
 };

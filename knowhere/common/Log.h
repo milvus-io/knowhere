@@ -14,7 +14,6 @@
 #include <string>
 #include "easyloggingpp/easylogging++.h"
 
-namespace milvus {
 namespace knowhere {
 
 std::string
@@ -51,12 +50,12 @@ log_fatal_(const std::string&);
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 #define KNOWHERE_MODULE_NAME "KNOWHERE"
-#define KNOWHERE_MODULE_CLASS_FUNCTION                                                                        \
-    milvus::knowhere::LogOut("[%s][%s::%s][%s] ", KNOWHERE_MODULE_NAME, (typeid(*this).name()), __FUNCTION__, \
-                             milvus::knowhere::GetThreadName().c_str())
-#define KNOWHERE_MODULE_FUNCTION                                                  \
-    milvus::knowhere::LogOut("[%s][%s][%s] ", KNOWHERE_MODULE_NAME, __FUNCTION__, \
-                             milvus::knowhere::GetThreadName().c_str())
+#define KNOWHERE_MODULE_CLASS_FUNCTION                                                                \
+    knowhere::LogOut("[%s][%s::%s][%s] ", KNOWHERE_MODULE_NAME, (typeid(*this).name()), __FUNCTION__, \
+                     knowhere::GetThreadName().c_str())
+#define KNOWHERE_MODULE_FUNCTION                                          \
+    knowhere::LogOut("[%s][%s][%s] ", KNOWHERE_MODULE_NAME, __FUNCTION__, \
+                     knowhere::GetThreadName().c_str())
 
 #define LOG_KNOWHERE_TRACE_C LOG(TRACE) << KNOWHERE_MODULE_CLASS_FUNCTION
 #define LOG_KNOWHERE_DEBUG_C LOG(DEBUG) << KNOWHERE_MODULE_CLASS_FUNCTION
@@ -73,4 +72,3 @@ log_fatal_(const std::string&);
 #define LOG_KNOWHERE_FATAL_ LOG(FATAL) << KNOWHERE_MODULE_FUNCTION
 
 }  // namespace knowhere
-}  // namespace milvus

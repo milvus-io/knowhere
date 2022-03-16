@@ -14,7 +14,6 @@
 #include <exception>
 #include <string>
 
-namespace milvus {
 namespace knowhere {
 
 class KnowhereException : public std::exception {
@@ -33,7 +32,7 @@ class KnowhereException : public std::exception {
 
 #define KNOWHERE_THROW_MSG(MSG)                                                                  \
     do {                                                                                         \
-        throw milvus::knowhere::KnowhereException(MSG, __PRETTY_FUNCTION__, __FILE__, __LINE__); \
+        throw KnowhereException(MSG, __PRETTY_FUNCTION__, __FILE__, __LINE__); \
     } while (false)
 
 #define KNOHERE_THROW_FORMAT(FMT, ...)                                             \
@@ -46,4 +45,3 @@ class KnowhereException : public std::exception {
     } while (false)
 
 }  // namespace knowhere
-}  // namespace milvus

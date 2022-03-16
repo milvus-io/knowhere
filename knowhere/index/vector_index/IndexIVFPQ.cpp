@@ -29,7 +29,6 @@
 #include "index/vector_index/gpu/IndexGPUIVFPQ.h"
 #endif
 
-namespace milvus {
 namespace knowhere {
 
 void
@@ -108,4 +107,3 @@ IVFPQ::UpdateIndexSize() {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

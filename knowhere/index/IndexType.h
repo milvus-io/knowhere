@@ -13,7 +13,6 @@
 
 #include <string>
 
-namespace milvus {
 namespace knowhere {
 
 /* used in 0.7.0 */
@@ -74,4 +73,3 @@ extern const char* INDEX_NGTONNG;
 enum class IndexMode { MODE_CPU = 0, MODE_GPU = 1 };
 
 }  // namespace knowhere
-}  // namespace milvus

@@ -42,12 +42,12 @@ using ::testing::TestWithParam;
 using ::testing::Values;
 
 class IVFTest : public DataGen,
-                public TestWithParam<::std::tuple<milvus::knowhere::IndexType, milvus::knowhere::IndexMode>> {
+                public TestWithParam<::std::tuple<knowhere::IndexType, knowhere::IndexMode>> {
  protected:
     void
     SetUp() override {
 #ifdef KNOWHERE_GPU_VERSION
-        milvus::knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
+        knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
 #endif
         std::tie(index_type_, index_mode_) = GetParam();
         // Init_with_default();
@@ -63,15 +63,15 @@ class IVFTest : public DataGen,
     void
     TearDown() override {
 #ifdef KNOWHERE_GPU_VERSION
-        milvus::knowhere::FaissGpuResourceMgr::GetInstance().Free();
+        knowhere::FaissGpuResourceMgr::GetInstance().Free();
 #endif
     }
 
  protected:
-    milvus::knowhere::IndexType index_type_;
-    milvus::knowhere::IndexMode index_mode_;
-    milvus::knowhere::Config conf_;
-    milvus::knowhere::IVFPtr index_ = nullptr;
+    knowhere::IndexType index_type_;
+    knowhere::IndexMode index_mode_;
+    knowhere::Config conf_;
+    knowhere::IVFPtr index_ = nullptr;
 };
 
 INSTANTIATE_TEST_CASE_P(
@@ -79,17 +79,17 @@ INSTANTIATE_TEST_CASE_P(
     IVFTest,
     Values(
 #ifdef KNOWHERE_GPU_VERSION
-        std::make_tuple(milvus::knowhere::IndexEnum::INDEX_FAISS_IVFPQ, milvus::knowhere::IndexMode::MODE_GPU),
-        std::make_tuple(milvus::knowhere::IndexEnum::INDEX_FAISS_IVFSQ8, milvus::knowhere::IndexMode::MODE_GPU),
-        std::make_tuple(milvus::knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H, milvus::knowhere::IndexMode::MODE_GPU),
+        std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFPQ, knowhere::IndexMode::MODE_GPU),
+        std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFSQ8, knowhere::IndexMode::MODE_GPU),
+        std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H, knowhere::IndexMode::MODE_GPU),
 #endif
-        std::make_tuple(milvus::knowhere::IndexEnum::INDEX_FAISS_IVFPQ, milvus::knowhere::IndexMode::MODE_CPU),
-        std::make_tuple(milvus::knowhere::IndexEnum::INDEX_FAISS_IVFSQ8, milvus::knowhere::IndexMode::MODE_CPU)));
+        std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFPQ, knowhere::IndexMode::MODE_CPU),
+        std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFSQ8, knowhere::IndexMode::MODE_CPU)));
 
 TEST_P(IVFTest, ivf_basic_cpu) {
     assert(!xb.empty());
 
-    if (index_mode_ != milvus::knowhere::IndexMode::MODE_CPU) {
+    if (index_mode_ != knowhere::IndexMode::MODE_CPU) {
         return;
     }
 
@@ -105,12 +105,12 @@ TEST_P(IVFTest, ivf_basic_cpu) {
     AssertAnns(result, nq, k);
     // PrintResult(result, nq, k);
 
-    if (index_type_ != milvus::knowhere::IndexEnum::INDEX_FAISS_IVFPQ) {
+    if (index_type_ != knowhere::IndexEnum::INDEX_FAISS_IVFPQ) {
 #if 0
         auto result2 = index_->QueryById(id_dataset, conf_);
         AssertAnns(result2, nq, k);
 
-        if (index_type_ != milvus::knowhere::IndexEnum::INDEX_FAISS_IVFSQ8) {
+        if (index_type_ != knowhere::IndexEnum::INDEX_FAISS_IVFSQ8) {
             auto result3 = index_->GetVectorById(xid_dataset, conf_);
             AssertVec(result3, base_dataset, xid_dataset, 1, dim);
         } else {
@@ -140,14 +140,14 @@ TEST_P(IVFTest, ivf_basic_cpu) {
     }
 
 #ifdef KNOWHERE_GPU_VERSION
-    milvus::knowhere::FaissGpuResourceMgr::GetInstance().Dump();
+    knowhere::FaissGpuResourceMgr::GetInstance().Dump();
 #endif
 }
 
 TEST_P(IVFTest, ivf_basic_gpu) {
     assert(!xb.empty());
 
-    if (index_mode_ != milvus::knowhere::IndexMode::MODE_GPU) {
+    if (index_mode_ != knowhere::IndexMode::MODE_GPU) {
         return;
     }
 
@@ -172,12 +172,12 @@ TEST_P(IVFTest, ivf_basic_gpu) {
     // PrintResult(result, nq, k);
 
 #ifdef KNOWHERE_GPU_VERSION
-    milvus::knowhere::FaissGpuResourceMgr::GetInstance().Dump();
+    knowhere::FaissGpuResourceMgr::GetInstance().Dump();
 #endif
 }
 
 TEST_P(IVFTest, ivf_serialize) {
-    auto serialize = [](const std::string& filename, milvus::knowhere::BinaryPtr& bin, uint8_t* ret) {
+    auto serialize = [](const std::string& filename, knowhere::BinaryPtr& bin, uint8_t* ret) {
         FileIOWriter writer(filename);
         writer(static_cast<void*>(bin->data.get()), bin->size);
 
@@ -204,7 +204,7 @@ TEST_P(IVFTest, ivf_serialize) {
         EXPECT_EQ(index_->Count(), nb);
         EXPECT_EQ(index_->Dim(), dim);
         auto result = index_->Query(query_dataset, conf_, nullptr);
-        AssertAnns(result, nq, conf_[milvus::knowhere::meta::TOPK]);
+        AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
     }
 }
 
@@ -219,7 +219,7 @@ TEST_P(IVFTest, ivf_slice) {
         EXPECT_EQ(index_->Count(), nb);
         EXPECT_EQ(index_->Dim(), dim);
         auto result = index_->Query(query_dataset, conf_, nullptr);
-        AssertAnns(result, nq, conf_[milvus::knowhere::meta::TOPK]);
+        AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
     }
 }
 
@@ -237,12 +237,12 @@ TEST_P(IVFTest, clone_test) {
     index_->SetIndexSize(nq * dim * sizeof(float));
 
     auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, conf_[milvus::knowhere::meta::TOPK]);
+    AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
     // PrintResult(result, nq, k);
 
-    auto AssertEqual = [&](milvus::knowhere::DatasetPtr p1, milvus::knowhere::DatasetPtr p2) {
-        auto ids_p1 = p1->Get<int64_t*>(milvus::knowhere::meta::IDS);
-        auto ids_p2 = p2->Get<int64_t*>(milvus::knowhere::meta::IDS);
+    auto AssertEqual = [&](knowhere::DatasetPtr p1, knowhere::DatasetPtr p2) {
+        auto ids_p1 = p1->Get<int64_t*>(knowhere::meta::IDS);
+        auto ids_p2 = p2->Get<int64_t*>(knowhere::meta::IDS);
 
         for (int i = 0; i < nq * k; ++i) {
             EXPECT_EQ(*((int64_t*)(ids_p2) + i), *((int64_t*)(ids_p1) + i));
@@ -253,9 +253,9 @@ TEST_P(IVFTest, clone_test) {
 
     {
         // copy from gpu to cpu
-        if (index_mode_ == milvus::knowhere::IndexMode::MODE_GPU) {
+        if (index_mode_ == knowhere::IndexMode::MODE_GPU) {
             EXPECT_NO_THROW({
-                auto clone_index = milvus::knowhere::cloner::CopyGpuToCpu(index_, milvus::knowhere::Config());
+                auto clone_index = knowhere::cloner::CopyGpuToCpu(index_, knowhere::Config());
                 auto clone_result = clone_index->Query(query_dataset, conf_, nullptr);
                 AssertEqual(result, clone_result);
                 std::cout << "clone G <=> C [" << index_type_ << "] success" << std::endl;
@@ -264,22 +264,22 @@ TEST_P(IVFTest, clone_test) {
             EXPECT_THROW(
                 {
                     std::cout << "clone G <=> C [" << index_type_ << "] failed" << std::endl;
-                    auto clone_index = milvus::knowhere::cloner::CopyGpuToCpu(index_, milvus::knowhere::Config());
+                    auto clone_index = knowhere::cloner::CopyGpuToCpu(index_, knowhere::Config());
                 },
-                milvus::knowhere::KnowhereException);
+                knowhere::KnowhereException);
         }
     }
 
     {
         // copy to gpu
-        if (index_type_ != milvus::knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
+        if (index_type_ != knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
             EXPECT_NO_THROW({
-                auto clone_index = milvus::knowhere::cloner::CopyCpuToGpu(index_, DEVICEID, milvus::knowhere::Config());
+                auto clone_index = knowhere::cloner::CopyCpuToGpu(index_, DEVICEID, knowhere::Config());
                 auto clone_result = clone_index->Query(query_dataset, conf_, nullptr);
                 AssertEqual(result, clone_result);
                 std::cout << "clone C <=> G [" << index_type_ << "] success" << std::endl;
             });
-            EXPECT_ANY_THROW(milvus::knowhere::cloner::CopyCpuToGpu(index_, -1, milvus::knowhere::Config()));
+            EXPECT_ANY_THROW(knowhere::cloner::CopyCpuToGpu(index_, -1, knowhere::Config()));
         }
     }
 }
@@ -287,7 +287,7 @@ TEST_P(IVFTest, clone_test) {
 
 #ifdef KNOWHERE_GPU_VERSION
 TEST_P(IVFTest, gpu_seal_test) {
-    if (index_mode_ != milvus::knowhere::IndexMode::MODE_GPU) {
+    if (index_mode_ != knowhere::IndexMode::MODE_GPU) {
         return;
     }
     assert(!xb.empty());
@@ -304,47 +304,47 @@ TEST_P(IVFTest, gpu_seal_test) {
     index_->SetIndexSize(nq * dim * sizeof(float));
 
     auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, conf_[milvus::knowhere::meta::TOPK]);
+    AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
     ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
     ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
 
-    auto cpu_idx = milvus::knowhere::cloner::CopyGpuToCpu(index_, milvus::knowhere::Config());
-    milvus::knowhere::IVFPtr ivf_idx = std::dynamic_pointer_cast<milvus::knowhere::IVF>(cpu_idx);
+    auto cpu_idx = knowhere::cloner::CopyGpuToCpu(index_, knowhere::Config());
+    knowhere::IVFPtr ivf_idx = std::dynamic_pointer_cast<knowhere::IVF>(cpu_idx);
 
-    milvus::knowhere::TimeRecorder tc("CopyToGpu");
-    milvus::knowhere::cloner::CopyCpuToGpu(cpu_idx, DEVICEID, milvus::knowhere::Config());
+    knowhere::TimeRecorder tc("CopyToGpu");
+    knowhere::cloner::CopyCpuToGpu(cpu_idx, DEVICEID, knowhere::Config());
     auto without_seal = tc.RecordSection("Without seal");
     ivf_idx->Seal();
     tc.RecordSection("seal cost");
-    milvus::knowhere::cloner::CopyCpuToGpu(cpu_idx, DEVICEID, milvus::knowhere::Config());
+    knowhere::cloner::CopyCpuToGpu(cpu_idx, DEVICEID, knowhere::Config());
     auto with_seal = tc.RecordSection("With seal");
     ASSERT_GE(without_seal, with_seal);
 
     // copy to GPU with invalid device id
-    ASSERT_ANY_THROW(milvus::knowhere::cloner::CopyCpuToGpu(cpu_idx, -1, milvus::knowhere::Config()));
+    ASSERT_ANY_THROW(knowhere::cloner::CopyCpuToGpu(cpu_idx, -1, knowhere::Config()));
 }
 
 TEST_P(IVFTest, invalid_gpu_source) {
-    if (index_mode_ != milvus::knowhere::IndexMode::MODE_GPU) {
+    if (index_mode_ != knowhere::IndexMode::MODE_GPU) {
         return;
     }
 
     auto invalid_conf = ParamGenerator::GetInstance().Gen(index_type_);
-    invalid_conf[milvus::knowhere::meta::DEVICEID] = -1;
+    invalid_conf[knowhere::meta::DEVICEID] = -1;
 
-    // if (index_type_ == milvus::knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
+    // if (index_type_ == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
     //     null faiss index
     //     index_->SetIndexSize(0);
-    //     milvus::knowhere::cloner::CopyGpuToCpu(index_, milvus::knowhere::Config());
+    //     knowhere::cloner::CopyGpuToCpu(index_, knowhere::Config());
     // }
 
     index_->Train(base_dataset, conf_);
     ASSERT_ANY_THROW(index_->Serialize(conf_));
     ASSERT_ANY_THROW(index_->Query(base_dataset, invalid_conf, nullptr));
 
-    auto ivf_index = std::dynamic_pointer_cast<milvus::knowhere::GPUIVF>(index_);
+    auto ivf_index = std::dynamic_pointer_cast<knowhere::GPUIVF>(index_);
     if (ivf_index) {
-        auto gpu_index = std::dynamic_pointer_cast<milvus::knowhere::GPUIndex>(ivf_index);
+        auto gpu_index = std::dynamic_pointer_cast<knowhere::GPUIndex>(ivf_index);
         gpu_index->SetGpuDevice(-1);
         ASSERT_EQ(gpu_index->GetGpuDevice(), -1);
     }
@@ -354,18 +354,18 @@ TEST_P(IVFTest, invalid_gpu_source) {
 }
 
 TEST_P(IVFTest, IVFSQHybrid_test) {
-    if (index_type_ != milvus::knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
+    if (index_type_ != knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
         return;
     }
 
     index_->SetIndexSize(0);
-    milvus::knowhere::cloner::CopyGpuToCpu(index_, conf_);
-    ASSERT_ANY_THROW(milvus::knowhere::cloner::CopyCpuToGpu(index_, -1, conf_));
+    knowhere::cloner::CopyGpuToCpu(index_, conf_);
+    ASSERT_ANY_THROW(knowhere::cloner::CopyCpuToGpu(index_, -1, conf_));
     ASSERT_ANY_THROW(index_->Train(base_dataset, conf_));
     ASSERT_ANY_THROW(index_->CopyCpuToGpu(DEVICEID, conf_));
 
     index_->Train(base_dataset, conf_);
-    auto index = std::dynamic_pointer_cast<milvus::knowhere::IVFSQHybrid>(index_);
+    auto index = std::dynamic_pointer_cast<knowhere::IVFSQHybrid>(index_);
     ASSERT_TRUE(index != nullptr);
     ASSERT_ANY_THROW(index->UnsetQuantizer());
 

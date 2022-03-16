@@ -22,7 +22,6 @@
 #include "knowhere/index/vector_index/helpers/FaissIO.h"
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
 
-namespace milvus {
 namespace knowhere {
 
 #ifdef KNOWHERE_GPU_VERSION
@@ -30,7 +29,7 @@ namespace knowhere {
 void
 IVFSQHybrid::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA_DIM(dataset_ptr)
-    gpu_id_ = config[knowhere::meta::DEVICEID];
+    gpu_id_ = config[meta::DEVICEID];
 
     auto gpu_res = FaissGpuResourceMgr::GetInstance().GetRes(gpu_id_);
     if (gpu_res != nullptr) {
@@ -117,7 +116,7 @@ IVFSQHybrid::CopyCpuToGpuWithQuantizer(const int64_t device_id, const Config& co
 
 VecIndexPtr
 IVFSQHybrid::LoadData(const FaissIVFQuantizerPtr& quantizer_ptr, const Config& config) {
-    int64_t gpu_id = config[knowhere::meta::DEVICEID];
+    int64_t gpu_id = config[meta::DEVICEID];
 
     if (auto res = FaissGpuResourceMgr::GetInstance().GetRes(gpu_id)) {
         ResScope rs(res, gpu_id, false);
@@ -145,7 +144,7 @@ IVFSQHybrid::LoadData(const FaissIVFQuantizerPtr& quantizer_ptr, const Config& c
 
 FaissIVFQuantizerPtr
 IVFSQHybrid::LoadQuantizer(const Config& config) {
-    auto gpu_id = config[knowhere::meta::DEVICEID].get<int64_t>();
+    auto gpu_id = config[meta::DEVICEID].get<int64_t>();
 
     if (auto res = FaissGpuResourceMgr::GetInstance().GetRes(gpu_id)) {
         ResScope rs(res, gpu_id, false);
@@ -279,4 +278,3 @@ FaissIVFQuantizer::~FaissIVFQuantizer() {
 #endif
 
 }  // namespace knowhere
-}  // namespace milvus

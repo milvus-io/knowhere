@@ -16,7 +16,6 @@
 #include "index/vector_index/FaissBaseIndex.h"
 #include "index/vector_index/helpers/FaissIO.h"
 
-namespace milvus {
 namespace knowhere {
 
 BinarySet
@@ -58,4 +57,3 @@ FaissBaseIndex::SealImpl() {
 // FaissBaseIndex::~FaissBaseIndex() {}
 //
 }  // namespace knowhere
-}  // namespace milvus

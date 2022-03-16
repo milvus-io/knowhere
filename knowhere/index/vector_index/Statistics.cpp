@@ -18,7 +18,6 @@
 #include "common/Log.h"
 #include "index/vector_index/Statistics.h"
 
-namespace milvus {
 namespace knowhere {
 
 int32_t STATISTICS_LEVEL = 0;
@@ -199,4 +198,3 @@ IVFStatistics::AccessCDF(const std::vector<size_t>& axis_x) {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

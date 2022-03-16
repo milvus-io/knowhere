@@ -17,7 +17,6 @@
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/IndexParameter.h"
 
-namespace milvus {
 namespace knowhere {
 
 BinarySet
@@ -217,4 +216,3 @@ IndexNGT::UpdateIndexSize() {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

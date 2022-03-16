@@ -14,7 +14,6 @@
 
 #include <utility>
 
-namespace milvus {
 namespace knowhere {
 
 constexpr int64_t MB = 1LL << 20;
@@ -129,4 +128,3 @@ FaissGpuResourceMgr::Dump() {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

@@ -25,13 +25,12 @@
 #include "knowhere/index/vector_offset_index/IndexIVF_NM.h"
 #include "knowhere/index/vector_offset_index/gpu/IndexGPUIVF_NM.h"
 
-namespace milvus {
 namespace knowhere {
 
 void
 GPUIVF_NM::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA_DIM(dataset_ptr)
-    gpu_id_ = config[knowhere::meta::DEVICEID];
+    gpu_id_ = config[meta::DEVICEID];
 
     auto gpu_res = FaissGpuResourceMgr::GetInstance().GetRes(gpu_id_);
     if (gpu_res != nullptr) {
@@ -139,4 +138,3 @@ GPUIVF_NM::QueryImpl(int64_t n,
 }
 
 }  // namespace knowhere
-}  // namespace milvus

@@ -19,7 +19,6 @@
 
 #include "knowhere/index/vector_index/VecIndex.h"
 
-namespace milvus {
 namespace knowhere {
 
 class CPUSPTAGRNG : public VecIndex {
@@ -69,4 +68,3 @@ class CPUSPTAGRNG : public VecIndex {
 using CPUSPTAGRNGPtr = std::shared_ptr<CPUSPTAGRNG>;
 
 }  // namespace knowhere
-}  // namespace milvus

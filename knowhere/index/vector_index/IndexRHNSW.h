@@ -23,19 +23,18 @@
 #include <faiss/index_io.h>
 #include <faiss/IndexRHNSW.h>
 
-namespace milvus {
 namespace knowhere {
 
 class IndexRHNSW : public VecIndex, public FaissBaseIndex {
  public:
     IndexRHNSW() : FaissBaseIndex(nullptr) {
         index_type_ = IndexEnum::INVALID;
-        stats = std::make_shared<milvus::knowhere::RHNSWStatistics>(index_type_);
+        stats = std::make_shared<RHNSWStatistics>(index_type_);
     }
 
     explicit IndexRHNSW(std::shared_ptr<faiss::Index> index) : FaissBaseIndex(std::move(index)) {
         index_type_ = IndexEnum::INVALID;
-        stats = std::make_shared<milvus::knowhere::RHNSWStatistics>(index_type_);
+        stats = std::make_shared<RHNSWStatistics>(index_type_);
     }
 
     BinarySet
@@ -70,5 +69,5 @@ class IndexRHNSW : public VecIndex, public FaissBaseIndex {
     ClearStatistics() override;
 #endif
 };
+
 }  // namespace knowhere
-}  // namespace milvus

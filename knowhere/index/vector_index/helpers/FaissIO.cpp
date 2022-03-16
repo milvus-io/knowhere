@@ -13,7 +13,6 @@
 
 #include "index/vector_index/helpers/FaissIO.h"
 
-namespace milvus {
 namespace knowhere {
 
 // TODO(linxj): Get From Config File
@@ -63,4 +62,3 @@ MemoryIOReader::operator()(void* ptr, size_t size, size_t nitems) {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

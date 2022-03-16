@@ -22,10 +22,9 @@
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/FaissIO.h"
 
-namespace milvus {
 namespace knowhere {
 
-IndexRHNSWSQ::IndexRHNSWSQ(int d, faiss::QuantizerType qtype, int M, milvus::knowhere::MetricType metric) {
+IndexRHNSWSQ::IndexRHNSWSQ(int d, faiss::QuantizerType qtype, int M, MetricType metric) {
     faiss::MetricType mt =
         metric == Metric::L2 ? faiss::MetricType::METRIC_L2 : faiss::MetricType::METRIC_INNER_PRODUCT;
     index_ = std::shared_ptr<faiss::Index>(new faiss::IndexRHNSWSQ(d, qtype, M, mt));
@@ -107,4 +106,3 @@ IndexRHNSWSQ::UpdateIndexSize() {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

@@ -19,7 +19,6 @@
 #include "knowhere/index/IndexType.h"
 #include "knowhere/index/vector_index/IndexRHNSW.h"
 
-namespace milvus {
 namespace knowhere {
 
 class IndexRHNSWFlat : public IndexRHNSW {
@@ -48,4 +47,3 @@ class IndexRHNSWFlat : public IndexRHNSW {
 };
 
 }  // namespace knowhere
-}  // namespace milvus

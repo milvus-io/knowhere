@@ -18,7 +18,6 @@
 #include <utility>
 #include <vector>
 
-namespace milvus {
 namespace knowhere {
 
 struct Binary {
@@ -89,4 +88,3 @@ class BinarySet {
 };
 
 }  // namespace knowhere
-}  // namespace milvus

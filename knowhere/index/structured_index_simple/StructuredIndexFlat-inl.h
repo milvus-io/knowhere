@@ -15,7 +15,6 @@
 #include "knowhere/common/Log.h"
 #include "knowhere/index/structured_index_simple/StructuredIndexFlat.h"
 
-namespace milvus {
 namespace knowhere::scalar {
 
 template <typename T>
@@ -151,4 +150,3 @@ StructuredIndexFlat<T>::Range(T lower_bound_value, bool lb_inclusive, T upper_bo
 }
 
 }  // namespace knowhere::scalar
-}  // namespace milvus

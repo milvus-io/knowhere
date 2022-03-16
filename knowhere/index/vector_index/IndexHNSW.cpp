@@ -26,7 +26,6 @@
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/FaissIO.h"
 
-namespace milvus {
 namespace knowhere {
 
 // void
@@ -262,4 +261,3 @@ IndexHNSW::ClearStatistics() {
 #endif
 
 }  // namespace knowhere
-}  // namespace milvus

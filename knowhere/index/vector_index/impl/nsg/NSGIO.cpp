@@ -13,9 +13,7 @@
 
 #include "index/vector_index/impl/nsg/NSGIO.h"
 
-namespace milvus {
-namespace knowhere {
-namespace impl {
+namespace knowhere::impl {
 
 void
 write_index(NsgIndex* index, MemoryIOWriter& writer) {
@@ -63,6 +61,4 @@ read_index(MemoryIOReader& reader) {
     return index;
 }
 
-}  // namespace impl
-}  // namespace knowhere
-}  // namespace milvus
+}  // namespace knowhere::impl

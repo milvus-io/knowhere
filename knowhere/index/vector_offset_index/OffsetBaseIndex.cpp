@@ -16,7 +16,6 @@
 #include "index/vector_index/helpers/FaissIO.h"
 #include "index/vector_offset_index/OffsetBaseIndex.h"
 
-namespace milvus {
 namespace knowhere {
 
 BinarySet
@@ -51,4 +50,3 @@ OffsetBaseIndex::LoadImpl(const BinarySet& binary_set, const IndexType& type) {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

@@ -22,10 +22,9 @@
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/FaissIO.h"
 
-namespace milvus {
 namespace knowhere {
 
-IndexRHNSWFlat::IndexRHNSWFlat(int d, int M, milvus::knowhere::MetricType metric) {
+IndexRHNSWFlat::IndexRHNSWFlat(int d, int M, MetricType metric) {
     faiss::MetricType mt =
         metric == Metric::L2 ? faiss::MetricType::METRIC_L2 : faiss::MetricType::METRIC_INNER_PRODUCT;
     index_ = std::shared_ptr<faiss::Index>(new faiss::IndexRHNSWFlat(d, M, mt));
@@ -105,4 +104,3 @@ IndexRHNSWFlat::UpdateIndexSize() {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

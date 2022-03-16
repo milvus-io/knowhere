@@ -13,9 +13,7 @@
 
 #include "index/vector_index/impl/nsg/NSGHelper.h"
 
-namespace milvus {
-namespace knowhere {
-namespace impl {
+namespace knowhere::impl {
 
 // TODO: impl search && insert && return insert pos. why not just find and swap?
 int
@@ -66,6 +64,4 @@ InsertIntoPool(Neighbor* addr, unsigned K, Neighbor nn) {
     return right;
 }
 
-}  // namespace impl
-}  // namespace knowhere
-}  // namespace milvus
+}  // namespace knowhere::impl

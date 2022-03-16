@@ -17,7 +17,6 @@
 #include "knowhere/common/Config.h"
 #include "knowhere/common/Exception.h"
 
-namespace milvus {
 namespace knowhere {
 
 extern const char* INDEX_FILE_SLICE_SIZE_IN_MEGABYTE;
@@ -30,4 +29,3 @@ void
 Disassemble(const int64_t& slice_size_in_byte, BinarySet& binarySet);
 
 }  // namespace knowhere
-}  // namespace milvus

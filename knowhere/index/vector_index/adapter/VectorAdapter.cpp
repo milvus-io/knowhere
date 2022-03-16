@@ -15,7 +15,6 @@
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/IndexParameter.h"
 
-namespace milvus {
 namespace knowhere {
 
 DatasetPtr
@@ -28,4 +27,3 @@ GenDataset(const int64_t nb, const int64_t dim, const void* xb) {
 }
 
 }  // namespace knowhere
-}  // namespace milvus

@@ -17,7 +17,6 @@
 #include "knowhere/index/Index.h"
 #include <boost/dynamic_bitset.hpp>
 
-namespace milvus {
 namespace knowhere::scalar {
 
 enum OperatorType { LT = 0, LE = 1, GT = 3, GE = 4 };
@@ -82,5 +81,5 @@ class StructuredIndex : public Index {
 
 template <typename T>
 using StructuredIndexPtr = std::shared_ptr<StructuredIndex<T>>;
+
 }  // namespace knowhere::scalar
-}  // namespace milvus

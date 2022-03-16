@@ -21,7 +21,7 @@
 /*Some unittest for knowhere/common, mainly for improve code coverage.*/
 
 TEST(COMMON_TEST, dataset_test) {
-    milvus::knowhere::Dataset set;
+    knowhere::Dataset set;
     int64_t v1 = 111;
 
     set.Set("key1", v1);
@@ -34,14 +34,14 @@ TEST(COMMON_TEST, dataset_test) {
 
 TEST(COMMON_TEST, knowhere_exception) {
     const std::string msg = "test";
-    milvus::knowhere::KnowhereException ex(msg);
+    knowhere::KnowhereException ex(msg);
     ASSERT_EQ(ex.what(), msg);
 }
 
 TEST(COMMON_TEST, time_recoder) {
     InitLog();
 
-    milvus::knowhere::TimeRecorder recoder("COMMTEST", 0);
+    knowhere::TimeRecorder recoder("COMMTEST", 0);
     sleep(1);
     double span = recoder.ElapseFromBegin("get time");
     ASSERT_GE(span, 1.0);

@@ -31,7 +31,6 @@
 #include "index/vector_index/helpers/FaissGpuResourceMgr.h"
 #endif
 
-namespace milvus {
 namespace knowhere {
 
 BinarySet
@@ -98,8 +97,8 @@ IDMAP::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::B
 }
 
 DynamicResultSegment
-IDMAP::QueryByDistance(const milvus::knowhere::DatasetPtr& dataset,
-                       const milvus::knowhere::Config& config,
+IDMAP::QueryByDistance(const DatasetPtr& dataset,
+                       const Config& config,
                        const faiss::BitsetView bitset) {
     if (!index_) {
         KNOWHERE_THROW_MSG("index not initialize");
@@ -191,4 +190,3 @@ IDMAP::QueryImpl(int64_t n,
 }
 
 }  // namespace knowhere
-}  // namespace milvus

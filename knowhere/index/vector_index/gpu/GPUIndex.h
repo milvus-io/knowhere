@@ -14,7 +14,6 @@
 #include "knowhere/index/vector_index/VecIndex.h"
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
 
-namespace milvus {
 namespace knowhere {
 
 class GPUIndex {
@@ -47,4 +46,3 @@ class GPUIndex {
 };
 
 }  // namespace knowhere
-}  // namespace milvus

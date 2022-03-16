@@ -11,7 +11,6 @@
 
 #include "knowhere/index/vector_index/helpers/SPTAGParameterMgr.h"
 
-namespace milvus {
 namespace knowhere {
 
 const Config&
@@ -64,4 +63,3 @@ SPTAGParameterMgr::SPTAGParameterMgr() {
 }
 
 }  // namespace knowhere
-}  // namespace milvus
