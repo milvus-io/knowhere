@@ -15,9 +15,9 @@
 #include <utility>
 #include <vector>
 
-#include "index/vector_index/FaissBaseBinaryIndex.h"
-#include "index/vector_index/VecIndex.h"
-#include "index/vector_index/helpers/DynamicResultSet.h"
+#include "knowhere/index/vector_index/FaissBaseBinaryIndex.h"
+#include "knowhere/index/vector_index/VecIndex.h"
+#include "knowhere/index/vector_index/helpers/DynamicResultSet.h"
 
 namespace milvus {
 namespace knowhere {

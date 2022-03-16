@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "index/vector_index/IndexNGT.h"
+#include "knowhere/index/vector_index/IndexNGT.h"
 
 namespace milvus {
 namespace knowhere {

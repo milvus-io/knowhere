@@ -12,7 +12,7 @@
 #pragma once
 
 #include <string>
-#include "common/MetricType.h"
+#include "knowhere/common/MetricType.h"
 
 namespace milvus {
 namespace knowhere {

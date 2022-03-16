@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "Neighbor.h"
+#include "knowhere/index/vector_index/impl/nsg/Neighbor.h"
 
 namespace milvus {
 namespace knowhere {

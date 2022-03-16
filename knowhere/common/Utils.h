@@ -12,9 +12,10 @@
 #pragma once
 
 #include <string>
-#include "BinarySet.h"
-#include "Config.h"
-#include "Exception.h"
+
+#include "knowhere/common/BinarySet.h"
+#include "knowhere/common/Config.h"
+#include "knowhere/common/Exception.h"
 
 namespace milvus {
 namespace knowhere {

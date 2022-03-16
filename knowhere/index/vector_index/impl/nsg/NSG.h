@@ -17,11 +17,10 @@
 #include <string>
 #include <vector>
 
-#include "common/Config.h"
-#include "faiss/utils/BitsetView.h"
-#include "index/vector_index/helpers/IndexParameter.h"
-#include "index/vector_index/impl/nsg/Distance.h"
-#include "index/vector_index/impl/nsg/Neighbor.h"
+#include "knowhere/index/vector_index/helpers/IndexParameter.h"
+#include "knowhere/index/vector_index/impl/nsg/Distance.h"
+#include "knowhere/index/vector_index/impl/nsg/Neighbor.h"
+#include "knowhere/utils/BitsetView.h"
 
 namespace milvus {
 namespace knowhere {

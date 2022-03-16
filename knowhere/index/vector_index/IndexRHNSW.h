@@ -15,13 +15,13 @@
 #include <mutex>
 #include <utility>
 
-#include "common/Exception.h"
-#include "index/vector_index/FaissBaseIndex.h"
-#include "index/vector_index/VecIndex.h"
-#include "index/vector_index/adapter/VectorAdapter.h"
+#include "knowhere/common/Exception.h"
+#include "knowhere/index/vector_index/FaissBaseIndex.h"
+#include "knowhere/index/vector_index/VecIndex.h"
+#include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 
 #include <faiss/index_io.h>
-#include "faiss/IndexRHNSW.h"
+#include <faiss/IndexRHNSW.h>
 
 namespace milvus {
 namespace knowhere {
