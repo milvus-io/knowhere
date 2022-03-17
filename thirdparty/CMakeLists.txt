@@ -89,7 +89,7 @@ macro(build_faiss)
 
     set( FAISS_CMAKE_ARGS
             "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
-            "-DCMAKE_BUILD_TYPE=Release"
+            "-DCMAKE_BUILD_TYPE=Debug"
             "-DFAISS_ENABLE_PYTHON=OFF"
             "-DFAISS_C_COMPILER=${FAISS_C_COMPILER}"
             "-DFAISS_CXX_COMPILER=${FAISS_CXX_COMPILER}"
