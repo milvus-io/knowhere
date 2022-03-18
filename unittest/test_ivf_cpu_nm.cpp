@@ -69,7 +69,6 @@ INSTANTIATE_TEST_CASE_P(IVFParameters,
                         IVFNMCPUTest,
                         Values(std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFFLAT,
                                                knowhere::IndexMode::MODE_CPU)));
-
 TEST_P(IVFNMCPUTest, ivf_basic_cpu) {
     assert(!xb.empty());
 
@@ -93,7 +92,7 @@ TEST_P(IVFNMCPUTest, ivf_basic_cpu) {
     int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
     auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
     knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
-    bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
+    bptr->data = std::shared_ptr<uint8_t>((uint8_t*)raw_data, [](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
     bs.Append(RAW_DATA, bptr);
     index_->Load(bs);
@@ -150,7 +149,7 @@ TEST_P(IVFNMCPUTest, ivf_slice) {
     int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
     auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
     knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
-    bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
+    bptr->data = std::shared_ptr<uint8_t>((uint8_t*)raw_data, [](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
     bs.Append(RAW_DATA, bptr);
     index_->Load(bs);

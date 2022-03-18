@@ -26,8 +26,8 @@ using idx_t = int64_t;
  * Class: Dynamic result set (merged results)
  */
 struct DynamicResultSet {
-    std::shared_ptr<idx_t[]> labels;     /// result for query i is labels[lims[i]:lims[i + 1]]
-    std::shared_ptr<float[]> distances;  /// corresponding distances, not sorted
+    std::shared_ptr<idx_t> labels;     /// result for query i is labels[lims[i]:lims[i + 1]]
+    std::shared_ptr<float> distances;  /// corresponding distances, not sorted
     size_t count;  /// size of the result buffer's size, when reaches this size, auto start a new buffer
 
     void

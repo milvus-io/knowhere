@@ -18,10 +18,14 @@ extern fvec_func_ptr fvec_L2sqr;
 extern fvec_func_ptr fvec_L1;
 extern fvec_func_ptr fvec_Linf;
 
-bool cpu_support_avx512();
-bool cpu_support_avx2();
-bool cpu_support_sse4_2();
+bool
+cpu_support_avx512();
+bool
+cpu_support_avx2();
+bool
+cpu_support_sse4_2();
 
-void hook_fvec(std::string&);
+void
+hook_fvec(std::string&);
 
-} // namespace faiss
+}  // namespace faiss

@@ -10,6 +10,7 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <gtest/gtest.h>
+
 #include <iostream>
 #include <sstream>
 
@@ -17,7 +18,6 @@
 #include "knowhere/index/vector_index/IndexSPTAG.h"
 #include "knowhere/index/vector_index/adapter/SptagAdapter.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
-
 #include "unittest/utils.h"
 
 using ::testing::Combine;
@@ -129,7 +129,7 @@ TEST_P(SPTAGTest, sptag_serialize) {
 
             auto load_data = new uint8_t[bin_size];
             reader(load_data, bin_size);
-            std::shared_ptr<uint8_t[]> data(load_data);
+            std::shared_ptr<uint8_t> data(load_data);
             load_data_list.Append(meta_list[i].first, data, bin_size);
         }
 
@@ -177,7 +177,7 @@ TEST_P(SPTAGTest, sptag_slice) {
 
             auto load_data = new uint8_t[bin_size];
             reader(load_data, bin_size);
-            std::shared_ptr<uint8_t[]> data(load_data);
+            std::shared_ptr<uint8_t> data(load_data);
             load_data_list.Append(meta_list[i].first, data, bin_size);
         }
 

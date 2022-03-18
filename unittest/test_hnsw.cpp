@@ -10,12 +10,14 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <gtest/gtest.h>
-#include "knowhere/common/Config.h"
-#include "knowhere/index/vector_index/IndexHNSW.h"
-#include "knowhere/index/vector_index/helpers/IndexParameter.h"
+
 #include <iostream>
 #include <random>
+
+#include "knowhere/common/Config.h"
 #include "knowhere/common/Exception.h"
+#include "knowhere/index/vector_index/IndexHNSW.h"
+#include "knowhere/index/vector_index/helpers/IndexParameter.h"
 #include "unittest/utils.h"
 
 using ::testing::Combine;
@@ -71,7 +73,7 @@ TEST_P(HNSWTest, HNSW_basic) {
     int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
     auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
     knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
-    bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
+    bptr->data = std::shared_ptr<uint8_t>((uint8_t*)raw_data, [](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
     bs.Append(RAW_DATA, bptr);
 
@@ -114,7 +116,7 @@ TEST_P(HNSWTest, HNSW_delete) {
     int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
     auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
     knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
-    bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
+    bptr->data = std::shared_ptr<uint8_t>((uint8_t*)raw_data, [](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
     bs.Append(RAW_DATA, bptr);
 
@@ -171,7 +173,7 @@ TEST_P(HNSWTest, HNSW_serialize) {
         serialize(filename, bin, load_data);
 
         binaryset.clear();
-        std::shared_ptr<uint8_t[]> data(load_data);
+        std::shared_ptr<uint8_t> data(load_data);
         binaryset.Append("HNSW", data, bin->size);
 
         index_->Load(binaryset);

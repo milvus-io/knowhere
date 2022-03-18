@@ -13,13 +13,14 @@
 
 #include <iostream>
 #include <thread>
-#include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/IndexType.h"
 #include "knowhere/index/vector_index/IndexIDMAP.h"
+#include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #ifdef KNOWHERE_GPU_VERSION
 #include <faiss/gpu/GpuCloner.h>
+
 #include "knowhere/index/vector_index/gpu/IndexGPUIDMAP.h"
 #include "knowhere/index/vector_index/helpers/Cloner.h"
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
@@ -55,8 +56,7 @@ class IDMAPTest : public DataGen, public TestWithParam<knowhere::IndexMode> {
     knowhere::IndexMode index_mode_;
 };
 
-INSTANTIATE_TEST_CASE_P(IDMAPParameters,
-                        IDMAPTest,
+INSTANTIATE_TEST_CASE_P(IDMAPParameters, IDMAPTest,
                         Values(
 #ifdef KNOWHERE_GPU_VERSION
                             knowhere::IndexMode::MODE_GPU,
@@ -163,7 +163,7 @@ TEST_P(IDMAPTest, idmap_serialize) {
         serialize(filename, bin, load_data);
 
         binaryset.clear();
-        std::shared_ptr<uint8_t[]> data(load_data);
+        std::shared_ptr<uint8_t> data(load_data);
         binaryset.Append("IVF", data, bin->size);
 
         index_->Load(binaryset);

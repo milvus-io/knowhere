@@ -36,13 +36,13 @@ IndexNGT::Serialize(const Config& config) {
     uint64_t prf_size = prf_str.size();
     uint64_t tre_size = tre_str.size();
 
-    std::shared_ptr<uint8_t[]> obj_data(new uint8_t[obj_size]);
+    std::shared_ptr<uint8_t> obj_data(new uint8_t[obj_size], std::default_delete<uint8_t[]>());
     memcpy(obj_data.get(), obj_str.data(), obj_size);
-    std::shared_ptr<uint8_t[]> grp_data(new uint8_t[grp_size]);
+    std::shared_ptr<uint8_t> grp_data(new uint8_t[grp_size], std::default_delete<uint8_t[]>());
     memcpy(grp_data.get(), grp_str.data(), grp_size);
-    std::shared_ptr<uint8_t[]> prf_data(new uint8_t[prf_size]);
+    std::shared_ptr<uint8_t> prf_data(new uint8_t[prf_size], std::default_delete<uint8_t[]>());
     memcpy(prf_data.get(), prf_str.data(), prf_size);
-    std::shared_ptr<uint8_t[]> tre_data(new uint8_t[tre_size]);
+    std::shared_ptr<uint8_t> tre_data(new uint8_t[tre_size], std::default_delete<uint8_t[]>());
     memcpy(tre_data.get(), tre_str.data(), tre_size);
 
     BinarySet res_set;

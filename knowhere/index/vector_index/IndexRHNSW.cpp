@@ -34,7 +34,7 @@ IndexRHNSW::Serialize(const Config& config) {
         MemoryIOWriter writer;
         writer.name = this->index_type() + "_Index";
         faiss::write_index(index_.get(), &writer);
-        std::shared_ptr<uint8_t[]> data(writer.data_);
+        std::shared_ptr<uint8_t> data(writer.data_, std::default_delete<uint8_t[]>());
 
         BinarySet res_set;
         res_set.Append(writer.name, data, writer.rp);

@@ -39,7 +39,7 @@ Slice(const std::string& prefix,
     for (int64_t i = 0; i < data_src->size; ++slice_num) {
         int64_t ri = std::min(i + slice_len, data_src->size);
         auto size = static_cast<size_t>(ri - i);
-        auto slice_i = std::shared_ptr<uint8_t[]>(new uint8_t[size]);
+        auto slice_i = std::shared_ptr<uint8_t>(new uint8_t[size], std::default_delete<uint8_t[]>());
         memcpy(slice_i.get(), data_src->data.get() + i, size);
         binarySet.Append(prefix + "_" + std::to_string(slice_num), slice_i, ri - i);
         i = ri;
@@ -62,7 +62,7 @@ Assemble(BinarySet& binarySet) {
         std::string prefix = item[NAME];
         int slice_num = item[SLICE_NUM];
         auto total_len = static_cast<size_t>(item[TOTAL_LEN]);
-        auto p_data = std::shared_ptr<uint8_t[]>(new uint8_t[total_len]);
+        auto p_data = std::shared_ptr<uint8_t>(new uint8_t[total_len], std::default_delete<uint8_t[]>());
         int64_t pos = 0;
         for (auto i = 0; i < slice_num; ++i) {
             auto slice_i_sp = binarySet.Erase(prefix + "_" + std::to_string(i));
@@ -98,7 +98,7 @@ Disassemble(const int64_t& slice_size_in_byte, BinarySet& binarySet) {
     }
     if (!slice_key_list.empty()) {
         auto meta_str = meta_info.dump();
-        std::shared_ptr<uint8_t[]> meta_data(new uint8_t[meta_str.length() + 1], std::default_delete<uint8_t[]>());
+        std::shared_ptr<uint8_t> meta_data(new uint8_t[meta_str.length() + 1], std::default_delete<uint8_t[]>());
         memcpy(meta_data.get(), meta_str.data(), meta_str.length());
         meta_data.get()[meta_str.length()] = 0;
         binarySet.Append(INDEX_FILE_SLICE_META, meta_data, meta_str.length() + 1);

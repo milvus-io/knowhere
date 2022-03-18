@@ -1,273 +1,250 @@
-#-------------------------------------------------------------------------------
-# Copyright (C) 2019-2020 Zilliz. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance
-# with the License. You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software distributed under the License
-# is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-# or implied. See the License for the specific language governing permissions and limitations under the License.
-#-------------------------------------------------------------------------------
+cmake_minimum_required(VERSION 3.2)
+project(knowhere CXX C)
 
-cmake_minimum_required(VERSION 3.18)
-message( STATUS "------------------------------KNOWHERE-----------------------------------" )
-message( STATUS "Building using CMake version: ${CMAKE_VERSION}" )
+include(cmake/utils/utils.cmake)
+include(cmake/utils/compiler_check.cmake)
+include(cmake/utils/platform_check.cmake)
+knowhere_option(USE_CUDA "Build with CUDA" OFF)
 
-add_definitions( -DAUTO_INITIALIZE_EASYLOGGINGPP )
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Note: Cross compiling arguments must be set before project annotation, when ${CMAKE_SYSTEM_NAME} is not available.
-# We have to use the "APPLE" variable here as a result.
-if ( APPLE )
-    set ( MACOS TRUE )
-    set ( CMAKE_CROSSCOMPILING TRUE )
-    set ( RUN_HAVE_GNU_POSIX_REGEX 0 )
-    set ( CMAKE_C_COMPILER "/usr/local/opt/llvm/bin/clang" )
-    set ( CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++" )
-endif ()
+if(KNOWHERE_ENABLE_GPU)
+  set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
+  enable_language(CUDA)
+endif()
 
-set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
-include( UtilsKw )
+add_definitions(-DAUTO_INITIALIZE_EASYLOGGINGPP=1)
+add_definitions(-DELPP_THREAD_SAFE=1)
+add_definitions(-DINFO=1)
+if(__X86_64)
+  include(cmake/libs/libcpu_features.cmake)
+endif()
+# include(cmake/libs/libopenblas.cmake)
+find_package(BLAS REQUIRED)
+include_directories(${CMAKE_SOURCE_DIR})
+include_directories(thirdparty/easyloggingpp/src)
+include_directories(thirdparty/faiss)
+include_directories(knowhere)
+include_directories(thirdparty)
+include_directories(thirdparty/nlohmann_json/include)
+include_directories(thirdparty/NGT/lib)
+include_directories(thirdparty/SPTAG/AnnService)
+include_directories(thirdparty/cpu_features/include)
+include_directories(thirdparty/any-lite/include)
 
-#******************* Build time, type and code version *****************
-get_current_time( BUILD_TIME )
-message( STATUS "Build time = ${BUILD_TIME}" )
+knowhere_file_glob(
+  GLOB_RECURSE KNOWHERE_SRCS knowhere/archive/*.cpp knowhere/cache/*.cpp
+  knowhere/common/*.cpp knowhere/index/*.cpp)
 
-get_build_type( TARGET  BUILD_TYPE
-                        DEFAULT "Release" )
-message( STATUS "Build type = ${BUILD_TYPE}" )
+if(__X86_64)
+  knowhere_file_glob(
+    GLOB_RECURSE KNOWHERE_UTILS_SRCS knowhere/utils/FaissHookFvec.cpp
+    knowhere/utils/distances_simd.cpp knowhere/utils/distances_simd_avx.cpp)
+endif()
 
-get_knowhere_version( TARGET KNOWHERE_VERSION
-                             DEFAULT "1.0.1" )
-message( STATUS "Build version = ${KNOWHERE_VERSION}" )
+if(__AARCH64)
+  knowhere_file_glob(GLOB KNOWHERE_UTILS_SRCS knowhere/utils/FaissHookFvec.cpp
+                     knowhere/utils/distances_simd.cpp)
+endif()
 
-get_last_commit_id( LAST_COMMIT_ID )
-message( STATUS "LAST_COMMIT_ID = ${LAST_COMMIT_ID}" )
+knowhere_file_glob(
+  GLOB_RECURSE
+  KNOWHERE_GPU_SRCS
+  knowhere/index/vector_index/gpu/*.cpp
+  knowhere/index/vector_offset_index/gpu/*.cpp
+  knowhere/index/vector_index/helpers/Cloner.cpp
+  knowhere/index/vector_index/helpers/FaissGpuResourceMgr.cpp)
 
-#configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in
-#                ${CMAKE_CURRENT_SOURCE_DIR}/src/version.h @ONLY )
+list(REMOVE_ITEM KNOWHERE_SRCS ${KNOWHERE_GPU_SRCS})
 
-# unset( CMAKE_EXPORT_COMPILE_COMMANDS CACHE)
-set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
+knowhere_file_glob(
+  GLOB_RECURSE
+  KNOWHERE_SPTAG_SRCS
+  knowhere/index/vector_index/IndexSPTAG.cpp
+  knowhere/index/vector_index/IndexNGTPANNG.cpp
+  knowhere/index/vector_index/IndexNGTONNG.cpp
+  knowhere/index/vector_index/IndexSPTAG.cpp
+  knowhere/index/vector_index/helpers/SPTAGParameterMgr.cpp
+  knowhere/index/vector_index/adapter/SptagAdapter.cpp
+  knowhere/index/vector_index/IndexNGT.cpp)
 
+# TODO: need a better solution
+list(REMOVE_ITEM KNOWHERE_SRCS ${KNOWHERE_SPTAG_SRCS})
 
-#************************** Project Settings ***************************
-project( knowhere VERSION "${KNOWHERE_VERSION}" )
-project( knowhere LANGUAGES C CXX )
+knowhere_file_glob(GLOB_RECURSE KNOWHERE_SPTAG_SRCS
+                   knowhere/index/vector_index/IndexSPTAG.cpp)
 
-set( CMAKE_CXX_STANDARD 17 )
-set( CMAKE_CXX_STANDARD_REQUIRED on )
+list(REMOVE_ITEM KNOWHERE_SRCS ${KNOWHERE_SPTAG_SRCS})
 
-set( KNOWHERE_SOURCE_DIR ${PROJECT_SOURCE_DIR} )
-set( KNOWHERE_BINARY_DIR ${PROJECT_BINARY_DIR} )
-set( KNOWHERE_THIRDPARTY_SRC ${PROJECT_SOURCE_DIR}/thirdparty )
+knowhere_file_glob(
+  GLOB FAISS_SRCS thirdparty/faiss/faiss/*.cpp
+  thirdparty/faiss/faiss/impl/*.cpp thirdparty/faiss/faiss/invlists/*.cpp
+  thirdparty/faiss/faiss/utils/*.cpp)
 
-# This will set RPATH to all excutable TARGET
-# self-installed dynamic libraries will be correctly linked by executable
-include( GNUInstallDirs )
-set( CMAKE_INSTALL_RPATH "/usr/lib" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" )
-set( CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE )
+knowhere_file_glob(
+  GLOB FAISS_AVX512_SRCS thirdparty/faiss/faiss/impl/*avx512.cpp
+  knowhere/utils/*avx512.cpp)
 
-set( CMAKE_CUDA_COMPILER  "/usr/local/cuda/bin/nvcc" )
-include( CheckCXXCompilerFlag )
+list(REMOVE_ITEM FAISS_SRCS ${FAISS_AVX512_SRCS})
 
-if ( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
-    message(STATUS "==============Darwin Environment==============")
-    set( MACOS TRUE )
-    set( CMAKE_CXX_FLAGS "-L/usr/local/opt/libomp/lib -I/usr/local/opt/llvm/include -I/usr/local/include -I/usr/local/opt/openblas/include -I/usr/local/opt/libomp/include -DBOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED=1" )
-    check_cxx_compiler_flag( -std=c++11 HAS_STD_CPP11_FLAG )
-    if ( HAS_STD_CPP11_FLAG )
-        add_compile_options(-std=c++11)
-    endif ()
-    if ( CMAKE_C_COMPILER_ID MATCHES "Clang" )
-        set( OpenMP_C "${CMAKE_C_COMPILER}" CACHE STRING "" FORCE )
-        set( OpenMP_C_FLAGS "-fopenmp=libomp -Wno-unused-command-line-argument" CACHE STRING "" FORCE )
-        set( OpenMP_C_LIB_NAMES "libomp" "libgomp" "libiomp5" CACHE STRING "" FORCE )
-        set( OpenMP_libomp_LIBRARY ${OpenMP_C_LIB_NAMES} CACHE STRING "" FORCE )
-        set( OpenMP_libgomp_LIBRARY ${OpenMP_C_LIB_NAMES} CACHE STRING "" FORCE )
-        set( OpenMP_libiomp5_LIBRARY ${OpenMP_C_LIB_NAMES} CACHE STRING "" FORCE )
-    endif ()
-    if ( CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
-        set( OpenMP_CXX "${CMAKE_CXX_COMPILER}" CACHE STRING "" FORCE)
-        set( OpenMP_CXX_FLAGS "-fopenmp=libomp -Wno-unused-command-line-argument" CACHE STRING "" FORCE )
-        set( OpenMP_CXX_LIB_NAMES "libomp" "libgomp" "libiomp5" CACHE STRING "" FORCE )
-        set( OpenMP_libomp_LIBRARY ${OpenMP_CXX_LIB_NAMES} CACHE STRING "" FORCE )
-        set( OpenMP_libgomp_LIBRARY ${OpenMP_CXX_LIB_NAMES} CACHE STRING "" FORCE )
-        set( OpenMP_libiomp5_LIBRARY ${OpenMP_CXX_LIB_NAMES} CACHE STRING "" FORCE )
-    endif ()
-elseif ( "${CMAKE_SYSTEM}" MATCHES "Linux" )
-    message( STATUS "==============Linux Environment===============" )
-    set ( LINUX TRUE )
-else ()
-    message( FATAL_ERROR "Unsupported platform!" )
-endif ()
+if(__AARCH64)
+  knowhere_file_glob(GLOB FAISS_AVX_SRCS thirdparty/faiss/faiss/impl/*avx.cpp)
+  list(REMOVE_ITEM FAISS_SRCS ${FAISS_AVX_SRCS})
+endif()
 
+knowhere_file_glob(GLOB_RECURSE EASYLOGGINGPP_SRCS
+                   thirdparty/easyloggingpp/src/*.cc)
 
-#***************************** Dependencies ****************************
-include( DefineOptionsKw )
-include( BuildUtilsKw )
-include( ExternalProject )
+list(APPEND KNOWHERE_SRCS ${FAISS_SRCS} ${EASYLOGGINGPP_SRCS})
 
-if ( LINUX )
-    include( ThirdPartyPackagesKw )
-endif ()
+if(__X86_64)
+  add_library(faiss_avx512 OBJECT ${FAISS_AVX512_SRCS})
+  target_compile_options(
+    faiss_avx512
+    PRIVATE $<$<COMPILE_LANGUAGE:CXX>:
+            -msse4.2
+            -mavx2
+            -mfma
+            -mf16c
+            -mavx512dq
+            -mavx512bw>)
 
-using_ccache_if_defined( KNOWHERE_USE_CCACHE )
+  add_library(knowhere_utils OBJECT ${KNOWHERE_UTILS_SRCS})
 
+  if(UNIX)
+    target_compile_options(knowhere_utils PRIVATE $<$<COMPILE_LANGUAGE:CXX>:
+                                                  -msse4.2 -mavx2 -mfma -mf16c>)
+  endif()
+  if(APPLE)
+    target_compile_options(knowhere_utils PRIVATE $<$<COMPILE_LANGUAGE:CXX>:
+                                                  -msse4.2 -mfma -mf16c>)
+  endif()
+endif()
 
-#************************** Compiler arguments *************************
-if ( KNOWHERE_GPU_VERSION )
-    message( STATUS "Building Knowhere GPU version" )
-    add_compile_definitions( "KNOWHERE_GPU_VERSION" )
-    enable_language( CUDA )
-    find_package( CUDA 10 REQUIRED )
-    include_directories( ${CUDA_INCLUDE_DIRS} )
-    link_directories( ${CUDA_TOOLKIT_ROOT_DIR}/lib64 )
-    set( CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -Xcompiler -fPIC -std=c++11 -D_FORCE_INLINES --expt-extended-lambda" )
-    if ( CCACHE_FOUND )
-        set( CMAKE_CUDA_COMPILER_LAUNCHER "${CCACHE_FOUND}" )
-    endif ()
-else ()
-    message( STATUS "Building Knowhere CPU version" )
-endif ()
+if(__AARCH64)
+  list(APPEND KNOWHERE_SRCS ${KNOWHERE_UTILS_SRCS})
+endif()
 
-if ( KNOWHERE_SUPPORT_SPTAG )
-    message( STATUS "Building Knowhere with SPTAG supported" )
-    add_compile_definitions( "KNOWHERE_SUPPORT_SPTAG" )
-endif ()
+add_library(knowhere SHARED ${KNOWHERE_SRCS})
+if(__X86_64)
+  if(UNIX)
+    target_compile_options(knowhere PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -msse4.2
+                                            -mavx2 -mfma -mf16c>)
+  endif()
+  if(APPLE)
+    target_compile_options(knowhere PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -msse4.2
+                                            -mfma -mf16c>)
+  endif()
+endif()
 
-if ( CMAKE_BUILD_TYPE STREQUAL "Release" )
-    append_flags( CMAKE_CXX_FLAGS FLAGS "-O3" )
-    append_flags( CUDA_NVCC_FLAGS FLAGS "-O3" )
-else ()
-    append_flags( CMAKE_CXX_FLAGS FLAGS "-O0" "-g" )
-    append_flags( CUDA_NVCC_FLAGS FLAGS "-O0" "-g" )
-endif ()
+if(__AARCH64)
+  target_compile_options(knowhere PRIVATE $<$<COMPILE_LANGUAGE:CXX>: >)
+endif()
 
-append_flags( CMAKE_CXX_FLAGS
-              FLAGS
-                    "-fPIC"
-                    "-DELPP_THREAD_SAFE"
-                    "-fopenmp"
-                    )
+set_target_properties(knowhere PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_compile_definitions(knowhere PRIVATE FINTEGER=int)
+target_compile_definitions(knowhere PRIVATE USE_CPU=1)
+find_package(OpenMP REQUIRED)
+# find_package(Boost REQUIRED)
+include_directories(${OpenMP_CXX_INCLUDE_DIRS})
+# add_dependencies(knowhere libopenblas)
+if(__X86_64)
+  if(UNIX)
+    get_property(LIB64 GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS)
+    if("${LIB64}" STREQUAL "TRUE")
+      set(LIBSUFFIX "lib64")
+    else()
+      set(LIBSUFFIX "lib")
+    endif()
+  endif()
+  if(APPLE)
+    set(LIBSUFFIX "lib")
+  endif()
 
-# option "-rdynamic" is to print out detailed backtrace info for debug-ease
-if ( LINUX )
-    append_flags( CMAKE_CXX_FLAGS FLAGS "-Werror" "-rdynamic" )
-endif ()
+endif()
 
-#*********************** Coding style check tools **********************
-find_package( Python COMPONENTS Interpreter Development )
-find_package( ClangToolsKw )
-set( BUILD_SUPPORT_DIR "${CMAKE_SOURCE_DIR}/build-support" )
+if(__X86_64)
+  add_dependencies(knowhere libcpu_features)
+  add_dependencies(knowhere faiss_avx512)
+  add_dependencies(knowhere knowhere_utils)
+  target_link_libraries(
+    knowhere
+    PRIVATE OpenMP::OpenMP_CXX ${BLAS_LIBRARIES}
+            ${CMAKE_BINARY_DIR}/cpu_features/${LIBSUFFIX}/libcpu_features.a
+            faiss_avx512 knowhere_utils)
+endif()
 
-if ( "$ENV{CMAKE_EXPORT_COMPILE_COMMANDS}" STREQUAL "1" OR CLANG_TIDY_FOUND )
-  # Generate a Clang compile_commands.json "compilation database" file for use
-  # with various development tools, such as Vim's YouCompleteMe plugin.
-  # See http://clang.llvm.org/docs/JSONCompilationDatabase.html
-  set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
-  set( CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES} )
-endif ()
+if(__AARCH64)
+  target_link_libraries(knowhere PRIVATE OpenMP::OpenMP_CXX ${BLAS_LIBRARIES})
+endif()
 
-#
-# "make lint" target
-#
-if ( NOT KNOWHERE_VERBOSE_LINT )
-    set( KNOWHERE_LINT_QUIET "--quiet" )
-endif ()
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/e2239ee6043f73722e7aa812a459f54a28552929.zip
+)
+set(gtest_force_shared_crt
+    ON
+    CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
 
-if ( NOT LINT_EXCLUSIONS_FILE )
-    # source files matching a glob from a line in this file
-    # will be excluded from linting (cpplint, clang-tidy, clang-format)
-    set( LINT_EXCLUSIONS_FILE ${BUILD_SUPPORT_DIR}/lint_exclusions.txt )
-endif ()
+# knowhere_file_glob(GLOB KNOWHERE_UNITTEST_SRCS unittest/*.cpp )
 
-if ( NOT IGNORE_CHECKS_FILE )
-    set( IGNORE_CHECKS_FILE ${BUILD_SUPPORT_DIR}/ignore_checks.txt )
-endif ()
+set(KNOWHERE_UNITTEST_SRCS
+    # unittest/test_annoy.cpp
+    unittest/test_binaryidmap.cpp
+    unittest/test_binaryivf.cpp
+    unittest/test_hnsw.cpp
+    unittest/test_idmap.cpp
+    unittest/test_ivf.cpp
+    unittest/test_ivf_cpu_nm.cpp
+    unittest/test_ivf_hnsw.cpp
+    unittest/test_rhnsw_flat.cpp
+    unittest/test_rhnsw_pq.cpp
+    unittest/test_rhnsw_sq8.cpp
+    unittest/utils.cpp)
 
-find_program( CPPLINT_BIN NAMES cpplint cpplint.py HINTS ${BUILD_SUPPORT_DIR} )
-message( STATUS "Found cpplint executable at ${CPPLINT_BIN}" )
+add_executable(knowhere_test_run ${KNOWHERE_UNITTEST_SRCS})
 
-#
-# "make lint-knowhere" targets
-#
-add_custom_target( lint-knowhere
-    ${PYTHON_EXECUTABLE}    ${BUILD_SUPPORT_DIR}/run_cpplint.py
-                            --cpplint_binary    ${CPPLINT_BIN}
-                            --exclude_globs     ${LINT_EXCLUSIONS_FILE}
-                            --source_dir        ${CMAKE_CURRENT_SOURCE_DIR}
-                            ${KNOWHERE_LINT_QUIET}
-                            )
+target_compile_definitions(knowhere_test_run PRIVATE ELPP_DISABLE_LOGS=1)
 
-#
-# "make clang-format" and "make check-clang-format" targets
-#
-if ( ${CLANG_FORMAT_FOUND} )
-    # runs clang format and updates files in place.
-    add_custom_target( clang-format-knowhere
-        ${PYTHON_EXECUTABLE}    ${BUILD_SUPPORT_DIR}/run_clang_format.py
-                                --clang_format_binary   ${CLANG_FORMAT_BIN}
-                                --exclude_globs         ${LINT_EXCLUSIONS_FILE}
-                                --source_dir            ${CMAKE_CURRENT_SOURCE_DIR}/src
-                                --fix
-                                ${KNOWHERE_LINT_QUIET} )
+add_dependencies(knowhere_test_run knowhere)
+target_include_directories(knowhere_test_run AFTER
+                           PRIVATE thirdparty/nlohmann_json/include)
+target_include_directories(knowhere_test_run AFTER PRIVATE knowhere)
+target_include_directories(knowhere_test_run AFTER PRIVATE thirdparty)
 
-    # runs clang format and exits with a non-zero exit code if any files need to be reformatted
-    add_custom_target( check-clang-format-knowhere
-        ${PYTHON_EXECUTABLE}    ${BUILD_SUPPORT_DIR}/run_clang_format.py
-                                --clang_format_binary   ${CLANG_FORMAT_BIN}
-                                --exclude_globs         ${LINT_EXCLUSIONS_FILE}
-                                --source_dir            ${CMAKE_CURRENT_SOURCE_DIR}/src
-                                ${KNOWHERE_LINT_QUIET} )
-endif ()
+target_include_directories(knowhere_test_run AFTER PRIVATE thirdparty/NGT/lib)
 
-#
-# "make clang-tidy" and "make check-clang-tidy" targets
-#
-if ( ${CLANG_TIDY_FOUND} )
-    # runs clang-tidy and attempts to fix any warning automatically
-    add_custom_target( clang-tidy-knowhere
-        ${PYTHON_EXECUTABLE}    ${BUILD_SUPPORT_DIR}/run_clang_tidy.py
-                                --clang_tidy_binary ${CLANG_TIDY_BIN}
-                                --exclude_globs     ${LINT_EXCLUSIONS_FILE}
-                                --compile_commands  ${CMAKE_BINARY_DIR}/compile_commands.json
-                                --source_dir        ${CMAKE_CURRENT_SOURCE_DIR}/src
-                                --fix
-                                ${KNOWHERE_LINT_QUIET} )
+target_include_directories(knowhere_test_run AFTER
+                           PRIVATE thirdparty/faiss/faiss)
 
-    # runs clang-tidy and exits with a non-zero exit code if any errors are found.
-    add_custom_target( check-clang-tidy-knowhere
-        ${PYTHON_EXECUTABLE}    ${BUILD_SUPPORT_DIR}/run_clang_tidy.py
-                                --clang_tidy_binary ${CLANG_TIDY_BIN}
-                                --exclude_globs     ${LINT_EXCLUSIONS_FILE}
-                                --ignore_checks     ${IGNORE_CHECKS_FILE}
-                                --compile_commands  ${CMAKE_BINARY_DIR}/compile_commands.json
-                                --source_dir        ${CMAKE_CURRENT_SOURCE_DIR}/src
-                                ${KNOWHERE_LINT_QUIET} )
-endif ()
+target_include_directories(knowhere_test_run AFTER
+                           PRIVATE thirdparty/SPTAG/AnnService)
 
-#
-# Validate and print out Milvus configuration options
-#
-config_summary()
+target_link_libraries(knowhere_test_run gtest_main gmock knowhere)
+add_test(NAME knowhere_test COMMAND knowhere_test_run)
 
+set(FAISS_UNITTEST_SRCS
+    thirdparty/faiss/tests/test_binary_flat.cpp
+    thirdparty/faiss/tests/test_dealloc_invlists.cpp
+    thirdparty/faiss/tests/test_ivfpq_codec.cpp
+    thirdparty/faiss/tests/test_ivfpq_indexing.cpp
+    thirdparty/faiss/tests/test_lowlevel_ivf.cpp
+    thirdparty/faiss/tests/test_merge.cpp
+    thirdparty/faiss/tests/test_omp_threads.cpp
+    thirdparty/faiss/tests/test_ondisk_ivf.cpp
+    thirdparty/faiss/tests/test_pairs_decoding.cpp
+    thirdparty/faiss/tests/test_params_override.cpp
+    thirdparty/faiss/tests/test_pq_encoding.cpp
+    thirdparty/faiss/tests/test_sliding_ivf.cpp
+    thirdparty/faiss/tests/test_threaded_index.cpp
+    thirdparty/faiss/tests/test_transfer_invlists.cpp)
 
-#***************************** Source files ****************************
-add_subdirectory( knowhere/utils )
-add_subdirectory( thirdparty )
-add_subdirectory( knowhere )
+add_executable(faiss_test_run ${FAISS_UNITTEST_SRCS})
 
-if ( KNOWHERE_BUILD_TESTS )
-    if ( BUILD_COVERAGE STREQUAL "ON" )
-        append_flags( CMAKE_CXX_FLAGS
-                      FLAGS
-                           "-fprofile-arcs"
-                           "-ftest-coverage"
-                           )
-    endif ()
-    append_flags( CMAKE_CXX_FLAGS FLAGS "-DELPP_DISABLE_LOGS")
+target_compile_definitions(faiss_test_run PRIVATE ELPP_DISABLE_LOGS=1)
 
-    add_subdirectory( unittest )
-endif ()
+target_link_libraries(faiss_test_run gtest_main gmock knowhere
+                      OpenMP::OpenMP_CXX)
+add_test(NAME faiss_test COMMAND faiss_test_run)

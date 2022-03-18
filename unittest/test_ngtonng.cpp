@@ -10,13 +10,13 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <gtest/gtest.h>
-#include "knowhere/index/vector_index/helpers/IndexParameter.h"
+
 #include <iostream>
 #include <sstream>
 
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/vector_index/IndexNGTONNG.h"
-
+#include "knowhere/index/vector_index/helpers/IndexParameter.h"
 #include "unittest/utils.h"
 
 using ::testing::Combine;
@@ -129,16 +129,16 @@ TEST_P(NGTONNGTest, ngtonng_serialize) {
         serialize(filename4, bin_tre_data, load_data4);
 
         binaryset.clear();
-        std::shared_ptr<uint8_t[]> obj_data(load_data1);
+        std::shared_ptr<uint8_t> obj_data(load_data1);
         binaryset.Append("ngt_obj_data", obj_data, bin_obj_data->size);
 
-        std::shared_ptr<uint8_t[]> grp_data(load_data2);
+        std::shared_ptr<uint8_t> grp_data(load_data2);
         binaryset.Append("ngt_grp_data", grp_data, bin_grp_data->size);
 
-        std::shared_ptr<uint8_t[]> prf_data(load_data3);
+        std::shared_ptr<uint8_t> prf_data(load_data3);
         binaryset.Append("ngt_prf_data", prf_data, bin_prf_data->size);
 
-        std::shared_ptr<uint8_t[]> tre_data(load_data4);
+        std::shared_ptr<uint8_t> tre_data(load_data4);
         binaryset.Append("ngt_tre_data", tre_data, bin_tre_data->size);
 
         index_->Load(binaryset);

@@ -21,7 +21,7 @@
 namespace knowhere {
 
 struct Binary {
-    std::shared_ptr<uint8_t[]> data;
+    std::shared_ptr<uint8_t> data;
     int64_t size = 0;
 };
 using BinaryPtr = std::shared_ptr<Binary>;
@@ -46,7 +46,7 @@ class BinarySet {
     }
 
     void
-    Append(const std::string& name, std::shared_ptr<uint8_t[]> data, int64_t size) {
+    Append(const std::string& name, std::shared_ptr<uint8_t> data, int64_t size) {
         auto binary = std::make_shared<Binary>();
         binary->data = data;
         binary->size = size;

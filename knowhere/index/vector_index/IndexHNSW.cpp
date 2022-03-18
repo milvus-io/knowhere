@@ -45,7 +45,7 @@ IndexHNSW::Serialize(const Config& config) {
     try {
         MemoryIOWriter writer;
         index_->saveIndex(writer);
-        std::shared_ptr<uint8_t[]> data(writer.data_);
+        std::shared_ptr<uint8_t> data(writer.data_);
 
         BinarySet res_set;
         res_set.Append("HNSW", data, writer.rp);

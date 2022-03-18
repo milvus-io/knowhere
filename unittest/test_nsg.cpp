@@ -10,6 +10,7 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <gtest/gtest.h>
+
 #include <memory>
 
 #include "knowhere/common/Exception.h"
@@ -23,7 +24,6 @@
 
 #include "knowhere/common/Timer.h"
 #include "knowhere/index/vector_index/impl/nsg/NSGIO.h"
-
 #include "unittest/utils.h"
 
 using ::testing::Combine;
@@ -92,7 +92,7 @@ TEST_F(NSGInterfaceTest, basic_test) {
     int64_t rows = base_dataset->Get<int64_t>(milvus::knowhere::meta::ROWS);
     auto raw_data = base_dataset->Get<const void*>(milvus::knowhere::meta::TENSOR);
     milvus::knowhere::BinaryPtr bptr = std::make_shared<milvus::knowhere::Binary>();
-    bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
+    bptr->data = std::shared_ptr<uint8_t>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
     bs.Append(RAW_DATA, bptr);
 
@@ -113,7 +113,7 @@ TEST_F(NSGInterfaceTest, basic_test) {
     rows = base_dataset->Get<int64_t>(milvus::knowhere::meta::ROWS);
     raw_data = base_dataset->Get<const void*>(milvus::knowhere::meta::TENSOR);
     bptr = std::make_shared<milvus::knowhere::Binary>();
-    bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
+    bptr->data = std::shared_ptr<uint8_t>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
     bs.Append(RAW_DATA, bptr);
 
@@ -154,7 +154,7 @@ TEST_F(NSGInterfaceTest, delete_test) {
     int64_t rows = base_dataset->Get<int64_t>(milvus::knowhere::meta::ROWS);
     auto raw_data = base_dataset->Get<const void*>(milvus::knowhere::meta::TENSOR);
     milvus::knowhere::BinaryPtr bptr = std::make_shared<milvus::knowhere::Binary>();
-    bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
+    bptr->data = std::shared_ptr<uint8_t>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
     bs.Append(RAW_DATA, bptr);
 
@@ -174,7 +174,7 @@ TEST_F(NSGInterfaceTest, delete_test) {
     rows = base_dataset->Get<int64_t>(milvus::knowhere::meta::ROWS);
     raw_data = base_dataset->Get<const void*>(milvus::knowhere::meta::TENSOR);
     bptr = std::make_shared<milvus::knowhere::Binary>();
-    bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
+    bptr->data = std::shared_ptr<uint8_t>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
     bs.Append(RAW_DATA, bptr);
 
@@ -215,7 +215,7 @@ TEST_F(NSGInterfaceTest, slice_test) {
     int64_t rows = base_dataset->Get<int64_t>(milvus::knowhere::meta::ROWS);
     auto raw_data = base_dataset->Get<const void*>(milvus::knowhere::meta::TENSOR);
     milvus::knowhere::BinaryPtr bptr = std::make_shared<milvus::knowhere::Binary>();
-    bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
+    bptr->data = std::shared_ptr<uint8_t>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
     bs.Append(RAW_DATA, bptr);
 
@@ -236,7 +236,7 @@ TEST_F(NSGInterfaceTest, slice_test) {
     rows = base_dataset->Get<int64_t>(milvus::knowhere::meta::ROWS);
     raw_data = base_dataset->Get<const void*>(milvus::knowhere::meta::TENSOR);
     bptr = std::make_shared<milvus::knowhere::Binary>();
-    bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
+    bptr->data = std::shared_ptr<uint8_t>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
     bs.Append(RAW_DATA, bptr);
 

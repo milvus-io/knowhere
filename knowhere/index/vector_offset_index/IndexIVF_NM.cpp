@@ -87,7 +87,7 @@ IVF_NM::Load(const BinarySet& binary_set) {
         prefix_sum[i] = curr_index;
         curr_index += list_size;
     }
-    data_ = std::shared_ptr<uint8_t[]>(reinterpret_cast<uint8_t*>(arranged_data));
+    data_ = std::shared_ptr<uint8_t>(reinterpret_cast<uint8_t*>(arranged_data));
 #else
     auto rol = dynamic_cast<faiss::ReadOnlyArrayInvertedLists*>(invlists);
     auto arranged_data = reinterpret_cast<float*>(rol->pin_readonly_codes->data);

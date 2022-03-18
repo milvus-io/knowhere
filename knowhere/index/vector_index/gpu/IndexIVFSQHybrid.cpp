@@ -209,7 +209,7 @@ IVFSQHybrid::SerializeImpl(const IndexType& type) {
         MemoryIOWriter writer;
         faiss::write_index(index_.get(), &writer);
 
-        std::shared_ptr<uint8_t[]> data(writer.data_);
+        std::shared_ptr<uint8_t> data(writer.data_);
 
         BinarySet res_set;
         res_set.Append("IVF", data, writer.rp);

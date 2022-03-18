@@ -11,10 +11,12 @@
 
 #include <gtest/gtest.h>
 #include <knowhere/index/vector_index/IndexRHNSWFlat.h>
-#include "knowhere/index/vector_index/helpers/IndexParameter.h"
+
 #include <iostream>
 #include <random>
+
 #include "knowhere/common/Exception.h"
+#include "knowhere/index/vector_index/helpers/IndexParameter.h"
 #include "unittest/utils.h"
 
 using ::testing::Combine;
@@ -66,7 +68,7 @@ TEST_P(RHNSWFlatTest, HNSW_basic) {
     int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
     auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
     knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
-    bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
+    bptr->data = std::shared_ptr<uint8_t>((uint8_t*)raw_data, [](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
     bs.Append(RAW_DATA, bptr);
     auto tmp_index = std::make_shared<knowhere::IndexRHNSWFlat>();
@@ -154,8 +156,8 @@ TEST_P(RHNSWFlatTest, HNSW_serialize) {
 
         binaryset.clear();
         auto new_idx = std::make_shared<knowhere::IndexRHNSWFlat>();
-        std::shared_ptr<uint8_t[]> met(load_met);
-        std::shared_ptr<uint8_t[]> idx(load_idx);
+        std::shared_ptr<uint8_t> met(load_met);
+        std::shared_ptr<uint8_t> idx(load_idx);
         binaryset.Append(new_idx->index_type() + "_Index", idx, bin_idx->size);
         binaryset.Append("META", met, bin_met->size);
 
@@ -163,7 +165,7 @@ TEST_P(RHNSWFlatTest, HNSW_serialize) {
         int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
         auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
         knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
-        bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
+        bptr->data = std::shared_ptr<uint8_t>((uint8_t*)raw_data, [](uint8_t*) {});
         bptr->size = dim * rows * sizeof(float);
         binaryset.Append(RAW_DATA, bptr);
         new_idx->Load(binaryset);
@@ -184,7 +186,7 @@ TEST_P(RHNSWFlatTest, HNSW_slice) {
         int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
         auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
         knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
-        bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
+        bptr->data = std::shared_ptr<uint8_t>((uint8_t*)raw_data, [](uint8_t*) {});
         bptr->size = dim * rows * sizeof(float);
         binaryset.Append(RAW_DATA, bptr);
         new_idx->Load(binaryset);

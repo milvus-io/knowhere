@@ -42,7 +42,7 @@ IndexRHNSWPQ::Serialize(const Config& config) {
             KNOWHERE_THROW_MSG("dynamic_cast<faiss::IndexRHNSWPQ*>(index_) failed during Serialize!");
         }
         faiss::write_index(real_idx->storage, &writer);
-        std::shared_ptr<uint8_t[]> data(writer.data_);
+        std::shared_ptr<uint8_t> data(writer.data_, std::default_delete<uint8_t[]>());
 
         res_set.Append(writer.name, data, writer.rp);
         if (config.contains(INDEX_FILE_SLICE_SIZE_IN_MEGABYTE)) {

@@ -10,13 +10,13 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <gtest/gtest.h>
-#include "knowhere/index/vector_index/helpers/IndexParameter.h"
+
 #include <iostream>
 #include <sstream>
 
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/vector_index/IndexAnnoy.h"
-
+#include "knowhere/index/vector_index/helpers/IndexParameter.h"
 #include "unittest/utils.h"
 
 using ::testing::Combine;
@@ -187,13 +187,13 @@ TEST_P(AnnoyTest, annoy_serialize) {
         serialize(filename3, bin_dim, load_data3);
 
         binaryset.clear();
-        std::shared_ptr<uint8_t[]> index_data(load_data1);
+        std::shared_ptr<uint8_t> index_data(load_data1);
         binaryset.Append("annoy_index_data", index_data, bin_data->size);
 
-        std::shared_ptr<uint8_t[]> metric_data(load_data2);
+        std::shared_ptr<uint8_t> metric_data(load_data2);
         binaryset.Append("annoy_metric_type", metric_data, bin_metric_type->size);
 
-        std::shared_ptr<uint8_t[]> dim_data(load_data3);
+        std::shared_ptr<uint8_t> dim_data(load_data3);
         binaryset.Append("annoy_dim", dim_data, bin_dim->size);
 
         index_->Load(binaryset);

@@ -32,15 +32,15 @@ IndexAnnoy::Serialize(const Config& config) {
     }
 
     auto metric_type_length = metric_type_.length();
-    std::shared_ptr<uint8_t[]> metric_type(new uint8_t[metric_type_length]);
+    std::shared_ptr<uint8_t> metric_type(new uint8_t[metric_type_length]);
     memcpy(metric_type.get(), metric_type_.data(), metric_type_.length());
 
     auto dim = Dim();
-    std::shared_ptr<uint8_t[]> dim_data(new uint8_t[sizeof(uint64_t)]);
+    std::shared_ptr<uint8_t> dim_data(new uint8_t[sizeof(uint64_t)]);
     memcpy(dim_data.get(), &dim, sizeof(uint64_t));
 
     size_t index_length = index_->get_index_length();
-    std::shared_ptr<uint8_t[]> index_data(new uint8_t[index_length]);
+    std::shared_ptr<uint8_t> index_data(new uint8_t[index_length]);
     memcpy(index_data.get(), index_->get_index(), index_length);
 
     BinarySet res_set;
@@ -58,7 +58,7 @@ IndexAnnoy::Load(const BinarySet& index_binary) {
     Assemble(const_cast<BinarySet&>(index_binary));
     auto metric_type = index_binary.GetByName("annoy_metric_type");
     metric_type_.resize(static_cast<size_t>(metric_type->size));
-    memcpy(metric_type_.data(), metric_type->data.get(), static_cast<size_t>(metric_type->size));
+    memcpy(&metric_type_[0], metric_type->data.get(), static_cast<size_t>(metric_type->size));
 
     auto dim_data = index_binary.GetByName("annoy_dim");
     uint64_t dim;

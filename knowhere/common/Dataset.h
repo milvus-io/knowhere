@@ -11,18 +11,18 @@
 
 #pragma once
 
-#include <any>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <utility>
 
+#include "nonstd/any.hpp"
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
 
 namespace knowhere {
 
-using Value = std::any;
+using Value = nonstd::any;
 using ValuePtr = std::shared_ptr<Value>;
 
 class Dataset {
@@ -54,7 +54,7 @@ class Dataset {
     Get(const std::string& k) {
         std::lock_guard<std::mutex> lk(mutex_);
         try {
-            return std::any_cast<T>(*(data_.at(k)));
+            return nonstd::any_cast<T>(*(data_.at(k)));
         } catch (...) {
             throw std::logic_error("Can't find this key");
         }

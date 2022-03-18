@@ -10,12 +10,11 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <gtest/gtest.h>
-#include "knowhere/index/vector_index/adapter/VectorAdapter.h"
-
-#include "knowhere/common/Exception.h"
-#include "knowhere/index/vector_index/IndexBinaryIDMAP.h"
 
 #include "Helper.h"
+#include "knowhere/common/Exception.h"
+#include "knowhere/index/vector_index/IndexBinaryIDMAP.h"
+#include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #include "unittest/utils.h"
 
 using ::testing::Combine;
@@ -37,13 +36,9 @@ class BinaryIDMAPTest : public DataGen, public TestWithParam<std::string> {
     knowhere::BinaryIDMAPPtr index_ = nullptr;
 };
 
-INSTANTIATE_TEST_CASE_P(METRICParameters,
-                        BinaryIDMAPTest,
-                        Values(std::string("HAMMING"),
-                               std::string("JACCARD"),
-                               std::string("TANIMOTO"),
-                               std::string("SUPERSTRUCTURE"),
-                               std::string("SUBSTRUCTURE")));
+INSTANTIATE_TEST_CASE_P(METRICParameters, BinaryIDMAPTest,
+                        Values(std::string("HAMMING"), std::string("JACCARD"), std::string("TANIMOTO"),
+                               std::string("SUPERSTRUCTURE"), std::string("SUBSTRUCTURE")));
 
 TEST_P(BinaryIDMAPTest, binaryidmap_basic) {
     ASSERT_TRUE(!xb_bin.empty());
@@ -123,7 +118,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_serialize) {
         serialize(filename, bin, load_data);
 
         binaryset.clear();
-        std::shared_ptr<uint8_t[]> data(load_data);
+        std::shared_ptr<uint8_t> data(load_data);
         binaryset.Append("BinaryIVF", data, bin->size);
 
         index_->Load(binaryset);

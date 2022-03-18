@@ -12,7 +12,7 @@
 #pragma once
 
 #include <string>
-#include "easyloggingpp/easylogging++.h"
+#include "easylogging++.h"
 
 namespace knowhere {
 

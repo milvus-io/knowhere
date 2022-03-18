@@ -10,7 +10,9 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License
 
 #include <faiss/FaissHook.h>
+#if defined(__x86_64__)
 #include <immintrin.h>
+#endif()
 
 #include "index/vector_index/impl/nsg/Distance.h"
 

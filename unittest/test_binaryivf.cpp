@@ -10,6 +10,7 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <gtest/gtest.h>
+
 #include <iostream>
 #include <thread>
 
@@ -54,8 +55,7 @@ class BinaryIVFTest : public DataGen, public TestWithParam<std::string> {
     knowhere::BinaryIVFIndexPtr index_ = nullptr;
 };
 
-INSTANTIATE_TEST_CASE_P(METRICParameters,
-                        BinaryIVFTest,
+INSTANTIATE_TEST_CASE_P(METRICParameters, BinaryIVFTest,
                         Values(std::string("JACCARD"), std::string("TANIMOTO"), std::string("HAMMING")));
 
 TEST_P(BinaryIVFTest, binaryivf_basic) {
@@ -138,7 +138,7 @@ TEST_P(BinaryIVFTest, binaryivf_serialize) {
         serialize(filename, bin, load_data);
 
         binaryset.clear();
-        std::shared_ptr<uint8_t[]> data(load_data);
+        std::shared_ptr<uint8_t> data(load_data);
         binaryset.Append("BinaryIVF", data, bin->size);
 
         index_->Load(binaryset);

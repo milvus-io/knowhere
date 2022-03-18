@@ -10,6 +10,7 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <gtest/gtest.h>
+
 #include <algorithm>
 #include <chrono>
 #include <iostream>
@@ -17,7 +18,6 @@
 #include <sstream>
 
 #include "knowhere/index/structured_index/StructuredIndexSort.h"
-
 #include "unittest/utils.h"
 
 void
@@ -93,10 +93,10 @@ TEST(STRUCTUREDINDEXSORT_TEST, test_serialize_and_load) {
     serialize(length_file, bin_length, load_length);
 
     binaryset.clear();
-    std::shared_ptr<uint8_t[]> index_data(load_data);
+    std::shared_ptr<uint8_t> index_data(load_data);
     binaryset.Append("index_data", index_data, bin_data->size);
 
-    std::shared_ptr<uint8_t[]> length_data(load_length);
+    std::shared_ptr<uint8_t> length_data(load_length);
     binaryset.Append("index_length", length_data, bin_length->size);
 
     structuredIndexSort.Load(binaryset);

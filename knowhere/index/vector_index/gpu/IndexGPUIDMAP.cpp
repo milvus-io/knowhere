@@ -48,7 +48,7 @@ GPUIDMAP::SerializeImpl(const IndexType& type) {
             faiss::write_index(host_index, &writer);
             delete host_index;
         }
-        std::shared_ptr<uint8_t[]> data(writer.data_);
+        std::shared_ptr<uint8_t> data(writer.data_, std::default_delete<uint8_t[]>());
 
         BinarySet res_set;
         res_set.Append("IVF", data, writer.rp);

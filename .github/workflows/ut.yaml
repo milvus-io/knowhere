@@ -36,9 +36,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Install Dependency
         run: |
           ./scripts/install_deps.sh
       - name: Run Unittest
         run: |
-          ./build.sh -t Release -u && output/unittest/faiss_test && output/unittest/test_knowhere
+          rm -rf build && mkdir build && cd build && cmake ..  && make -j4 && ./faiss_test_run && ./knowhere_test_run 

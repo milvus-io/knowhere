@@ -10,6 +10,7 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <gtest/gtest.h>
+
 #include <iostream>
 #include <thread>
 
@@ -75,8 +76,7 @@ class IVFTest : public DataGen,
 };
 
 INSTANTIATE_TEST_CASE_P(
-    IVFParameters,
-    IVFTest,
+    IVFParameters, IVFTest,
     Values(
 #ifdef KNOWHERE_GPU_VERSION
         std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFPQ, knowhere::IndexMode::MODE_GPU),
@@ -197,7 +197,7 @@ TEST_P(IVFTest, ivf_serialize) {
         serialize(filename, bin, load_data);
 
         binaryset.clear();
-        std::shared_ptr<uint8_t[]> data(load_data);
+        std::shared_ptr<uint8_t> data(load_data);
         binaryset.Append("IVF", data, bin->size);
 
         index_->Load(binaryset);
