@@ -11,6 +11,8 @@
 
 namespace faiss {
 
+int32_t STATISTICS_LEVEL = 0;
+
 /* set default to AVX */
 sq_get_distance_computer_func_ptr sq_get_distance_computer = sq_get_distance_computer_avx;
 sq_sel_quantizer_func_ptr sq_sel_quantizer = sq_select_quantizer_avx;
