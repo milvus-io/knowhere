@@ -108,9 +108,8 @@ KnowhereConfig::SetClusteringType(const ClusteringType clustering_type) {
 #endif
 }
 
-#if 0
 void
-KnowhereConfig::SetStatisticsLevel(const int64_t stat_level) {
+KnowhereConfig::SetStatisticsLevel(const int32_t stat_level) {
 #ifdef __APPLE__
     // do nothing
 #elif __linux__
@@ -120,7 +119,6 @@ KnowhereConfig::SetStatisticsLevel(const int64_t stat_level) {
     KNOWHERE_THROW_MSG("Unsupported SetStatisticsLevel on current platform!");
 #endif
 }
-#endif
 
 void
 KnowhereConfig::SetLogHandler() {
