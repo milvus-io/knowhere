@@ -214,7 +214,7 @@ if (MACOS)
         )
     endif ()
 
-    target_link_libraries(knowhere pthread)
+    target_link_libraries(knowhere pthread knowhere_utils)
     set(KNOWHERE_INCLUDE_DIRS ${KNOWHERE_SOURCE_DIR})
 endif()
 

@@ -128,7 +128,6 @@ set( ALL_INDEXING_SRCS
         ${UTIL_SRCS}
         test_bruteforce.cpp
         test_common.cpp
-        test_customized_index.cpp
         test_structured_index_sort.cpp
         test_structured_index_flat.cpp
         )
@@ -139,6 +138,7 @@ if ( LINUX )
             test_annoy.cpp
             test_binaryidmap.cpp
             test_binaryivf.cpp
+            test_customized_index.cpp
             test_hnsw.cpp
             test_idmap.cpp
             test_instructionset.cpp
