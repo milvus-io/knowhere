@@ -19,13 +19,17 @@
 
 #include "knowhere/common/Dataset.h"
 #include "knowhere/common/Log.h"
+#ifdef __linux__
 #include "faiss/FaissHook.h"
+#endif
 
 class DataGen {
  public:
     DataGen() {
         std::string cpu_flag;
+#ifdef __linux__
         faiss::hook_init(cpu_flag);
+#endif
     }
 
  protected:
