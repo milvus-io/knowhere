@@ -593,17 +593,18 @@ void search_knn_hamming_heap(
 void search_knn_binary_dis_heap(
         const IndexBinaryIVF& ivf,
         size_t n,
-        const uint8_t *x,
+        const uint8_t* x,
         idx_t k,
-        const idx_t *keys,
-        const float * coarse_dis,
-        float *distances,
-        idx_t *labels,
+        const idx_t* keys,
+        const float* coarse_dis,
+        float* distances,
+        idx_t* labels,
         bool store_pairs,
-        const IVFSearchParameters *params,
+        const IVFSearchParameters* params,
         const BitsetView bitset = nullptr) {
-    long nprobe = params ? params->nprobe : ivf.nprobe;
-    long max_codes = params ? params->max_codes : ivf.max_codes;
+    idx_t nprobe = params ? params->nprobe : ivf.nprobe;
+    nprobe = std::min((idx_t)ivf.nlist, nprobe);
+    idx_t max_codes = params ? params->max_codes : ivf.max_codes;
     MetricType metric_type = ivf.metric_type;
 
     // almost verbatim copy from IndexIVF::search_preassigned
@@ -618,12 +619,12 @@ void search_knn_binary_dis_heap(
 
 #pragma omp for
         for (size_t i = 0; i < n; i++) {
-            const uint8_t *xi = x + i * ivf.code_size;
+            const uint8_t* xi = x + i * ivf.code_size;
             scanner->set_query(xi);
 
-            const idx_t * keysi = keys + i * nprobe;
-            float * simi = distances + k * i;
-            idx_t * idxi = labels + k * i;
+            const idx_t* keysi = keys + i * nprobe;
+            float* simi = distances + k * i;
+            idx_t* idxi = labels + k * i;
 
             heap_heapify<HeapForJaccard>(k, simi, idxi);
 
@@ -838,8 +839,8 @@ void IndexBinaryIVF::search_preassigned(
         const BitsetView bitset) const {
     if (metric_type == METRIC_Jaccard || metric_type == METRIC_Tanimoto) {
         if (use_heap) {
-            float *D = new float[k * n];
-            float *c_dis = new float[n * nprobe];
+            float* D = new float[k * n];
+            float* c_dis = new float[n * nprobe];
             memcpy(c_dis, coarse_dis, sizeof(float) * n * nprobe);
             search_knn_binary_dis_heap(*this, n, x, k, idx, c_dis ,
                                        D, labels, store_pairs,
@@ -850,8 +851,8 @@ void IndexBinaryIVF::search_preassigned(
                 }
             }
             memcpy(distances, D, sizeof(float) * n * k);
-            delete [] D;
-            delete [] c_dis;
+            delete[] D;
+            delete[] c_dis;
         } else {
             //not implemented
         }

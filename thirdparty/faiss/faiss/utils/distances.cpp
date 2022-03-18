@@ -419,7 +419,7 @@ static void knn_jaccard_blas(
             /* collect minima */
 #pragma omp parallel for
             for (size_t i = i0; i < i1; i++) {
-                float *ip_line = ip_block + (i - i0) * (j1 - j0);
+                float* ip_line = ip_block + (i - i0) * (j1 - j0);
 
                 for (size_t j = j0; j < j1; j++) {
                     if (!bitset || !bitset.test(j)) {
@@ -525,9 +525,9 @@ void knn_jaccard(
         size_t ny,
         float_maxheap_array_t* ha,
         const BitsetView bitset) {
-    if (d % 4 == 0 && nx < distance_compute_blas_threshold) {
+    if (d % 4 != 0) {
         // knn_jaccard_sse(x, y, d, nx, ny, res);
-        printf("jaccard sse not implemented!\n");
+        FAISS_ASSERT_MSG(false, "dim is not multiple of 4!");
     } else {
         NopDistanceCorrection nop;
         HeapResultHandler<CMax<float, int64_t>> res(ha->nh, ha->val, ha->ids, ha->k);

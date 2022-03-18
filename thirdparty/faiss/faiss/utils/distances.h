@@ -219,10 +219,12 @@ void knn_L2sqr(
         const BitsetView bitset = nullptr);
 
 void knn_jaccard (
-        const float * x,
-        const float * y,
-        size_t d, size_t nx, size_t ny,
-        float_maxheap_array_t * res,
+        const float* x,
+        const float* y,
+        size_t d,
+        size_t nx,
+        size_t ny,
+        float_maxheap_array_t* res,
         const BitsetView bitset = nullptr);
 
 /* Find the nearest neighbors for nx queries in a set of ny vectors
