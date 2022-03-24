@@ -24,7 +24,7 @@
 #pragma once
 
 #include <cstdio>
-#include "common/Heap.h"
+#include "knowhere/common/Heap.h"
 #include "knowhere/utils/BitsetView.h"
 #include "knowhere/utils/distances_simd.h"
 
