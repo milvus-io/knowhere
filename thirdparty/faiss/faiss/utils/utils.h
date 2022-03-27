@@ -57,17 +57,17 @@ uint64_t get_cycles();
  * @param b   size n
  * @param c   restult table, size n
  */
-void fvec_madd(size_t n, const float* a, float bf, const float* b, float* c);
+//void fvec_madd(size_t n, const float* a, float bf, const float* b, float* c);
 
 /** same as fvec_madd, also return index of the min of the result table
  * @return    index of the min of table c
  */
-int fvec_madd_and_argmin(
-        size_t n,
-        const float* a,
-        float bf,
-        const float* b,
-        float* c);
+//int fvec_madd_and_argmin(
+//        size_t n,
+//        const float* a,
+//        float bf,
+//        const float* b,
+//        float* c);
 
 /* perform a reflection (not an efficient implementation, just for test ) */
 void reflection(const float* u, float* x, size_t n, size_t d, size_t nu);

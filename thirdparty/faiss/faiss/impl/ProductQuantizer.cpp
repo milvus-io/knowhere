@@ -16,6 +16,7 @@
 
 #include <algorithm>
 
+#include <faiss/FaissHook.h>
 #include <faiss/IndexFlat.h>
 #include <faiss/VectorTransform.h>
 #include <faiss/impl/FaissAssert.h>

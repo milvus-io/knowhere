@@ -26,15 +26,19 @@ else ()
             distances_simd.cpp
             FaissHookFvec.cpp
             )
-
+    set(UTILS_SSE_SRC
+            distances_simd_sse.cpp
+            )
     set(UTILS_AVX_SRC
             distances_simd_avx.cpp
             )
-
     set(UTILS_AVX512_SRC
             distances_simd_avx512.cpp
             )
 
+    add_library(utils_sse OBJECT
+            ${UTILS_SSE_SRC}
+            )
     add_library(utils_avx OBJECT
             ${UTILS_AVX_SRC}
             )
@@ -42,17 +46,16 @@ else ()
             ${UTILS_AVX512_SRC}
             )
 
+    target_compile_options(utils_sse PUBLIC "-msse4.2")
     target_compile_options(utils_avx PUBLIC "-mf16c;-mavx2")
     target_compile_options(utils_avx512 PUBLIC "-mf16c;-mavx512f;-mavx512dq;-mavx512bw")
 
     add_library(knowhere_utils STATIC
             ${UTILS_SRC}
+            $<TARGET_OBJECTS:utils_sse>
             $<TARGET_OBJECTS:utils_avx>
             $<TARGET_OBJECTS:utils_avx512>
             )
 endif ()
-
-target_compile_options(knowhere_utils PUBLIC "-msse4.2")
-#target_link_libraries(knowhere_utils PUBLIC openblas)
 
 target_include_directories(knowhere_utils PUBLIC ${KNOWHERE_SOURCE_DIR}/knowhere/utils)
