@@ -17,6 +17,7 @@
 
 #include <algorithm>
 
+#include <faiss/FaissHook.h>
 #include <faiss/impl/FaissAssert.h>
 #include <faiss/utils/Heap.h>
 #include <faiss/utils/distances.h>

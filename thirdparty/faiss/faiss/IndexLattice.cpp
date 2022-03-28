@@ -7,6 +7,7 @@
 
 // -*- c++ -*-
 
+#include <faiss/FaissHook.h>
 #include <faiss/IndexLattice.h>
 #include <faiss/impl/FaissAssert.h>
 #include <faiss/utils/distances.h>

@@ -44,25 +44,6 @@ void pairwise_L2sqr(
         int64_t ldb = -1,
         int64_t ldd = -1);
 
-/* compute the inner product between nx vectors x and one y */
-void fvec_inner_products_ny(
-        float* ip, /* output inner product */
-        const float* x,
-        const float* y,
-        size_t d,
-        size_t ny);
-
-/* compute ny square L2 distance between x and a set of contiguous y vectors */
-void fvec_L2sqr_ny(
-        float* dis,
-        const float* x,
-        const float* y,
-        size_t d,
-        size_t ny);
-
-/** squared norm of a vector */
-float fvec_norm_L2sqr(const float* x, size_t d);
-
 /** compute the L2 norms for a set of vectors
  *
  * @param  norms    output norms, size nx
