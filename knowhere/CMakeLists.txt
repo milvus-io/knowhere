@@ -220,7 +220,8 @@ endif()
 
 target_include_directories(knowhere PUBLIC ${KNOWHERE_INCLUDE_DIRS})
 
-install(TARGETS knowhere DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+# always install libknowhere to directory lib for all platforms
+install(TARGETS knowhere DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
 install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/knowhere/"
         DESTINATION "${CMAKE_INSTALL_PREFIX}/include/knowhere"
