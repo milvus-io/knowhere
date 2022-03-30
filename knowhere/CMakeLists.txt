@@ -29,194 +29,168 @@ set(config_srcs
         archive/KnowhereConfig.cpp
         )
 
-if ( LINUX )
-    if (KNOWHERE_SUPPORT_NGT)
-        include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib)
+if (KNOWHERE_SUPPORT_NGT)
+    include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib)
+endif ()
+
+if (KNOWHERE_SUPPORT_SPTAG)
+    include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService)
+
+    set(SPTAG_SOURCE_DIR ${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG)
+    file(GLOB HDR_FILES
+            ${SPTAG_SOURCE_DIR}/AnnService/inc/Core/*.h
+            ${SPTAG_SOURCE_DIR}/AnnService/inc/Core/Common/*.h
+            ${SPTAG_SOURCE_DIR}/AnnService/inc/Core/BKT/*.h
+            ${SPTAG_SOURCE_DIR}/AnnService/inc/Core/KDT/*.h
+            ${SPTAG_SOURCE_DIR}/AnnService/inc/Helper/*.h)
+    file(GLOB SRC_FILES
+            ${SPTAG_SOURCE_DIR}/AnnService/src/Core/*.cpp
+            ${SPTAG_SOURCE_DIR}/AnnService/src/Core/Common/*.cpp
+            ${SPTAG_SOURCE_DIR}/AnnService/src/Core/BKT/*.cpp
+            ${SPTAG_SOURCE_DIR}/AnnService/src/Core/KDT/*.cpp
+            ${SPTAG_SOURCE_DIR}/AnnService/src/Helper/*.cpp)
+
+    if (NOT TARGET SPTAGLibStatic)
+        add_library(SPTAGLibStatic STATIC ${SRC_FILES} ${HDR_FILES})
     endif ()
+endif ()
 
-    if (KNOWHERE_SUPPORT_SPTAG)
-        include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService)
-
-        set(SPTAG_SOURCE_DIR ${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG)
-        file(GLOB HDR_FILES
-                ${SPTAG_SOURCE_DIR}/AnnService/inc/Core/*.h
-                ${SPTAG_SOURCE_DIR}/AnnService/inc/Core/Common/*.h
-                ${SPTAG_SOURCE_DIR}/AnnService/inc/Core/BKT/*.h
-                ${SPTAG_SOURCE_DIR}/AnnService/inc/Core/KDT/*.h
-                ${SPTAG_SOURCE_DIR}/AnnService/inc/Helper/*.h)
-        file(GLOB SRC_FILES
-                ${SPTAG_SOURCE_DIR}/AnnService/src/Core/*.cpp
-                ${SPTAG_SOURCE_DIR}/AnnService/src/Core/Common/*.cpp
-                ${SPTAG_SOURCE_DIR}/AnnService/src/Core/BKT/*.cpp
-                ${SPTAG_SOURCE_DIR}/AnnService/src/Core/KDT/*.cpp
-                ${SPTAG_SOURCE_DIR}/AnnService/src/Helper/*.cpp)
-
-        if (NOT TARGET SPTAGLibStatic)
-            add_library(SPTAGLibStatic STATIC ${SRC_FILES} ${HDR_FILES})
-        endif ()
-    endif ()
-
-    set(vector_index_srcs
-            index/IndexType.cpp
-            index/vector_index/adapter/VectorAdapter.cpp
-            index/vector_index/helpers/FaissIO.cpp
-            index/vector_index/helpers/IndexParameter.cpp
-            index/vector_index/helpers/DynamicResultSet.cpp
-            index/vector_index/impl/bruteforce/BruteForce.cpp
-            index/vector_index/impl/bruteforce/SimpleIndexFlat.cpp
-            index/vector_index/ConfAdapter.cpp
-            index/vector_index/ConfAdapterMgr.cpp
-            index/vector_index/FaissBaseBinaryIndex.cpp
-            index/vector_index/FaissBaseIndex.cpp
-            index/vector_index/IndexBinaryIDMAP.cpp
-            index/vector_index/IndexBinaryIVF.cpp
-            index/vector_index/IndexIDMAP.cpp
-            index/vector_index/IndexIVF.cpp
-            index/vector_index/IndexIVFPQ.cpp
-            index/vector_index/IndexIVFSQ.cpp
-            index/vector_index/IndexIVFHNSW.cpp
-            index/vector_index/IndexAnnoy.cpp
-            index/vector_index/IndexRHNSW.cpp
-            index/vector_index/IndexHNSW.cpp
-            index/vector_index/IndexRHNSWFlat.cpp
-            index/vector_index/IndexRHNSWSQ.cpp
-            index/vector_index/IndexRHNSWPQ.cpp
-            index/vector_index/Statistics.cpp
-            index/vector_index/VecIndexFactory.cpp
-            )
-
-    set(vector_offset_index_srcs
-            index/vector_offset_index/OffsetBaseIndex.cpp
-            index/vector_offset_index/IndexIVF_NM.cpp
-            )
-
-    if (KNOWHERE_SUPPORT_SPTAG)
-        set(vector_index_srcs
-                index/vector_index/adapter/SptagAdapter.cpp
-                index/vector_index/helpers/SPTAGParameterMgr.cpp
-                index/vector_index/IndexSPTAG.cpp
-                ${vector_index_srcs}
-                )
-        set(KNOWHERE_INCLUDE_DIRS
-                ${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService
-                ${KNOWHERE_INCLUDE_DIRS}
-                )
-    endif ()
-
-    if (KNOWHERE_SUPPORT_NGT)
-        set(vector_index_srcs
-                index/vector_index/IndexNGT.cpp
-                index/vector_index/IndexNGTPANNG.cpp
-                index/vector_index/IndexNGTONNG.cpp
-                ${vector_index_srcs}
-                )
-    endif ()
-
-    if (KNOWHERE_SUPPORT_NSG)
-        set(vector_index_srcs
-                index/vector_index/impl/nsg/Distance.cpp
-                index/vector_index/impl/nsg/NSG.cpp
-                index/vector_index/impl/nsg/NSGHelper.cpp
-                index/vector_index/impl/nsg/NSGIO.cpp
-                ${vector_index_srcs}
-                )
-        set(vector_offset_index_srcs
-                index/vector_offset_index/IndexNSG_NM.cpp
-                ${vector_offset_index_srcs}
-                )
-    endif ()
-
-    set(depend_libs
-            faiss
-            pthread
-            knowhere_utils
-            )
-
-    if (KNOWHERE_SUPPORT_SPTAG)
-        set(depend_libs
-                SPTAGLibStatic
-                ${depend_libs}
-                )
-    endif ()
-
-    if (KNOWHERE_SUPPORT_NGT)
-        set(depend_libs
-                ngt
-                ${depend_libs}
-                )
-    endif ()
-
-    if (KNOWHERE_GPU_VERSION)
-        include_directories(${CUDA_INCLUDE_DIRS})
-        link_directories("${CUDA_TOOLKIT_ROOT_DIR}/lib64")
-        set(cuda_lib
-                cudart
-                cublas
-                )
-        set(depend_libs ${depend_libs}
-                ${cuda_lib}
-                )
-
-        set(vector_index_srcs ${vector_index_srcs}
-                index/vector_index/gpu/IndexGPUIDMAP.cpp
-                index/vector_index/gpu/IndexGPUIVF.cpp
-                index/vector_index/gpu/IndexGPUIVFPQ.cpp
-                index/vector_index/gpu/IndexGPUIVFSQ.cpp
-                index/vector_index/gpu/IndexIVFSQHybrid.cpp
-                index/vector_index/helpers/Cloner.cpp
-                index/vector_index/helpers/FaissGpuResourceMgr.cpp
-                )
-
-        set(vector_offset_index_srcs ${vector_offset_index_srcs}
-                index/vector_offset_index/gpu/IndexGPUIVF_NM.cpp
-                )
-    endif ()
-
-    if (NOT TARGET knowhere)
-        add_library(
-                knowhere SHARED
-                ${external_srcs}
-                ${config_srcs}
-                ${vector_index_srcs}
-                ${vector_offset_index_srcs}
+set(vector_index_srcs
+        index/IndexType.cpp
+        index/vector_index/adapter/VectorAdapter.cpp
+        index/vector_index/helpers/FaissIO.cpp
+        index/vector_index/helpers/IndexParameter.cpp
+        index/vector_index/helpers/DynamicResultSet.cpp
+        index/vector_index/impl/bruteforce/BruteForce.cpp
+        index/vector_index/impl/bruteforce/SimpleIndexFlat.cpp
+        index/vector_index/ConfAdapter.cpp
+        index/vector_index/ConfAdapterMgr.cpp
+        index/vector_index/FaissBaseBinaryIndex.cpp
+        index/vector_index/FaissBaseIndex.cpp
+        index/vector_index/IndexBinaryIDMAP.cpp
+        index/vector_index/IndexBinaryIVF.cpp
+        index/vector_index/IndexIDMAP.cpp
+        index/vector_index/IndexIVF.cpp
+        index/vector_index/IndexIVFPQ.cpp
+        index/vector_index/IndexIVFSQ.cpp
+        index/vector_index/IndexIVFHNSW.cpp
+        index/vector_index/IndexAnnoy.cpp
+        index/vector_index/IndexRHNSW.cpp
+        index/vector_index/IndexHNSW.cpp
+        index/vector_index/IndexRHNSWFlat.cpp
+        index/vector_index/IndexRHNSWSQ.cpp
+        index/vector_index/IndexRHNSWPQ.cpp
+        index/vector_index/Statistics.cpp
+        index/vector_index/VecIndexFactory.cpp
         )
-        target_include_directories(knowhere PUBLIC ${KNOWHERE_SOURCE_DIR}/knowere)
-    endif ()
 
-    target_link_libraries(knowhere ${depend_libs})
+set(vector_offset_index_srcs
+        index/vector_offset_index/OffsetBaseIndex.cpp
+        index/vector_offset_index/IndexIVF_NM.cpp
+        )
+
+if (KNOWHERE_SUPPORT_SPTAG)
+    set(vector_index_srcs
+            index/vector_index/adapter/SptagAdapter.cpp
+            index/vector_index/helpers/SPTAGParameterMgr.cpp
+            index/vector_index/IndexSPTAG.cpp
+            ${vector_index_srcs}
+            )
     set(KNOWHERE_INCLUDE_DIRS
+            ${KNOWHERE_INCLUDE_DIRS}
+            ${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService
+            )
+endif ()
+
+if (KNOWHERE_SUPPORT_NGT)
+    set(vector_index_srcs
+            index/vector_index/IndexNGT.cpp
+            index/vector_index/IndexNGTPANNG.cpp
+            index/vector_index/IndexNGTONNG.cpp
+            ${vector_index_srcs}
+            )
+endif ()
+
+if (KNOWHERE_SUPPORT_NSG)
+    set(vector_index_srcs
+            index/vector_index/impl/nsg/Distance.cpp
+            index/vector_index/impl/nsg/NSG.cpp
+            index/vector_index/impl/nsg/NSGHelper.cpp
+            index/vector_index/impl/nsg/NSGIO.cpp
+            ${vector_index_srcs}
+            )
+    set(vector_offset_index_srcs
+            index/vector_offset_index/IndexNSG_NM.cpp
+            ${vector_offset_index_srcs}
+            )
+endif ()
+
+set(depend_libs
+        faiss
+        pthread
+        knowhere_utils
+        )
+
+if (KNOWHERE_SUPPORT_SPTAG)
+    set(depend_libs
+            SPTAGLibStatic
+            ${depend_libs}
+            )
+endif ()
+
+if (KNOWHERE_SUPPORT_NGT)
+    set(depend_libs
+            ngt
+            ${depend_libs}
+            )
+endif ()
+
+if (KNOWHERE_GPU_VERSION)
+    include_directories(${CUDA_INCLUDE_DIRS})
+    link_directories("${CUDA_TOOLKIT_ROOT_DIR}/lib64")
+    set(cuda_lib
+            cudart
+            cublas
+            )
+    set(depend_libs ${depend_libs}
+            ${cuda_lib}
+            )
+
+    set(vector_index_srcs ${vector_index_srcs}
+            index/vector_index/gpu/IndexGPUIDMAP.cpp
+            index/vector_index/gpu/IndexGPUIVF.cpp
+            index/vector_index/gpu/IndexGPUIVFPQ.cpp
+            index/vector_index/gpu/IndexGPUIVFSQ.cpp
+            index/vector_index/gpu/IndexIVFSQHybrid.cpp
+            index/vector_index/helpers/Cloner.cpp
+            index/vector_index/helpers/FaissGpuResourceMgr.cpp
+            )
+
+    set(vector_offset_index_srcs ${vector_offset_index_srcs}
+            index/vector_offset_index/gpu/IndexGPUIVF_NM.cpp
+            )
+endif ()
+
+if (NOT TARGET knowhere)
+    add_library(
+            knowhere SHARED
+            ${external_srcs}
+            ${config_srcs}
+            ${vector_index_srcs}
+            ${vector_offset_index_srcs}
+    )
+    target_include_directories(knowhere PUBLIC ${KNOWHERE_SOURCE_DIR}/knowere)
+endif ()
+
+target_link_libraries(knowhere ${depend_libs})
+
+set (KNOWHERE_INCLUDE_DIRS
         ${KNOWHERE_SOURCE_DIR}
         ${KNOWHERE_SOURCE_DIR}/thirdparty
         ${FAISS_INCLUDE_DIR}
         ${OpenBLAS_INCLUDE_DIR}
         ${LAPACK_INCLUDE_DIR}
         )
-endif()
-
-if (MACOS)
-    set(vector_index_srcs
-            index/vector_index/impl/bruteforce/BruteForce.cpp
-            index/vector_index/impl/bruteforce/SimpleIndexFlat.cpp
-            index/IndexType.cpp
-            index/vector_index/adapter/VectorAdapter.cpp
-            index/vector_index/helpers/IndexParameter.cpp
-            index/vector_index/ConfAdapter.cpp
-            index/vector_index/ConfAdapterMgr.cpp
-            index/vector_index/Statistics.cpp
-            index/vector_index/VecIndexFactory.cpp
-            )
-    if (NOT TARGET knowhere)
-        add_library(
-                knowhere SHARED
-                ${external_srcs}
-                ${config_srcs}
-                ${vector_index_srcs}
-        )
-    endif ()
-
-    target_link_libraries(knowhere pthread knowhere_utils)
-    set(KNOWHERE_INCLUDE_DIRS ${KNOWHERE_SOURCE_DIR})
-endif()
 
 target_include_directories(knowhere PUBLIC ${KNOWHERE_INCLUDE_DIRS})
 

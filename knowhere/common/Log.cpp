@@ -34,11 +34,11 @@ LogOut(const char* pattern, ...) {
 
 void
 SetThreadName(const std::string& name) {
-    #ifdef __APPLE__
-        pthread_setname_np(name.c_str());
-    #elif __linux__
-        pthread_setname_np(pthread_self(), name.c_str());
-    #endif
+#ifdef __APPLE__
+    pthread_setname_np(name.c_str());
+#elif __linux__
+    pthread_setname_np(pthread_self(), name.c_str());
+#endif
 }
 
 std::string

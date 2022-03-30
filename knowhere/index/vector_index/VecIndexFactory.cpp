@@ -11,20 +11,18 @@
 
 #include "common/Exception.h"
 #include "common/Log.h"
+#include "index/vector_index/IndexAnnoy.h"
+#include "index/vector_index/IndexBinaryIDMAP.h"
+#include "index/vector_index/IndexBinaryIVF.h"
+#include "index/vector_index/IndexHNSW.h"
+#include "index/vector_index/IndexIDMAP.h"
+#include "index/vector_index/IndexIVF.h"
+#include "index/vector_index/IndexIVFPQ.h"
+#include "index/vector_index/IndexIVFSQ.h"
+#include "index/vector_index/IndexRHNSWFlat.h"
+#include "index/vector_index/IndexRHNSWPQ.h"
+#include "index/vector_index/IndexRHNSWSQ.h"
 #include "index/vector_index/VecIndexFactory.h"
-
-#ifdef __linux__
-#include "IndexAnnoy.h"
-#include "IndexBinaryIDMAP.h"
-#include "IndexBinaryIVF.h"
-#include "IndexHNSW.h"
-#include "IndexIDMAP.h"
-#include "IndexIVF.h"
-#include "IndexIVFPQ.h"
-#include "IndexIVFSQ.h"
-#include "IndexRHNSWFlat.h"
-#include "IndexRHNSWPQ.h"
-#include "IndexRHNSWSQ.h"
 #include "index/vector_offset_index/IndexIVF_NM.h"
 
 #ifdef KNOWHERE_SUPPORT_SPTAG
@@ -50,13 +48,11 @@
 #include "knowhere/index/vector_index/helpers/Cloner.h"
 #include "knowhere/index/vector_offset_index/gpu/IndexGPUIVF_NM.h"
 #endif
-#endif
 
 namespace knowhere {
 
 VecIndexPtr
 VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
-#ifdef __linux__
 #ifdef KNOWHERE_GPU_VERSION
     auto gpu_device = -1;  // TODO: remove hardcode here, get from invoker
 #endif
@@ -120,9 +116,6 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
     } else {
         return nullptr;
     }
-#else
-    KNOWHERE_THROW_MSG("Unsupported CreateVecIndex on current platform!");
-#endif
 }
 
 }  // namespace knowhere

@@ -60,15 +60,24 @@ macro(build_faiss)
     set( FAISS_STATIC_LIB
             "${FAISS_PREFIX}/${CMAKE_INSTALL_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}faiss${CMAKE_STATIC_LIBRARY_SUFFIX}" )
 
+    if ( MACOS )
+        # MACOS always report this error when build google test in faiss unittest:
+        # clang-13: error: argument unused during compilation: '-L/usr/local/opt/libomp/lib' [-Werror,-Wunused-command-line-argument]
+        # so disable faiss_test for MACOS
+        set ( ENABLE_FAISS_UNIT_TEST OFF )
+    else ()
+        set ( ENABLE_FAISS_UNIT_TEST ${BUILD_UNIT_TEST} )
+    endif ()
+
     set( FAISS_CMAKE_ARGS
             "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
             "-DCMAKE_BUILD_TYPE=Release"
             "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
             "-DCMAKE_CUDA_COMPILER=${CMAKE_CUDA_COMPILER}"
-            "-DCMAKE_CXX_FLAGS=${EP_CXX_FLAGS} -O3 -fpermissive -I ${KNOWHERE_SOURCE_DIR}"
+            "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} -fpermissive -I ${KNOWHERE_SOURCE_DIR}"
             "-DFAISS_ENABLE_PYTHON=OFF"
             "-DFAISS_ENABLE_GPU=OFF"
-            "-DBUILD_TESTING=${BUILD_UNIT_TEST}"
+            "-DBUILD_TESTING=${ENABLE_FAISS_UNIT_TEST}"
             )
 
     message( STATUS "${FAISS_CONFIGURE_ARGS}" )
@@ -132,50 +141,48 @@ macro(build_faiss)
 
 endmacro()
 
-if ( LINUX )
-    if ( KNOWHERE_WITH_FAISS AND NOT TARGET faiss_ep )
-        if ( FAISS_SOURCE STREQUAL "AUTO" )
-            # find_package(FAISS MODULE)
-            if ( NOT FAISS_FOUND )
-                build_faiss()
-            endif ()
-        elseif ( FAISS_SOURCE STREQUAL "BUNDLED")
+if ( KNOWHERE_WITH_FAISS AND NOT TARGET faiss_ep )
+    if ( FAISS_SOURCE STREQUAL "AUTO" )
+        # find_package(FAISS MODULE)
+        if ( NOT FAISS_FOUND )
             build_faiss()
-        elseif ( FAISS_SOURCE STREQUAL "SYSTEM" )
-            find_package( FAISS REQUIRED )
         endif ()
-
-        get_target_property( FAISS_INCLUDE_DIR faiss INTERFACE_INCLUDE_DIRECTORIES )
-        include_directories( SYSTEM "${FAISS_INCLUDE_DIR}" )
-        link_directories( SYSTEM ${FAISS_PREFIX}/${CMAKE_INSTALL_LIBDIR}/ )
+    elseif ( FAISS_SOURCE STREQUAL "BUNDLED")
+        build_faiss()
+    elseif ( FAISS_SOURCE STREQUAL "SYSTEM" )
+        find_package( FAISS REQUIRED )
     endif ()
 
-    install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/annoy/"
-            DESTINATION "include/annoy"
-            FILES_MATCHING
-            PATTERN "*.h"
-            )
-
-    install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/faiss/"
-            DESTINATION "include/faiss"
-            FILES_MATCHING
-            PATTERN "*.h"
-            )
-
-    install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/hnswlib/"
-            DESTINATION "include/hnswlib"
-            FILES_MATCHING
-            PATTERN "*.h"
-            )
-
-    if (KNOWHERE_SUPPORT_NGT)
-        install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib/NGT/"
-                DESTINATION "include/NGT"
-                FILES_MATCHING
-                PATTERN "*.h"
-                )
-    endif()
+    get_target_property( FAISS_INCLUDE_DIR faiss INTERFACE_INCLUDE_DIRECTORIES )
+    include_directories( SYSTEM "${FAISS_INCLUDE_DIR}" )
+    link_directories( SYSTEM ${FAISS_PREFIX}/${CMAKE_INSTALL_LIBDIR}/ )
 endif ()
+
+install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/annoy/"
+        DESTINATION "include/annoy"
+        FILES_MATCHING
+        PATTERN "*.h"
+        )
+
+install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/faiss/"
+        DESTINATION "include/faiss"
+        FILES_MATCHING
+        PATTERN "*.h"
+        )
+
+install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/hnswlib/"
+        DESTINATION "include/hnswlib"
+        FILES_MATCHING
+        PATTERN "*.h"
+        )
+
+if (KNOWHERE_SUPPORT_NGT)
+    install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib/NGT/"
+            DESTINATION "include/NGT"
+            FILES_MATCHING
+            PATTERN "*.h"
+            )
+endif()
 
 install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/easyloggingpp/"
         DESTINATION "include/easyloggingpp"
