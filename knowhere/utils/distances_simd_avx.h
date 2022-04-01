@@ -11,7 +11,6 @@ namespace faiss {
 /*********************************************************
  * Optimized distance/norm/inner prod computations
  *********************************************************/
-extern uint8_t lookup8bit[256];
 
 /// Squared L2 distance between two vectors
 float fvec_L2sqr_avx(
