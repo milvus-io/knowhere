@@ -127,8 +127,6 @@ if ( LINUX )
 
     set(depend_libs
             faiss
-            gomp
-            gfortran
             pthread
             knowhere_utils
             )

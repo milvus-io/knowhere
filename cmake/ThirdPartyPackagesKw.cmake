@@ -176,6 +176,8 @@ macro(build_openblas)
 
     set(OPENBLAS_CMAKE_ARGS
             ${EP_COMMON_CMAKE_ARGS}
+            -DVERSION=${OPENBLAS_VERSION}
+            -DCMAKE_INSTALL_PREFIX=${KNOWHERE_INSTALL_PREFIX}
             -DCMAKE_BUILD_TYPE=Release
             -DBUILD_SHARED_LIBS=ON
             -DBUILD_STATIC_LIBS=ON
@@ -189,8 +191,6 @@ macro(build_openblas)
             -DINTERFACE64=0
             -DNUM_THREADS=128
             -DNO_LAPACKE=0
-            "-DVERSION=${OPENBLAS_VERSION}"
-            "-DCMAKE_INSTALL_PREFIX=${KNOWHERE_INSTALL_PREFIX}"
             )
 
     externalproject_add(openblas_ep
