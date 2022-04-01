@@ -17,11 +17,12 @@
 
 #include <faiss/impl/FaissAssert.h>
 #include <faiss/utils/utils.h>
-#include <faiss/FaissHook.h>
 #include <faiss/utils/hamming.h>
 #include <faiss/utils/jaccard-inl.h>
 #include <faiss/utils/substructure-inl.h>
 #include <faiss/utils/superstructure-inl.h>
+#include <knowhere/utils/FaissHookFvec.h>
+#include <knowhere/utils/distances_simd.h>
 
 namespace faiss {
 
