@@ -14,9 +14,9 @@ namespace faiss {
 int32_t STATISTICS_LEVEL = 0;
 
 /* set default to AVX */
-sq_get_distance_computer_func_ptr sq_get_distance_computer = sq_get_distance_computer_avx;
-sq_sel_quantizer_func_ptr sq_sel_quantizer = sq_select_quantizer_avx;
-sq_sel_inv_list_scanner_func_ptr sq_sel_inv_list_scanner = sq_select_inverted_list_scanner_avx;
+sq_get_distance_computer_func_ptr sq_get_distance_computer = sq_get_distance_computer_ref;
+sq_sel_quantizer_func_ptr sq_sel_quantizer = sq_select_quantizer_ref;
+sq_sel_inv_list_scanner_func_ptr sq_sel_inv_list_scanner = sq_select_inverted_list_scanner_ref;
 
 /*****************************************************************************/
 
@@ -25,7 +25,8 @@ void hook_init(std::string& simd_type) {
     std::lock_guard<std::mutex> lock(hook_mutex);
 
     // SQ8 always hook best SIMD
-    std::string type;
+    std::string type = "REF";
+#ifdef __linux__
     if (faiss_use_avx512 && cpu_support_avx512()) {
         /* for IVFSQ */
         sq_get_distance_computer = sq_get_distance_computer_avx512;
@@ -55,6 +56,7 @@ void hook_init(std::string& simd_type) {
 
         type = "REF";
     }
+#endif
     std::cout << "FAISS SQ8 hook " << type << std::endl;
 
     hook_fvec(simd_type);
