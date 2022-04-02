@@ -23,14 +23,6 @@ option(FAISS_ENABLE_GPU "Enable support for GPU indexes." ON)
 option(FAISS_ENABLE_PYTHON "Build Python extension." ON)
 option(FAISS_ENABLE_C_API "Build C API." OFF)
 
-if (FAISS_CFLAGS)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FAISS_CFLAGS} ${FAISS_CPPFLAGS}")
-endif()
-
-if (FAISS_CXXFLAGS)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FAISS_CXXFLAGS} ${FAISS_CPPFLAGS}")
-endif()
-
 if(FAISS_ENABLE_GPU)
   # externalproject_add use semicolon to separate commands, revert to desired format
   if (CMAKE_CUDA_ARCHITECTURES)
