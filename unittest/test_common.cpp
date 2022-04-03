@@ -9,14 +9,12 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
-#include <boost/dynamic_bitset.hpp>
 #include <gtest/gtest.h>
 
 #include "knowhere/common/Dataset.h"
 #include "knowhere/common/Timer.h"
 #include "knowhere/common/Exception.h"
 #include "knowhere/utils/BitsetView.h"
-#include "unittest/utils.h"
 
 /*Some unittest for knowhere/common, mainly for improve code coverage.*/
 
@@ -59,12 +57,5 @@ TEST(COMMON_TEST, BitsetView) {
             con_bitset->clear(i);
         }
     }
-
-    auto view = [](const BitsetView view_para) { return view_para; }(con_bitset);
-
-    boost::dynamic_bitset<> boo_bitset(N);
-    for (int i = 0; i < N; ++i) {
-        boo_bitset[i] = con_bitset->test(i);
-    }
-    ASSERT_EQ(boo_bitset.count(), N / 3);
+    ASSERT_EQ(con_bitset->count_1(), N / 3);
 }
