@@ -29,20 +29,6 @@ else()
     set( THIRDPARTY_DOWNLOAD_PATH ${CMAKE_BINARY_DIR}/3rdparty_download/download )
 endif()
 message( STATUS "Thirdparty downloaded file path: ${THIRDPARTY_DOWNLOAD_PATH}" )
-# ----------------------------------------------------------------------
-# assume built-in pthreads on MacOS
-if ( MACOS )
-    set( CMAKE_THREAD_LIBS_INIT "-lpthread" )
-    set( CMAKE_HAVE_THREADS_LIBRARY 1 )
-    set( CMAKE_USE_WIN32_THREADS_INIT 0 )
-    set( CMAKE_USE_PTHREADS_INIT 1 )
-    set( THREADS_PREFER_PTHREAD_FLAG ON )
-endif()
-
-# Find pthreads
-set( THREADS_PREFER_PTHREAD_FLAG ON )
-find_package( Threads REQUIRED )
-
 
 # ****************************** Thirdparty googletest ***************************************
 if ( KNOWHERE_BUILD_TESTS )
