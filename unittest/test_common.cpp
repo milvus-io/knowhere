@@ -39,8 +39,6 @@ TEST(COMMON_TEST, knowhere_exception) {
 }
 
 TEST(COMMON_TEST, time_recoder) {
-    InitLog();
-
     knowhere::TimeRecorder recoder("COMMTEST", 0);
     sleep(1);
     double span = recoder.ElapseFromBegin("get time");

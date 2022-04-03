@@ -18,16 +18,6 @@
 #include <string>
 #include <utility>
 
-INITIALIZE_EASYLOGGINGPP
-
-void
-InitLog() {
-    el::Configurations defaultConf;
-    defaultConf.setToDefault();
-    defaultConf.set(el::Level::Debug, el::ConfigurationType::Format, "[%thread-%datetime-%level]: %msg (%fbase:%line)");
-    el::Loggers::reconfigureLogger("default", defaultConf);
-}
-
 void
 DataGen::Init_with_default(const bool is_binary) {
     Generate(dim, nb, nq, is_binary);
