@@ -74,29 +74,13 @@ macro(build_faiss)
     set( FAISS_STATIC_LIB
             "${FAISS_PREFIX}/${CMAKE_INSTALL_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}faiss${CMAKE_STATIC_LIBRARY_SUFFIX}" )
 
-    if ( CCACHE_FOUND )
-        set( FAISS_C_COMPILER "${CCACHE_FOUND} ${CMAKE_C_COMPILER}" )
-        if ( KNOWHERE_GPU_VERSION )
-            set( FAISS_CXX_COMPILER "${CMAKE_CXX_COMPILER}" )
-            set( FAISS_CUDA_COMPILER "${CCACHE_FOUND} ${CMAKE_CUDA_COMPILER}" )
-        else ()
-            set( FAISS_CXX_COMPILER "${CCACHE_FOUND} ${CMAKE_CXX_COMPILER}" )
-        endif()
-    else ()
-        set( FAISS_C_COMPILER "${CMAKE_C_COMPILER}" )
-        set( FAISS_CXX_COMPILER "${CMAKE_CXX_COMPILER}" )
-    endif ()
-
     set( FAISS_CMAKE_ARGS
             "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
             "-DCMAKE_BUILD_TYPE=Release"
+            "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+            "-DCMAKE_CUDA_COMPILER=${CMAKE_CUDA_COMPILER}"
+            "-DCMAKE_CXX_FLAGS=${EP_CXX_FLAGS} -O3 -fpermissive -I ${KNOWHERE_SOURCE_DIR}"
             "-DFAISS_ENABLE_PYTHON=OFF"
-            "-DFAISS_C_COMPILER=${FAISS_C_COMPILER}"
-            "-DFAISS_CXX_COMPILER=${FAISS_CXX_COMPILER}"
-            "-DFAISS_CUDA_COMPILER=${FAISS_CUDA_COMPILER}"
-            "-DFAISS_CFLAGS=${EP_C_FLAGS}"
-            "-DFAISS_CXXFLAGS=${EP_CXX_FLAGS}"
-            "-DFAISS_CPPFLAGS=-O3 -fpermissive -I ${KNOWHERE_SOURCE_DIR}"
             "-DFAISS_ENABLE_GPU=OFF"
             "-DBUILD_TESTING=${BUILD_UNIT_TEST}"
             )

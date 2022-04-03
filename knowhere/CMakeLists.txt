@@ -63,6 +63,7 @@ if ( LINUX )
             index/vector_index/helpers/IndexParameter.cpp
             index/vector_index/helpers/DynamicResultSet.cpp
             index/vector_index/impl/bruteforce/BruteForce.cpp
+            index/vector_index/impl/bruteforce/SimpleIndexFlat.cpp
             index/vector_index/ConfAdapter.cpp
             index/vector_index/ConfAdapterMgr.cpp
             index/vector_index/FaissBaseBinaryIndex.cpp
@@ -195,6 +196,7 @@ endif()
 if (MACOS)
     set(vector_index_srcs
             index/vector_index/impl/bruteforce/BruteForce.cpp
+            index/vector_index/impl/bruteforce/SimpleIndexFlat.cpp
             index/IndexType.cpp
             index/vector_index/adapter/VectorAdapter.cpp
             index/vector_index/helpers/IndexParameter.cpp

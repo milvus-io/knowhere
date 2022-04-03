@@ -10,11 +10,8 @@
 # or implied. See the License for the specific language governing permissions and limitations under the License
 
 include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty)
-
-if ( LINUX )
-    include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService)
-    include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib)
-endif ()
+include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService)
+include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib)
 include_directories(${KNOWHERE_SOURCE_DIR}/knowhere)
 include_directories(${KNOWHERE_SOURCE_DIR})
 
@@ -25,48 +22,10 @@ set( DEPEND_LIBS
         gmock_main
         )
 
-if ( LINUX )
+if ( LINUX AND ENABLE_PROFILING )
     set( DEPEND_LIBS
             ${DEPEND_LIBS}
-            faiss
-            openblas
-            )
-
-    if ( ENABLE_PROFILING )
-        set( DEPEND_LIBS
-                ${DEPEND_LIBS}
-                gperftools
-                )
-    endif ()
-
-    if ( KNOWHERE_SUPPORT_NGT )
-        set( DEPEND_LIBS
-                ${DEPEND_LIBS}
-                ngt
-                )
-    endif ()
-endif ()
-
-set( BASIC_LIBS gomp gfortran pthread )
-
-set( UTIL_SRCS
-        ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/adapter/VectorAdapter.cpp
-        ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/helpers/IndexParameter.cpp
-        ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/Statistics.cpp
-        ${KNOWHERE_SOURCE_DIR}/knowhere/index/IndexType.cpp
-        ${KNOWHERE_SOURCE_DIR}/knowhere/common/Exception.cpp
-        ${KNOWHERE_SOURCE_DIR}/knowhere/common/Timer.cpp
-        ${KNOWHERE_SOURCE_DIR}/knowhere/common/Utils.cpp
-        ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/impl/bruteforce/SimpleIndexFlat.cpp
-        ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/impl/bruteforce/BruteForce.cpp
-        ${KNOWHERE_SOURCE_DIR}/unittest/utils.cpp
-        )
-
-if ( LINUX )
-    set( UTIL_SRCS
-            ${UTIL_SRCS}
-            ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/helpers/FaissIO.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/helpers/DynamicResultSet.cpp
+            gperftools
             )
 endif ()
 
@@ -77,52 +36,11 @@ if ( LINUX AND KNOWHERE_GPU_VERSION )
             cudart
             cublas
             )
-    set( BASIC_LIBS ${basic_libs} ${cuda_lib} )
-    set( UTIL_SRCS ${util_srcs}
-            ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/helpers/FaissGpuResourceMgr.cpp
-            )
 endif ()
 
-if ( LINUX )
-    set( FAISS_SRCS
-            ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/FaissBaseIndex.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/FaissBaseBinaryIndex.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/IndexBinaryIDMAP.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/IndexBinaryIVF.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/IndexIDMAP.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/IndexIVF.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/IndexIVFSQ.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/IndexIVFPQ.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/IndexIVFHNSW.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_offset_index/OffsetBaseIndex.cpp
-            ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_offset_index/IndexIVF_NM.cpp
-            )
-
-    if ( KNOWHERE_GPU_VERSION )
-        set( FAISS_SRCS ${faiss_srcs}
-                ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/ConfAdapter.cpp
-                ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/helpers/Cloner.cpp
-                ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/gpu/IndexGPUIDMAP.cpp
-                ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/gpu/IndexGPUIVF.cpp
-                ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/gpu/IndexGPUIVFSQ.cpp
-                ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/gpu/IndexGPUIVFPQ.cpp
-                ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_index/gpu/IndexIVFSQHybrid.cpp
-                ${KNOWHERE_SOURCE_DIR}/knowhere/index/vector_offset_index/gpu/IndexGPUIVF_NM.cpp
-                )
-    endif ()
-
-    ###############################################################################
-    #<NSG-TEST>
-    add_definitions( -std=c++11 -O3 -march=native -Werror -DINFO )
-endif ()
-
-find_package( OpenMP REQUIRED )
-if ( OpenMP_FOUND )
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}" )
-    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}" )
-else ()
-    message( FATAL_ERROR "no OpenMP supprot" )
-endif ()
+set( UTIL_SRCS
+        ${KNOWHERE_SOURCE_DIR}/unittest/utils.cpp
+        )
 
 set( ALL_INDEXING_SRCS
         ${UTIL_SRCS}
@@ -160,19 +78,26 @@ endif ()
 
 if ( KNOWHERE_SUPPORT_SPTAG )
     set( ALL_INDEXING_SRCS
+            ${ALL_INDEXING_SRCS}
             test_sptag.cpp
             )
 endif ()
 
 if ( KNOWHERE_SUPPORT_NGT )
     set( ALL_INDEXING_SRCS
+            ${ALL_INDEXING_SRCS}
             test_ngtonng.cpp
             test_ngtpanng.cpp
+            )
+    set( DEPEND_LIBS
+            ${DEPEND_LIBS}
+            ngt
             )
 endif ()
 
 if ( KNOWHERE_SUPPORT_NSG )
     set( ALL_INDEXING_SRCS
+            ${ALL_INDEXING_SRCS}
             test_nsg.cpp
             )
 endif ()
