@@ -86,9 +86,6 @@ GenBase(const int64_t dim,
         int64_t* xids,
         const bool is_binary);
 
-extern void
-InitLog();
-
 enum class CheckMode {
     CHECK_EQUAL = 0,
     CHECK_NOT_EQUAL = 1,
