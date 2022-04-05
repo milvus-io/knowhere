@@ -16,29 +16,33 @@
 
 namespace knowhere {
 
-/* used in 0.8.0 */
 namespace IndexEnum {
 const char* INVALID = "";
+const char* INDEX_FAISS_BIN_IDMAP = "BIN_FLAT";
+const char* INDEX_FAISS_BIN_IVFFLAT = "BIN_IVF_FLAT";
 const char* INDEX_FAISS_IDMAP = "FLAT";
 const char* INDEX_FAISS_IVFFLAT = "IVF_FLAT";
 const char* INDEX_FAISS_IVFPQ = "IVF_PQ";
 const char* INDEX_FAISS_IVFSQ8 = "IVF_SQ8";
 const char* INDEX_FAISS_IVFSQ8H = "IVF_SQ8_HYBRID";
 const char* INDEX_FAISS_IVFHNSW = "IVF_HNSW";
-const char* INDEX_FAISS_BIN_IDMAP = "BIN_FLAT";
-const char* INDEX_FAISS_BIN_IVFFLAT = "BIN_IVF_FLAT";
-const char* INDEX_NSG = "NSG";
-#ifdef KNOWHERE_SUPPORT_SPTAG
-const char* INDEX_SPTAG_KDT_RNT = "SPTAG_KDT_RNT";
-const char* INDEX_SPTAG_BKT_RNT = "SPTAG_BKT_RNT";
-#endif
+
+const char* INDEX_ANNOY = "ANNOY";
 const char* INDEX_HNSW = "HNSW";
 const char* INDEX_RHNSWFlat = "RHNSW_FLAT";
 const char* INDEX_RHNSWPQ = "RHNSW_PQ";
 const char* INDEX_RHNSWSQ = "RHNSW_SQ";
-const char* INDEX_ANNOY = "ANNOY";
+#ifdef KNOWHERE_SUPPORT_NGT
 const char* INDEX_NGTPANNG = "NGT_PANNG";
 const char* INDEX_NGTONNG = "NGT_ONNG";
+#endif
+#ifdef KNOWHERE_SUPPORT_NSG
+const char* INDEX_NSG = "NSG";
+#endif
+#ifdef KNOWHERE_SUPPORT_SPTAG
+const char* INDEX_SPTAG_KDT_RNT = "SPTAG_KDT_RNT";
+const char* INDEX_SPTAG_BKT_RNT = "SPTAG_BKT_RNT";
+#endif
 }  // namespace IndexEnum
 
 }  // namespace knowhere
