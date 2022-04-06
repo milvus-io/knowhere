@@ -18,9 +18,12 @@ namespace knowhere {
 using IndexType = std::string;
 
 namespace IndexEnum {
+
 extern const char* INVALID;
+
 extern const char* INDEX_FAISS_BIN_IDMAP;
 extern const char* INDEX_FAISS_BIN_IVFFLAT;
+
 extern const char* INDEX_FAISS_IDMAP;
 extern const char* INDEX_FAISS_IVFFLAT;
 extern const char* INDEX_FAISS_IVFPQ;
@@ -33,6 +36,7 @@ extern const char* INDEX_HNSW;
 extern const char* INDEX_RHNSWFlat;
 extern const char* INDEX_RHNSWPQ;
 extern const char* INDEX_RHNSWSQ;
+
 #ifdef KNOWHERE_SUPPORT_NGT
 extern const char* INDEX_NGTPANNG;
 extern const char* INDEX_NGTONNG;
