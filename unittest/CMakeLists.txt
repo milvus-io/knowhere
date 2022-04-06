@@ -112,4 +112,4 @@ target_link_libraries( test_knowhere knowhere ${DEPEND_LIBS} )
 
 install(TARGETS test_knowhere DESTINATION unittest)
 
-#add_subdirectory(knowhere_benchmark)
+#add_subdirectory(benchmark)

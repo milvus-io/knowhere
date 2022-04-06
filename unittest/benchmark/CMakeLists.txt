@@ -15,55 +15,40 @@ include_directories(${KNOWHERE_SOURCE_DIR}/include)
 include_directories(/usr/local/hdf5/include)
 link_directories(/usr/local/hdf5/lib)
 
-if (KNOWHERE_GPU_VERSION)
-    include_directories(/usr/local/cuda/include)
-    link_directories(/usr/local/cuda/lib64)
-endif ()
-
 set(unittest_libs
         gtest gmock gtest_main gmock_main)
 
 set(depend_libs
-        knowhere hdf5
+        knowhere
+        hdf5
+        ${OpenBLAS_LIBRARIES}
+        ${LAPACK_LIBRARIES}
         )
-if (FAISS_WITH_MKL)
-    set(depend_libs ${depend_libs}
-            "-Wl,--start-group \
-            ${MKL_LIB_PATH}/libmkl_intel_ilp64.a \
-            ${MKL_LIB_PATH}/libmkl_gnu_thread.a \
-            ${MKL_LIB_PATH}/libmkl_core.a \
-            -Wl,--end-group -lgomp -lpthread -lm -ldl"
-            )
-else ()
-    set(depend_libs ${depend_libs}
-            ${OpenBLAS_LIBRARIES}
-            ${LAPACK_LIBRARIES}
-            )
-endif ()
 
 set(basic_libs
         gomp gfortran pthread
         )
 
-if (KNOWHERE_GPU_VERSION)
-    set(cuda_lib
-        cudart
-        cublas
-        )
-    set(basic_libs ${basic_libs}
-        ${cuda_lib}
-        )
-endif ()
-
 set( UTIL_SRCS
         ${KNOWHERE_SOURCE_DIR}/unittest/utils.cpp
         )
 
-set( TEST_SRCS
+#==============================================================================
+set( BENCHMARK_FAISS_SRCS
         ${UTIL_SRCS}
-        knowhere_benchmark_test.cpp
+        benchmark_faiss_test.cpp
         )
 
-add_executable(test_knowhere_benchmark ${TEST_SRCS})
-target_link_libraries(test_knowhere_benchmark ${depend_libs} ${unittest_libs} ${basic_libs})
-install(TARGETS test_knowhere_benchmark DESTINATION unittest)
+add_executable(benchmark_faiss ${BENCHMARK_FAISS_SRCS})
+target_link_libraries(benchmark_faiss ${depend_libs} ${unittest_libs} ${basic_libs})
+install(TARGETS benchmark_faiss DESTINATION unittest)
+
+#==============================================================================
+set( BENCHMARK_KNOWHERE_SRCS
+        ${UTIL_SRCS}
+        benchmark_knowhere_test.cpp
+        )
+
+add_executable(benchmark_knowhere ${BENCHMARK_KNOWHERE_SRCS})
+target_link_libraries(benchmark_knowhere ${depend_libs} ${unittest_libs} ${basic_libs})
+install(TARGETS benchmark_knowhere DESTINATION unittest)
