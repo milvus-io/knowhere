@@ -53,68 +53,74 @@ namespace knowhere {
 
 VecIndexPtr
 VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
-#ifdef KNOWHERE_GPU_VERSION
-    auto gpu_device = -1;  // TODO: remove hardcode here, get from invoker
+    switch (mode) {
+        case IndexMode::MODE_CPU: {
+            if (type == IndexEnum::INDEX_FAISS_BIN_IDMAP) {
+                return std::make_shared<knowhere::BinaryIDMAP>();
+            } else if (type == IndexEnum::INDEX_FAISS_BIN_IVFFLAT) {
+                return std::make_shared<knowhere::BinaryIVF>();
+            } else if (type == IndexEnum::INDEX_FAISS_IDMAP) {
+                return std::make_shared<knowhere::IDMAP>();
+            } else if (type == IndexEnum::INDEX_FAISS_IVFFLAT) {
+                return std::make_shared<knowhere::IVF_NM>();
+            } else if (type == IndexEnum::INDEX_FAISS_IVFPQ) {
+                return std::make_shared<knowhere::IVFPQ>();
+            } else if (type == IndexEnum::INDEX_FAISS_IVFSQ8) {
+                return std::make_shared<knowhere::IVFSQ>();
+            } else if (type == IndexEnum::INDEX_ANNOY) {
+                return std::make_shared<knowhere::IndexAnnoy>();
+            } else if (type == IndexEnum::INDEX_HNSW) {
+                return std::make_shared<knowhere::IndexHNSW>();
+            } else if (type == IndexEnum::INDEX_RHNSWFlat) {
+                return std::make_shared<knowhere::IndexRHNSWFlat>();
+            } else if (type == IndexEnum::INDEX_RHNSWPQ) {
+                return std::make_shared<knowhere::IndexRHNSWPQ>();
+            } else if (type == IndexEnum::INDEX_RHNSWSQ) {
+                return std::make_shared<knowhere::IndexRHNSWSQ>();
+#ifdef KNOWHERE_SUPPORT_NGT
+            } else if (type == IndexEnum::INDEX_NGTPANNG) {
+                return std::make_shared<knowhere::IndexNGTPANNG>();
+            } else if (type == IndexEnum::INDEX_NGTONNG) {
+                return std::make_shared<knowhere::IndexNGTONNG>();
 #endif
-    if (type == IndexEnum::INDEX_FAISS_IDMAP) {
-        return std::make_shared<knowhere::IDMAP>();
-    } else if (type == IndexEnum::INDEX_FAISS_IVFFLAT) {
-#ifdef KNOWHERE_GPU_VERSION
-        if (mode == IndexMode::MODE_GPU) {
-            return std::make_shared<knowhere::GPUIVF_NM>(gpu_device);
-        }
-#endif
-        return std::make_shared<knowhere::IVF_NM>();
-    } else if (type == IndexEnum::INDEX_FAISS_IVFPQ) {
-#ifdef KNOWHERE_GPU_VERSION
-        if (mode == IndexMode::MODE_GPU) {
-            return std::make_shared<knowhere::GPUIVFPQ>(gpu_device);
-        }
-#endif
-        return std::make_shared<knowhere::IVFPQ>();
-    } else if (type == IndexEnum::INDEX_FAISS_IVFSQ8) {
-#ifdef KNOWHERE_GPU_VERSION
-        if (mode == IndexMode::MODE_GPU) {
-            return std::make_shared<knowhere::GPUIVFSQ>(gpu_device);
-        }
-#endif
-        return std::make_shared<knowhere::IVFSQ>();
-#ifdef KNOWHERE_GPU_VERSION
-    } else if (type == IndexEnum::INDEX_FAISS_IVFSQ8H) {
-        return std::make_shared<knowhere::IVFSQHybrid>(gpu_device);
-#endif
-    } else if (type == IndexEnum::INDEX_FAISS_BIN_IDMAP) {
-        return std::make_shared<knowhere::BinaryIDMAP>();
-    } else if (type == IndexEnum::INDEX_FAISS_BIN_IVFFLAT) {
-        return std::make_shared<knowhere::BinaryIVF>();
 #ifdef KNOWHERE_SUPPORT_NSG
-    } else if (type == IndexEnum::INDEX_NSG) {
-        return std::make_shared<knowhere::NSG_NM>(-1);
+            } else if (type == IndexEnum::INDEX_NSG) {
+                return std::make_shared<knowhere::NSG_NM>(-1);
 #endif
 #ifdef KNOWHERE_SUPPORT_SPTAG
-    } else if (type == IndexEnum::INDEX_SPTAG_KDT_RNT) {
-        return std::make_shared<knowhere::CPUSPTAGRNG>("KDT");
-    } else if (type == IndexEnum::INDEX_SPTAG_BKT_RNT) {
-        return std::make_shared<knowhere::CPUSPTAGRNG>("BKT");
+            } else if (type == IndexEnum::INDEX_SPTAG_KDT_RNT) {
+                return std::make_shared<knowhere::CPUSPTAGRNG>("KDT");
+            } else if (type == IndexEnum::INDEX_SPTAG_BKT_RNT) {
+                return std::make_shared<knowhere::CPUSPTAGRNG>("BKT");
 #endif
-    } else if (type == IndexEnum::INDEX_HNSW) {
-        return std::make_shared<knowhere::IndexHNSW>();
-    } else if (type == IndexEnum::INDEX_ANNOY) {
-        return std::make_shared<knowhere::IndexAnnoy>();
-    } else if (type == IndexEnum::INDEX_RHNSWFlat) {
-        return std::make_shared<knowhere::IndexRHNSWFlat>();
-    } else if (type == IndexEnum::INDEX_RHNSWPQ) {
-        return std::make_shared<knowhere::IndexRHNSWPQ>();
-    } else if (type == IndexEnum::INDEX_RHNSWSQ) {
-        return std::make_shared<knowhere::IndexRHNSWSQ>();
-#ifdef KNOWHERE_SUPPORT_SPTAG
-    } else if (type == IndexEnum::INDEX_NGTPANNG) {
-        return std::make_shared<knowhere::IndexNGTPANNG>();
-    } else if (type == IndexEnum::INDEX_NGTONNG) {
-        return std::make_shared<knowhere::IndexNGTONNG>();
+            } else {
+                return nullptr;
+            }
+        }
+#ifdef KNOWHERE_GPU_VERSION
+        case IndexMode::MODE_GPU: {
+            auto gpu_device = -1;  // TODO: remove hardcode here, get from invoker
+            if (type == IndexEnum::INDEX_FAISS_BIN_IDMAP) {
+                return std::make_shared<knowhere::BinaryIDMAP>();
+            } else if (type == IndexEnum::INDEX_FAISS_BIN_IVFFLAT) {
+                return std::make_shared<knowhere::BinaryIVF>();
+            } else if (type == IndexEnum::INDEX_FAISS_IDMAP) {
+                return std::make_shared<knowhere::GPUIDMAP>(gpu_device);
+            } else if (type == IndexEnum::INDEX_FAISS_IVFFLAT) {
+                return std::make_shared<knowhere::GPUIVF_NM>(gpu_device);
+            } else if (type == IndexEnum::INDEX_FAISS_IVFPQ) {
+                return std::make_shared<knowhere::GPUIVFPQ>(gpu_device);
+            } else if (type == IndexEnum::INDEX_FAISS_IVFSQ8) {
+                return std::make_shared<knowhere::GPUIVFSQ>(gpu_device);
+            } else if (type == IndexEnum::INDEX_FAISS_IVFSQ8H) {
+                return std::make_shared<knowhere::IVFSQHybrid>(gpu_device);
+            } else {
+                return nullptr;
+            }
+        }
 #endif
-    } else {
-        return nullptr;
+        default:
+            return nullptr;
     }
 }
 
