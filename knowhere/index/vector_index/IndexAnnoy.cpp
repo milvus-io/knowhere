@@ -47,9 +47,7 @@ IndexAnnoy::Serialize(const Config& config) {
     res_set.Append("annoy_metric_type", metric_type, metric_type_length);
     res_set.Append("annoy_dim", dim_data, sizeof(uint64_t));
     res_set.Append("annoy_index_data", index_data, index_length);
-    if (config.contains(INDEX_FILE_SLICE_SIZE_IN_MEGABYTE)) {
-        Disassemble(config[INDEX_FILE_SLICE_SIZE_IN_MEGABYTE].get<int64_t>() * 1024 * 1024, res_set);
-    }
+    Disassemble(res_set, config);
     return res_set;
 }
 

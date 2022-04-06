@@ -36,7 +36,7 @@ class AnnoyTest : public DataGen, public TestWithParam<std::string> {
             {knowhere::IndexParams::n_trees, 4},
             {knowhere::IndexParams::search_k, 100},
             {knowhere::Metric::TYPE, knowhere::Metric::L2},
-            {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
+            {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
         };
     }
 

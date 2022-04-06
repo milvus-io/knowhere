@@ -49,9 +49,7 @@ IVF_NM::Serialize(const Config& config) {
     }
 
     auto ret = SerializeImpl(index_type_);
-    if (config.contains(INDEX_FILE_SLICE_SIZE_IN_MEGABYTE)) {
-        Disassemble(config[INDEX_FILE_SLICE_SIZE_IN_MEGABYTE].get<int64_t>() * 1024 * 1024, ret);
-    }
+    Disassemble(ret, config);
     return ret;
 }
 

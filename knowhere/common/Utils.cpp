@@ -17,20 +17,23 @@
 
 namespace knowhere {
 
+const int64_t DEFAULT_INDEX_FILE_SLICE_SIZE = 4;
 const char* INDEX_FILE_SLICE_SIZE_IN_MEGABYTE = "SLICE_SIZE";
-const char* INDEX_FILE_SLICE_META = "SLICE_META";
+static const char* INDEX_FILE_SLICE_META = "SLICE_META";
 
 static const char* META = "meta";
 static const char* NAME = "name";
 static const char* SLICE_NUM = "slice_num";
 static const char* TOTAL_LEN = "total_len";
 
+int64_t index_file_slice_size = DEFAULT_INDEX_FILE_SLICE_SIZE;
+
 void
 Slice(const std::string& prefix,
       const BinaryPtr& data_src,
-      const int64_t& slice_len,
+      const int64_t slice_len,
       BinarySet& binarySet,
-      json& ret) {
+      Config& ret) {
     if (!data_src) {
         return;
     }
@@ -51,12 +54,12 @@ Slice(const std::string& prefix,
 
 void
 Assemble(BinarySet& binarySet) {
-    auto slice_meta = binarySet.Erase(INDEX_FILE_SLICE_META);
+    auto slice_meta = EraseSliceMeta(binarySet);
     if (slice_meta == nullptr) {
         return;
     }
 
-    json meta_data = json::parse(std::string(reinterpret_cast<char*>(slice_meta->data.get()), slice_meta->size));
+    Config meta_data = Config::parse(std::string(reinterpret_cast<char*>(slice_meta->data.get()), slice_meta->size));
 
     for (auto& item : meta_data[META]) {
         std::string prefix = item[NAME];
@@ -74,17 +77,22 @@ Assemble(BinarySet& binarySet) {
 }
 
 void
-Disassemble(const int64_t& slice_size_in_byte, BinarySet& binarySet) {
-    json meta_info;
-    auto slice_meta = binarySet.Erase(INDEX_FILE_SLICE_META);
+Disassemble(BinarySet& binarySet, const Config& config) {
+    if (!config.contains(INDEX_FILE_SLICE_SIZE_IN_MEGABYTE)) {
+        return;
+    }
+
+    Config meta_info;
+    auto slice_meta = EraseSliceMeta(binarySet);
     if (slice_meta != nullptr) {
-        json last_meta_data =
-            json::parse(std::string(reinterpret_cast<char*>(slice_meta->data.get()), slice_meta->size));
+        Config last_meta_data =
+            Config::parse(std::string(reinterpret_cast<char*>(slice_meta->data.get()), slice_meta->size));
         for (auto& item : last_meta_data[META]) {
             meta_info[META].emplace_back(item);
         }
     }
 
+    const int64_t slice_size_in_byte = config[INDEX_FILE_SLICE_SIZE_IN_MEGABYTE].get<int64_t>() << 20;
     std::vector<std::string> slice_key_list;
     for (auto& kv : binarySet.binary_map_) {
         if (kv.second->size > slice_size_in_byte) {
@@ -92,17 +100,28 @@ Disassemble(const int64_t& slice_size_in_byte, BinarySet& binarySet) {
         }
     }
     for (auto& key : slice_key_list) {
-        json slice_i;
+        Config slice_i;
         Slice(key, binarySet.Erase(key), slice_size_in_byte, binarySet, slice_i);
         meta_info[META].emplace_back(slice_i);
     }
     if (!slice_key_list.empty()) {
-        auto meta_str = meta_info.dump();
-        std::shared_ptr<uint8_t[]> meta_data(new uint8_t[meta_str.length() + 1], std::default_delete<uint8_t[]>());
-        memcpy(meta_data.get(), meta_str.data(), meta_str.length());
-        meta_data.get()[meta_str.length()] = 0;
-        binarySet.Append(INDEX_FILE_SLICE_META, meta_data, meta_str.length() + 1);
+        AppendSliceMeta(binarySet, meta_info);
     }
+}
+
+void
+AppendSliceMeta(BinarySet& binarySet, const Config& meta_info) {
+    auto meta_str = meta_info.dump();
+    auto meta_len = meta_str.length();
+    std::shared_ptr<uint8_t[]> meta_data(new uint8_t[meta_len + 1]);
+    memcpy(meta_data.get(), meta_str.data(), meta_len);
+    meta_data[meta_len] = 0;
+    binarySet.Append(INDEX_FILE_SLICE_META, meta_data, meta_len + 1);
+}
+
+BinaryPtr
+EraseSliceMeta(BinarySet& binarySet) {
+    return binarySet.Erase(INDEX_FILE_SLICE_META);
 }
 
 }  // namespace knowhere

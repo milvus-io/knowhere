@@ -141,7 +141,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_slice) {
         {knowhere::meta::DIM, dim},
         {knowhere::meta::TOPK, k},
         {knowhere::Metric::TYPE, MetricType},
-        {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
+        {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
     };
 
     {
