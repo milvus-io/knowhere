@@ -49,9 +49,7 @@ IndexRHNSWFlat::Serialize(const Config& config) {
         std::shared_ptr<uint8_t[]> space_sp(meta_space, std::default_delete<uint8_t[]>());
         res_set.Append("META", space_sp, sizeof(meta_info));
 
-        if (config.contains(INDEX_FILE_SLICE_SIZE_IN_MEGABYTE)) {
-            Disassemble(config[INDEX_FILE_SLICE_SIZE_IN_MEGABYTE].get<int64_t>() * 1024 * 1024, res_set);
-        }
+        Disassemble(res_set, config);
         return res_set;
     } catch (std::exception& e) {
         KNOWHERE_THROW_MSG(e.what());

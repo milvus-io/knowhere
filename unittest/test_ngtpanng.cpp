@@ -29,23 +29,23 @@ class NGTPANNGTest : public DataGen, public TestWithParam<std::string> {
     SetUp() override {
         IndexType = GetParam();
         Generate(128, 10000, 10);
-        index_ = std::make_shared<milvus::knowhere::IndexNGTPANNG>();
-        conf = milvus::knowhere::Config{
-            {milvus::knowhere::meta::DIM, dim},
-            {milvus::knowhere::meta::TOPK, 10},
-            {milvus::knowhere::Metric::TYPE, milvus::knowhere::Metric::L2},
-            {milvus::knowhere::IndexParams::edge_size, 10},
-            {milvus::knowhere::IndexParams::epsilon, 0.1},
-            {milvus::knowhere::IndexParams::max_search_edges, 50},
-            {milvus::knowhere::IndexParams::forcedly_pruned_edge_size, 60},
-            {milvus::knowhere::IndexParams::selectively_pruned_edge_size, 30},
-            {milvus::knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
+        index_ = std::make_shared<knowhere::IndexNGTPANNG>();
+        conf = knowhere::Config{
+            {knowhere::meta::DIM, dim},
+            {knowhere::meta::TOPK, 10},
+            {knowhere::Metric::TYPE, knowhere::Metric::L2},
+            {knowhere::IndexParams::edge_size, 10},
+            {knowhere::IndexParams::epsilon, 0.1},
+            {knowhere::IndexParams::max_search_edges, 50},
+            {knowhere::IndexParams::forcedly_pruned_edge_size, 60},
+            {knowhere::IndexParams::selectively_pruned_edge_size, 30},
+            {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
         };
     }
 
  protected:
-    milvus::knowhere::Config conf;
-    std::shared_ptr<milvus::knowhere::IndexNGTPANNG> index_ = nullptr;
+    knowhere::Config conf;
+    std::shared_ptr<knowhere::IndexNGTPANNG> index_ = nullptr;
     std::string IndexType;
 };
 
@@ -92,7 +92,7 @@ TEST_P(NGTPANNGTest, ngtpanng_delete) {
 }
 
 TEST_P(NGTPANNGTest, ngtpanng_serialize) {
-    auto serialize = [](const std::string& filename, milvus::knowhere::BinaryPtr& bin, uint8_t* ret) {
+    auto serialize = [](const std::string& filename, knowhere::BinaryPtr& bin, uint8_t* ret) {
         {
             // write and flush
             FileIOWriter writer(filename);
@@ -106,7 +106,7 @@ TEST_P(NGTPANNGTest, ngtpanng_serialize) {
     {
         // serialize index
         index_->BuildAll(base_dataset, conf);
-        auto binaryset = index_->Serialize(milvus::knowhere::Config());
+        auto binaryset = index_->Serialize(knowhere::Config());
 
         auto bin_obj_data = binaryset.GetByName("ngt_obj_data");
         std::string filename1 = "/tmp/ngt_obj_data_serialize.bin";
@@ -145,7 +145,7 @@ TEST_P(NGTPANNGTest, ngtpanng_serialize) {
         ASSERT_EQ(index_->Count(), nb);
         ASSERT_EQ(index_->Dim(), dim);
         auto result = index_->Query(query_dataset, conf, nullptr);
-        AssertAnns(result, nq, conf[milvus::knowhere::meta::TOPK]);
+        AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
     }
 }
 
@@ -153,12 +153,12 @@ TEST_P(NGTPANNGTest, ngtpanng_slice) {
     {
         // serialize index
         index_->BuildAll(base_dataset, conf);
-        auto binaryset = index_->Serialize(milvus::knowhere::Config());
+        auto binaryset = index_->Serialize(knowhere::Config());
 
         index_->Load(binaryset);
         ASSERT_EQ(index_->Count(), nb);
         ASSERT_EQ(index_->Dim(), dim);
         auto result = index_->Query(query_dataset, conf, nullptr);
-        AssertAnns(result, nq, conf[milvus::knowhere::meta::TOPK]);
+        AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
     }
 }

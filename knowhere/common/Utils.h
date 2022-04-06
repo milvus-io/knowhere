@@ -20,12 +20,18 @@
 namespace knowhere {
 
 extern const char* INDEX_FILE_SLICE_SIZE_IN_MEGABYTE;
-extern const char* INDEX_FILE_SLICE_META;
+extern int64_t index_file_slice_size;
 
 void
 Assemble(BinarySet& binarySet);
 
 void
-Disassemble(const int64_t& slice_size_in_byte, BinarySet& binarySet);
+Disassemble(BinarySet& binarySet, const Config& config);
+
+void
+AppendSliceMeta(BinarySet& binarySet, const Config& meta_info);
+
+BinaryPtr
+EraseSliceMeta(BinarySet& binarySet);
 
 }  // namespace knowhere

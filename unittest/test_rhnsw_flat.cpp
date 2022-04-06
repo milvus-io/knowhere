@@ -36,7 +36,7 @@ class RHNSWFlatTest : public DataGen, public TestWithParam<std::string> {
             {knowhere::IndexParams::efConstruction, 200},
             {knowhere::IndexParams::ef, 200},
             {knowhere::Metric::TYPE, knowhere::Metric::L2},
-            {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
+            {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
         };
     }
 

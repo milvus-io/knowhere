@@ -101,7 +101,7 @@ class ParamGenerator {
                 {knowhere::IndexParams::nlist, 100},
                 {knowhere::IndexParams::nprobe, 4},
                 {knowhere::Metric::TYPE, knowhere::Metric::L2},
-                {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
+                {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
                 {knowhere::meta::DEVICEID, DEVICEID},
             };
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFPQ) {
@@ -113,7 +113,7 @@ class ParamGenerator {
                 {knowhere::IndexParams::m, 4},
                 {knowhere::IndexParams::nbits, 8},
                 {knowhere::Metric::TYPE, knowhere::Metric::L2},
-                {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
+                {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
                 {knowhere::meta::DEVICEID, DEVICEID},
             };
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8 ||
@@ -125,7 +125,7 @@ class ParamGenerator {
                 {knowhere::IndexParams::nprobe, 4},
                 {knowhere::IndexParams::nbits, 8},
                 {knowhere::Metric::TYPE, knowhere::Metric::L2},
-                {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
+                {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
                 {knowhere::meta::DEVICEID, DEVICEID},
             };
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFHNSW) {
@@ -138,7 +138,7 @@ class ParamGenerator {
                 {knowhere::IndexParams::efConstruction, 200},
                 {knowhere::IndexParams::ef, 200},
                 {knowhere::Metric::TYPE, knowhere::Metric::L2},
-                {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, 4},
+                {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
                 {knowhere::meta::DEVICEID, DEVICEID},
             };
         } else {
