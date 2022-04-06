@@ -17,6 +17,7 @@
 if (MACOS)
     set(UTILS_SRC
             distances_simd.cpp
+            FaissHookFvec.cpp
             )
     add_library(knowhere_utils STATIC
             ${UTILS_SRC}

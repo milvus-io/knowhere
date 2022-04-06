@@ -13,17 +13,16 @@
 
 #include "archive/KnowhereConfig.h"
 #include "common/Log.h"
-
-#ifdef __linux__
 #include "index/vector_index/Statistics.h"
-#include "NGT/lib/NGT/defines.h"
 #include "faiss/Clustering.h"
 #include "faiss/FaissHook.h"
 #include "faiss/utils/distances.h"
 #include "faiss/utils/utils.h"
-#endif
 #ifdef KNOWHERE_GPU_VERSION
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
+#endif
+#ifdef KNOWHERE_SUPPORT_NGT
+#include "NGT/lib/NGT/defines.h"
 #endif
 
 namespace knowhere {
@@ -32,10 +31,6 @@ constexpr int64_t M_BYTE = 1024 * 1024;
 
 std::string
 KnowhereConfig::SetSimdType(const SimdType simd_type) {
-#ifdef __APPLE__
-    // return emtpy string if running on macos
-    return "";
-#elif __linux__
     if (simd_type == SimdType::AUTO) {
         faiss::faiss_use_avx512 = true;
         faiss::faiss_use_avx2 = true;
@@ -62,38 +57,20 @@ KnowhereConfig::SetSimdType(const SimdType simd_type) {
     faiss::hook_init(simd_str);
     LOG_KNOWHERE_DEBUG_ << "FAISS hook " << simd_str;
     return simd_str;
-#else
-    KNOWHERE_THROW_MSG("Unsupported SetSimdType on current platform!");
-#endif
 }
 
 void
 KnowhereConfig::SetBlasThreshold(const int64_t use_blas_threshold) {
-#ifdef __APPLE__
-    // do nothing
-#elif __linux__
     faiss::distance_compute_blas_threshold = static_cast<int>(use_blas_threshold);
-#else
-    KNOWHERE_THROW_MSG("Unsupported SetBlasThreshold on current platform!");
-#endif
 }
 
 void
 KnowhereConfig::SetEarlyStopThreshold(const double early_stop_threshold) {
-#ifdef __APPLE__
-    // do nothing
-#elif __linux__
     faiss::early_stop_threshold = early_stop_threshold;
-#else
-    KNOWHERE_THROW_MSG("Unsupported SetEarlyStopThreshold on current platform!");
-#endif
 }
 
 void
 KnowhereConfig::SetClusteringType(const ClusteringType clustering_type) {
-#ifdef __APPLE__
-    // do nothing
-#elif __linux__
     switch (clustering_type) {
         case ClusteringType::K_MEANS:
         default:
@@ -103,36 +80,21 @@ KnowhereConfig::SetClusteringType(const ClusteringType clustering_type) {
             faiss::clustering_type = faiss::ClusteringType::K_MEANS_PLUS_PLUS;
             break;
     }
-#else
-    KNOWHERE_THROW_MSG("Unsupported SetClusteringType on current platform!");
-#endif
 }
 
 void
 KnowhereConfig::SetStatisticsLevel(const int32_t stat_level) {
-#ifdef __APPLE__
-    // do nothing
-#elif __linux__
     knowhere::STATISTICS_LEVEL = stat_level;
     faiss::STATISTICS_LEVEL = stat_level;
-#else
-    KNOWHERE_THROW_MSG("Unsupported SetStatisticsLevel on current platform!");
-#endif
 }
 
 void
 KnowhereConfig::SetLogHandler() {
-#ifdef __APPLE__
-    // do nothing
-#elif __linux__
     faiss::LOG_ERROR_ = &knowhere::log_error_;
     faiss::LOG_WARNING_ = &knowhere::log_warning_;
 #ifdef KNOWHERE_SUPPORT_NGT
     NGT_LOG_ERROR_ = &knowhere::log_error_;
     NGT_LOG_WARNING_ = &knowhere::log_warning_;
-#endif
-#else
-    KNOWHERE_THROW_MSG("Unsupported SetLogHandler on current platform!");
 #endif
 }
 

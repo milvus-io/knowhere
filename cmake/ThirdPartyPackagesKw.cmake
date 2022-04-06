@@ -221,7 +221,6 @@ endmacro()
 
 if (KNOWHERE_WITH_OPENBLAS)
     if (OpenBLAS_SOURCE STREQUAL "AUTO")
-        set (BLA_VENDOR OpenBLAS)
         find_package(BLAS)
 
         message(STATUS "Knowhere openblas libraries: ${BLAS_LIBRARIES}")

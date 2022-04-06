@@ -28,7 +28,7 @@ extern fvec_inner_products_ny_func_ptr fvec_inner_products_ny;
 extern fvec_madd_func_ptr fvec_madd;
 extern fvec_madd_and_argmin_func_ptr fvec_madd_and_argmin;
 
-#if __linux__
+#ifdef __linux__
 bool cpu_support_avx512();
 bool cpu_support_avx2();
 bool cpu_support_sse4_2();

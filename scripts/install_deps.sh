@@ -78,5 +78,5 @@ if [[ "${MACHINE}" == "Linux" ]]; then
 fi
 
 if [[ "${MACHINE}" == "Mac"  ]]; then
-    brew install boost libomp llvm ninja tbb
+    brew install boost libomp llvm ninja tbb openblas
 fi

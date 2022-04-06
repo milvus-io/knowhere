@@ -22,11 +22,8 @@
 #include "knowhere/index/Index.h"
 #include "knowhere/index/IndexType.h"
 #include "knowhere/index/vector_index/Statistics.h"
-#include "knowhere/utils/BitsetView.h"
-
-#ifdef __linux__
 #include "knowhere/index/vector_index/helpers/DynamicResultSet.h"
-#endif
+#include "knowhere/utils/BitsetView.h"
 
 namespace knowhere {
 
@@ -96,7 +93,6 @@ class VecIndex : public Index {
         }
     }
 
-#ifdef __linux__
     void
     MapUids(DynamicResultSegment& milvus_dataset) {
         if (uids_) {
@@ -113,7 +109,6 @@ class VecIndex : public Index {
             }
         }
     }
-#endif
 
     size_t
     UidsSize() {
