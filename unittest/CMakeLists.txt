@@ -58,7 +58,6 @@ set(ALL_INDEXING_SRCS
         test_customized_index.cpp
         test_hnsw.cpp
         test_idmap.cpp
-        test_instructionset.cpp
         test_ivf.cpp
         test_ivf_cpu_nm.cpp
         test_ivf_hnsw.cpp
@@ -66,6 +65,14 @@ set(ALL_INDEXING_SRCS
         test_rhnsw_pq.cpp
         test_rhnsw_sq8.cpp
         )
+
+if ( LINUX )
+    set(ALL_INDEXING_SRCS
+            ${ALL_INDEXING_SRCS}
+            test_instructionset.cpp
+            )
+endif()
+
 if ( KNOWHERE_GPU_VERSION )
     set(ALL_INDEXING_SRCS
             ${ALL_INDEXING_SRCS}

@@ -4,15 +4,17 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-file(GLOB_RECURSE AVX2_CPP "*avx.cpp")
-add_library(faiss_avx2 OBJECT ${AVX2_CPP})
-target_compile_options(faiss_avx2 PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -mf16c -mavx2>)
-target_include_directories(faiss_avx2 PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>)
+if("${CMAKE_SYSTEM}" MATCHES "Linux")
+  file(GLOB_RECURSE AVX2_CPP "*avx.cpp")
+  add_library(faiss_avx2 OBJECT ${AVX2_CPP})
+  target_compile_options(faiss_avx2 PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -mf16c -mavx2>)
+  target_include_directories(faiss_avx2 PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>)
 
-file(GLOB_RECURSE AVX512_CPP "*avx512.cpp")
-add_library(faiss_avx512 OBJECT ${AVX512_CPP})
-target_compile_options(faiss_avx512 PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -mf16c -mavx512f -mavx512dq -mavx512bw>)
-target_include_directories(faiss_avx512 PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>)
+  file(GLOB_RECURSE AVX512_CPP "*avx512.cpp")
+  add_library(faiss_avx512 OBJECT ${AVX512_CPP})
+  target_compile_options(faiss_avx512 PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -mf16c -mavx512f -mavx512dq -mavx512bw>)
+  target_include_directories(faiss_avx512 PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>)
+endif()
 
 set(FAISS_SRC
   AutoTune.cpp
@@ -96,9 +98,15 @@ set(FAISS_SRC
   utils/quantize_lut.cpp
   utils/random.cpp
   utils/utils.cpp
-  $<TARGET_OBJECTS:faiss_avx2>
-  $<TARGET_OBJECTS:faiss_avx512>
 )
+
+if("${CMAKE_SYSTEM}" MATCHES "Linux")
+  set(FAISS_SRC
+          ${FAISS_SRC}
+          $<TARGET_OBJECTS:faiss_avx2>
+          $<TARGET_OBJECTS:faiss_avx512>
+        )
+endif()
 
 set(FAISS_HEADERS
   AutoTune.h
@@ -228,46 +236,46 @@ add_library(faiss ${FAISS_SRC})
 target_include_directories(faiss PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>)
 # Handle `#include <faiss/foo.h>`.
-target_include_directories(faiss_avx2 PUBLIC
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>)
+#target_include_directories(faiss_avx2 PUBLIC
+#  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>)
 
 set_target_properties(faiss PROPERTIES
   POSITION_INDEPENDENT_CODE ON
   WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
-set_target_properties(faiss_avx2 PROPERTIES
-  POSITION_INDEPENDENT_CODE ON
-  WINDOWS_EXPORT_ALL_SYMBOLS ON
-)
+#set_target_properties(faiss_avx2 PROPERTIES
+#  POSITION_INDEPENDENT_CODE ON
+#  WINDOWS_EXPORT_ALL_SYMBOLS ON
+#)
 
 if(WIN32)
   target_compile_definitions(faiss PRIVATE FAISS_MAIN_LIB)
-  target_compile_definitions(faiss_avx2 PRIVATE FAISS_MAIN_LIB)
+  #target_compile_definitions(faiss_avx2 PRIVATE FAISS_MAIN_LIB)
 endif()
 
 target_compile_definitions(faiss PRIVATE FINTEGER=int)
 target_compile_options(faiss PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-msse4.2 -mpopcnt>)
-target_compile_definitions(faiss_avx2 PRIVATE FINTEGER=int)
+#target_compile_definitions(faiss_avx2 PRIVATE FINTEGER=int)
 
 find_package(OpenMP REQUIRED)
 target_link_libraries(faiss PRIVATE OpenMP::OpenMP_CXX)
-target_link_libraries(faiss_avx2 PRIVATE OpenMP::OpenMP_CXX)
+#target_link_libraries(faiss_avx2 PRIVATE OpenMP::OpenMP_CXX)
 
 find_package(MKL)
 if(MKL_FOUND AND FAISS_WITH_MKL)
   target_link_libraries(faiss PRIVATE ${MKL_LIBRARIES})
-  target_link_libraries(faiss_avx2 PRIVATE ${MKL_LIBRARIES})
+  #target_link_libraries(faiss_avx2 PRIVATE ${MKL_LIBRARIES})
 else()
   message(STATUS "Build Faiss with OpenBlas/LAPACK")
   find_package(BLAS REQUIRED)
   message(STATUS "Faiss BLAS libraries: ${BLAS_LIBRARIES}")
   target_link_libraries(faiss PRIVATE ${BLAS_LIBRARIES})
-  target_link_libraries(faiss_avx2 PRIVATE ${BLAS_LIBRARIES})
+  #target_link_libraries(faiss_avx2 PRIVATE ${BLAS_LIBRARIES})
 
   find_package(LAPACK REQUIRED)
   message(STATUS "Faiss LAPACK libraries: ${BLAS_LIBRARIES}")
   target_link_libraries(faiss PRIVATE ${LAPACK_LIBRARIES})
-  target_link_libraries(faiss_avx2 PRIVATE ${LAPACK_LIBRARIES})
+  #target_link_libraries(faiss_avx2 PRIVATE ${LAPACK_LIBRARIES})
 endif()
 
 install(TARGETS faiss
@@ -277,13 +285,13 @@ install(TARGETS faiss
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
-if(FAISS_OPT_LEVEL STREQUAL "avx2")
-  install(TARGETS faiss_avx2
-    EXPORT faiss-targets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
-endif()
+#if(FAISS_OPT_LEVEL STREQUAL "avx2")
+#  install(TARGETS faiss_avx2
+#    EXPORT faiss-targets
+#    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#  )
+#endif()
 
 foreach(header ${FAISS_HEADERS})
   get_filename_component(dir ${header} DIRECTORY )
