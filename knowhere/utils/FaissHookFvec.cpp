@@ -9,7 +9,9 @@
 #include "distances_simd_avx.h"
 #include "distances_simd_avx512.h"
 #include "distances_simd_sse.h"
+#ifdef __linux__
 #include "instruction_set.h"
+#endif
 
 namespace faiss {
 
