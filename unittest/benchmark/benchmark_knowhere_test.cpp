@@ -166,7 +166,7 @@ print_array(const char* header, bool is_integer, const void* arr, int32_t nq, in
  * SIFT     128         1,000,000   10,000      100         Euclidean   HDF5 (501MB)
  *************************************************************************************/
 
-class Benchmark : public ::testing::Test {
+class Benchmark_knowhere : public ::testing::Test {
  public:
     bool parse_ann_test_name() {
         size_t pos1, pos2;
@@ -429,7 +429,7 @@ class Benchmark : public ::testing::Test {
     std::string binary_header_;
 };
 
-TEST_F(Benchmark, TEST_IVFFLAT_NM) {
+TEST_F(Benchmark_knowhere, TEST_IVFFLAT_NM) {
     const std::vector<int32_t> nlists = {256, 512};
     const std::vector<int32_t> nqs = {100};
     const std::vector<int32_t> topks = {10};
@@ -460,7 +460,7 @@ TEST_F(Benchmark, TEST_IVFFLAT_NM) {
     }
 }
 
-TEST_F(Benchmark, TEST_IVFSQ8) {
+TEST_F(Benchmark_knowhere, TEST_IVFSQ8) {
     const std::vector<int32_t> nlists = {256, 512};
     const std::vector<int32_t> nqs = {100};
     const std::vector<int32_t> topks = {10};
@@ -485,7 +485,7 @@ TEST_F(Benchmark, TEST_IVFSQ8) {
     }
 }
 
-TEST_F(Benchmark, TEST_HNSW) {
+TEST_F(Benchmark_knowhere, TEST_HNSW) {
     const std::vector<int32_t> ms = {8, 16};
     const std::vector<int32_t> efCons = {100, 200, 300};
     const std::vector<int32_t> nqs = {100};
