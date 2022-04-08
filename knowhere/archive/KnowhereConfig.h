@@ -34,7 +34,7 @@ class KnowhereConfig {
     /**
      * set knowhere index_file_slice_size
      */
-    void
+    static void
     SetIndexFileSliceSize(const int64_t size);
 
     /**
