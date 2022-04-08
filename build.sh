@@ -71,6 +71,9 @@ done
 if [[ ${MAKE_CLEAN} == "ON" ]]; then
   echo "Remove ${BUILD_DIR} ${OUTPUT_DIR} ..."
   rm -rf ${BUILD_DIR} ${OUTPUT_DIR}
+  echo "Clean faiss ..."
+  cd thirdparty/faiss
+  rm -rf CMakeFiles _deps CMakeCache.txt
   exit 0
 fi
 
