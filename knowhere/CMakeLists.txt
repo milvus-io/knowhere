@@ -20,7 +20,6 @@ set(external_srcs
         common/Exception.cpp
         common/Timer.cpp
         common/Utils.cpp
-        common/Heap.cpp
         common/Log.cpp
         ${KNOWHERE_THIRDPARTY_SRC}/easyloggingpp/easylogging++.cc
         )
@@ -61,8 +60,6 @@ set(vector_index_srcs
         index/vector_index/helpers/FaissIO.cpp
         index/vector_index/helpers/IndexParameter.cpp
         index/vector_index/helpers/DynamicResultSet.cpp
-        index/vector_index/impl/bruteforce/BruteForce.cpp
-        index/vector_index/impl/bruteforce/SimpleIndexFlat.cpp
         index/vector_index/ConfAdapter.cpp
         index/vector_index/ConfAdapterMgr.cpp
         index/vector_index/FaissBaseBinaryIndex.cpp
