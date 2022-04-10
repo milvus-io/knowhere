@@ -121,7 +121,7 @@ void exhaustive_parallel_on_nx(
 
             resi.begin(i);
             for (size_t j = 0; j < ny; j++) {
-                if (!bitset || !bitset.test(j)) {
+                if (bitset.empty() || !bitset.test(j)) {
                     float ip = dis_compute_func(x_i, y_j, d);
                     resi.add_result(ip, j);
                 }
@@ -168,7 +168,7 @@ void exhaustive_parallel_on_ny(
 #pragma omp parallel for schedule(static)
         for (size_t j = 0; j < ny; j++) {
             int t = omp_get_thread_num();
-            if (!bitset || !bitset.test(j)) {
+            if (bitset.empty() || !bitset.test(j)) {
                 const float* y_j = y + j * d;
                 const float* x_i = x + x_from * d;
                 for (size_t i = 0; i < size; i++) {
@@ -339,7 +339,7 @@ void exhaustive_L2sqr_blas(
                 float* ip_line = ip_block.get() + (i - i0) * (j1 - j0);
 
                 for (size_t j = j0; j < j1; j++) {
-                    if (!bitset || !bitset.test(j)) {
+                    if (bitset.empty() || !bitset.test(j)) {
                         float ip = *ip_line;
                         float dis = x_norms[i] + y_norms[j] - 2 * ip;
 
@@ -422,7 +422,7 @@ static void knn_jaccard_blas(
                 float* ip_line = ip_block + (i - i0) * (j1 - j0);
 
                 for (size_t j = j0; j < j1; j++) {
-                    if (!bitset || !bitset.test(j)) {
+                    if (bitset.empty() || !bitset.test(j)) {
                         float ip = *ip_line;
                         float dis = 1.0 - ip / (x_norms[i] + y_norms[j] - ip);
 

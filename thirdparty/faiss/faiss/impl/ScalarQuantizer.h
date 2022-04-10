@@ -138,7 +138,7 @@ struct IVFSQScannerIP : InvertedListScanner {
         size_t nup = 0;
 
         for (size_t j = 0; j < list_size; j++) {
-            if (!bitset || !bitset.test(ids[j])) {
+            if (bitset.empty() || !bitset.test(ids[j])) {
                 float accu = accu0 + dc.query_to_code(codes);
                 if (accu > simi[0]) {
                     int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
@@ -159,7 +159,7 @@ struct IVFSQScannerIP : InvertedListScanner {
             RangeQueryResult& res,
             const BitsetView bitset = nullptr) const override {
         for (size_t j = 0; j < list_size; j++) {
-            if (!bitset || !bitset.test(ids[j])) {
+            if (bitset.empty() || !bitset.test(ids[j])) {
                 float accu = accu0 + dc.query_to_code(codes);
                 if (accu > radius) {
                     int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
@@ -229,7 +229,7 @@ struct IVFSQScannerL2 : InvertedListScanner {
             const BitsetView bitset = nullptr) const override {
         size_t nup = 0;
         for (size_t j = 0; j < list_size; j++) {
-            if (!bitset || !bitset.test(ids[j])) {
+            if (bitset.empty() || !bitset.test(ids[j])) {
                 float dis = dc.query_to_code(codes);
                 if (dis < simi[0]) {
                     int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
@@ -250,7 +250,7 @@ struct IVFSQScannerL2 : InvertedListScanner {
             RangeQueryResult& res,
             const BitsetView bitset = nullptr) const override {
         for (size_t j = 0; j < list_size; j++) {
-            if (!bitset || !bitset.test(ids[j])) {
+            if (bitset.empty() || !bitset.test(ids[j])) {
                 float dis = dc.query_to_code(codes);
                 if (dis < radius) {
                     int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];

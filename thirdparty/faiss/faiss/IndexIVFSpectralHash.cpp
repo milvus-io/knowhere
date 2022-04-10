@@ -262,7 +262,7 @@ struct IVFScanner : InvertedListScanner {
             const BitsetView bitset) const override {
         size_t nup = 0;
         for (size_t j = 0; j < list_size; j++) {
-            if (!bitset || !bitset.test(ids[j])) {
+            if (bitset.empty() || !bitset.test(ids[j])) {
                 float dis = hc.compute(codes);
 
                 if (dis < simi[0]) {

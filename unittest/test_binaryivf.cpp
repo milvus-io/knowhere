@@ -76,12 +76,12 @@ TEST_P(BinaryIVFTest, binaryivf_basic) {
     AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
     // PrintResult(result, nq, k);
 
-    faiss::ConcurrentBitsetPtr concurrent_bitset_ptr = std::make_shared<faiss::ConcurrentBitset>(nb);
+    std::shared_ptr<uint8_t[]> data(new uint8_t[nb/8]);
     for (int64_t i = 0; i < nq; ++i) {
-        concurrent_bitset_ptr->set(i);
+        set_bit(data.get(), i);
     }
-
-    auto result2 = index_->Query(query_dataset, conf, concurrent_bitset_ptr);
+    auto bitset = faiss::BitsetView(data.get(), nb);
+    auto result2 = index_->Query(query_dataset, conf, bitset);
     AssertAnns(result2, nq, k, CheckMode::CHECK_NOT_EQUAL);
 
 #if 0

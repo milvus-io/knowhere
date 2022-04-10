@@ -156,7 +156,7 @@ void binary_distance_knn_mc(
 
 #pragma omp parallel for
         for (size_t j = 0; j < n2; j++) {
-            if(!bitset || !bitset.test(j)) {
+            if (bitset.empty() || !bitset.test(j)) {
                 int thread_no = omp_get_thread_num();
 
                 const uint8_t * bs2_ = bs2 + j * bytes_per_code;
@@ -214,7 +214,7 @@ void binary_distance_knn_mc(
                 T hc (bs1 + i * bytes_per_code, bytes_per_code);
                 const uint8_t * bs2_ = bs2 + j0 * bytes_per_code;
                 for (size_t j = j0; j < j1; j++, bs2_ += bytes_per_code) {
-                    if(!bitset || !bitset.test(j)){
+                    if (bitset.empty() || !bitset.test(j)){
                         if (hc.compute (bs2_)) {
                             dis[num_i] = 0;
                             lab[num_i] = j;
@@ -340,7 +340,7 @@ void binary_distance_knn_hc (
 
 #pragma omp parallel for
         for (size_t j = 0; j < n2; j++) {
-            if(!bitset || !bitset.test(j)) {
+            if (bitset.empty() || !bitset.test(j)) {
                 int thread_no = omp_get_thread_num();
 
                 const uint8_t * bs2_ = bs2 + j * bytes_per_code;
@@ -394,7 +394,7 @@ void binary_distance_knn_hc (
                 T *__restrict bh_val_ = ha->val + i * k;
                 int64_t *__restrict bh_ids_ = ha->ids + i * k;
                 for (size_t j = j0; j < j1; j++, bs2_ += bytes_per_code) {
-                    if (!bitset || !bitset.test(j)) {
+                    if (bitset.empty() || !bitset.test(j)) {
                         dis = hc.compute (bs2_);
                         if (C::cmp(bh_val_[0], dis)) {
                             faiss::heap_replace_top<C>(k, bh_val_, bh_ids_, dis, j);
@@ -530,7 +530,7 @@ void binary_range_search (
 
 #pragma omp for
         for (size_t j = 0; j < nb; j++) {
-            if(!bitset || !bitset.test(j)) {
+            if (bitset.empty() || !bitset.test(j)) {
                 T dist = mc.compute(b + j * ncodes);
                 if (C::cmp(radius, dist)) {
                     qres.add(dist, j);
