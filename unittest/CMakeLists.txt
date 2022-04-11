@@ -45,8 +45,6 @@ set( UTIL_SRCS
 set( ALL_INDEXING_SRCS
         ${UTIL_SRCS}
         test_common.cpp
-        test_structured_index_sort.cpp
-        test_structured_index_flat.cpp
         )
 
 set(ALL_INDEXING_SRCS
