@@ -11,6 +11,7 @@
 
 #include <gtest/gtest.h>
 #include <hdf5.h>
+#include <math.h>
 #include <vector>
 
 #include <faiss/AutoTune.h>
@@ -382,8 +383,7 @@ class Benchmark_faiss : public ::testing::Test {
         printf("[%.3f s] Loading ground truth\n", elapsed() - T0_);
         load_ground_truth();
 
-        std::string simd_type;
-        faiss::hook_init(simd_type);
+        knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AUTO);
     }
 
     void TearDown() override {
