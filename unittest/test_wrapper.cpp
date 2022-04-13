@@ -142,7 +142,7 @@ TEST_P(KnowhereWrapperTest, TO_GPU_TEST) {
     }
 
     {
-        std::string file_location = "/tmp/knowhere_gpu_file";
+        std::string file_location = temp_path("/tmp/knowhere_gpu_file");
         write_index(index_, file_location);
         auto new_index = milvus::engine::read_index(file_location);
 
@@ -182,7 +182,7 @@ TEST_P(KnowhereWrapperTest, SERIALIZE_TEST) {
     }
 
     {
-        std::string file_location = "/tmp/knowhere";
+        std::string file_location = temp_path("/tmp/knowhere");
         write_index(index_, file_location);
         auto new_index = milvus::engine::read_index(file_location);
         EXPECT_EQ(new_index->GetType(), ConvertToCpuIndexType(index_type));

@@ -109,7 +109,7 @@ TEST_P(SPTAGTest, sptag_serialize) {
 
     {
         int fileno = 0;
-        const std::string& base_name = "/tmp/sptag_serialize_test_bin_";
+        const std::string& base_name = temp_path("/tmp/sptag_serialize_test_bin_");
         std::vector<std::string> filename_list;
         std::vector<std::pair<std::string, size_t>> meta_list;
         for (auto& iter : binaryset.binary_map_) {
@@ -157,7 +157,7 @@ TEST_P(SPTAGTest, sptag_slice) {
 
     {
         int fileno = 0;
-        const std::string& base_name = "/tmp/sptag_serialize_test_bin_";
+        const std::string& base_name = temp_path("/tmp/sptag_serialize_test_bin_");
         std::vector<std::string> filename_list;
         std::vector<std::pair<std::string, size_t>> meta_list;
         for (auto& iter : binaryset.binary_map_) {

@@ -32,10 +32,7 @@ class SPTAGParameterMgr {
 
  public:
     static SPTAGParameterMgr&
-    GetInstance() {
-        static SPTAGParameterMgr instance;
-        return instance;
-    }
+    GetInstance();
 
     SPTAGParameterMgr(const SPTAGParameterMgr&) = delete;
 

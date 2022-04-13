@@ -298,7 +298,7 @@ void fvec_madd_sse(
         float bf,
         const float* b,
         float* c) {
-    if ((n & 3) != 0 || ((((long)a) | ((long)b) | ((long)c)) & 15) != 0) {
+    if ((n & 3) != 0 || ((((int64_t)a) | ((int64_t)b) | ((int64_t)c)) & 15) != 0) {
         fvec_madd_ref(n, a, bf, b, c);
         return;
     }
@@ -323,7 +323,7 @@ int fvec_madd_and_argmin_sse(
         float bf,
         const float* b,
         float* c) {
-    if ((n & 3) != 0 || ((((long)a) | ((long)b) | ((long)c)) & 15) != 0) {
+    if ((n & 3) != 0 || ((((int64_t)a) | ((int64_t)b) | ((int64_t)c)) & 15) != 0) {
         return fvec_madd_and_argmin_ref(n, a, bf, b, c);
     }
 

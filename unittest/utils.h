@@ -178,3 +178,19 @@ inline void
 clear_bit(uint8_t* data, size_t idx) {
     data[idx >> 3] &= ~(0x1 << (idx & 0x7));
 }
+
+std::string
+temp_path(const char* path);
+
+#ifdef __MINGW64__
+
+uint32_t
+lrand48();
+
+float
+drand48();
+
+int64_t
+random();
+
+#endif

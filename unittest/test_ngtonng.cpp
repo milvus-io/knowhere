@@ -109,22 +109,22 @@ TEST_P(NGTONNGTest, ngtonng_serialize) {
         auto binaryset = index_->Serialize(knowhere::Config());
 
         auto bin_obj_data = binaryset.GetByName("ngt_obj_data");
-        std::string filename1 = "/tmp/ngt_obj_data_serialize.bin";
+        std::string filename1 = temp_path("/tmp/ngt_obj_data_serialize.bin");
         auto load_data1 = new uint8_t[bin_obj_data->size];
         serialize(filename1, bin_obj_data, load_data1);
 
         auto bin_grp_data = binaryset.GetByName("ngt_grp_data");
-        std::string filename2 = "/tmp/ngt_grp_data_serialize.bin";
+        std::string filename2 = temp_path("/tmp/ngt_grp_data_serialize.bin");
         auto load_data2 = new uint8_t[bin_grp_data->size];
         serialize(filename2, bin_grp_data, load_data2);
 
         auto bin_prf_data = binaryset.GetByName("ngt_prf_data");
-        std::string filename3 = "/tmp/ngt_prf_data_serialize.bin";
+        std::string filename3 = temp_path("/tmp/ngt_prf_data_serialize.bin");
         auto load_data3 = new uint8_t[bin_prf_data->size];
         serialize(filename3, bin_prf_data, load_data3);
 
         auto bin_tre_data = binaryset.GetByName("ngt_tre_data");
-        std::string filename4 = "/tmp/ngt_tre_data_serialize.bin";
+        std::string filename4 = temp_path("/tmp/ngt_tre_data_serialize.bin");
         auto load_data4 = new uint8_t[bin_tre_data->size];
         serialize(filename4, bin_tre_data, load_data4);
 

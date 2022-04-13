@@ -9,6 +9,7 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
+#include <thread>
 #include <gtest/gtest.h>
 
 #include "knowhere/common/Dataset.h"
@@ -38,7 +39,7 @@ TEST(COMMON_TEST, knowhere_exception) {
 
 TEST(COMMON_TEST, time_recoder) {
     knowhere::TimeRecorder recoder("COMMTEST", 0);
-    sleep(1);
+    std::this_thread::sleep_for(std::chrono::seconds{1});
     double span = recoder.ElapseFromBegin("get time");
     ASSERT_GE(span, 1.0);
 }
