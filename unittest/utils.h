@@ -17,15 +17,14 @@
 #include <string>
 #include <vector>
 
-#include "faiss/FaissHook.h"
+#include "knowhere/archive/KnowhereConfig.h"
 #include "knowhere/common/Dataset.h"
 #include "knowhere/common/Log.h"
 
 class DataGen {
  public:
     DataGen() {
-        std::string cpu_flag;
-        faiss::hook_init(cpu_flag);
+        knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AUTO);
     }
 
  protected:

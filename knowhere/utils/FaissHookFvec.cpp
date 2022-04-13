@@ -116,7 +116,6 @@ void hook_fvec(std::string& simd_type) {
 #else
     simd_type = "REF";
 #endif
-    std::cout << "FAISS hook " << simd_type << std::endl;
 }
 
 } // namespace faiss
