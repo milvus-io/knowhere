@@ -182,10 +182,11 @@ TEST_F(NSGInterfaceTest, delete_test) {
     index_->Load(bs);
 
     // search xq with delete
-    faiss::ConcurrentBitsetPtr bitset = std::make_shared<faiss::ConcurrentBitset>(nb);
-    for (int i = 0; i < nq; i++) {
-        bitset->set(i);
+    std::shared_ptr<uint8_t[]> data(new uint8_t[nb/8]);
+    for (int64_t i = 0; i < nq; ++i) {
+        set_bit(data.get(), i);
     }
+    auto bitset = faiss::BitsetView(data.get(), nb);
     auto result_after = index_->Query(query_dataset, search_conf, bitset);
 
     AssertAnns(result_after, nq, k, CheckMode::CHECK_NOT_EQUAL);

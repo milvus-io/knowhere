@@ -373,7 +373,7 @@ struct IVFBinaryScannerL2 : BinaryInvertedListScanner {
 
         size_t nup = 0;
         for (size_t j = 0; j < n; j++) {
-            if (!bitset || !bitset.test(ids[j])) {
+            if (bitset.empty() || !bitset.test(ids[j])) {
                 uint32_t dis = hc.compute(codes);
                 if (dis < simi[0]) {
                     idx_t id = store_pairs ? lo_build(list_no, j) : ids[j];
@@ -436,7 +436,7 @@ struct IVFBinaryScannerJaccard: BinaryInvertedListScanner {
         float* psimi = (float*)simi;
         size_t nup = 0;
         for (size_t j = 0; j < n; j++) {
-            if (!bitset || !bitset.test(ids[j])) {
+            if (bitset.empty() || !bitset.test(ids[j])) {
                 float dis = hc.compute(codes);
 
                 if (dis < psimi[0]) {
@@ -734,7 +734,7 @@ void search_knn_hamming_count(
                     store_pairs ? nullptr : ivf.invlists->get_ids(key);
 
             for (size_t j = 0; j < list_size; j++) {
-                if (!bitset || !bitset.test(ids[j])) {
+                if (bitset.empty() || !bitset.test(ids[j])) {
                     const uint8_t* yj = list_vecs + ivf.code_size * j;
 
                     idx_t id = store_pairs ? (key << 32 | j) : ids[j];

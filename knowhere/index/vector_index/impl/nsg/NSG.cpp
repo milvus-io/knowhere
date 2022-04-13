@@ -887,7 +887,7 @@ NsgIndex::Search(const float* query,
             if (pos >= k) {
                 break;  // already top k
             }
-            if (!bitset || !bitset.test(node.id)) {
+            if (bitset.empty() || !bitset.test(node.id)) {
                 ids[i * k + pos] = ids_[node.id];
                 dist[i * k + pos] = is_ip ? -node.distance : node.distance;
                 ++pos;

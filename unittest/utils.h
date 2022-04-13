@@ -169,3 +169,13 @@ fvecs_read(const char* fname, size_t* d_out, size_t* n_out);
 
 int*
 ivecs_read(const char* fname, size_t* d_out, size_t* n_out);
+
+inline void
+set_bit(uint8_t* data, size_t idx) {
+    data[idx >> 3] |= 0x1 << (idx & 0x7);
+}
+
+inline void
+clear_bit(uint8_t* data, size_t idx) {
+    data[idx >> 3] &= ~(0x1 << (idx & 0x7));
+}

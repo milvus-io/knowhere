@@ -299,7 +299,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 #endif
 
 //                        if (!has_deletions || !isMarkedDeleted(candidate_id))
-                        if (!has_deletions || (!bitset.test((int64_t)candidate_id))) {
+                        if (!has_deletions || !bitset.test((int64_t)candidate_id)) {
                             top_candidates.emplace(dist, candidate_id);
                         }
 

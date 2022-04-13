@@ -1451,7 +1451,7 @@ size_t InvertedListScanner::scan_codes(
 
     if (!keep_max) {
         for (size_t j = 0; j < list_size; j++) {
-            if (!bitset || !bitset.test(j)) {
+            if (bitset.empty() || !bitset.test(j)) {
                 float dis = distance_to_code(codes);
                 if (dis < simi[0]) {
                     int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
@@ -1463,7 +1463,7 @@ size_t InvertedListScanner::scan_codes(
         }
     } else {
         for (size_t j = 0; j < list_size; j++) {
-            if (!bitset || !bitset.test(j)) {
+            if (bitset.empty() || !bitset.test(j)) {
                 float dis = distance_to_code(codes);
                 if (dis > simi[0]) {
                     int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
@@ -1485,7 +1485,7 @@ void InvertedListScanner::scan_codes_range(
         RangeQueryResult& res,
         const BitsetView bitset) const {
     for (size_t j = 0; j < list_size; j++) {
-        if (!bitset || !bitset.test(j)) {
+        if (bitset.empty() || !bitset.test(j)) {
             float dis = distance_to_code(codes);
             bool keep = !keep_max
                     ? dis < radius

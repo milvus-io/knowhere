@@ -85,11 +85,11 @@ TEST_P(RHNSWFlatTest, HNSW_delete) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
-    faiss::ConcurrentBitsetPtr bitset = std::make_shared<faiss::ConcurrentBitset>(nb);
-    for (auto i = 0; i < nq; ++i) {
-        bitset->set(i);
+    std::shared_ptr<uint8_t[]> data(new uint8_t[nb/8]);
+    for (int64_t i = 0; i < nq; ++i) {
+        set_bit(data.get(), i);
     }
-
+    auto bitset = faiss::BitsetView(data.get(), nb);
     auto result1 = index_->Query(query_dataset, conf, nullptr);
     //    AssertAnns(result1, nq, k);
 
