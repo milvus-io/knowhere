@@ -69,12 +69,18 @@ macro(build_faiss)
         set ( ENABLE_FAISS_UNIT_TEST ${BUILD_UNIT_TEST} )
     endif ()
 
+    # header only mman-win32 for MSYS
+    if (MSYS)
+	set(MMAN_INCLUDE_FLAGS "-I ${KNOWHERE_THIRDPARTY_SRC}/mman-win32")
+    endif ()
+
+
     set( FAISS_CMAKE_ARGS
             "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
             "-DCMAKE_BUILD_TYPE=Release"
             "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
             "-DCMAKE_CUDA_COMPILER=${CMAKE_CUDA_COMPILER}"
-            "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} -fpermissive -I ${KNOWHERE_SOURCE_DIR}"
+	    "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} -fpermissive -I ${KNOWHERE_SOURCE_DIR} ${MMAN_INCLUDE_FLAGS}"
             "-DFAISS_ENABLE_PYTHON=OFF"
             "-DFAISS_ENABLE_GPU=OFF"
             "-DBUILD_TESTING=${ENABLE_FAISS_UNIT_TEST}"

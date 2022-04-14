@@ -208,10 +208,11 @@ set(FAISS_HEADERS
   utils/utils.h
 )
 
-if(NOT WIN32)
+# OK for MSYS
+# if(NOT WIN32)
   list(APPEND FAISS_SRC invlists/OnDiskInvertedLists.cpp)
   list(APPEND FAISS_HEADERS invlists/OnDiskInvertedLists.h)
-endif()
+# endif()
 
 # Export FAISS_HEADERS variable to parent scope.
 set(FAISS_HEADERS ${FAISS_HEADERS} PARENT_SCOPE)

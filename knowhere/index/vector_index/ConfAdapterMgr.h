@@ -31,10 +31,7 @@ class AdapterMgr {
     };
 
     static AdapterMgr&
-    GetInstance() {
-        static AdapterMgr instance;
-        return instance;
-    }
+    GetInstance();
 
     ConfAdapterPtr
     GetAdapter(const IndexType indexType);

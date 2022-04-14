@@ -523,7 +523,7 @@ void OnDiskInvertedLists::free_slot(size_t offset, size_t capacity) {
         it++;
     }
 
-    size_t inf = 1UL << 60;
+    size_t inf = 1ULL << 60;
 
     size_t end_prev = inf;
     if (it != slots.begin()) {
@@ -532,7 +532,7 @@ void OnDiskInvertedLists::free_slot(size_t offset, size_t capacity) {
         end_prev = prev->offset + prev->capacity;
     }
 
-    size_t begin_next = 1L << 60;
+    size_t begin_next = 1LL << 60;
     if (it != slots.end()) {
         begin_next = it->offset;
     }

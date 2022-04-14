@@ -23,6 +23,12 @@ SPTAGParameterMgr::GetBKTParameters() {
     return bkt_config_;
 }
 
+SPTAGParameterMgr&
+SPTAGParameterMgr::GetInstance() {
+    static SPTAGParameterMgr instance;
+    return instance;
+}
+
 SPTAGParameterMgr::SPTAGParameterMgr() {
     kdt_config_["kdtnumber"] = 1;
     kdt_config_["numtopdimensionkdtsplit"] = 5;

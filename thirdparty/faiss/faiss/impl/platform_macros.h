@@ -74,6 +74,14 @@ inline int __builtin_clzll(uint64_t x) {
 #define __F16C__ 1
 #endif
 
+#elif __MINGW64__
+// MSYS
+#define FAISS_API
+#define posix_memalign(p, a, s) (((*(p)) = _aligned_malloc((s), (a))), *(p) ?0 :errno)
+#define posix_memalign_free _aligned_free
+#define ALIGNED(x) __attribute__ ((aligned(x)))
+
+
 #else
 /*******************************************************
  * Linux and OSX

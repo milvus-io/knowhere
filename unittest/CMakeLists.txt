@@ -29,7 +29,7 @@ if ( LINUX AND ENABLE_PROFILING )
             )
 endif ()
 
-if ( LINUX AND KNOWHERE_GPU_VERSION )
+if ( ( LINUX OR MSYS ) AND KNOWHERE_GPU_VERSION )
     include_directories( ${CUDA_INCLUDE_DIRS} )
     link_directories( "${CUDA_TOOLKIT_ROOT_DIR}/lib64" )
     set( CUDA_LIB
@@ -63,7 +63,7 @@ set(ALL_INDEXING_SRCS
         test_rhnsw_sq8.cpp
         )
 
-if ( LINUX )
+if ( LINUX OR MSYS )
     set(ALL_INDEXING_SRCS
             ${ALL_INDEXING_SRCS}
             test_instructionset.cpp
