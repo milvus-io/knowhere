@@ -431,7 +431,7 @@ struct IVFBinaryScannerJaccard: BinaryInvertedListScanner {
             const idx_t *ids,
             int32_t *simi, idx_t *idxi,
             size_t k,
-            const BitsetView bitset = nullptr) const override {
+            const BitsetView bitset) const override {
         using C = CMax<float, idx_t>;
         float* psimi = (float*)simi;
         size_t nup = 0;
@@ -601,7 +601,7 @@ void search_knn_binary_dis_heap(
         idx_t* labels,
         bool store_pairs,
         const IVFSearchParameters* params,
-        const BitsetView bitset = nullptr) {
+        const BitsetView bitset) {
     idx_t nprobe = params ? params->nprobe : ivf.nprobe;
     nprobe = std::min((idx_t)ivf.nlist, nprobe);
     idx_t max_codes = params ? params->max_codes : ivf.max_codes;

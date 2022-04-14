@@ -22,6 +22,10 @@ using ::testing::Combine;
 using ::testing::TestWithParam;
 using ::testing::Values;
 
+typedef int (*binary_int_func_ptr)(const int64_t*, const int64_t*);
+typedef float (*binary_float_func_ptr)(const int64_t*, const int64_t*);
+typedef bool (*binary_bool_func_ptr)(const int64_t*, const int64_t*);
+
 class BinaryIDMAPTest : public DataGen, public TestWithParam<std::string> {
  protected:
     void
@@ -32,6 +36,89 @@ class BinaryIDMAPTest : public DataGen, public TestWithParam<std::string> {
 
     void
     TearDown() override{};
+
+    // for hamming
+    void
+    RunRangeSearchBF(
+        std::vector<std::vector<bool>>& golden_result,
+        std::vector<size_t>& golden_cnt,
+        binary_int_func_ptr func,
+        float radius) {
+        for (auto i = 0; i < nq; ++i) {
+            const int64_t* pq = reinterpret_cast<int64_t*>(xq_bin.data()) + i;
+            const int64_t* pb = reinterpret_cast<int64_t*>(xb_bin.data());
+            for (auto j = 0; j < nb; ++j) {
+                auto dist = func(pq, pb + j);
+                if (dist < radius) {
+                    golden_result[i][j] = true;
+                    golden_cnt[i]++;
+                }
+            }
+        }
+    };
+
+    // for jaccard & tanimoto
+    void
+    RunRangeSearchBF(
+        std::vector<std::vector<bool>>& golden_result,
+        std::vector<size_t>& golden_cnt,
+        binary_float_func_ptr func,
+        float radius) {
+        for (auto i = 0; i < nq; ++i) {
+            const int64_t* pq = reinterpret_cast<int64_t*>(xq_bin.data()) + i;
+            const int64_t* pb = reinterpret_cast<int64_t*>(xb_bin.data());
+            for (auto j = 0; j < nb; ++j) {
+                auto dist = func(pq, pb + j);
+                if (dist < radius) {
+                    golden_result[i][j] = true;
+                    golden_cnt[i]++;
+                }
+            }
+        }
+    };
+
+    // for superstructure & substructure
+    void
+    RunRangeSearchBF(
+        std::vector<std::vector<bool>>& golden_result,
+        std::vector<size_t>& golden_cnt,
+        binary_bool_func_ptr func,
+        float radius) {
+        for (auto i = 0; i < nq; ++i) {
+            const int64_t* pq = reinterpret_cast<int64_t*>(xq_bin.data()) + i;
+            const int64_t* pb = reinterpret_cast<int64_t*>(xb_bin.data());
+            for (auto j = 0; j < nb; ++j) {
+                auto dist = func(pq, pb + j);
+                if (dist > radius) {
+                    golden_result[i][j] = true;
+                    golden_cnt[i]++;
+                }
+            }
+        }
+    };
+
+    void
+    CheckRangeSearchResult(
+        std::vector<std::vector<bool>>& golden_result,
+        std::vector<size_t>& golden_cnt,
+        std::vector<knowhere::DynamicResultSegment>& results) {
+        for (auto i = 0; i < nq; ++i) {
+            int correct_cnt = 0;
+            for (auto& res_space : results[i]) {
+                auto qnr = res_space->buffer_size * res_space->buffers.size() - res_space->buffer_size + res_space->wp;
+                for (auto j = 0; j < qnr; ++j) {
+                    auto bno = j / res_space->buffer_size;
+                    auto pos = j % res_space->buffer_size;
+                    auto idx = res_space->buffers[bno].ids[pos];
+                    ASSERT_EQ(golden_result[i][idx], true);
+                    if (golden_result[i][idx]) {
+                        correct_cnt++;
+                    }
+                }
+            }
+            ASSERT_EQ(correct_cnt, golden_cnt[i]);
+        }
+    }
 
  protected:
     knowhere::BinaryIDMAPPtr index_ = nullptr;
@@ -93,8 +180,10 @@ TEST_P(BinaryIDMAPTest, binaryidmap_basic) {
 
 TEST_P(BinaryIDMAPTest, binaryidmap_serialize) {
     auto serialize = [](const std::string& filename, knowhere::BinaryPtr& bin, uint8_t* ret) {
-        FileIOWriter writer(filename);
-        writer(static_cast<void*>(bin->data.get()), bin->size);
+        {
+            FileIOWriter writer(filename);
+            writer(static_cast<void*>(bin->data.get()), bin->size);
+        }
 
         FileIOReader reader(filename);
         reader(ret, bin->size);
@@ -107,33 +196,31 @@ TEST_P(BinaryIDMAPTest, binaryidmap_serialize) {
         {knowhere::Metric::TYPE, MetricType},
     };
 
-    {
-        // serialize index
-        index_->Train(base_dataset, conf);
-        index_->AddWithoutIds(base_dataset, knowhere::Config());
-        auto re_result = index_->Query(query_dataset, conf, nullptr);
-        AssertAnns(re_result, nq, k);
-        //        PrintResult(re_result, nq, k);
-        EXPECT_EQ(index_->Count(), nb);
-        EXPECT_EQ(index_->Dim(), dim);
-        auto binaryset = index_->Serialize(conf);
-        auto bin = binaryset.GetByName("BinaryIVF");
+    // serialize index
+    index_->Train(base_dataset, conf);
+    index_->AddWithoutIds(base_dataset, knowhere::Config());
+    auto result1 = index_->Query(query_dataset, conf, nullptr);
+    AssertAnns(result1, nq, k);
+    // PrintResult(result1, nq, k);
+    EXPECT_EQ(index_->Count(), nb);
+    EXPECT_EQ(index_->Dim(), dim);
+    auto binaryset = index_->Serialize(conf);
+    auto bin = binaryset.GetByName("BinaryIVF");
 
-        std::string filename = temp_path("/tmp/bianryidmap_test_serialize.bin");
-        auto load_data = new uint8_t[bin->size];
-        serialize(filename, bin, load_data);
+    std::string filename = temp_path("/tmp/bianryidmap_test_serialize.bin");
+    auto load_data = new uint8_t[bin->size];
+    serialize(filename, bin, load_data);
 
-        binaryset.clear();
-        std::shared_ptr<uint8_t[]> data(load_data);
-        binaryset.Append("BinaryIVF", data, bin->size);
+    binaryset.clear();
+    std::shared_ptr<uint8_t[]> data(load_data);
+    binaryset.Append("BinaryIVF", data, bin->size);
 
-        index_->Load(binaryset);
-        EXPECT_EQ(index_->Count(), nb);
-        EXPECT_EQ(index_->Dim(), dim);
-        auto result = index_->Query(query_dataset, conf, nullptr);
-        AssertAnns(result, nq, k);
-        // PrintResult(result, nq, k);
-    }
+    index_->Load(binaryset);
+    EXPECT_EQ(index_->Count(), nb);
+    EXPECT_EQ(index_->Dim(), dim);
+    auto result2 = index_->Query(query_dataset, conf, nullptr);
+    AssertAnns(result2, nq, k);
+    // PrintResult(result2, nq, k);
 }
 
 TEST_P(BinaryIDMAPTest, binaryidmap_slice) {
@@ -145,24 +232,22 @@ TEST_P(BinaryIDMAPTest, binaryidmap_slice) {
         {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
     };
 
-    {
-        // serialize index
-        index_->Train(base_dataset, conf);
-        index_->AddWithoutIds(base_dataset, knowhere::Config());
-        auto re_result = index_->Query(query_dataset, conf, nullptr);
-        AssertAnns(re_result, nq, k);
-        //        PrintResult(re_result, nq, k);
-        EXPECT_EQ(index_->Count(), nb);
-        EXPECT_EQ(index_->Dim(), dim);
-        auto binaryset = index_->Serialize(conf);
+    // serialize index
+    index_->Train(base_dataset, conf);
+    index_->AddWithoutIds(base_dataset, knowhere::Config());
+    auto result1 = index_->Query(query_dataset, conf, nullptr);
+    AssertAnns(result1, nq, k);
+    // PrintResult(result1, nq, k);
+    EXPECT_EQ(index_->Count(), nb);
+    EXPECT_EQ(index_->Dim(), dim);
+    auto binaryset = index_->Serialize(conf);
 
-        index_->Load(binaryset);
-        EXPECT_EQ(index_->Count(), nb);
-        EXPECT_EQ(index_->Dim(), dim);
-        auto result = index_->Query(query_dataset, conf, nullptr);
-        AssertAnns(result, nq, k);
-        // PrintResult(result, nq, k);
-    }
+    index_->Load(binaryset);
+    EXPECT_EQ(index_->Count(), nb);
+    EXPECT_EQ(index_->Dim(), dim);
+    auto result2 = index_->Query(query_dataset, conf, nullptr);
+    AssertAnns(result2, nq, k);
+    // PrintResult(result2, nq, k);
 }
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search) {
@@ -174,50 +259,22 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search) {
         {knowhere::Metric::TYPE, MetricType},
     };
 
-    std::vector<std::vector<bool>> idmap(nq, std::vector<bool>(nb, false));
-    std::vector<size_t> bf_cnt(nq, 0);
+    std::vector<std::vector<bool>> golden_result(nq, std::vector<bool>(nb, false));
+    std::vector<size_t> golden_cnt(nq, 0);
 
+    // hamming
     int hamming_radius = 10;
     auto hamming_dis = [](const int64_t* pa, const int64_t* pb) -> int { return __builtin_popcountl((*pa) ^ (*pb)); };
-    auto bruteforce_ham = [&]() {
-        //        std::cout << "show hamming bruteforce ans:" << std::endl;
-        for (auto i = 0; i < nq; ++i) {
-            const int64_t* pq = reinterpret_cast<int64_t*>(xq_bin.data()) + i;
-            const int64_t* pb = reinterpret_cast<int64_t*>(xb_bin.data());
-            for (auto j = 0; j < nb; ++j) {
-                auto dist = hamming_dis(pq, pb + j);
-                if (dist < hamming_radius) {
-                    idmap[i][j] = true;
-                    bf_cnt[i]++;
-                    //                    std::cout << "i = " << i << ", j = " << j << std::endl;
-                }
-            }
-        }
-    };
 
+    // jaccard
     float jaccard_radius = 0.4;
     auto jaccard_dis = [](const int64_t* pa, const int64_t* pb) -> float {
         auto intersection = __builtin_popcountl((*pa) & (*pb));
         auto Union = __builtin_popcountl((*pa) | (*pb));
         return 1.0 - (double)intersection / (double)Union;
     };
-    auto bruteforce_jcd = [&]() {
-        //        std::cout << "show jaccard bruteforce ans:" << std::endl;
-        for (auto i = 0; i < nq; ++i) {
-            const int64_t* pq = reinterpret_cast<int64_t*>(xq_bin.data()) + i;
-            const int64_t* pb = reinterpret_cast<int64_t*>(xb_bin.data());
-            for (auto j = 0; j < nb; ++j) {
-                auto dist = jaccard_dis(pq, pb + j);
-                if (dist < jaccard_radius) {
-                    idmap[i][j] = true;
-                    bf_cnt[i]++;
-                    //                    std::cout << "query_id = " << i << ", ans_j = " << j << ", dis_j = " << dist
-                    //                    << std::endl;
-                }
-            }
-        }
-    };
 
+    // tanimoto
     float tanimoto_radius = 0.2;
     auto tanimoto_dis = [](const int64_t* pa, const int64_t* pb) -> float {
         auto intersection = __builtin_popcountl((*pa) & (*pb));
@@ -225,145 +282,61 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search) {
         auto jcd = 1.0 - (double)intersection / (double)Union;
         return (-log2(1 - jcd));
     };
-    auto bruteforce_tnm = [&]() {
-        //        std::cout << "show tanimoto bruteforce ans:" << std::endl;
-        for (auto i = 0; i < nq; ++i) {
-            const int64_t* pq = reinterpret_cast<int64_t*>(xq_bin.data()) + i;
-            const int64_t* pb = reinterpret_cast<int64_t*>(xb_bin.data());
-            for (auto j = 0; j < nb; ++j) {
-                auto dist = tanimoto_dis(pq, pb + j);
-                if (dist < tanimoto_radius) {
-                    idmap[i][j] = true;
-                    bf_cnt[i]++;
-                    //                    std::cout << "query_id = " << i << ", ans_j = " << j << ", dis_j = " << dist
-                    //                    << std::endl;
-                }
-            }
-        }
-    };
 
+    // superstructure
     bool superstructure_radius = false;
     auto superstructure_dis = [](const int64_t* pa, const int64_t* pb) -> bool { return ((*pa) & (*pb)) == (*pb); };
-    auto bruteforce_sup = [&]() {
-        for (auto i = 0; i < nq; ++i) {
-            const int64_t* pq = reinterpret_cast<int64_t*>(xq_bin.data()) + i;
-            const int64_t* pb = reinterpret_cast<int64_t*>(xb_bin.data());
-            for (auto j = 0; j < nb; ++j) {
-                auto dist = superstructure_dis(pq, pb + j);
-                if (dist > superstructure_radius) {
-                    idmap[i][j] = true;
-                    bf_cnt[i]++;
-                }
-            }
-        }
-    };
 
+    // substructure
     int substructure_radius = false;
     auto substructure_dis = [](const int64_t* pa, const int64_t* pb) -> bool { return ((*pa) & (*pb)) == (*pa); };
-    auto bruteforce_sub = [&]() {
-        for (auto i = 0; i < nq; ++i) {
-            const int64_t* pq = reinterpret_cast<int64_t*>(xq_bin.data()) + i;
-            const int64_t* pb = reinterpret_cast<int64_t*>(xb_bin.data());
-            for (auto j = 0; j < nb; ++j) {
-                auto dist = substructure_dis(pq, pb + j);
-                if (dist > substructure_radius) {
-                    idmap[i][j] = true;
-                    bf_cnt[i]++;
-                }
-            }
-        }
-    };
 
-    auto mt = conf[knowhere::Metric::TYPE].get<std::string>();
-    //    std::cout << "current metric_type = " << mt << std::endl;
-    float set_radius = radius;
-    if ("HAMMING" == mt) {
-        set_radius = hamming_radius;
-        bruteforce_ham();
-        //        for (auto i = 0;i < nq; ++ i)
-        //            std::cout << bf_cnt[i] << " ";
-        //        std::cout << std::endl;
-    } else if ("JACCARD" == mt) {
-        set_radius = jaccard_radius;
-        bruteforce_jcd();
-        //        for (auto i = 0;i < nq; ++ i)
-        //            std::cout << bf_cnt[i] << " ";
-        //        std::cout << std::endl;
-    } else if ("TANIMOTO" == mt) {
-        set_radius = tanimoto_radius;
-        bruteforce_tnm();
-        //        for (auto i = 0;i < nq; ++ i)
-        //            std::cout << bf_cnt[i] << " ";
-        //        std::cout << std::endl;
-    } else if ("SUPERSTRUCTURE" == mt) {
-        set_radius = superstructure_radius;
-        bruteforce_sup();
-        //        for (auto i = 0;i < nq; ++ i)
-        //            std::cout << bf_cnt[i] << " ";
-        //        std::cout << std::endl;
-    } else if ("SUBSTRUCTURE" == mt) {
-        set_radius = substructure_radius;
-        bruteforce_sub();
-        //        for (auto i = 0;i < nq; ++ i)
-        //            std::cout << bf_cnt[i] << " ";
-        //        std::cout << std::endl;
+    auto metric_type = conf[knowhere::Metric::TYPE].get<std::string>();
+    float curr_radius = radius;
+    if (metric_type == "HAMMING") {
+        curr_radius = hamming_radius;
+        RunRangeSearchBF(golden_result, golden_cnt, hamming_dis, hamming_radius);
+    } else if (metric_type == "JACCARD") {
+        curr_radius = jaccard_radius;
+        RunRangeSearchBF(golden_result, golden_cnt, jaccard_dis, jaccard_radius);
+    } else if (metric_type == "TANIMOTO") {
+        curr_radius = tanimoto_radius;
+        RunRangeSearchBF(golden_result, golden_cnt, tanimoto_dis, tanimoto_radius);
+    } else if (metric_type == "SUPERSTRUCTURE") {
+        curr_radius = superstructure_radius;
+        RunRangeSearchBF(golden_result, golden_cnt, superstructure_dis, superstructure_radius);
+    } else if (metric_type == "SUBSTRUCTURE") {
+        curr_radius = substructure_radius;
+        RunRangeSearchBF(golden_result, golden_cnt, substructure_dis, substructure_radius);
     } else {
         std::cout << "unsupport type of metric type" << std::endl;
     }
-    conf[knowhere::IndexParams::range_search_radius] = set_radius;
-    //    std::cout << "current radius = " << conf[knowhere::IndexParams::range_search_radius].get<float>() <<
-    //    std::endl;
 
-    auto compare_res = [&](std::vector<knowhere::DynamicResultSegment>& results) {
-        //        std::cout << "show faiss ans:" << std::endl;
-        for (auto i = 0; i < nq; ++i) {
-            int correct_cnt = 0;
-            for (auto& res_space : results[i]) {
-                auto qnr = res_space->buffer_size * res_space->buffers.size() - res_space->buffer_size + res_space->wp;
-                for (auto j = 0; j < qnr; ++j) {
-                    auto bno = j / res_space->buffer_size;
-                    auto pos = j % res_space->buffer_size;
-                    //                    std::cout << "query_id = " << i << ", ans_j = " <<
-                    //                    res_space->buffers[bno].ids[pos] << ", dis_j = " <<
-                    //                    res_space->buffers[bno].dis[pos] << std::endl;
-                    ASSERT_EQ(idmap[i][res_space->buffers[bno].ids[pos]], true);
-                    if (idmap[i][res_space->buffers[bno].ids[pos]]) {
-                        correct_cnt++;
-                    }
-                }
-            }
-            ASSERT_EQ(correct_cnt, bf_cnt[i]);
-        }
-    };
+    conf[knowhere::IndexParams::range_search_radius] = curr_radius;
 
-    {
-        // serialize index
-        index_->Train(base_dataset, conf);
-        index_->AddWithoutIds(base_dataset, knowhere::Config());
-        EXPECT_EQ(index_->Count(), nb);
-        EXPECT_EQ(index_->Dim(), dim);
+    // serialize index
+    index_->Train(base_dataset, conf);
+    index_->AddWithoutIds(base_dataset, knowhere::Config());
+    EXPECT_EQ(index_->Count(), nb);
+    EXPECT_EQ(index_->Dim(), dim);
 
-        std::vector<knowhere::DynamicResultSegment> results;
-        for (auto i = 0; i < nq; ++i) {
-            auto qd = knowhere::GenDataset(1, dim, xq_bin.data() + i * dim / 8);
-            results.push_back(index_->QueryByDistance(qd, conf, nullptr));
-        }
-
-        compare_res(results);
-        //
-        auto binaryset = index_->Serialize(conf);
-        index_->Load(binaryset);
-
-        EXPECT_EQ(index_->Count(), nb);
-        EXPECT_EQ(index_->Dim(), dim);
-        {
-            std::vector<knowhere::DynamicResultSegment> rresults;
-            for (auto i = 0; i < nq; ++i) {
-                auto qd = knowhere::GenDataset(1, dim, xq_bin.data() + i * dim / 8);
-                rresults.push_back(index_->QueryByDistance(qd, conf, nullptr));
-            }
-
-            compare_res(rresults);
-        }
+    std::vector<knowhere::DynamicResultSegment> results1;
+    for (auto i = 0; i < nq; ++i) {
+        auto qd = knowhere::GenDataset(1, dim, xq_bin.data() + i * dim / 8);
+        results1.push_back(index_->QueryByDistance(qd, conf, nullptr));
     }
+    CheckRangeSearchResult(golden_result, golden_cnt, results1);
+
+    auto binaryset = index_->Serialize(conf);
+    index_->Load(binaryset);
+
+    EXPECT_EQ(index_->Count(), nb);
+    EXPECT_EQ(index_->Dim(), dim);
+
+    std::vector<knowhere::DynamicResultSegment> results2;
+    for (auto i = 0; i < nq; ++i) {
+        auto qd = knowhere::GenDataset(1, dim, xq_bin.data() + i * dim / 8);
+        results2.push_back(index_->QueryByDistance(qd, conf, nullptr));
+    }
+    CheckRangeSearchResult(golden_result, golden_cnt, results1);
 }

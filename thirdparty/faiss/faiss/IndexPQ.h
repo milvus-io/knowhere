@@ -46,7 +46,7 @@ struct IndexPQ : IndexFlatCodes {
             idx_t k,
             float* distances,
             idx_t* labels,
-            const BitsetView bitset) const override;
+            const BitsetView bitset = nullptr) const override;
 
     /* The standalone codec interface */
     void sa_encode(idx_t n, const float* x, uint8_t* bytes) const override;

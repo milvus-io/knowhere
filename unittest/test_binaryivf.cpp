@@ -95,8 +95,10 @@ TEST_P(BinaryIVFTest, binaryivf_basic) {
 
 TEST_P(BinaryIVFTest, binaryivf_serialize) {
     auto serialize = [](const std::string& filename, knowhere::BinaryPtr& bin, uint8_t* ret) {
-        FileIOWriter writer(filename);
-        writer(static_cast<void*>(bin->data.get()), bin->size);
+        {
+            FileIOWriter writer(filename);
+            writer(static_cast<void*>(bin->data.get()), bin->size);
+        }
 
         FileIOReader reader(filename);
         reader(ret, bin->size);

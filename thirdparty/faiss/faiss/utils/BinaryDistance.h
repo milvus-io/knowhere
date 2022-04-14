@@ -153,7 +153,7 @@ namespace faiss {
         size_t ncodes,
         std::vector<faiss::RangeSearchPartialResult*>& result,
         size_t buffer_size,
-        const BitsetView bitset);
+        const BitsetView bitset = nullptr);
 
     extern template
     void binary_range_search<CMax<int, int64_t>, int>(
@@ -166,7 +166,7 @@ namespace faiss {
         size_t ncodes,
         std::vector<faiss::RangeSearchPartialResult*>& result,
         size_t buffer_size,
-        const BitsetView bitset);
+        const BitsetView bitset = nullptr);
 
     extern template
     void binary_range_search<CMax<float, int64_t>, float>(
@@ -179,7 +179,7 @@ namespace faiss {
         size_t ncodes,
         std::vector<faiss::RangeSearchPartialResult*>& result,
         size_t buffer_size,
-        const BitsetView bitset);
+        const BitsetView bitset = nullptr);
 
     extern template
     void binary_range_search<CMin<bool, int64_t>, bool>(
@@ -192,7 +192,7 @@ namespace faiss {
         size_t ncodes,
         std::vector<faiss::RangeSearchPartialResult*>& result,
         size_t buffer_size,
-        const BitsetView bitset);
+        const BitsetView bitset = nullptr);
 
 } // namespace faiss
 
