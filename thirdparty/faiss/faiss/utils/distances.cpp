@@ -109,7 +109,7 @@ void exhaustive_parallel_on_nx(
         size_t ny,
         ResultHandler& res,
         fvec_func_ptr dis_compute_func,
-        const BitsetView bitset = nullptr) {
+        const BitsetView bitset) {
     using SingleResultHandler = typename ResultHandler::SingleResultHandler;
 #pragma omp parallel
     {
@@ -141,7 +141,7 @@ void exhaustive_parallel_on_ny(
         size_t ny,
         ResultHandler& res,
         fvec_func_ptr dis_compute_func,
-        const BitsetView bitset = nullptr) {
+        const BitsetView bitset) {
     using SingleResultHandler = typename ResultHandler::SingleResultHandler;
     size_t k = res.k;
     size_t thread_max_num = omp_get_max_threads();
@@ -206,7 +206,7 @@ void exhaustive_L2sqr_IP_seq(
         size_t ny,
         ResultHandler& res,
         fvec_func_ptr dis_compute_func,
-        const BitsetView bitset = nullptr) {
+        const BitsetView bitset) {
     size_t thread_max_num = omp_get_max_threads();
     if (ny > parallel_policy_threshold || (nx < thread_max_num / 2 && ny >= thread_max_num * 32)) {
         exhaustive_parallel_on_ny(x, y, d, nx, ny, res, dis_compute_func, bitset);
@@ -224,7 +224,7 @@ void exhaustive_inner_product_blas(
         size_t nx,
         size_t ny,
         ResultHandler& res,
-        const BitsetView bitset = nullptr) {
+        const BitsetView bitset) {
     // BLAS does not like empty matrices
     if (nx == 0 || ny == 0)
         return;
@@ -369,7 +369,7 @@ static void knn_jaccard_blas(
         size_t ny,
         ResultHandler& res,
         const DistanceCorrection& corr,
-        const BitsetView bitset = nullptr) {
+        const BitsetView bitset) {
     // BLAS does not like empty matrices
     if (nx == 0 || ny == 0)
         return;

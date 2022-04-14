@@ -178,8 +178,10 @@ TEST_P(IVFTest, ivf_basic_gpu) {
 
 TEST_P(IVFTest, ivf_serialize) {
     auto serialize = [](const std::string& filename, knowhere::BinaryPtr& bin, uint8_t* ret) {
-        FileIOWriter writer(filename);
-        writer(static_cast<void*>(bin->data.get()), bin->size);
+        {
+            FileIOWriter writer(filename);
+            writer(static_cast<void*>(bin->data.get()), bin->size);
+        }
 
         FileIOReader reader(filename);
         reader(ret, bin->size);
