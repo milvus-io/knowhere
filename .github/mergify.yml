@@ -59,6 +59,7 @@ pull_request_rules:
       - "status-success=Unit Test on ubuntu-18.04"
       - "status-success=Unit Test on centos7"
       - "status-success=Unit Test on macos-11"
+      - "status-success=Unit Test on MSYS"
     actions:
       label:
         add:
@@ -70,6 +71,7 @@ pull_request_rules:
       - "status-success!=Unit Test on ubuntu-18.04"
       - "status-success!=Unit Test on centos7"
       - "status-success!=Unit Test on macos-11"
+      - "status-success!=Unit Test on MSYS"
     actions:
       label:
         remove:
