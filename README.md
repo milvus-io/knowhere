@@ -40,3 +40,35 @@ To run unit tests:
 $ ./build.sh -t Release -u && cmake_build/unittest/test_knowhere
 ```
 
+## GEN PYTHON WHEEL
+
+install dependency:
+
+```
+sudo apt install swig python3-dev
+```
+
+after build knowhere:
+
+```bash
+cd knowhere/python
+python3 setup.py bdist_wheel
+```
+
+install knowhere wheel:
+
+```bash
+pip3 install dist/knowhere-1.0.0-cp38-cp38-linux_x86_64.whl
+```
+
+clean
+
+```bash
+cd knowhere/python
+rm -rf build
+rm -rf dist
+rm -rf knowhere.egg-info
+rm knowhere/knowhere_wrap.cpp
+rm knowhere/swigknowhere.py
+```
+
