@@ -94,7 +94,7 @@ class VecIndex : public Index {
     }
 
     void
-    MapUids(DynamicResultSegment& milvus_dataset) {
+    MapUids(std::vector<BufferListPtr>& milvus_dataset) {
         if (uids_) {
             for (auto& mrspr : milvus_dataset) {
                 for (auto j = 0; j < mrspr->buffers.size(); ++j) {

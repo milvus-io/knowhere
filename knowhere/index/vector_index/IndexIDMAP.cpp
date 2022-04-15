@@ -94,7 +94,7 @@ IDMAP::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::B
     return ret_ds;
 }
 
-DynamicResultSegment
+std::vector<BufferListPtr>
 IDMAP::QueryByDistance(const DatasetPtr& dataset,
                        const Config& config,
                        const faiss::BitsetView bitset) {
@@ -111,7 +111,6 @@ IDMAP::QueryByDistance(const DatasetPtr& dataset,
         index_->metric_type = GetMetricType(config[Metric::TYPE].get<std::string>());
     }
     std::vector<faiss::RangeSearchPartialResult*> res;
-    DynamicResultSegment result;
     auto radius = config[IndexParams::range_search_radius].get<float>();
     auto buffer_size = config.contains(IndexParams::range_search_buffer_size)
                            ? config[IndexParams::range_search_buffer_size].get<size_t>()
@@ -124,6 +123,8 @@ IDMAP::QueryByDistance(const DatasetPtr& dataset,
         radius *= radius;
     }
     real_idx->range_search(rows, reinterpret_cast<const float*>(p_data), radius, res, buffer_size, bitset);
+
+    std::vector<BufferListPtr> result;
     ExchangeDataset(result, res);
     MapUids(result);
     index_->metric_type = default_type;

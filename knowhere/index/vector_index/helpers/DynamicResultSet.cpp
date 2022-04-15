@@ -23,94 +23,68 @@ namespace knowhere {
  ***********************************************************************/
 
 void
-DynamicResultSet::AlloctionImpl() {
+RangeSearchResult::AllocImpl() {
     if (count <= 0) {
-        KNOWHERE_THROW_MSG("DynamicResultSet::do_alloction failed because of count <= 0");
+        KNOWHERE_THROW_MSG("RangeSearchResult::do_alloction failed because of count <= 0");
     }
-    labels = std::shared_ptr<idx_t[]>(new idx_t[count], std::default_delete<idx_t[]>());
-    distances = std::shared_ptr<float[]>(new float[count], std::default_delete<float[]>());
-    //    labels = std::make_shared<idx_t []>(new idx_t[count], std::default_delete<idx_t[]>());
-    //    distances = std::make_shared<float []>(new float[count], std::default_delete<float[]>());
+    labels = std::shared_ptr<idx_t[]>(new idx_t[count]);
+    distances = std::shared_ptr<float[]>(new float[count]);
 }
 
 void
-DynamicResultSet::SortImpl(ResultSetPostProcessType postProcessType) {
-    if (postProcessType == ResultSetPostProcessType::SortAsc) {
-        quick_sort<true>(0, count);
-    } else if (postProcessType == ResultSetPostProcessType::SortDesc) {
-        quick_sort<false>(0, count);
-    } else {
-        KNOWHERE_THROW_MSG("invalid sort type!");
+RangeSearchResult::SortImpl(SortType type) {
+    switch(type) {
+        case SortType::AscOrder:
+            quick_sort<true>(0, count - 1);
+            break;
+        case SortType::DescOrder:
+            quick_sort<false>(0, count - 1);
+            break;
+        default:
+            KNOWHERE_THROW_MSG("invalid sort type!");
     }
 }
 
-template <bool asc>
+template <bool is_asc>
 void
-DynamicResultSet::quick_sort(size_t lp, size_t rp) {
-    auto len = rp - lp;
-    if (len <= 1) {
-        return;
-    }
-    auto pvot = lp + (len >> 1);
-    size_t low = lp;
-    size_t high = rp - 1;
-    auto pids = labels.get();
-    auto pdis = distances.get();
-    std::swap(pdis[pvot], pdis[high]);
-    std::swap(pids[pvot], pids[high]);
-    if (asc) {
-        while (low < high) {
-            while (low < high && pdis[low] <= pdis[high]) {
-                low++;
-            }
-            if (low == high) {
-                break;
-            }
-            std::swap(pdis[low], pdis[high]);
-            std::swap(pids[low], pids[high]);
-            high--;
-            while (low < high && pdis[high] >= pdis[low]) {
-                high--;
-            }
-            if (low == high) {
-                break;
-            }
-            std::swap(pdis[low], pdis[high]);
-            std::swap(pids[low], pids[high]);
-            low++;
+RangeSearchResult::quick_sort(int64_t start, int64_t end) {
+    if (start >= end) return;
+    int64_t l = start, r = end;
+    int64_t x_id = labels[start];
+    float x_dist = distances[start];
+    while (l < r) {
+        // search from right to left, find the first num less than x
+        while (l < r && ((is_asc && distances[r] >= x_dist) || (!is_asc && distances[r] <= x_dist))) {
+            r--;
         }
-    } else {
-        while (low < high) {
-            while (low < high && pdis[low] >= pdis[high]) {
-                low++;
-            }
-            if (low == high) {
-                break;
-            }
-            std::swap(pdis[low], pdis[high]);
-            std::swap(pids[low], pids[high]);
-            high--;
-            while (low < high && pdis[high] <= pdis[low]) {
-                high--;
-            }
-            if (low == high) {
-                break;
-            }
-            std::swap(pdis[low], pdis[high]);
-            std::swap(pids[low], pids[high]);
-            low++;
+        if (l < r) {
+            labels[l] = labels[r];
+            distances[l] = distances[r];
+            l++;
+        }
+
+        // search from left to right, find the first num bigger than x
+        while (l < r && ((is_asc && distances[l] <= x_dist) || (!is_asc && distances[l] >= x_dist))) {
+            l++;
+        }
+        if (l < r) {
+            labels[r] = labels[l];
+            distances[r] = distances[l];
+            r--;
         }
     }
-    quick_sort<asc>(lp, low);
-    quick_sort<asc>(low, rp);
+    labels[r] = x_id;
+    distances[r] = x_dist;
+    quick_sort<is_asc>(start, r-1);
+    quick_sort<is_asc>(r+1, end);
 }
 
-DynamicResultSet
-DynamicResultCollector::Merge(size_t limit, ResultSetPostProcessType postProcessType) {
+RangeSearchResult
+RangeSearchResultHandler::Merge(size_t limit, RangeSearchResult::SortType type) {
     if (limit <= 0) {
         KNOWHERE_THROW_MSG("limit must > 0!");
     }
-    DynamicResultSet ret;
+    RangeSearchResult ret;
     auto seg_num = seg_results.size();
     std::vector<size_t> boundaries(seg_num + 1, 0);
 #pragma omp parallel for
@@ -126,7 +100,7 @@ DynamicResultCollector::Merge(size_t limit, ResultSetPostProcessType postProcess
         //        boundaries[i] += boundaries[i - 1];
     }
     ret.count = boundaries[seg_num] <= limit ? boundaries[seg_num] : limit;
-    ret.AlloctionImpl();
+    ret.AllocImpl();
 
     // abandon redundancy answers randomly
     // abandon strategy: keep the top limit sequentially
@@ -160,32 +134,33 @@ DynamicResultCollector::Merge(size_t limit, ResultSetPostProcessType postProcess
         }
     }
 
-    if (postProcessType != ResultSetPostProcessType::None) {
-        ret.SortImpl(postProcessType);
+    if (type != RangeSearchResult::SortType::None) {
+        ret.SortImpl(type);
     }
     return ret;
 }
 
 void
-DynamicResultCollector::Append(DynamicResultSegment&& seg_result) {
+RangeSearchResultHandler::Append(std::vector<BufferListPtr>& seg_result) {
     seg_results.emplace_back(std::move(seg_result));
 }
 
+// TODO: this API seems useless, should be removed
 void
-ExchangeDataset(DynamicResultSegment& milvus_dataset, std::vector<faiss::RangeSearchPartialResult*>& faiss_dataset) {
-    for (auto& prspr : faiss_dataset) {
-        auto mrspr = std::make_shared<DynamicResultFragment>(prspr->res->buffer_size);
-        mrspr->wp = prspr->wp;
-        mrspr->buffers.resize(prspr->buffers.size());
-        for (auto i = 0; i < prspr->buffers.size(); ++i) {
-            mrspr->buffers[i].ids = prspr->buffers[i].ids;
-            mrspr->buffers[i].dis = prspr->buffers[i].dis;
-            prspr->buffers[i].ids = nullptr;
-            prspr->buffers[i].dis = nullptr;
+ExchangeDataset(std::vector<BufferListPtr>& dst, std::vector<faiss::RangeSearchPartialResult*>& src) {
+    for (auto& s : src) {
+        auto bptr = std::make_shared<BufferList>(s->res->buffer_size);
+        bptr->wp = s->wp;
+        bptr->buffers.resize(s->buffers.size());
+        for (auto i = 0; i < s->buffers.size(); ++i) {
+            bptr->buffers[i].ids = s->buffers[i].ids;
+            bptr->buffers[i].dis = s->buffers[i].dis;
+            s->buffers[i].ids = nullptr;
+            s->buffers[i].dis = nullptr;
         }
-        delete prspr->res;
-        delete prspr;
-        milvus_dataset.push_back(mrspr);
+        delete s->res;
+        delete s;
+        dst.push_back(bptr);
     }
 }
 

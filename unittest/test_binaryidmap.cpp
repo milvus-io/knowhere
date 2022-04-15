@@ -101,7 +101,7 @@ class BinaryIDMAPTest : public DataGen, public TestWithParam<std::string> {
     CheckRangeSearchResult(
         std::vector<std::vector<bool>>& golden_result,
         std::vector<size_t>& golden_cnt,
-        std::vector<knowhere::DynamicResultSegment>& results) {
+        std::vector<std::vector<knowhere::BufferListPtr>>& results) {
         for (auto i = 0; i < nq; ++i) {
             int correct_cnt = 0;
             for (auto& res_space : results[i]) {
@@ -320,7 +320,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
-    std::vector<knowhere::DynamicResultSegment> results1;
+    std::vector<std::vector<knowhere::BufferListPtr>> results1;
     for (auto i = 0; i < nq; ++i) {
         auto qd = knowhere::GenDataset(1, dim, xq_bin.data() + i * dim / 8);
         results1.push_back(index_->QueryByDistance(qd, conf, nullptr));
@@ -333,7 +333,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
-    std::vector<knowhere::DynamicResultSegment> results2;
+    std::vector<std::vector<knowhere::BufferListPtr>> results2;
     for (auto i = 0; i < nq; ++i) {
         auto qd = knowhere::GenDataset(1, dim, xq_bin.data() + i * dim / 8);
         results2.push_back(index_->QueryByDistance(qd, conf, nullptr));

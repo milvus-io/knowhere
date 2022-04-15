@@ -71,7 +71,8 @@ static void range_search_blas(
         return;
 
     /* block sizes */
-    const size_t bs_x = 4096, bs_y = 1024;
+    const size_t bs_x = distance_compute_blas_query_bs;
+    const size_t bs_y = distance_compute_blas_database_bs;
     // const size_t bs_x = 16, bs_y = 16;
     float *ip_block = new float[bs_x * bs_y];
     ScopeDeleter<float> del0(ip_block);
@@ -171,12 +172,10 @@ static void range_search_sse(
 #pragma omp for
         for (size_t i = 0; i < nx; i++) {
             const float * x_ = x + i * d;
-            const float * y_ = y;
-            size_t j;
-
             RangeQueryResult& qres = pres->new_result(i);
 
-            for (j = 0; j < ny; j++) {
+            for (size_t j = 0; j < ny; j++) {
+                const float * y_ = y + j * d;
                 if (bitset.empty() || !bitset.test((int64_t)j)) {
                     if (compute_l2) {
                         float disij = fvec_L2sqr(x_, y_, d);
@@ -190,59 +189,12 @@ static void range_search_sse(
                         }
                     }
                 }
-                y_ += d;
             }
         }
+        if (!pres->buffers.empty()) {
 #pragma omp critical
-        res.push_back(pres);
-    }
-
-    // check just at the end because the use case is typically just
-    // when the nb of queries is low.
-    InterruptCallback::check();
-}
-
-// range search by sse when nq = 1, namely single query situation
-template <bool compute_l2>
-static void range_search_sse_sq(
-        const float* x,
-        const float* y,
-        size_t d,
-        size_t nx,
-        size_t ny,
-        float radius,
-        std::vector<RangeSearchPartialResult*>& res,
-        size_t buffer_size,
-        const BitsetView bitset) {
-#pragma omp parallel
-    {
-        RangeSearchResult* tmp_res = new RangeSearchResult(nx);
-        tmp_res->buffer_size = buffer_size;
-        auto pres = new RangeSearchPartialResult(tmp_res);
-
-        const float* x_ = x;
-        size_t j;
-        RangeQueryResult& qres = pres->new_result(0);
-
-#pragma omp for
-        for (j = 0; j < ny; j++) {
-            const float* y_ = y + j * d;
-            if (bitset.empty() || !bitset.test((int64_t)j)) {
-                if (compute_l2) {
-                    float disij = fvec_L2sqr(x_, y_, d);
-                    if (disij < radius) {
-                        qres.add(disij, j);
-                    }
-                } else {
-                    float ip = fvec_inner_product(x_, y_, d);
-                    if (ip > radius) {
-                        qres.add(ip, j);
-                    }
-                }
-            }
+            res.push_back(pres);
         }
-#pragma omp critical
-        res.push_back(pres);
     }
 
     // check just at the end because the use case is typically just
@@ -261,13 +213,11 @@ void range_search_L2sqr(
         size_t buffer_size,
         const BitsetView bitset) {
     if (nx < distance_compute_blas_threshold) {
-        if (nx == 1) {
-            range_search_sse_sq<true>(x, y, d, nx, ny, radius, res, buffer_size, bitset);
-        } else {
-            range_search_sse<true>(x, y, d, nx, ny, radius, res, buffer_size, bitset);
-        }
+        range_search_sse<true>(
+                x, y, d, nx, ny, radius, res, buffer_size, bitset);
     } else {
-        range_search_blas<true>(x, y, d, nx, ny, radius, res, buffer_size, bitset);
+        range_search_blas<true>(
+                x, y, d, nx, ny, radius, res, buffer_size, bitset);
     }
 }
 
@@ -282,12 +232,111 @@ void range_search_inner_product(
         size_t buffer_size,
         const BitsetView bitset) {
     if (nx < distance_compute_blas_threshold) {
-        if (nx == 1)
-            range_search_sse_sq<false>(x, y, d, nx, ny, radius, res, buffer_size, bitset);
-        else
-            range_search_sse<false>(x, y, d, nx, ny, radius, res, buffer_size, bitset);
+        range_search_sse<false>(
+                x, y, d, nx, ny, radius, res, buffer_size, bitset);
     } else {
-        range_search_blas<false>(x, y, d, nx, ny, radius, res, buffer_size, bitset);
+        range_search_blas<false>(
+                x, y, d, nx, ny, radius, res, buffer_size, bitset);
+    }
+}
+
+template <class ResultHandler>
+void exhaustive_inner_product_seq(
+        const float* x,
+        const float* y,
+        size_t d,
+        size_t nx,
+        size_t ny,
+        ResultHandler& res,
+        const BitsetView bitset) {
+    using SingleResultHandler = typename ResultHandler::SingleResultHandler;
+    int nt = std::min(int(nx), omp_get_max_threads());
+
+#pragma omp parallel num_threads(nt)
+    {
+        SingleResultHandler resi(res);
+#pragma omp for
+        for (int64_t i = 0; i < nx; i++) {
+            const float* x_i = x + i * d;
+            const float* y_j = y;
+
+            resi.begin(i);
+
+            for (size_t j = 0; j < ny; j++) {
+                if (bitset.empty() || !bitset.test(j)) {
+                    float ip = fvec_inner_product(x_i, y_j, d);
+                    resi.add_result(ip, j);
+                }
+                y_j += d;
+            }
+            resi.end();
+        }
+    }
+}
+
+template <class ResultHandler>
+void exhaustive_L2sqr_seq(
+        const float* x,
+        const float* y,
+        size_t d,
+        size_t nx,
+        size_t ny,
+        ResultHandler& res,
+        const BitsetView bitset) {
+    using SingleResultHandler = typename ResultHandler::SingleResultHandler;
+    int nt = std::min(int(nx), omp_get_max_threads());
+
+#pragma omp parallel num_threads(nt)
+    {
+        SingleResultHandler resi(res);
+#pragma omp for
+        for (int64_t i = 0; i < nx; i++) {
+            const float* x_i = x + i * d;
+            const float* y_j = y;
+            resi.begin(i);
+            for (size_t j = 0; j < ny; j++) {
+                if (bitset.empty() || !bitset.test(j)) {
+                    float disij = fvec_L2sqr(x_i, y_j, d);
+                    resi.add_result(disij, j);
+                }
+                y_j += d;
+            }
+            resi.end();
+        }
+    }
+}
+
+void range_search_L2sqr(
+        const float* x,
+        const float* y,
+        size_t d,
+        size_t nx,
+        size_t ny,
+        float radius,
+        RangeSearchResult* res,
+        const BitsetView bitset) {
+    RangeSearchResultHandler<CMax<float, int64_t>> resh(res, radius);
+    if (nx < distance_compute_blas_threshold) {
+        exhaustive_L2sqr_seq(x, y, d, nx, ny, resh, bitset);
+    } else {
+        // exhaustive_L2sqr_blas(x, y, d, nx, ny, resh, nullptr, bitset);
+    }
+}
+
+void range_search_inner_product(
+        const float* x,
+        const float* y,
+        size_t d,
+        size_t nx,
+        size_t ny,
+        float radius,
+        RangeSearchResult* res,
+        const BitsetView bitset) {
+    RangeSearchResultHandler<CMin<float, int64_t>> resh(res, radius);
+    if (nx < distance_compute_blas_threshold) {
+        exhaustive_inner_product_seq(x, y, d, nx, ny, resh, bitset);
+    } else {
+        // exhaustive_inner_product_blas(x, y, d, nx, ny, resh, nullptr, bitset);
     }
 }
 
