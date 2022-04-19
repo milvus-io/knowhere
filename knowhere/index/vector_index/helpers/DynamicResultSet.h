@@ -19,33 +19,34 @@
 
 namespace knowhere {
 
-enum class ResultSetPostProcessType { None = 0, SortDesc, SortAsc };
 using idx_t = int64_t;
+
+// BufferPool (inner classes)
+using BufferList = faiss::BufferList;
+using BufferListPtr = std::shared_ptr<BufferList>;
 
 /*
  * Class: Dynamic result set (merged results)
  */
-struct DynamicResultSet {
+struct RangeSearchResult {
+
+    enum class SortType { None = 0, AscOrder, DescOrder };
+
     std::shared_ptr<idx_t[]> labels;     /// result for query i is labels[lims[i]:lims[i + 1]]
     std::shared_ptr<float[]> distances;  /// corresponding distances, not sorted
     size_t count;  /// size of the result buffer's size, when reaches this size, auto start a new buffer
 
     void
-    AlloctionImpl();
+    AllocImpl();
 
     void
-    SortImpl(ResultSetPostProcessType postProcessType = ResultSetPostProcessType::SortAsc);
+    SortImpl(SortType type = SortType::AscOrder);
 
  private:
-    template <bool asc>
+    template<bool asc>
     void
-    quick_sort(size_t lp, size_t rp);
+    quick_sort(int64_t start, int64_t end);
 };
-
-// BufferPool (inner classes)
-typedef faiss::BufferList DynamicResultFragment;
-typedef std::shared_ptr<DynamicResultFragment> DynamicResultFragmentPtr;
-typedef std::vector<DynamicResultFragmentPtr> DynamicResultSegment;
 
 /*
  * Class: Dynamic result collector
@@ -57,27 +58,27 @@ typedef std::vector<DynamicResultFragmentPtr> DynamicResultSegment;
     }
     auto rst = collector.merge();
  */
-struct DynamicResultCollector {
+struct RangeSearchResultHandler {
  public:
     /*
      * Merge the results of segments
      * Notes: Now, we apply limit before sort.
      *        It can be updated if you don't expect the policy.
      */
-    DynamicResultSet
-    Merge(size_t limit = 10000, ResultSetPostProcessType postProcessType = ResultSetPostProcessType::None);
+    RangeSearchResult
+    Merge(size_t limit = 10000, RangeSearchResult::SortType type = RangeSearchResult::SortType::None);
 
     /*
      * Collect the results of segments
      */
     void
-    Append(DynamicResultSegment&& seg_result);
+    Append(std::vector<BufferListPtr>& seg_result);
 
  private:
-    std::vector<DynamicResultSegment> seg_results;  /// unmerged results of every segments
+    std::vector<std::vector<BufferListPtr>> seg_results;  /// unmerged results of every segments
 };
 
 void
-ExchangeDataset(DynamicResultSegment& milvus_dataset, std::vector<faiss::RangeSearchPartialResult*>& faiss_dataset);
+ExchangeDataset(std::vector<BufferListPtr>& dst, std::vector<faiss::RangeSearchPartialResult*>& src);
 
 }  // namespace knowhere

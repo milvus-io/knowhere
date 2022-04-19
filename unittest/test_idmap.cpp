@@ -76,16 +76,15 @@ class IDMAPTest : public DataGen, public TestWithParam<knowhere::IndexMode> {
     CheckRangeSearchResult(
         std::vector<std::vector<bool>>& golden_result,
         std::vector<size_t>& golden_cnt,
-        std::vector<knowhere::DynamicResultSegment>& results) {
+        std::vector<std::vector<knowhere::BufferListPtr>>& results) {
         for (auto i = 0; i < nq; ++i) {
             int correct_cnt = 0;
-            for (auto& res_space : results[i]) {
-                auto qnr =
-                    res_space->buffer_size * res_space->buffers.size() - res_space->buffer_size + res_space->wp;
+            for (auto& res: results[i]) {
+                auto qnr = res->buffer_size * (res->buffers.size() - 1) + res->wp;
                 for (auto j = 0; j < qnr; ++j) {
-                    auto bno = j / res_space->buffer_size;
-                    auto pos = j % res_space->buffer_size;
-                    auto idx = res_space->buffers[bno].ids[pos];
+                    auto bno = j / res->buffer_size;
+                    auto pos = j % res->buffer_size;
+                    auto idx = res->buffers[bno].ids[pos];
                     ASSERT_EQ(golden_result[i][idx], true);
                     if (golden_result[i][idx]) {
                         correct_cnt++;
@@ -274,7 +273,7 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
     index_->Train(base_dataset, conf);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
 
-    std::vector<knowhere::DynamicResultSegment> results1;
+    std::vector<std::vector<knowhere::BufferListPtr>> results1;
     for (auto i = 0; i < nq; ++i) {
         auto qd = knowhere::GenDataset(1, dim, xq.data() + i * dim);
         results1.push_back(index_->QueryByDistance(qd, conf, nullptr));
@@ -288,7 +287,7 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
     EXPECT_EQ(index_->Dim(), dim);
 
     // query again and compare the result
-    std::vector<knowhere::DynamicResultSegment> results2;
+    std::vector<std::vector<knowhere::BufferListPtr>> results2;
     for (auto i = 0; i < nq; ++i) {
         auto qd = knowhere::GenDataset(1, dim, xq.data() + i * dim);
         results2.push_back(index_->QueryByDistance(qd, conf, nullptr));
@@ -311,7 +310,7 @@ TEST_P(IDMAPTest, idmap_range_search_ip) {
     index_->Train(base_dataset, conf);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
 
-    std::vector<knowhere::DynamicResultSegment> results1;
+    std::vector<std::vector<knowhere::BufferListPtr>> results1;
     for (auto i = 0; i < nq; ++i) {
         auto qd = knowhere::GenDataset(1, dim, xq.data() + i * dim);
         results1.push_back(index_->QueryByDistance(qd, conf, nullptr));
@@ -325,7 +324,7 @@ TEST_P(IDMAPTest, idmap_range_search_ip) {
     EXPECT_EQ(index_->Dim(), dim);
 
     // query again and compare the result
-    std::vector<knowhere::DynamicResultSegment> results2;
+    std::vector<std::vector<knowhere::BufferListPtr>> results2;
     for (auto i = 0; i < nq; ++i) {
         auto qd = knowhere::GenDataset(1, dim, xq.data() + i * dim);
         results2.push_back(index_->QueryByDistance(qd, conf, nullptr));
@@ -345,28 +344,29 @@ TEST_P(IDMAPTest, idmap_dynamic_result_set) {
     std::vector<size_t> golden_cnt(nq, 0);
     RunRangeSearchBF(golden_result, golden_cnt, faiss::fvec_L2sqr_ref, radius * radius, true);
 
-    auto check_rst = [&](knowhere::DynamicResultSet& rst, knowhere::ResultSetPostProcessType type) {
+    auto check_rst = [&](knowhere::RangeSearchResult& rst, knowhere::RangeSearchResult::SortType type) {
         for (auto i = 0; i < rst.count - 1; ++i) {
-            if (type == knowhere::ResultSetPostProcessType::SortAsc)
-                ASSERT_LE(rst.distances.get() + i, rst.distances.get() + i + 1);
-            else if (type == knowhere::ResultSetPostProcessType::SortDesc)
-                ASSERT_GE(rst.distances.get() + i, rst.distances.get() + i + 1);
+            if (type == knowhere::RangeSearchResult::SortType::AscOrder)
+                ASSERT_LE(rst.distances[i], rst.distances[i + 1]);
+            else if (type == knowhere::RangeSearchResult::SortType::DescOrder)
+                ASSERT_GE(rst.distances[i], rst.distances[i + 1]);
         }
     };
 
-    knowhere::DynamicResultCollector collector;
+    knowhere::RangeSearchResultHandler handler;
     index_->Train(base_dataset, conf);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
 
     for (auto i = 0; i < 3; ++i) {
         auto qd = knowhere::GenDataset(1, dim, xq.data());
-        collector.Append(index_->QueryByDistance(qd, conf, nullptr));
+        auto result = index_->QueryByDistance(qd, conf, nullptr);
+        handler.Append(result);
     }
 
-    auto rst = collector.Merge(1000, knowhere::ResultSetPostProcessType::SortAsc);
+    auto rst = handler.Merge(1000, knowhere::RangeSearchResult::SortType::AscOrder);
     ASSERT_LE(rst.count, 1000);
 
-    check_rst(rst, knowhere::ResultSetPostProcessType::SortAsc);
+    check_rst(rst, knowhere::RangeSearchResult::SortType::AscOrder);
 }
 
 #ifdef KNOWHERE_GPU_VERSION

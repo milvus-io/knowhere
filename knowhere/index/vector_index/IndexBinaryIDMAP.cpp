@@ -60,7 +60,7 @@ BinaryIDMAP::Query(const DatasetPtr& dataset_ptr, const Config& config, const fa
     return ret_ds;
 }
 
-DynamicResultSegment
+std::vector<BufferListPtr>
 BinaryIDMAP::QueryByDistance(const DatasetPtr& dataset,
                              const Config& config,
                              const faiss::BitsetView bitset) {
@@ -77,7 +77,7 @@ BinaryIDMAP::QueryByDistance(const DatasetPtr& dataset,
         index_->metric_type = GetMetricType(config[Metric::TYPE].get<std::string>());
     }
     std::vector<faiss::RangeSearchPartialResult*> res;
-    DynamicResultSegment result;
+    std::vector<BufferListPtr> result;
     float radius = 0.0;
     if (index_->metric_type != faiss::MetricType::METRIC_Substructure &&
         index_->metric_type != faiss::METRIC_Superstructure) {
