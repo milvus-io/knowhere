@@ -180,7 +180,6 @@ IndexHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fais
             rst.pop();
             idx--;
         }
-        MapOffsetToUid(p_single_id, rst_size);
 
         for (idx = rst_size; idx < k; idx++) {
             p_single_dis[idx] = float(1.0 / 0.0);

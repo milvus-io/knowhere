@@ -133,8 +133,6 @@ IndexAnnoy::Query(const DatasetPtr& dataset_ptr, const Config& config, const fai
         memcpy(local_p_id, result.data(), result_num * sizeof(int64_t));
         memcpy(local_p_dist, distances.data(), result_num * sizeof(float));
 
-        MapOffsetToUid(local_p_id, result_num);
-
         for (; result_num < k; result_num++) {
             local_p_id[result_num] = -1;
             local_p_dist[result_num] = 1.0 / 0.0;

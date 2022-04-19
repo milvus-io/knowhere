@@ -51,7 +51,6 @@ BinaryIDMAP::Query(const DatasetPtr& dataset_ptr, const Config& config, const fa
     auto p_dist = static_cast<float*>(malloc(p_dist_size));
 
     QueryImpl(rows, reinterpret_cast<const uint8_t*>(p_data), k, p_dist, p_id, config, bitset);
-    MapOffsetToUid(p_id, static_cast<size_t>(elems));
 
     auto ret_ds = std::make_shared<Dataset>();
     ret_ds->Set(meta::IDS, p_id);
@@ -92,7 +91,6 @@ BinaryIDMAP::QueryByDistance(const DatasetPtr& dataset,
     }
     real_idx->range_search(rows, reinterpret_cast<const uint8_t*>(p_data), radius, res, buffer_size, bitset);
     ExchangeDataset(result, res);
-    MapUids(result);
     index_->metric_type = default_type;
     return result;
 }

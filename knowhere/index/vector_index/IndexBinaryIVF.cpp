@@ -76,7 +76,6 @@ BinaryIVF::Query(const DatasetPtr& dataset_ptr, const Config& config, const fais
         p_dist = static_cast<float*>(malloc(p_dist_size));
 
         QueryImpl(rows, reinterpret_cast<const uint8_t*>(p_data), k, p_dist, p_id, config, bitset);
-        MapOffsetToUid(p_id, static_cast<size_t>(elems));
 
         auto ret_ds = std::make_shared<Dataset>();
 

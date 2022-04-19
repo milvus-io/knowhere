@@ -138,10 +138,8 @@ IndexRHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fai
         }
     }
 #endif
-    //     LOG_KNOWHERE_DEBUG_ << "IndexRHNSW::Load finished, show statistics:";
-    //     LOG_KNOWHERE_DEBUG_ << GetStatistics()->ToString();
-
-    MapOffsetToUid(p_id, result_count);
+    // LOG_KNOWHERE_DEBUG_ << "IndexRHNSW::Load finished, show statistics:";
+    // LOG_KNOWHERE_DEBUG_ << GetStatistics()->ToString();
 
     auto ret_ds = std::make_shared<Dataset>();
     ret_ds->Set(meta::IDS, p_id);
