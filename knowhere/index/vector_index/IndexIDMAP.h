@@ -46,8 +46,8 @@ class IDMAP : public VecIndex, public FaissBaseIndex {
     DatasetPtr
     Query(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
 
-    std::vector<BufferListPtr>
-    QueryByDistance(const DatasetPtr& dataset, const Config& config, const faiss::BitsetView bitset);
+    DatasetPtr
+    QueryByRange(const DatasetPtr& dataset, const Config& config, const faiss::BitsetView bitset) override;
 
     int64_t
     Count() override;
@@ -69,6 +69,10 @@ class IDMAP : public VecIndex, public FaissBaseIndex {
  protected:
     virtual void
     QueryImpl(int64_t, const float*, int64_t, float*, int64_t*, const Config&, const faiss::BitsetView);
+
+    virtual void
+    QueryByRangeImpl(int64_t, const float*, float, float*&, int64_t*&, size_t*&, const Config&,
+                     const faiss::BitsetView);
 };
 
 using IDMAPPtr = std::shared_ptr<IDMAP>;

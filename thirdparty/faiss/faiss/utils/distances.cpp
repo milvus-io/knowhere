@@ -215,6 +215,69 @@ void exhaustive_L2sqr_IP_seq(
     }
 }
 
+/* Find the nearest neighbors for nx queries in a set of ny vectors */
+template <class ResultHandler>
+void exhaustive_inner_product_seq(
+        const float* x,
+        const float* y,
+        size_t d,
+        size_t nx,
+        size_t ny,
+        ResultHandler& res,
+        const BitsetView bitset) {
+    using SingleResultHandler = typename ResultHandler::SingleResultHandler;
+    int nt = std::min(int(nx), omp_get_max_threads());
+
+#pragma omp parallel num_threads(nt)
+    {
+        SingleResultHandler resi(res);
+#pragma omp for
+        for (int64_t i = 0; i < nx; i++) {
+            const float* x_i = x + i * d;
+            resi.begin(i);
+            for (size_t j = 0; j < ny; j++) {
+                const float* y_j = y + j * d;
+                if (bitset.empty() || !bitset.test(j)) {
+                    float ip = fvec_inner_product(x_i, y_j, d);
+                    resi.add_result(ip, j);
+                }
+            }
+            resi.end();
+        }
+    }
+}
+
+template <class ResultHandler>
+void exhaustive_L2sqr_seq(
+        const float* x,
+        const float* y,
+        size_t d,
+        size_t nx,
+        size_t ny,
+        ResultHandler& res,
+        const BitsetView bitset) {
+    using SingleResultHandler = typename ResultHandler::SingleResultHandler;
+    int nt = std::min(int(nx), omp_get_max_threads());
+
+#pragma omp parallel num_threads(nt)
+    {
+        SingleResultHandler resi(res);
+#pragma omp for
+        for (int64_t i = 0; i < nx; i++) {
+            const float* x_i = x + i * d;
+            resi.begin(i);
+            for (size_t j = 0; j < ny; j++) {
+                const float* y_j = y + j * d;
+                if (bitset.empty() || !bitset.test(j)) {
+                    float disij = fvec_L2sqr(x_i, y_j, d);
+                    resi.add_result(disij, j);
+                }
+            }
+            resi.end();
+        }
+    }
+}
+
 /** Find the nearest neighbors for nx queries in a set of ny vectors */
 template <class ResultHandler>
 void exhaustive_inner_product_blas(
@@ -532,6 +595,44 @@ void knn_jaccard(
         NopDistanceCorrection nop;
         HeapResultHandler<CMax<float, int64_t>> res(ha->nh, ha->val, ha->ids, ha->k);
         knn_jaccard_blas(x, y, d, nx, ny, res, nop, bitset);
+    }
+}
+
+/***************************************************************************
+ * Range search
+ ***************************************************************************/
+
+void range_search_L2sqr(
+        const float* x,
+        const float* y,
+        size_t d,
+        size_t nx,
+        size_t ny,
+        float radius,
+        RangeSearchResult* res,
+        const BitsetView bitset) {
+    RangeSearchResultHandler<CMax<float, int64_t>> resh(res, radius);
+    if (nx < distance_compute_blas_threshold) {
+        exhaustive_L2sqr_seq(x, y, d, nx, ny, resh, bitset);
+    } else {
+        exhaustive_L2sqr_blas(x, y, d, nx, ny, resh, nullptr, bitset);
+    }
+}
+
+void range_search_inner_product(
+        const float* x,
+        const float* y,
+        size_t d,
+        size_t nx,
+        size_t ny,
+        float radius,
+        RangeSearchResult* res,
+        const BitsetView bitset) {
+    RangeSearchResultHandler<CMin<float, int64_t>> resh(res, radius);
+    if (nx < distance_compute_blas_threshold) {
+        exhaustive_inner_product_seq(x, y, d, nx, ny, resh, bitset);
+    } else {
+        exhaustive_inner_product_blas(x, y, d, nx, ny, resh, bitset);
     }
 }
 

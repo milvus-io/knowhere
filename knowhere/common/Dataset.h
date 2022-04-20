@@ -31,14 +31,19 @@ class Dataset {
     ~Dataset() {
         for (auto const& d : data_) {
             if (d.first == meta::IDS) {
-                auto row_data = Get<int64_t*>(meta::IDS);
+                auto ids = Get<int64_t*>(meta::IDS);
                 // the space of ids must be allocated through malloc
-                free(row_data);
+                free(ids);
             }
             if (d.first == meta::DISTANCE) {
-                auto row_data = Get<float*>(meta::DISTANCE);
+                auto distances = Get<float*>(meta::DISTANCE);
                 // the space of distance must be allocated through malloc
-                free(row_data);
+                free(distances);
+            }
+            if (d.first == meta::LIMS) {
+                auto lims = Get<size_t*>(meta::LIMS);
+                // the space of lims must be allocated through malloc
+                free(lims);
             }
         }
     }

@@ -472,7 +472,8 @@ struct RangeSearchResultHandler {
 
     /// add results for query i0..i1 and j0..j1
 
-    void add_results(size_t j0, size_t j1, const T* dis_tab) {
+    void add_results(size_t j0, size_t j1, const T* dis_tab,
+                     BitsetView bitset = nullptr) {
         RangeSearchPartialResult* pres;
         // there is one RangeSearchPartialResult structure per j0
         // (= block of columns of the large distance matrix)
@@ -496,11 +497,12 @@ struct RangeSearchResultHandler {
         for (size_t i = i0; i < i1; i++) {
             const float* ip_line = dis_tab + (i - i0) * (j1 - j0);
             RangeQueryResult& qres = pres->new_result(i);
-
             for (size_t j = j0; j < j1; j++) {
-                float dis = *ip_line++;
-                if (C::cmp(radius, dis)) {
-                    qres.add(dis, j);
+                if (bitset.empty() || !bitset.test(j)) {
+                    float dis = *ip_line++;
+                    if (C::cmp(radius, dis)) {
+                        qres.add(dis, j);
+                    }
                 }
             }
         }

@@ -43,14 +43,6 @@ struct IndexFlat : IndexFlatCodes {
             RangeSearchResult* result,
             const BitsetView bitset = nullptr) const override;
 
-    void range_search(
-            idx_t n,
-            const float* x,
-            float radius,
-            std::vector<RangeSearchPartialResult*>& result,
-            size_t buffer_size,
-            const BitsetView bitset = nullptr); // const override
-
     void reconstruct(idx_t key, float* recons) const override;
 
     /** compute distance with a subset of vectors
