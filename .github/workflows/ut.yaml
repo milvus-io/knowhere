@@ -39,6 +39,10 @@ jobs:
       - name: Install Dependency
         run: |
           ./scripts/install_deps.sh
+      - name: Cpplint & Clang-format check
+        if: ${{ matrix.os == 'ubuntu-18.04' }}
+        run: |
+          ./build.sh -l
       - name: Run Unittest
         run: |
           ./build.sh -t Release -u

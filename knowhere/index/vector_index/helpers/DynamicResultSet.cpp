@@ -33,7 +33,7 @@ RangeSearchResult::AllocImpl() {
 
 void
 RangeSearchResult::SortImpl(SortType type) {
-    switch(type) {
+    switch (type) {
         case SortType::AscOrder:
             quick_sort<true>(0, count - 1);
             break;
