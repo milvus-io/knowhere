@@ -72,49 +72,6 @@ class VecIndex : public Index {
         return index_mode_;
     }
 
-    std::shared_ptr<std::vector<IDType>>
-    GetUids() const {
-        return uids_;
-    }
-
-    void
-    SetUids(std::shared_ptr<std::vector<IDType>> uids) {
-        uids_ = uids;
-    }
-
-    void
-    MapOffsetToUid(IDType* id, size_t n) {
-        if (uids_) {
-            for (size_t i = 0; i < n; i++) {
-                if (id[i] >= 0) {
-                    id[i] = uids_->at(id[i]);
-                }
-            }
-        }
-    }
-
-    void
-    MapUids(std::vector<BufferListPtr>& milvus_dataset) {
-        if (uids_) {
-            for (auto& mrspr : milvus_dataset) {
-                for (auto j = 0; j < mrspr->buffers.size(); ++j) {
-                    auto buf = mrspr->buffers[j];
-                    auto len = j + 1 == mrspr->buffers.size() ? mrspr->wp : mrspr->buffer_size;
-                    for (auto i = 0; i < len; ++i) {
-                        if (buf.ids[i] >= 0) {
-                            buf.ids[i] = uids_->at(buf.ids[i]);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    size_t
-    UidsSize() {
-        return uids_ ? uids_->size() * sizeof(IDType) : 0;
-    }
-
     virtual int64_t
     IndexSize() {
         if (index_size_ == -1) {
@@ -134,13 +91,12 @@ class VecIndex : public Index {
 
     int64_t
     Size() override {
-        return UidsSize() + IndexSize();
+        return IndexSize();
     }
 
  protected:
     IndexType index_type_ = "";
     IndexMode index_mode_ = IndexMode::MODE_CPU;
-    std::shared_ptr<std::vector<IDType>> uids_ = nullptr;
     int64_t index_size_ = -1;
     StatisticsPtr stats = nullptr;
 };
