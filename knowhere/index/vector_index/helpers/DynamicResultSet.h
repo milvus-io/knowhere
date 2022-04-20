@@ -29,7 +29,6 @@ using BufferListPtr = std::shared_ptr<BufferList>;
  * Class: Dynamic result set (merged results)
  */
 struct RangeSearchResult {
-
     enum class SortType { None = 0, AscOrder, DescOrder };
 
     std::shared_ptr<idx_t[]> labels;     /// result for query i is labels[lims[i]:lims[i + 1]]

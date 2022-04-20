@@ -13,6 +13,7 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "knowhere/index/vector_index/FaissBaseIndex.h"
 #include "knowhere/index/vector_index/VecIndex.h"
