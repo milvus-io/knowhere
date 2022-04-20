@@ -56,17 +56,20 @@ class IDMAPTest : public DataGen, public TestWithParam<knowhere::IndexMode> {
     RunRangeSearchBF(
         std::vector<std::vector<bool>>& golden_result,
         std::vector<size_t>& golden_cnt,
-        fvec_func_ptr func,
         float radius,
-        bool check_small) {
+        fvec_func_ptr func,
+        bool check_small,
+        const faiss::BitsetView bitset = nullptr) {
         for (auto i = 0; i < nq; ++i) {
             const float* pq = xq.data() + i * dim;
             for (auto j = 0; j < nb; ++j) {
-                const float* pb = xb.data() + j * dim;
-                auto dist = func(pq, pb, dim);
-                if ((check_small && dist < radius) || (!check_small && dist > radius)) {
-                    golden_result[i][j] = true;
-                    golden_cnt[i]++;
+                if (bitset.empty() || !bitset.test(j)) {
+                    const float* pb = xb.data() + j * dim;
+                    auto dist = func(pq, pb, dim);
+                    if ((check_small && dist < radius) || (!check_small && dist > radius)) {
+                        golden_result[i][j] = true;
+                        golden_cnt[i]++;
+                    }
                 }
             }
         }
@@ -74,21 +77,19 @@ class IDMAPTest : public DataGen, public TestWithParam<knowhere::IndexMode> {
 
     void
     CheckRangeSearchResult(
-        std::vector<std::vector<bool>>& golden_result,
-        std::vector<size_t>& golden_cnt,
-        std::vector<std::vector<knowhere::BufferListPtr>>& results) {
+        const knowhere::DatasetPtr& result,
+        const int nq,
+        const std::vector<std::vector<bool>>& golden_result,
+        const std::vector<size_t>& golden_cnt) {
+        auto lims = result->Get<size_t*>(knowhere::meta::LIMS);
+        auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
         for (auto i = 0; i < nq; ++i) {
             int correct_cnt = 0;
-            for (auto& res: results[i]) {
-                auto qnr = res->buffer_size * (res->buffers.size() - 1) + res->wp;
-                for (auto j = 0; j < qnr; ++j) {
-                    auto bno = j / res->buffer_size;
-                    auto pos = j % res->buffer_size;
-                    auto idx = res->buffers[bno].ids[pos];
-                    ASSERT_EQ(golden_result[i][idx], true);
-                    if (golden_result[i][idx]) {
-                        correct_cnt++;
-                    }
+            for (auto j = lims[i]; j < lims[i+1]; j++) {
+                auto idx = ids[j];
+                ASSERT_EQ(golden_result[i][idx], true);
+                if (golden_result[i][idx]) {
+                    correct_cnt++;
                 }
             }
             ASSERT_EQ(correct_cnt, golden_cnt[i]);
@@ -262,23 +263,23 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
     knowhere::Config conf{
         {knowhere::meta::DIM, dim},
         {knowhere::IndexParams::range_search_radius, radius},
-        {knowhere::IndexParams::range_search_buffer_size, buffer_size},
         {knowhere::Metric::TYPE, knowhere::Metric::L2}
     };
-
-    std::vector<std::vector<bool>> golden_result(nq, std::vector<bool>(nb, false));
-    std::vector<size_t> golden_cnt(nq, 0);
-    RunRangeSearchBF(golden_result, golden_cnt, faiss::fvec_L2sqr_ref, radius * radius, true);
 
     index_->Train(base_dataset, conf);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
 
-    std::vector<std::vector<knowhere::BufferListPtr>> results1;
-    for (auto i = 0; i < nq; ++i) {
-        auto qd = knowhere::GenDataset(1, dim, xq.data() + i * dim);
-        results1.push_back(index_->QueryByDistance(qd, conf, nullptr));
+    auto qd = knowhere::GenDataset(nq, dim, xq.data());
+
+    // test without bitset
+    {
+        std::vector<std::vector<bool>> golden_result(nq, std::vector<bool>(nb, false));
+        std::vector<size_t> golden_cnt(nq, 0);
+        RunRangeSearchBF(golden_result, golden_cnt, radius * radius, faiss::fvec_L2sqr_ref, true);
+
+        auto result = index_->QueryByRange(qd, conf, nullptr);
+        CheckRangeSearchResult(result, nq, golden_result, golden_cnt);
     }
-    CheckRangeSearchResult(golden_result, golden_cnt, results1);
 
     auto binaryset = index_->Serialize(conf);
     index_->Load(binaryset);
@@ -286,36 +287,44 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
-    // query again and compare the result
-    std::vector<std::vector<knowhere::BufferListPtr>> results2;
-    for (auto i = 0; i < nq; ++i) {
-        auto qd = knowhere::GenDataset(1, dim, xq.data() + i * dim);
-        results2.push_back(index_->QueryByDistance(qd, conf, nullptr));
+    // test with bitset
+    {
+        std::shared_ptr<uint8_t[]> data(new uint8_t[nb / 8]);
+        for (int64_t i = 0; i < nb; i += 2) {
+            set_bit(data.get(), i);
+        }
+        auto bitset = faiss::BitsetView(data.get(), nb);
+
+        std::vector<std::vector<bool>> golden_result(nq, std::vector<bool>(nb, false));
+        std::vector<size_t> golden_cnt(nq, 0);
+        RunRangeSearchBF(golden_result, golden_cnt, radius * radius, faiss::fvec_L2sqr_ref, true, bitset);
+
+        auto result = index_->QueryByRange(qd, conf, bitset);
+        CheckRangeSearchResult(result, nq, golden_result, golden_cnt);
     }
-    CheckRangeSearchResult(golden_result, golden_cnt, results2);
 }
 
 TEST_P(IDMAPTest, idmap_range_search_ip) {
     knowhere::Config conf{
         {knowhere::meta::DIM, dim},
         {knowhere::IndexParams::range_search_radius, radius},
-        {knowhere::IndexParams::range_search_buffer_size, buffer_size},
         {knowhere::Metric::TYPE, knowhere::Metric::IP}
     };
-
-    std::vector<std::vector<bool>> golden_result(nq, std::vector<bool>(nb, false));
-    std::vector<size_t> golden_cnt(nq, 0);
-    RunRangeSearchBF(golden_result, golden_cnt, faiss::fvec_inner_product_ref, radius, false);
 
     index_->Train(base_dataset, conf);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
 
-    std::vector<std::vector<knowhere::BufferListPtr>> results1;
-    for (auto i = 0; i < nq; ++i) {
-        auto qd = knowhere::GenDataset(1, dim, xq.data() + i * dim);
-        results1.push_back(index_->QueryByDistance(qd, conf, nullptr));
+    auto qd = knowhere::GenDataset(nq, dim, xq.data());
+
+    // test without bitset
+    {
+        std::vector<std::vector<bool>> golden_result(nq, std::vector<bool>(nb, false));
+        std::vector<size_t> golden_cnt(nq, 0);
+        RunRangeSearchBF(golden_result, golden_cnt, radius, faiss::fvec_inner_product_ref, false);
+
+        auto result = index_->QueryByRange(qd, conf, nullptr);
+        CheckRangeSearchResult(result, nq, golden_result, golden_cnt);
     }
-    CheckRangeSearchResult(golden_result, golden_cnt, results1);
 
     auto binaryset = index_->Serialize(conf);
     index_->Load(binaryset);
@@ -323,50 +332,21 @@ TEST_P(IDMAPTest, idmap_range_search_ip) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
-    // query again and compare the result
-    std::vector<std::vector<knowhere::BufferListPtr>> results2;
-    for (auto i = 0; i < nq; ++i) {
-        auto qd = knowhere::GenDataset(1, dim, xq.data() + i * dim);
-        results2.push_back(index_->QueryByDistance(qd, conf, nullptr));
-    }
-    CheckRangeSearchResult(golden_result, golden_cnt, results2);
-}
-
-TEST_P(IDMAPTest, idmap_dynamic_result_set) {
-    knowhere::Config conf{
-        {knowhere::meta::DIM, dim},
-        {knowhere::IndexParams::range_search_radius, radius},
-        {knowhere::IndexParams::range_search_buffer_size, buffer_size},
-        {knowhere::Metric::TYPE, knowhere::Metric::L2}
-    };
-
-    std::vector<std::vector<bool>> golden_result(nq, std::vector<bool>(nb, false));
-    std::vector<size_t> golden_cnt(nq, 0);
-    RunRangeSearchBF(golden_result, golden_cnt, faiss::fvec_L2sqr_ref, radius * radius, true);
-
-    auto check_rst = [&](knowhere::RangeSearchResult& rst, knowhere::RangeSearchResult::SortType type) {
-        for (auto i = 0; i < rst.count - 1; ++i) {
-            if (type == knowhere::RangeSearchResult::SortType::AscOrder)
-                ASSERT_LE(rst.distances[i], rst.distances[i + 1]);
-            else if (type == knowhere::RangeSearchResult::SortType::DescOrder)
-                ASSERT_GE(rst.distances[i], rst.distances[i + 1]);
+    // test with bitset
+    {
+        std::shared_ptr<uint8_t[]> data(new uint8_t[nb / 8]);
+        for (int64_t i = 0; i < nb; i += 2) {
+            set_bit(data.get(), i);
         }
-    };
+        auto bitset = faiss::BitsetView(data.get(), nb);
 
-    knowhere::RangeSearchResultHandler handler;
-    index_->Train(base_dataset, conf);
-    index_->AddWithoutIds(base_dataset, knowhere::Config());
+        std::vector<std::vector<bool>> golden_result(nq, std::vector<bool>(nb, false));
+        std::vector<size_t> golden_cnt(nq, 0);
+        RunRangeSearchBF(golden_result, golden_cnt, radius, faiss::fvec_inner_product_ref, false, bitset);
 
-    for (auto i = 0; i < 3; ++i) {
-        auto qd = knowhere::GenDataset(1, dim, xq.data());
-        auto result = index_->QueryByDistance(qd, conf, nullptr);
-        handler.Append(result);
+        auto result = index_->QueryByRange(qd, conf, bitset);
+        CheckRangeSearchResult(result, nq, golden_result, golden_cnt);
     }
-
-    auto rst = handler.Merge(1000, knowhere::RangeSearchResult::SortType::AscOrder);
-    ASSERT_LE(rst.count, 1000);
-
-    check_rst(rst, knowhere::RangeSearchResult::SortType::AscOrder);
 }
 
 #ifdef KNOWHERE_GPU_VERSION

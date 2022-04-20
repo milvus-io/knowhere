@@ -47,6 +47,11 @@ class VecIndex : public Index {
     virtual DatasetPtr
     Query(const DatasetPtr& dataset, const Config& config, const faiss::BitsetView bitset) = 0;
 
+    virtual DatasetPtr
+    QueryByRange(const DatasetPtr& dataset, const Config& config, const faiss::BitsetView bitset) {
+        KNOWHERE_THROW_MSG("QueryByRange not supported yet");
+    }
+
     virtual int64_t
     Dim() = 0;
 

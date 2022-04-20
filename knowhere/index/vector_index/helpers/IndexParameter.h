@@ -23,6 +23,7 @@ constexpr const char* ROWS = "rows";
 constexpr const char* IDS = "ids";
 constexpr const char* DISTANCE = "distance";
 constexpr const char* TOPK = "k";
+constexpr const char* LIMS = "lims";
 constexpr const char* DEVICEID = "gpu_id";
 };  // namespace meta
 
