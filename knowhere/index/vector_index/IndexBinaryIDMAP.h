@@ -17,7 +17,6 @@
 
 #include "knowhere/index/vector_index/FaissBaseBinaryIndex.h"
 #include "knowhere/index/vector_index/VecIndex.h"
-#include "knowhere/index/vector_index/helpers/DynamicResultSet.h"
 
 namespace knowhere {
 
@@ -46,8 +45,8 @@ class BinaryIDMAP : public VecIndex, public FaissBaseBinaryIndex {
     DatasetPtr
     Query(const DatasetPtr&, const Config&, const faiss::BitsetView bitset) override;
 
-    std::vector<BufferListPtr>
-    QueryByDistance(const DatasetPtr& dataset, const Config& config, const faiss::BitsetView bitset);
+    DatasetPtr
+    QueryByRange(const DatasetPtr&, const Config&, const faiss::BitsetView bitset) override;
 
     int64_t
     Count() override;
@@ -72,6 +71,16 @@ class BinaryIDMAP : public VecIndex, public FaissBaseBinaryIndex {
               int64_t* labels,
               const Config& config,
               const faiss::BitsetView bitset);
+
+    virtual void
+    QueryByRangeImpl(int64_t n,
+                     const uint8_t* data,
+                     float radius,
+                     float*& distances,
+                     int64_t*& labels,
+                     size_t*& lims,
+                     const Config& config,
+                     const faiss::BitsetView bitset);
 };
 
 using BinaryIDMAPPtr = std::shared_ptr<BinaryIDMAP>;

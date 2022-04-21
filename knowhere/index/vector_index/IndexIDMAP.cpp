@@ -76,19 +76,38 @@ IDMAP::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::B
     }
     GET_TENSOR_DATA(dataset_ptr)
 
-    auto k = config[meta::TOPK].get<int64_t>();
-    auto elems = rows * k;
-    size_t p_id_size = sizeof(int64_t) * elems;
-    size_t p_dist_size = sizeof(float) * elems;
-    auto p_id = static_cast<int64_t*>(malloc(p_id_size));
-    auto p_dist = static_cast<float*>(malloc(p_dist_size));
+    int64_t* p_id = nullptr;
+    float* p_dist = nullptr;
+    auto release_when_exception = [&]() {
+        if (p_id != nullptr) {
+            free(p_id);
+        }
+        if (p_dist != nullptr) {
+            free(p_dist);
+        }
+    };
 
-    QueryImpl(rows, reinterpret_cast<const float*>(p_data), k, p_dist, p_id, config, bitset);
+    try {
+        auto k = config[meta::TOPK].get<int64_t>();
+        auto elems = rows * k;
+        size_t p_id_size = sizeof(int64_t) * elems;
+        size_t p_dist_size = sizeof(float) * elems;
+        p_id = static_cast<int64_t*>(malloc(p_id_size));
+        p_dist = static_cast<float*>(malloc(p_dist_size));
 
-    auto ret_ds = std::make_shared<Dataset>();
-    ret_ds->Set(meta::IDS, p_id);
-    ret_ds->Set(meta::DISTANCE, p_dist);
-    return ret_ds;
+        QueryImpl(rows, reinterpret_cast<const float*>(p_data), k, p_dist, p_id, config, bitset);
+
+        auto ret_ds = std::make_shared<Dataset>();
+        ret_ds->Set(meta::IDS, p_id);
+        ret_ds->Set(meta::DISTANCE, p_dist);
+        return ret_ds;
+    } catch (faiss::FaissException& e) {
+        release_when_exception();
+        KNOWHERE_THROW_MSG(e.what());
+    } catch (std::exception& e) {
+        release_when_exception();
+        KNOWHERE_THROW_MSG(e.what());
+    }
 }
 
 DatasetPtr
@@ -100,19 +119,39 @@ IDMAP::QueryByRange(const DatasetPtr& dataset,
     }
     GET_TENSOR_DATA(dataset)
 
-    auto radius = config[IndexParams::range_search_radius].get<float>();
+    auto radius = config[meta::RADIUS].get<float>();
 
     int64_t* p_id = nullptr;
     float* p_dist = nullptr;
     size_t* p_lims = nullptr;
 
-    QueryByRangeImpl(rows, reinterpret_cast<const float*>(p_data), radius, p_dist, p_id, p_lims, config, bitset);
+    auto release_when_exception = [&]() {
+        if (p_id != nullptr) {
+            free(p_id);
+        }
+        if (p_dist != nullptr) {
+            free(p_dist);
+        }
+        if (p_lims != nullptr) {
+            free(p_lims);
+        }
+    };
 
-    auto ret_ds = std::make_shared<Dataset>();
-    ret_ds->Set(meta::IDS, p_id);
-    ret_ds->Set(meta::DISTANCE, p_dist);
-    ret_ds->Set(meta::LIMS, p_lims);
-    return ret_ds;
+    try {
+        QueryByRangeImpl(rows, reinterpret_cast<const float*>(p_data), radius, p_dist, p_id, p_lims, config, bitset);
+
+        auto ret_ds = std::make_shared<Dataset>();
+        ret_ds->Set(meta::IDS, p_id);
+        ret_ds->Set(meta::DISTANCE, p_dist);
+        ret_ds->Set(meta::LIMS, p_lims);
+        return ret_ds;
+    } catch (faiss::FaissException& e) {
+        release_when_exception();
+        KNOWHERE_THROW_MSG(e.what());
+    } catch (std::exception& e) {
+        release_when_exception();
+        KNOWHERE_THROW_MSG(e.what());
+    }
 }
 
 int64_t

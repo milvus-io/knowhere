@@ -24,13 +24,11 @@ constexpr const char* IDS = "ids";
 constexpr const char* DISTANCE = "distance";
 constexpr const char* TOPK = "k";
 constexpr const char* LIMS = "lims";
+constexpr const char* RADIUS = "radius";
 constexpr const char* DEVICEID = "gpu_id";
 };  // namespace meta
 
 namespace IndexParams {
-// Range Search Params
-constexpr const char* range_search_radius = "range_search_radius";
-constexpr const char* range_search_buffer_size = "range_search_buffer_size";
 
 // IVF Params
 constexpr const char* nprobe = "nprobe";

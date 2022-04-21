@@ -37,7 +37,7 @@ class DataGen {
  protected:
     int nb = 10000;
     int nq = 10;
-    int dim = 64;
+    int dim = 128;
     int k = 10;
     int buffer_size = 16384;
     float radius = 2.8;

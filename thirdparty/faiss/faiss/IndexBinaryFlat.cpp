@@ -105,19 +105,9 @@ void IndexBinaryFlat::range_search(
         float radius,
         RangeSearchResult* result,
         const BitsetView bitset) const {
-    FAISS_THROW_MSG("This interface is abandoned yet.");
-}
-
-void IndexBinaryFlat::range_search(
-        idx_t n,
-        const uint8_t* x,
-        float radius,
-        std::vector<RangeSearchPartialResult*>& result,
-        size_t buffer_size,
-        const faiss::BitsetView bitset) {
     switch (metric_type) {
         case METRIC_Jaccard: {
-            binary_range_search<CMax<float, int64_t>, float>(
+            binary_range_search<CMin<float, int64_t>, float>(
                     METRIC_Jaccard,
                     x,
                     xb.data(),
@@ -126,12 +116,11 @@ void IndexBinaryFlat::range_search(
                     radius,
                     code_size,
                     result,
-                    buffer_size,
                     bitset);
             break;
         }
         case METRIC_Tanimoto: {
-            binary_range_search<CMax<float, int64_t>, float>(
+            binary_range_search<CMin<float, int64_t>, float>(
                     METRIC_Tanimoto,
                     x,
                     xb.data(),
@@ -140,12 +129,11 @@ void IndexBinaryFlat::range_search(
                     radius,
                     code_size,
                     result,
-                    buffer_size,
                     bitset);
             break;
         }
         case METRIC_Hamming: {
-            binary_range_search<CMax<int, int64_t>, int>(
+            binary_range_search<CMin<int, int64_t>, int>(
                     METRIC_Hamming,
                     x,
                     xb.data(),
@@ -154,39 +142,17 @@ void IndexBinaryFlat::range_search(
                     static_cast<int>(radius),
                     code_size,
                     result,
-                    buffer_size,
                     bitset);
             break;
         }
-        case METRIC_Superstructure: {
-            binary_range_search<CMin<bool, int64_t>, bool>(
-                    METRIC_Superstructure,
-                    x,
-                    xb.data(),
-                    n,
-                    ntotal,
-                    false,
-                    code_size,
-                    result,
-                    buffer_size,
-                    bitset);
+        case METRIC_Superstructure:
+            FAISS_THROW_MSG("Superstructure not support range_search");
             break;
-        }
-        case METRIC_Substructure: {
-            binary_range_search<CMin<bool, int64_t>, bool>(
-                    METRIC_Substructure,
-                    x,
-                    xb.data(),
-                    n,
-                    ntotal,
-                    false,
-                    code_size,
-                    result,
-                    buffer_size,
-                    bitset);
+        case METRIC_Substructure:
+            FAISS_THROW_MSG("Substructure not support range_search");
             break;
-        }
         default:
+            FAISS_THROW_FMT("Invalid metric type %d\n", (int)metric_type);
             break;
     }
 }

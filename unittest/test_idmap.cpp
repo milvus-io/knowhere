@@ -69,7 +69,7 @@ class IDMAPTest : public DataGen, public TestWithParam<knowhere::IndexMode> {
                 }
             }
         }
-    };
+    }
 
     template <class C>
     void CheckRangeSearchResult(
@@ -148,6 +148,7 @@ TEST_P(IDMAPTest, idmap_basic) {
     AssertVec(result4, base_dataset, xid_dataset, 1, dim);
 #endif
 
+    // query with bitset
     std::shared_ptr<uint8_t[]> data(new uint8_t[nb/8]);
     for (int64_t i = 0; i < nq; ++i) {
         set_bit(data.get(), i);
@@ -252,7 +253,7 @@ TEST_P(IDMAPTest, idmap_slice) {
 TEST_P(IDMAPTest, idmap_range_search_l2) {
     knowhere::Config conf{
         {knowhere::meta::DIM, dim},
-        {knowhere::IndexParams::range_search_radius, radius},
+        {knowhere::meta::RADIUS, radius},
         {knowhere::Metric::TYPE, knowhere::Metric::L2}
     };
 
@@ -294,7 +295,7 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
 TEST_P(IDMAPTest, idmap_range_search_ip) {
     knowhere::Config conf{
         {knowhere::meta::DIM, dim},
-        {knowhere::IndexParams::range_search_radius, radius},
+        {knowhere::meta::RADIUS, radius},
         {knowhere::Metric::TYPE, knowhere::Metric::IP}
     };
 
