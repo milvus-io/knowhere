@@ -110,7 +110,7 @@ struct FlipEnumerator {
 using idx_t = Index::idx_t;
 
 struct RangeSearchResults {
-    int radius;
+    float radius;
     RangeQueryResult& qres;
 
     inline void add(float dis, idx_t id) {
@@ -215,7 +215,7 @@ void search_single_query(
 void IndexBinaryHash::range_search(
         idx_t n,
         const uint8_t* x,
-        int radius,
+        float radius,
         RangeSearchResult* result,
         const BitsetView bitset) const {
     size_t nlist = 0, ndis = 0, n0 = 0;
@@ -432,7 +432,7 @@ void search_1_query_multihash(
 void IndexBinaryMultiHash::range_search(
         idx_t n,
         const uint8_t* x,
-        int radius,
+        float radius,
         RangeSearchResult* result,
         const BitsetView bitset) const {
     size_t nlist = 0, ndis = 0, n0 = 0;

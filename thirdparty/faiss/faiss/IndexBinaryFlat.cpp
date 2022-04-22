@@ -102,7 +102,7 @@ void IndexBinaryFlat::reconstruct(idx_t key, uint8_t* recons) const {
 void IndexBinaryFlat::range_search(
         idx_t n,
         const uint8_t* x,
-        int radius,
+        float radius,
         RangeSearchResult* result,
         const BitsetView bitset) const {
     FAISS_THROW_MSG("This interface is abandoned yet.");
