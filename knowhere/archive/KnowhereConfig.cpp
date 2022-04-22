@@ -52,6 +52,11 @@ KnowhereConfig::SetSimdType(const SimdType simd_type) {
         faiss::faiss_use_avx2 = false;
         faiss::faiss_use_sse4_2 = true;
         LOG_KNOWHERE_DEBUG_ << "FAISS expect simdType::SSE4_2";
+    } else if (simd_type == SimdType::GENERIC) {
+        faiss::faiss_use_avx512 = false;
+        faiss::faiss_use_avx2 = false;
+        faiss::faiss_use_sse4_2 = false;
+        LOG_KNOWHERE_DEBUG_ << "FAISS expect simdType::GENERIC";
     }
 
     std::string simd_str;

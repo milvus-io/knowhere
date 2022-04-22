@@ -430,8 +430,8 @@ class Benchmark_knowhere : public ::testing::Test {
 };
 
 TEST_F(Benchmark_knowhere, TEST_IVFFLAT_NM) {
-    const std::vector<int32_t> nlists = {256, 512};
-    const std::vector<int32_t> nqs = {100};
+    const std::vector<int32_t> nlists = {1024};
+    const std::vector<int32_t> nqs = {10000};
     const std::vector<int32_t> topks = {10};
     const std::vector<int32_t> nprobes = {1, 2, 4, 8, 16, 32, 64, 128, 256};
 
@@ -461,8 +461,8 @@ TEST_F(Benchmark_knowhere, TEST_IVFFLAT_NM) {
 }
 
 TEST_F(Benchmark_knowhere, TEST_IVFSQ8) {
-    const std::vector<int32_t> nlists = {256, 512};
-    const std::vector<int32_t> nqs = {100};
+    const std::vector<int32_t> nlists = {1024};
+    const std::vector<int32_t> nqs = {10000};
     const std::vector<int32_t> topks = {10};
     const std::vector<int32_t> nprobes = {1, 2, 4, 8, 16, 32, 64, 128, 256};
 
@@ -486,9 +486,9 @@ TEST_F(Benchmark_knowhere, TEST_IVFSQ8) {
 }
 
 TEST_F(Benchmark_knowhere, TEST_HNSW) {
-    const std::vector<int32_t> ms = {8, 16};
-    const std::vector<int32_t> efCons = {100, 200, 300};
-    const std::vector<int32_t> nqs = {100};
+    const std::vector<int32_t> ms = {16};
+    const std::vector<int32_t> efCons = {100};
+    const std::vector<int32_t> nqs = {10000};
     const std::vector<int32_t> topks = {10};
     const std::vector<int32_t> efs = {16, 32, 64, 128, 256};
 
