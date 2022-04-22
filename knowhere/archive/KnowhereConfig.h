@@ -23,9 +23,10 @@ class KnowhereConfig {
      */
     enum SimdType {
         AUTO = 0,  // enable all and depend on the system
-        SSE4_2,    // only enable SSE4_2
-        AVX2,      // only enable AVX2
         AVX512,    // only enable AVX512
+        AVX2,      // only enable AVX2
+        SSE4_2,    // only enable SSE4_2
+        GENERIC,   // use arithmetic instead of SIMD
     };
 
     static std::string
