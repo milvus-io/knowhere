@@ -179,6 +179,22 @@ clear_bit(uint8_t* data, size_t idx) {
     data[idx >> 3] &= ~(0x1 << (idx & 0x7));
 }
 
+template <typename T_>
+struct CMin {
+    typedef T_ T;
+    inline static bool cmp(T a, T b) {
+        return a < b;
+    }
+};
+
+template <typename T_>
+struct CMax {
+    typedef T_ T;
+    inline static bool cmp(T a, T b) {
+        return a > b;
+    }
+};
+
 std::string
 temp_path(const char* path);
 

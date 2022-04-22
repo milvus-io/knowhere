@@ -38,6 +38,9 @@ class KnowhereConfig {
     static void
     SetIndexFileSliceSize(const int64_t size);
 
+    static int64_t
+    GetIndexFileSliceSize();
+
     /**
      * Set openblas threshold
      *   if nq < use_blas_threshold, calculated by omp
@@ -45,6 +48,9 @@ class KnowhereConfig {
      */
     static void
     SetBlasThreshold(const int64_t use_blas_threshold);
+
+    static int64_t
+    GetBlasThreshold();
 
     /**
      * set Clustering early stop [0, 100]
@@ -55,11 +61,14 @@ class KnowhereConfig {
     static void
     SetEarlyStopThreshold(const double early_stop_threshold);
 
+    static double
+    GetEarlyStopThreshold();
+
     /**
      * set Clustering type
      */
     enum ClusteringType {
-        K_MEANS,            // k-means (default)
+        K_MEANS = 0,        // k-means (default)
         K_MEANS_PLUS_PLUS,  // k-means++
     };
 
