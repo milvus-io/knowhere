@@ -11,7 +11,6 @@
 
 #include <gtest/gtest.h>
 
-#include <iostream>
 #include <thread>
 
 #include "knowhere/common/Exception.h"
@@ -52,47 +51,38 @@ class IDMAPTest : public DataGen, public TestWithParam<knowhere::IndexMode> {
 #endif
     }
 
-    void
-    RunRangeSearchBF(
-        std::vector<std::vector<bool>>& golden_result,
-        std::vector<size_t>& golden_cnt,
+    template <class C>
+    void RunRangeSearchBF(
+        std::vector<int64_t>& golden_labels,
         float radius,
         fvec_func_ptr func,
-        bool check_small,
-        const faiss::BitsetView bitset = nullptr) {
+        const faiss::BitsetView bitset) {
         for (auto i = 0; i < nq; ++i) {
             const float* pq = xq.data() + i * dim;
             for (auto j = 0; j < nb; ++j) {
                 if (bitset.empty() || !bitset.test(j)) {
                     const float* pb = xb.data() + j * dim;
-                    auto dist = func(pq, pb, dim);
-                    if ((check_small && dist < radius) || (!check_small && dist > radius)) {
-                        golden_result[i][j] = true;
-                        golden_cnt[i]++;
+                    auto dis = func(pq, pb, dim);
+                    if (C::cmp(dis, radius)) {
+                        golden_labels.push_back(j);
                     }
                 }
             }
         }
     };
 
-    void
-    CheckRangeSearchResult(
+    template <class C>
+    void CheckRangeSearchResult(
         const knowhere::DatasetPtr& result,
-        const int nq,
-        const std::vector<std::vector<bool>>& golden_result,
-        const std::vector<size_t>& golden_cnt) {
+        const float radius,
+        const std::vector<int64_t>& golden_labels) {
         auto lims = result->Get<size_t*>(knowhere::meta::LIMS);
         auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
-        for (auto i = 0; i < nq; ++i) {
-            int correct_cnt = 0;
-            for (auto j = lims[i]; j < lims[i+1]; j++) {
-                auto idx = ids[j];
-                ASSERT_EQ(golden_result[i][idx], true);
-                if (golden_result[i][idx]) {
-                    correct_cnt++;
-                }
-            }
-            ASSERT_EQ(correct_cnt, golden_cnt[i]);
+        auto distances = result->Get<float*>(knowhere::meta::DISTANCE);
+        ASSERT_EQ(lims[nq], golden_labels.size());
+        for (auto i = 0; i < lims[nq]; ++i) {
+            ASSERT_EQ(golden_labels[i], ids[i]);
+            ASSERT_TRUE(C::cmp(distances[i], radius));
         }
     }
 
@@ -271,37 +261,34 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
 
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
-    // test without bitset
-    {
-        std::vector<std::vector<bool>> golden_result(nq, std::vector<bool>(nb, false));
-        std::vector<size_t> golden_cnt(nq, 0);
-        RunRangeSearchBF(golden_result, golden_cnt, radius * radius, faiss::fvec_L2sqr_ref, true);
-
-        auto result = index_->QueryByRange(qd, conf, nullptr);
-        CheckRangeSearchResult(result, nq, golden_result, golden_cnt);
+    std::shared_ptr<uint8_t[]> data(new uint8_t[nb / 8]);
+    for (int64_t i = 0; i < nb; i += 2) {
+        set_bit(data.get(), i);
     }
+    auto bitset = faiss::BitsetView(data.get(), nb);
 
-    auto binaryset = index_->Serialize(conf);
-    index_->Load(binaryset);
+    auto old_blas_threshold = knowhere::KnowhereConfig::GetBlasThreshold();
+    for (int64_t blas_threshold : {0, 20}) {
+        knowhere::KnowhereConfig::SetBlasThreshold(blas_threshold);
+        // test without bitset
+        {
+            std::vector<int64_t> golden_labels;
+            RunRangeSearchBF<CMin<float>>(golden_labels, radius * radius, faiss::fvec_L2sqr_ref, nullptr);
 
-    EXPECT_EQ(index_->Count(), nb);
-    EXPECT_EQ(index_->Dim(), dim);
-
-    // test with bitset
-    {
-        std::shared_ptr<uint8_t[]> data(new uint8_t[nb / 8]);
-        for (int64_t i = 0; i < nb; i += 2) {
-            set_bit(data.get(), i);
+            auto result = index_->QueryByRange(qd, conf, nullptr);
+            CheckRangeSearchResult<CMin<float>>(result, radius * radius, golden_labels);
         }
-        auto bitset = faiss::BitsetView(data.get(), nb);
 
-        std::vector<std::vector<bool>> golden_result(nq, std::vector<bool>(nb, false));
-        std::vector<size_t> golden_cnt(nq, 0);
-        RunRangeSearchBF(golden_result, golden_cnt, radius * radius, faiss::fvec_L2sqr_ref, true, bitset);
+        // test with bitset
+        {
+            std::vector<int64_t> golden_labels;
+            RunRangeSearchBF<CMin<float>>(golden_labels, radius * radius, faiss::fvec_L2sqr_ref, bitset);
 
-        auto result = index_->QueryByRange(qd, conf, bitset);
-        CheckRangeSearchResult(result, nq, golden_result, golden_cnt);
+            auto result = index_->QueryByRange(qd, conf, bitset);
+            CheckRangeSearchResult<CMin<float>>(result, radius * radius, golden_labels);
+        }
     }
+    knowhere::KnowhereConfig::SetBlasThreshold(old_blas_threshold);
 }
 
 TEST_P(IDMAPTest, idmap_range_search_ip) {
@@ -316,37 +303,34 @@ TEST_P(IDMAPTest, idmap_range_search_ip) {
 
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
-    // test without bitset
-    {
-        std::vector<std::vector<bool>> golden_result(nq, std::vector<bool>(nb, false));
-        std::vector<size_t> golden_cnt(nq, 0);
-        RunRangeSearchBF(golden_result, golden_cnt, radius, faiss::fvec_inner_product_ref, false);
-
-        auto result = index_->QueryByRange(qd, conf, nullptr);
-        CheckRangeSearchResult(result, nq, golden_result, golden_cnt);
+    std::shared_ptr<uint8_t[]> data(new uint8_t[nb / 8]);
+    for (int64_t i = 0; i < nb; i += 2) {
+        set_bit(data.get(), i);
     }
+    auto bitset = faiss::BitsetView(data.get(), nb);
 
-    auto binaryset = index_->Serialize(conf);
-    index_->Load(binaryset);
+    auto old_blas_threshold = knowhere::KnowhereConfig::GetBlasThreshold();
+    for (int64_t blas_threshold : {0, 20}) {
+        knowhere::KnowhereConfig::SetBlasThreshold(blas_threshold);
+        // test without bitset
+        {
+            std::vector<int64_t> golden_labels;
+            RunRangeSearchBF<CMax<float>>(golden_labels, radius, faiss::fvec_inner_product_ref, nullptr);
 
-    EXPECT_EQ(index_->Count(), nb);
-    EXPECT_EQ(index_->Dim(), dim);
-
-    // test with bitset
-    {
-        std::shared_ptr<uint8_t[]> data(new uint8_t[nb / 8]);
-        for (int64_t i = 0; i < nb; i += 2) {
-            set_bit(data.get(), i);
+            auto result = index_->QueryByRange(qd, conf, nullptr);
+            CheckRangeSearchResult<CMax<float>>(result, radius, golden_labels);
         }
-        auto bitset = faiss::BitsetView(data.get(), nb);
 
-        std::vector<std::vector<bool>> golden_result(nq, std::vector<bool>(nb, false));
-        std::vector<size_t> golden_cnt(nq, 0);
-        RunRangeSearchBF(golden_result, golden_cnt, radius, faiss::fvec_inner_product_ref, false, bitset);
+        // test with bitset
+        {
+            std::vector<int64_t> golden_labels;
+            RunRangeSearchBF<CMax<float>>(golden_labels, radius, faiss::fvec_inner_product_ref, bitset);
 
-        auto result = index_->QueryByRange(qd, conf, bitset);
-        CheckRangeSearchResult(result, nq, golden_result, golden_cnt);
+            auto result = index_->QueryByRange(qd, conf, bitset);
+            CheckRangeSearchResult<CMax<float>>(result, radius, golden_labels);
+        }
     }
+    knowhere::KnowhereConfig::SetBlasThreshold(old_blas_threshold);
 }
 
 #ifdef KNOWHERE_GPU_VERSION

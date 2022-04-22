@@ -71,14 +71,29 @@ KnowhereConfig::SetIndexFileSliceSize(const int64_t size) {
     knowhere::index_file_slice_size = size;
 }
 
+int64_t
+KnowhereConfig::GetIndexFileSliceSize() {
+    return knowhere::index_file_slice_size;
+}
+
 void
 KnowhereConfig::SetBlasThreshold(const int64_t use_blas_threshold) {
     faiss::distance_compute_blas_threshold = static_cast<int>(use_blas_threshold);
 }
 
+int64_t
+KnowhereConfig::GetBlasThreshold() {
+    return faiss::distance_compute_blas_threshold;
+}
+
 void
 KnowhereConfig::SetEarlyStopThreshold(const double early_stop_threshold) {
     faiss::early_stop_threshold = early_stop_threshold;
+}
+
+double
+KnowhereConfig::GetEarlyStopThreshold() {
+    return faiss::early_stop_threshold;
 }
 
 void
