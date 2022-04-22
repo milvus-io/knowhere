@@ -56,7 +56,7 @@ struct IndexIDMapTemplate : IndexT {
     void range_search(
             idx_t n,
             const component_t* x,
-            distance_t radius,
+            float radius,
             RangeSearchResult* result,
             const BitsetView bitset = nullptr) const override;
 

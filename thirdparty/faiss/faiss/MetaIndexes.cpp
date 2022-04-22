@@ -92,7 +92,7 @@ template <typename IndexT>
 void IndexIDMapTemplate<IndexT>::range_search(
         typename IndexT::idx_t n,
         const typename IndexT::component_t* x,
-        typename IndexT::distance_t radius,
+        float radius,
         RangeSearchResult* result,
         const BitsetView bitset) const {
     index->range_search(n, x, radius, result, bitset);

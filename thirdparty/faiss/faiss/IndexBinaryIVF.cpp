@@ -879,7 +879,7 @@ void IndexBinaryIVF::search_preassigned(
 void IndexBinaryIVF::range_search(
         idx_t n,
         const uint8_t* x,
-        int radius,
+        float radius,
         RangeSearchResult* res,
         const BitsetView bitset) const {
     const size_t nprobe = std::min(nlist, this->nprobe);

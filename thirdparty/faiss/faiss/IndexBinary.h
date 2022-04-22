@@ -118,7 +118,7 @@ struct IndexBinary {
     virtual void range_search(
             idx_t n,
             const uint8_t* x,
-            int radius,
+            float radius,
             RangeSearchResult* result,
             const BitsetView bitset = nullptr) const;
 
