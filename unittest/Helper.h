@@ -38,52 +38,6 @@ constexpr int64_t PINMEM = 1024 * 1024 * 200;
 constexpr int64_t TEMPMEM = 1024 * 1024 * 300;
 constexpr int64_t RESNUM = 2;
 
-inline knowhere::IVFPtr
-IndexFactory(const knowhere::IndexType& type, const knowhere::IndexMode mode) {
-    if (mode == knowhere::IndexMode::MODE_CPU) {
-        if (type == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
-            return std::make_shared<knowhere::IVF>();
-        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFPQ) {
-            return std::make_shared<knowhere::IVFPQ>();
-        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8) {
-            return std::make_shared<knowhere::IVFSQ>();
-        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFHNSW) {
-            return std::make_shared<knowhere::IVFHNSW>();
-        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
-            std::cout << "IVFSQ8H does not support MODE_CPU" << std::endl;
-        } else {
-            std::cout << "Invalid IndexType " << type << std::endl;
-        }
-#ifdef KNOWHERE_GPU_VERSION
-    } else {
-        if (type == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
-            return std::make_shared<knowhere::GPUIVF>(DEVICEID);
-        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFPQ) {
-            return std::make_shared<knowhere::GPUIVFPQ>(DEVICEID);
-        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8) {
-            return std::make_shared<knowhere::GPUIVFSQ>(DEVICEID);
-        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
-            return std::make_shared<knowhere::IVFSQHybrid>(DEVICEID);
-        } else {
-            std::cout << "Invalid IndexType " << type << std::endl;
-        }
-#endif
-    }
-    return nullptr;
-}
-
-inline knowhere::IVFNMPtr
-IndexFactoryNM(const knowhere::IndexType& type, const knowhere::IndexMode mode) {
-    if (mode == knowhere::IndexMode::MODE_CPU) {
-        if (type == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
-            return std::make_shared<knowhere::IVF_NM>();
-        } else {
-            std::cout << "Invalid IndexType " << type << std::endl;
-        }
-    }
-    return nullptr;
-}
-
 class ParamGenerator {
  public:
     static ParamGenerator&

@@ -18,11 +18,8 @@
 #endif
 
 #include "knowhere/common/Exception.h"
-#include "knowhere/common/Timer.h"
 #include "knowhere/index/IndexType.h"
-#include "knowhere/index/vector_index/IndexIVF.h"
-#include "knowhere/index/vector_index/IndexIVFPQ.h"
-#include "knowhere/index/vector_index/IndexIVFSQ.h"
+#include "knowhere/index/vector_index/VecIndexFactory.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 
 #ifdef KNOWHERE_GPU_VERSION
@@ -50,12 +47,8 @@ class IVFTest : public DataGen,
         knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
 #endif
         std::tie(index_type_, index_mode_) = GetParam();
-        // Init_with_default();
-        //        nb = 1000000;
-        //        nq = 1000;
-        //        k = 1000;
         Generate(DIM, NB, NQ);
-        index_ = IndexFactory(index_type_, index_mode_);
+        index_ = knowhere::VecIndexFactory::GetInstance().CreateVecIndex(index_type_, index_mode_);
         conf_ = ParamGenerator::GetInstance().Gen(index_type_);
         // conf_->Dump();
     }
@@ -71,7 +64,7 @@ class IVFTest : public DataGen,
     knowhere::IndexType index_type_;
     knowhere::IndexMode index_mode_;
     knowhere::Config conf_;
-    knowhere::IVFPtr index_ = nullptr;
+    knowhere::VecIndexPtr index_ = nullptr;
 };
 
 INSTANTIATE_TEST_CASE_P(
@@ -86,70 +79,8 @@ INSTANTIATE_TEST_CASE_P(
         std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFPQ, knowhere::IndexMode::MODE_CPU),
         std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFSQ8, knowhere::IndexMode::MODE_CPU)));
 
-TEST_P(IVFTest, ivf_basic_cpu) {
+TEST_P(IVFTest, ivf_basic) {
     assert(!xb.empty());
-
-    if (index_mode_ != knowhere::IndexMode::MODE_CPU) {
-        return;
-    }
-
-    // null faiss index
-    ASSERT_ANY_THROW(index_->AddWithoutIds(base_dataset, conf_));
-
-    index_->Train(base_dataset, conf_);
-    index_->AddWithoutIds(base_dataset, conf_);
-    EXPECT_EQ(index_->Count(), nb);
-    EXPECT_EQ(index_->Dim(), dim);
-
-    auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, k);
-    // PrintResult(result, nq, k);
-
-    if (index_type_ != knowhere::IndexEnum::INDEX_FAISS_IVFPQ) {
-#if 0
-        auto result2 = index_->QueryById(id_dataset, conf_);
-        AssertAnns(result2, nq, k);
-
-        if (index_type_ != knowhere::IndexEnum::INDEX_FAISS_IVFSQ8) {
-            auto result3 = index_->GetVectorById(xid_dataset, conf_);
-            AssertVec(result3, base_dataset, xid_dataset, 1, dim);
-        } else {
-            auto result3 = index_->GetVectorById(xid_dataset, conf_);
-            /* for SQ8, sometimes the mean diff can bigger than 20% */
-            // AssertVec(result3, base_dataset, xid_dataset, 1, dim, CheckMode::CHECK_APPROXIMATE_EQUAL);
-        }
-#endif
-
-        std::shared_ptr<uint8_t[]> data(new uint8_t[nb/8]);
-        for (int64_t i = 0; i < nq; ++i) {
-            set_bit(data.get(), i);
-        }
-        auto bitset = faiss::BitsetView(data.get(), nb);
-        auto result_bs_1 = index_->Query(query_dataset, conf_, bitset);
-        AssertAnns(result_bs_1, nq, k, CheckMode::CHECK_NOT_EQUAL);
-        // PrintResult(result, nq, k);
-
-#if 0
-        auto result_bs_2 = index_->QueryById(id_dataset, conf_);
-        AssertAnns(result_bs_2, nq, k, CheckMode::CHECK_NOT_EQUAL);
-        // PrintResult(result, nq, k);
-
-        auto result_bs_3 = index_->GetVectorById(xid_dataset, conf_);
-        AssertVec(result_bs_3, base_dataset, xid_dataset, 1, dim, CheckMode::CHECK_NOT_EQUAL);
-#endif
-    }
-
-#ifdef KNOWHERE_GPU_VERSION
-    knowhere::FaissGpuResourceMgr::GetInstance().Dump();
-#endif
-}
-
-TEST_P(IVFTest, ivf_basic_gpu) {
-    assert(!xb.empty());
-
-    if (index_mode_ != knowhere::IndexMode::MODE_GPU) {
-        return;
-    }
 
     // null faiss index
     ASSERT_ANY_THROW(index_->AddWithoutIds(base_dataset, conf_));
@@ -187,42 +118,38 @@ TEST_P(IVFTest, ivf_serialize) {
         reader(ret, bin->size);
     };
 
-    {
-        // serialize index
-        index_->Train(base_dataset, conf_);
-        index_->AddWithoutIds(base_dataset, conf_);
-        auto binaryset = index_->Serialize(conf_);
-        auto bin = binaryset.GetByName("IVF");
+    // serialize index
+    index_->Train(base_dataset, conf_);
+    index_->AddWithoutIds(base_dataset, conf_);
+    auto binaryset = index_->Serialize(conf_);
+    auto bin = binaryset.GetByName("IVF");
 
-        std::string filename = temp_path("/tmp/ivf_test_serialize.bin");
-        auto load_data = new uint8_t[bin->size];
-        serialize(filename, bin, load_data);
+    std::string filename = temp_path("/tmp/ivf_test_serialize.bin");
+    auto load_data = new uint8_t[bin->size];
+    serialize(filename, bin, load_data);
 
-        binaryset.clear();
-        std::shared_ptr<uint8_t[]> data(load_data);
-        binaryset.Append("IVF", data, bin->size);
+    binaryset.clear();
+    std::shared_ptr<uint8_t[]> data(load_data);
+    binaryset.Append("IVF", data, bin->size);
 
-        index_->Load(binaryset);
-        EXPECT_EQ(index_->Count(), nb);
-        EXPECT_EQ(index_->Dim(), dim);
-        auto result = index_->Query(query_dataset, conf_, nullptr);
-        AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
-    }
+    index_->Load(binaryset);
+    EXPECT_EQ(index_->Count(), nb);
+    EXPECT_EQ(index_->Dim(), dim);
+    auto result = index_->Query(query_dataset, conf_, nullptr);
+    AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
 }
 
 TEST_P(IVFTest, ivf_slice) {
-    {
-        // serialize index
-        index_->Train(base_dataset, conf_);
-        index_->AddWithoutIds(base_dataset, conf_);
-        auto binaryset = index_->Serialize(conf_);
+    // serialize index
+    index_->Train(base_dataset, conf_);
+    index_->AddWithoutIds(base_dataset, conf_);
+    auto binaryset = index_->Serialize(conf_);
 
-        index_->Load(binaryset);
-        EXPECT_EQ(index_->Count(), nb);
-        EXPECT_EQ(index_->Dim(), dim);
-        auto result = index_->Query(query_dataset, conf_, nullptr);
-        AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
-    }
+    index_->Load(binaryset);
+    EXPECT_EQ(index_->Count(), nb);
+    EXPECT_EQ(index_->Dim(), dim);
+    auto result = index_->Query(query_dataset, conf_, nullptr);
+    AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
 }
 
 // TODO(linxj): deprecated
