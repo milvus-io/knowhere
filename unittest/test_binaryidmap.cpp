@@ -10,136 +10,88 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <gtest/gtest.h>
-#include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 
+#include <faiss/utils/BinaryDistance.h>
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/vector_index/IndexBinaryIDMAP.h"
-
-#include "Helper.h"
+#include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #include "unittest/utils.h"
 
 using ::testing::Combine;
 using ::testing::TestWithParam;
 using ::testing::Values;
 
-typedef int (*binary_int_func_ptr)(const int64_t*, const int64_t*);
-typedef float (*binary_float_func_ptr)(const int64_t*, const int64_t*);
-typedef bool (*binary_bool_func_ptr)(const int64_t*, const int64_t*);
+typedef float (*binary_float_func_ptr)(const uint8_t*, const uint8_t*, const size_t);
 
-class BinaryIDMAPTest : public DataGen, public TestWithParam<std::string> {
+class BinaryIDMAPTest : public DataGen,
+                        public TestWithParam<knowhere::IndexMode> {
  protected:
     void
     SetUp() override {
         Init_with_default(true);
+        index_mode_ = GetParam();
         index_ = std::make_shared<knowhere::BinaryIDMAP>();
     }
 
     void
     TearDown() override{};
 
-    // for hamming
-    void
-    RunRangeSearchBF(
-        std::vector<std::vector<bool>>& golden_result,
-        std::vector<size_t>& golden_cnt,
-        binary_int_func_ptr func,
-        float radius) {
-        for (auto i = 0; i < nq; ++i) {
-            const int64_t* pq = reinterpret_cast<int64_t*>(xq_bin.data()) + i;
-            const int64_t* pb = reinterpret_cast<int64_t*>(xb_bin.data());
-            for (auto j = 0; j < nb; ++j) {
-                auto dist = func(pq, pb + j);
-                if (dist < radius) {
-                    golden_result[i][j] = true;
-                    golden_cnt[i]++;
-                }
-            }
-        }
-    };
-
-    // for jaccard & tanimoto
-    void
-    RunRangeSearchBF(
-        std::vector<std::vector<bool>>& golden_result,
-        std::vector<size_t>& golden_cnt,
+    template <class C>
+    void RunRangeSearchBF(
+        std::vector<int64_t>& golden_labels,
+        float radius,
         binary_float_func_ptr func,
-        float radius) {
+        const faiss::BitsetView bitset) {
         for (auto i = 0; i < nq; ++i) {
-            const int64_t* pq = reinterpret_cast<int64_t*>(xq_bin.data()) + i;
-            const int64_t* pb = reinterpret_cast<int64_t*>(xb_bin.data());
+            const uint8_t* pq = reinterpret_cast<uint8_t*>(xq_bin.data()) + i * dim / 8;
             for (auto j = 0; j < nb; ++j) {
-                auto dist = func(pq, pb + j);
-                if (dist < radius) {
-                    golden_result[i][j] = true;
-                    golden_cnt[i]++;
-                }
-            }
-        }
-    };
-
-    // for superstructure & substructure
-    void
-    RunRangeSearchBF(
-        std::vector<std::vector<bool>>& golden_result,
-        std::vector<size_t>& golden_cnt,
-        binary_bool_func_ptr func,
-        float radius) {
-        for (auto i = 0; i < nq; ++i) {
-            const int64_t* pq = reinterpret_cast<int64_t*>(xq_bin.data()) + i;
-            const int64_t* pb = reinterpret_cast<int64_t*>(xb_bin.data());
-            for (auto j = 0; j < nb; ++j) {
-                auto dist = func(pq, pb + j);
-                if (dist > radius) {
-                    golden_result[i][j] = true;
-                    golden_cnt[i]++;
-                }
-            }
-        }
-    };
-
-    void
-    CheckRangeSearchResult(
-        std::vector<std::vector<bool>>& golden_result,
-        std::vector<size_t>& golden_cnt,
-        std::vector<std::vector<knowhere::BufferListPtr>>& results) {
-        for (auto i = 0; i < nq; ++i) {
-            int correct_cnt = 0;
-            for (auto& res_space : results[i]) {
-                auto qnr = res_space->buffer_size * res_space->buffers.size() - res_space->buffer_size + res_space->wp;
-                for (auto j = 0; j < qnr; ++j) {
-                    auto bno = j / res_space->buffer_size;
-                    auto pos = j % res_space->buffer_size;
-                    auto idx = res_space->buffers[bno].ids[pos];
-                    ASSERT_EQ(golden_result[i][idx], true);
-                    if (golden_result[i][idx]) {
-                        correct_cnt++;
+                if (bitset.empty() || !bitset.test(j)) {
+                    const uint8_t* pb = reinterpret_cast<uint8_t*>(xb_bin.data()) + j * dim / 8;
+                    auto dist = func(pq, pb, dim/8);
+                    if (C::cmp(dist, radius)) {
+                        golden_labels.push_back(j);
                     }
                 }
             }
-            ASSERT_EQ(correct_cnt, golden_cnt[i]);
+        }
+    }
+
+    template <class C>
+    void CheckRangeSearchResult(
+        const knowhere::DatasetPtr& result,
+        const float radius,
+        const std::vector<int64_t>& golden_labels) {
+        auto lims = result->Get<size_t*>(knowhere::meta::LIMS);
+        auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
+        auto distances = result->Get<float*>(knowhere::meta::DISTANCE);
+        ASSERT_EQ(lims[nq], golden_labels.size());
+        for (auto i = 0; i < lims[nq]; ++i) {
+            ASSERT_EQ(golden_labels[i], ids[i]);
+            ASSERT_TRUE(C::cmp(distances[i], radius));
         }
     }
 
  protected:
     knowhere::BinaryIDMAPPtr index_ = nullptr;
+    knowhere::IndexMode index_mode_;
 };
 
-INSTANTIATE_TEST_CASE_P(METRICParameters,
-                        BinaryIDMAPTest,
-                        Values(std::string("HAMMING"),
-                               std::string("JACCARD"),
-                               std::string("TANIMOTO"),
-                               std::string("SUPERSTRUCTURE"),
-                               std::string("SUBSTRUCTURE")));
+INSTANTIATE_TEST_CASE_P(
+    BinaryIDMAPParameters,
+    BinaryIDMAPTest,
+    Values(
+#ifdef KNOWHERE_GPU_VERSION
+        knowhere::IndexMode::MODE_GPU,
+#endif
+        knowhere::IndexMode::MODE_CPU));
 
 TEST_P(BinaryIDMAPTest, binaryidmap_basic) {
     ASSERT_TRUE(!xb_bin.empty());
 
-    std::string MetricType = GetParam();
     knowhere::Config conf{
         {knowhere::meta::DIM, dim},
         {knowhere::meta::TOPK, k},
-        {knowhere::Metric::TYPE, MetricType},
+        {knowhere::Metric::TYPE, knowhere::Metric::HAMMING},
     };
 
     // null faiss index
@@ -189,11 +141,10 @@ TEST_P(BinaryIDMAPTest, binaryidmap_serialize) {
         reader(ret, bin->size);
     };
 
-    std::string MetricType = GetParam();
     knowhere::Config conf{
         {knowhere::meta::DIM, dim},
         {knowhere::meta::TOPK, k},
-        {knowhere::Metric::TYPE, MetricType},
+        {knowhere::Metric::TYPE, knowhere::Metric::HAMMING},
     };
 
     // serialize index
@@ -221,14 +172,22 @@ TEST_P(BinaryIDMAPTest, binaryidmap_serialize) {
     auto result2 = index_->Query(query_dataset, conf, nullptr);
     AssertAnns(result2, nq, k);
     // PrintResult(result2, nq, k);
+
+    // query with bitset
+    std::shared_ptr<uint8_t[]> bs_data(new uint8_t[nb/8]);
+    for (int64_t i = 0; i < nq; ++i) {
+        set_bit(bs_data.get(), i);
+    }
+    auto bitset = faiss::BitsetView(bs_data.get(), nb);
+    auto result_bs_1 = index_->Query(query_dataset, conf, bitset);
+    AssertAnns(result_bs_1, nq, k, CheckMode::CHECK_NOT_EQUAL);
 }
 
 TEST_P(BinaryIDMAPTest, binaryidmap_slice) {
-    std::string MetricType = GetParam();
     knowhere::Config conf{
         {knowhere::meta::DIM, dim},
         {knowhere::meta::TOPK, k},
-        {knowhere::Metric::TYPE, MetricType},
+        {knowhere::Metric::TYPE, knowhere::Metric::HAMMING},
         {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
     };
 
@@ -250,69 +209,64 @@ TEST_P(BinaryIDMAPTest, binaryidmap_slice) {
     // PrintResult(result2, nq, k);
 }
 
-TEST_P(BinaryIDMAPTest, binaryidmap_range_search) {
-    std::string MetricType = GetParam();
+TEST_P(BinaryIDMAPTest, binaryidmap_range_search_hamming) {
+    int hamming_radius = 20;
     knowhere::Config conf{
         {knowhere::meta::DIM, dim},
-        {knowhere::IndexParams::range_search_radius, radius},
-        {knowhere::IndexParams::range_search_buffer_size, buffer_size},
-        {knowhere::Metric::TYPE, MetricType},
+        {knowhere::meta::RADIUS, hamming_radius},
+        {knowhere::Metric::TYPE, knowhere::Metric::HAMMING},
     };
-
-    std::vector<std::vector<bool>> golden_result(nq, std::vector<bool>(nb, false));
-    std::vector<size_t> golden_cnt(nq, 0);
 
     // hamming
-    int hamming_radius = 10;
-    auto hamming_dis = [](const int64_t* pa, const int64_t* pb) -> int { return __builtin_popcountl((*pa) ^ (*pb)); };
-
-    // jaccard
-    float jaccard_radius = 0.4;
-    auto jaccard_dis = [](const int64_t* pa, const int64_t* pb) -> float {
-        auto intersection = __builtin_popcountl((*pa) & (*pb));
-        auto Union = __builtin_popcountl((*pa) | (*pb));
-        return 1.0 - (double)intersection / (double)Union;
+    auto hamming_dis = [](const uint8_t* pa, const uint8_t* pb, const size_t code_size) -> float {
+        return faiss::xor_popcnt(pa, pb, code_size);
     };
 
-    // tanimoto
-    float tanimoto_radius = 0.2;
-    auto tanimoto_dis = [](const int64_t* pa, const int64_t* pb) -> float {
-        auto intersection = __builtin_popcountl((*pa) & (*pb));
-        auto Union = __builtin_popcountl((*pa) | (*pb));
-        auto jcd = 1.0 - (double)intersection / (double)Union;
-        return (-log2(1 - jcd));
-    };
+    index_->Train(base_dataset, conf);
+    index_->AddWithoutIds(base_dataset, knowhere::Config());
+    EXPECT_EQ(index_->Count(), nb);
+    EXPECT_EQ(index_->Dim(), dim);
 
-    // superstructure
-    bool superstructure_radius = false;
-    auto superstructure_dis = [](const int64_t* pa, const int64_t* pb) -> bool { return ((*pa) & (*pb)) == (*pb); };
+    auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
 
-    // substructure
-    int substructure_radius = false;
-    auto substructure_dis = [](const int64_t* pa, const int64_t* pb) -> bool { return ((*pa) & (*pb)) == (*pa); };
+    std::shared_ptr<uint8_t[]> data(new uint8_t[nb / 8]);
+    for (int64_t i = 0; i < nb; i += 2) {
+        set_bit(data.get(), i);
+    }
+    auto bitset = faiss::BitsetView(data.get(), nb);
 
-    auto metric_type = conf[knowhere::Metric::TYPE].get<std::string>();
-    float curr_radius = radius;
-    if (metric_type == "HAMMING") {
-        curr_radius = hamming_radius;
-        RunRangeSearchBF(golden_result, golden_cnt, hamming_dis, hamming_radius);
-    } else if (metric_type == "JACCARD") {
-        curr_radius = jaccard_radius;
-        RunRangeSearchBF(golden_result, golden_cnt, jaccard_dis, jaccard_radius);
-    } else if (metric_type == "TANIMOTO") {
-        curr_radius = tanimoto_radius;
-        RunRangeSearchBF(golden_result, golden_cnt, tanimoto_dis, tanimoto_radius);
-    } else if (metric_type == "SUPERSTRUCTURE") {
-        curr_radius = superstructure_radius;
-        RunRangeSearchBF(golden_result, golden_cnt, superstructure_dis, superstructure_radius);
-    } else if (metric_type == "SUBSTRUCTURE") {
-        curr_radius = substructure_radius;
-        RunRangeSearchBF(golden_result, golden_cnt, substructure_dis, substructure_radius);
-    } else {
-        std::cout << "unsupport type of metric type" << std::endl;
+    // test without bitset
+    {
+        std::vector<int64_t> golden_labels;
+        RunRangeSearchBF<CMin<float>>(golden_labels, hamming_radius, hamming_dis, nullptr);
+
+        auto result = index_->QueryByRange(qd, conf, nullptr);
+        CheckRangeSearchResult<CMin<float>>(result, hamming_radius, golden_labels);
     }
 
-    conf[knowhere::IndexParams::range_search_radius] = curr_radius;
+    // test with bitset
+    {
+        std::vector<int64_t> golden_labels;
+        RunRangeSearchBF<CMin<float>>(golden_labels, hamming_radius, hamming_dis, bitset);
+
+        auto result = index_->QueryByRange(qd, conf, bitset);
+        CheckRangeSearchResult<CMin<float>>(result, hamming_radius, golden_labels);
+    }
+}
+
+TEST_P(BinaryIDMAPTest, binaryidmap_range_search_jaccard) {
+    float jaccard_radius = 0.5;
+    knowhere::Config conf{
+        {knowhere::meta::DIM, dim},
+        {knowhere::meta::RADIUS, jaccard_radius},
+        {knowhere::Metric::TYPE, knowhere::Metric::JACCARD},
+    };
+
+    auto jaccard_dis = [](const uint8_t* pa, const uint8_t* pb, const size_t code_size) -> float {
+        auto and_value = faiss::and_popcnt(pa, pb, code_size);
+        auto or_value = faiss::or_popcnt(pa, pb, code_size);
+        return 1.0 - (double)and_value / or_value;
+    };
 
     // serialize index
     index_->Train(base_dataset, conf);
@@ -320,23 +274,109 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
-    std::vector<std::vector<knowhere::BufferListPtr>> results1;
-    for (auto i = 0; i < nq; ++i) {
-        auto qd = knowhere::GenDataset(1, dim, xq_bin.data() + i * dim / 8);
-        results1.push_back(index_->QueryByDistance(qd, conf, nullptr));
+    auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
+
+    std::shared_ptr<uint8_t[]> data(new uint8_t[nb / 8]);
+    for (int64_t i = 0; i < nb; i += 2) {
+        set_bit(data.get(), i);
     }
-    CheckRangeSearchResult(golden_result, golden_cnt, results1);
+    auto bitset = faiss::BitsetView(data.get(), nb);
 
-    auto binaryset = index_->Serialize(conf);
-    index_->Load(binaryset);
+    // test without bitset
+    {
+        std::vector<int64_t> golden_labels;
+        RunRangeSearchBF<CMin<float>>(golden_labels, jaccard_radius, jaccard_dis, nullptr);
 
+        auto result = index_->QueryByRange(qd, conf, nullptr);
+        CheckRangeSearchResult<CMin<float>>(result, jaccard_radius, golden_labels);
+    }
+
+    // test with bitset
+    {
+        std::vector<int64_t> golden_labels;
+        RunRangeSearchBF<CMin<float>>(golden_labels, jaccard_radius, jaccard_dis, bitset);
+
+        auto result = index_->QueryByRange(qd, conf, bitset);
+        CheckRangeSearchResult<CMin<float>>(result, jaccard_radius, golden_labels);
+    }
+}
+
+TEST_P(BinaryIDMAPTest, binaryidmap_range_search_tanimoto) {
+    float tanimoto_radius = 1.0;
+    knowhere::Config conf{
+        {knowhere::meta::DIM, dim},
+        {knowhere::meta::RADIUS, tanimoto_radius},
+        {knowhere::Metric::TYPE, knowhere::Metric::TANIMOTO},
+    };
+
+    auto tanimoto_dis = [](const uint8_t* pa, const uint8_t* pb, const size_t code_size) -> float {
+        auto and_value = faiss::and_popcnt(pa, pb, code_size);
+        auto or_value = faiss::or_popcnt(pa, pb, code_size);
+        auto v = 1.0 - (double)and_value / or_value;
+        return (-log2(1 - v));
+    };
+
+
+    index_->Train(base_dataset, conf);
+    index_->AddWithoutIds(base_dataset, knowhere::Config());
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
-    std::vector<std::vector<knowhere::BufferListPtr>> results2;
-    for (auto i = 0; i < nq; ++i) {
-        auto qd = knowhere::GenDataset(1, dim, xq_bin.data() + i * dim / 8);
-        results2.push_back(index_->QueryByDistance(qd, conf, nullptr));
+    auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
+
+    std::shared_ptr<uint8_t[]> data(new uint8_t[nb / 8]);
+    for (int64_t i = 0; i < nb; i += 2) {
+        set_bit(data.get(), i);
     }
-    CheckRangeSearchResult(golden_result, golden_cnt, results1);
+    auto bitset = faiss::BitsetView(data.get(), nb);
+
+    // test without bitset
+    {
+        std::vector<int64_t> golden_labels;
+        RunRangeSearchBF<CMin<float>>(golden_labels, tanimoto_radius, tanimoto_dis, nullptr);
+
+        auto result = index_->QueryByRange(qd, conf, nullptr);
+        CheckRangeSearchResult<CMin<float>>(result, tanimoto_radius, golden_labels);
+    }
+
+    // test with bitset
+    {
+        std::vector<int64_t> golden_labels;
+        RunRangeSearchBF<CMin<float>>(golden_labels, tanimoto_radius, tanimoto_dis, bitset);
+
+        auto result = index_->QueryByRange(qd, conf, bitset);
+        CheckRangeSearchResult<CMin<float>>(result, tanimoto_radius, golden_labels);
+    }
+}
+
+TEST_P(BinaryIDMAPTest, binaryidmap_range_search_superstructure) {
+    knowhere::Config conf{
+        {knowhere::meta::DIM, dim},
+        {knowhere::meta::RADIUS, radius},
+        {knowhere::Metric::TYPE, knowhere::Metric::SUPERSTRUCTURE},
+    };
+
+    index_->Train(base_dataset, conf);
+    index_->AddWithoutIds(base_dataset, knowhere::Config());
+    EXPECT_EQ(index_->Count(), nb);
+    EXPECT_EQ(index_->Dim(), dim);
+
+    auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
+    ASSERT_ANY_THROW(index_->QueryByRange(qd, conf, nullptr));
+}
+
+TEST_P(BinaryIDMAPTest, binaryidmap_range_search_substructure) {
+    knowhere::Config conf{
+        {knowhere::meta::DIM, dim},
+        {knowhere::meta::RADIUS, radius},
+        {knowhere::Metric::TYPE, knowhere::Metric::SUBSTRUCTURE},
+    };
+
+    index_->Train(base_dataset, conf);
+    index_->AddWithoutIds(base_dataset, knowhere::Config());
+    EXPECT_EQ(index_->Count(), nb);
+    EXPECT_EQ(index_->Dim(), dim);
+
+    auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
+    ASSERT_ANY_THROW(index_->QueryByRange(qd, conf, nullptr));
 }

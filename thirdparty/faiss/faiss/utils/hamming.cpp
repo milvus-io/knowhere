@@ -347,30 +347,29 @@ static void hamming_range_search_template(
         size_t nb,
         int radius,
         size_t code_size,
-        std::vector<RangeSearchPartialResult*> &result,
-        size_t buffer_size,
-        const BitsetView bitset) {
+        RangeSearchResult* res,
+        const BitsetView bitset = nullptr) {
 #pragma omp parallel
     {
-        RangeSearchResult* tmp_res = new RangeSearchResult(na);
-        tmp_res->buffer_size = buffer_size;
-        auto pres = new RangeSearchPartialResult(tmp_res);
-
-        HammingComputer hc(a, code_size);
-        const uint8_t* yi = b;
-        RangeQueryResult& qres = pres->new_result(0);
+        RangeSearchPartialResult pres(res);
 
 #pragma omp for
-        for (size_t j = 0; j < nb; j++) {
-            if (bitset.empty() || !bitset.test((int64_t)j)) {
-                int dis = hc.compute(yi + j * code_size);
-                if (dis < radius) {
-                    qres.add(dis, j);
+        for (int64_t i = 0; i < na; i++) {
+            HammingComputer hc(a + i * code_size, code_size);
+            const uint8_t* yi = b;
+            RangeQueryResult& qres = pres.new_result(i);
+
+            for (size_t j = 0; j < nb; j++) {
+                if (bitset.empty() || !bitset.test(j)) {
+                    int dis = hc.compute(yi);
+                    if (dis < radius) {
+                        qres.add(dis, j);
+                    }
                 }
+                yi += code_size;
             }
         }
-#pragma omp critical
-        result.push_back(pres);
+        pres.finalize();
     }
 }
 
@@ -381,11 +380,10 @@ void hamming_range_search(
         size_t nb,
         int radius,
         size_t code_size,
-        std::vector<faiss::RangeSearchPartialResult*>& result,
-        size_t buffer_size,
-        const BitsetView bitset) {
+        RangeSearchResult* result,
+        const BitsetView bitset = nullptr) {
 #define HC(name) \
-    hamming_range_search_template<name>(a, b, na, nb, radius, code_size, result, buffer_size, bitset)
+    hamming_range_search_template<name>(a, b, na, nb, radius, code_size, result, bitset)
 
     switch (code_size) {
         case 4:
