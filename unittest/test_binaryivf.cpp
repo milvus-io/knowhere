@@ -76,12 +76,7 @@ TEST_P(BinaryIVFTest, binaryivf_basic) {
     AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
     // PrintResult(result, nq, k);
 
-    std::shared_ptr<uint8_t[]> data(new uint8_t[nb/8]);
-    for (int64_t i = 0; i < nq; ++i) {
-        set_bit(data.get(), i);
-    }
-    auto bitset = faiss::BitsetView(data.get(), nb);
-    auto result2 = index_->Query(query_dataset, conf, bitset);
+    auto result2 = index_->Query(query_dataset, conf, *bitset);
     AssertAnns(result2, nq, k, CheckMode::CHECK_NOT_EQUAL);
 
 #if 0

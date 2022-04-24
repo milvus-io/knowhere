@@ -51,6 +51,9 @@ class DataGen {
     knowhere::DatasetPtr query_dataset = nullptr;
     knowhere::DatasetPtr id_dataset = nullptr;
     knowhere::DatasetPtr xid_dataset = nullptr;
+
+    std::vector<uint8_t> bitset_data;
+    faiss::BitsetViewPtr bitset;
 };
 
 extern void

@@ -79,15 +79,10 @@ TEST_P(NGTONNGTest, ngtonng_delete) {
     ASSERT_EQ(index_->Count(), nb);
     ASSERT_EQ(index_->Dim(), dim);
 
-    std::shared_ptr<uint8_t[]> data(new uint8_t[nb/8]);
-    for (int64_t i = 0; i < nq; ++i) {
-        set_bit(data.get(), i);
-    }
-    auto bitset = faiss::BitsetView(data.get(), nb);
     auto result1 = index_->Query(query_dataset, conf, nullptr);
     AssertAnns(result1, nq, k);
 
-    auto result2 = index_->Query(query_dataset, conf, bitset);
+    auto result2 = index_->Query(query_dataset, conf, *bitset);
     AssertAnns(result2, nq, k, CheckMode::CHECK_NOT_EQUAL);
 }
 

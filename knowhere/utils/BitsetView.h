@@ -85,9 +85,10 @@ class BitsetView {
     }
 
     std::string
-    to_string() const {
+    to_string(size_t from, size_t to) const {
         std::stringbuf buf;
-        for (size_t i = 0; i < size(); i++) {
+        to = std::min<size_t>(to, num_bits_);
+        for (size_t i = from; i < to; i++) {
             buf.sputc(test(i) ? '1' : '0');
         }
         return buf.str();

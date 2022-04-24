@@ -129,12 +129,7 @@ TEST_P(IVFNMTest, ivf_basic) {
     }
 #endif
 
-    std::shared_ptr<uint8_t[]> data(new uint8_t[nb/8]);
-    for (int64_t i = 0; i < nq; ++i) {
-        set_bit(data.get(), i);
-    }
-    auto bitset = faiss::BitsetView(data.get(), nb);
-    auto result_bs_1 = index_->Query(query_dataset, conf_, bitset);
+    auto result_bs_1 = index_->Query(query_dataset, conf_, *bitset);
     AssertAnns(result_bs_1, nq, k, CheckMode::CHECK_NOT_EQUAL);
 
 #ifdef KNOWHERE_GPU_VERSION

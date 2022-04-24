@@ -53,6 +53,6 @@ TEST(COMMON_TEST, BitsetView) {
     for (size_t i = 0; i < init_array.size(); i++) {
         memset(data.get(), init_array[i], N / 8);
         ASSERT_EQ(bitset.count(), N / 8 * i);
-        std::cout << bitset.to_string() << std::endl;
+        std::cout << bitset.to_string(0, N) << std::endl;
     }
 }

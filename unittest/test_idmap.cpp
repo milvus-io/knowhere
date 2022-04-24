@@ -149,12 +149,7 @@ TEST_P(IDMAPTest, idmap_basic) {
 #endif
 
     // query with bitset
-    std::shared_ptr<uint8_t[]> data(new uint8_t[nb/8]);
-    for (int64_t i = 0; i < nq; ++i) {
-        set_bit(data.get(), i);
-    }
-    auto bitset = faiss::BitsetView(data.get(), nb);
-    auto result_bs_1 = index_->Query(query_dataset, conf, bitset);
+    auto result_bs_1 = index_->Query(query_dataset, conf, *bitset);
     AssertAnns(result_bs_1, nq, k, CheckMode::CHECK_NOT_EQUAL);
 
 #if 0
@@ -262,12 +257,6 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
 
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
-    std::shared_ptr<uint8_t[]> data(new uint8_t[nb / 8]);
-    for (int64_t i = 0; i < nb; i += 2) {
-        set_bit(data.get(), i);
-    }
-    auto bitset = faiss::BitsetView(data.get(), nb);
-
     auto old_blas_threshold = knowhere::KnowhereConfig::GetBlasThreshold();
     for (int64_t blas_threshold : {0, 20}) {
         knowhere::KnowhereConfig::SetBlasThreshold(blas_threshold);
@@ -283,9 +272,9 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
         // test with bitset
         {
             std::vector<int64_t> golden_labels;
-            RunRangeSearchBF<CMin<float>>(golden_labels, radius * radius, faiss::fvec_L2sqr_ref, bitset);
+            RunRangeSearchBF<CMin<float>>(golden_labels, radius * radius, faiss::fvec_L2sqr_ref, *bitset);
 
-            auto result = index_->QueryByRange(qd, conf, bitset);
+            auto result = index_->QueryByRange(qd, conf, *bitset);
             CheckRangeSearchResult<CMin<float>>(result, radius * radius, golden_labels);
         }
     }
@@ -304,12 +293,6 @@ TEST_P(IDMAPTest, idmap_range_search_ip) {
 
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
-    std::shared_ptr<uint8_t[]> data(new uint8_t[nb / 8]);
-    for (int64_t i = 0; i < nb; i += 2) {
-        set_bit(data.get(), i);
-    }
-    auto bitset = faiss::BitsetView(data.get(), nb);
-
     auto old_blas_threshold = knowhere::KnowhereConfig::GetBlasThreshold();
     for (int64_t blas_threshold : {0, 20}) {
         knowhere::KnowhereConfig::SetBlasThreshold(blas_threshold);
@@ -325,9 +308,9 @@ TEST_P(IDMAPTest, idmap_range_search_ip) {
         // test with bitset
         {
             std::vector<int64_t> golden_labels;
-            RunRangeSearchBF<CMax<float>>(golden_labels, radius, faiss::fvec_inner_product_ref, bitset);
+            RunRangeSearchBF<CMax<float>>(golden_labels, radius, faiss::fvec_inner_product_ref, *bitset);
 
-            auto result = index_->QueryByRange(qd, conf, bitset);
+            auto result = index_->QueryByRange(qd, conf, *bitset);
             CheckRangeSearchResult<CMax<float>>(result, radius, golden_labels);
         }
     }

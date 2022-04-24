@@ -102,12 +102,6 @@ TEST_P(HNSWTest, HNSW_delete) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
-    std::shared_ptr<uint8_t[]> data(new uint8_t[nb/8]);
-    for (int64_t i = 0; i < nq; ++i) {
-        set_bit(data.get(), i);
-    }
-    auto bitset = faiss::BitsetView(data.get(), nb);
-
     // Serialize and Load before Query
     knowhere::BinarySet bs = index_->Serialize(conf);
 
@@ -124,7 +118,7 @@ TEST_P(HNSWTest, HNSW_delete) {
     auto result1 = index_->Query(query_dataset, conf, nullptr);
     AssertAnns(result1, nq, k);
 
-    auto result2 = index_->Query(query_dataset, conf, bitset);
+    auto result2 = index_->Query(query_dataset, conf, *bitset);
     AssertAnns(result2, nq, k, CheckMode::CHECK_NOT_EQUAL);
 
     /*
