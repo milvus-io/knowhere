@@ -16,8 +16,8 @@
 #include <utility>
 
 #include "knowhere/common/Exception.h"
+#include "knowhere/index/VecIndex.h"
 #include "knowhere/index/vector_index/FaissBaseIndex.h"
-#include "knowhere/index/vector_index/VecIndex.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 
 #include <faiss/index_io.h>

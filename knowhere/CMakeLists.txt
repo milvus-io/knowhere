@@ -56,6 +56,7 @@ endif ()
 
 set(vector_index_srcs
         index/IndexType.cpp
+        index/VecIndexFactory.cpp
         index/vector_index/adapter/VectorAdapter.cpp
         index/vector_index/helpers/FaissIO.cpp
         index/vector_index/helpers/IndexParameter.cpp
@@ -77,7 +78,6 @@ set(vector_index_srcs
         index/vector_index/IndexRHNSWSQ.cpp
         index/vector_index/IndexRHNSWPQ.cpp
         index/vector_index/Statistics.cpp
-        index/vector_index/VecIndexFactory.cpp
         )
 
 set(vector_offset_index_srcs

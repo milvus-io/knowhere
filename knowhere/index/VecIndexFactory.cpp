@@ -11,6 +11,7 @@
 
 #include "common/Exception.h"
 #include "common/Log.h"
+#include "index/VecIndexFactory.h"
 #include "index/vector_index/IndexAnnoy.h"
 #include "index/vector_index/IndexBinaryIDMAP.h"
 #include "index/vector_index/IndexBinaryIVF.h"
@@ -22,7 +23,6 @@
 #include "index/vector_index/IndexRHNSWFlat.h"
 #include "index/vector_index/IndexRHNSWPQ.h"
 #include "index/vector_index/IndexRHNSWSQ.h"
-#include "index/vector_index/VecIndexFactory.h"
 #include "index/vector_offset_index/IndexIVF_NM.h"
 
 #ifdef KNOWHERE_SUPPORT_SPTAG

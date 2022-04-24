@@ -15,8 +15,8 @@
 #include <utility>
 #include <vector>
 
+#include "knowhere/index/VecIndex.h"
 #include "knowhere/index/vector_index/FaissBaseBinaryIndex.h"
-#include "knowhere/index/vector_index/VecIndex.h"
 
 namespace knowhere {
 
