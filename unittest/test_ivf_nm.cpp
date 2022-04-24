@@ -19,10 +19,9 @@
 #endif
 
 #include "knowhere/common/Exception.h"
-#include "knowhere/common/Timer.h"
 #include "knowhere/index/IndexType.h"
+#include "knowhere/index/vector_index/VecIndexFactory.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
-#include "knowhere/index/vector_offset_index/IndexIVF_NM.h"
 
 #ifdef KNOWHERE_GPU_VERSION
 #include "knowhere/index/vector_index/helpers/Cloner.h"
@@ -37,8 +36,8 @@ using ::testing::Combine;
 using ::testing::TestWithParam;
 using ::testing::Values;
 
-class IVFNMCPUTest : public DataGen,
-                     public TestWithParam<::std::tuple<knowhere::IndexType, knowhere::IndexMode>> {
+class IVFNMTest : public DataGen,
+                  public TestWithParam<::std::tuple<knowhere::IndexType, knowhere::IndexMode>> {
  protected:
     void
     SetUp() override {
@@ -47,7 +46,7 @@ class IVFNMCPUTest : public DataGen,
 #endif
         std::tie(index_type_, index_mode_) = GetParam();
         Generate(DIM, NB, NQ);
-        index_ = IndexFactoryNM(index_type_, index_mode_);
+        index_ = knowhere::VecIndexFactory::GetInstance().CreateVecIndex(index_type_, index_mode_);
         conf_ = ParamGenerator::GetInstance().Gen(index_type_);
     }
 
@@ -62,20 +61,34 @@ class IVFNMCPUTest : public DataGen,
     knowhere::IndexType index_type_;
     knowhere::IndexMode index_mode_;
     knowhere::Config conf_;
-    knowhere::IVFNMPtr index_ = nullptr;
+    knowhere::VecIndexPtr index_ = nullptr;
 };
 
-INSTANTIATE_TEST_CASE_P(IVFParameters,
-                        IVFNMCPUTest,
-                        Values(std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFFLAT,
-                                               knowhere::IndexMode::MODE_CPU)));
+INSTANTIATE_TEST_CASE_P(
+    IVFParameters,
+    IVFNMTest,
+    Values(
+#ifdef KNOWHERE_GPU_VERSION
+        std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFFLAT, knowhere::IndexMode::MODE_GPU),
+#endif
+        std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFFLAT, knowhere::IndexMode::MODE_CPU)));
 
-TEST_P(IVFNMCPUTest, ivf_basic_cpu) {
+void
+LoadRawData(const knowhere::VecIndexPtr index,
+            const knowhere::DatasetPtr dataset,
+            const knowhere::Config& conf) {
+    using namespace knowhere;
+    GET_TENSOR_DATA_DIM(dataset)
+    knowhere::BinarySet bs = index->Serialize(conf);
+    knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
+    bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)p_data, [&](uint8_t*) {});
+    bptr->size = dim * rows * sizeof(float);
+    bs.Append(RAW_DATA, bptr);
+    index->Load(bs);
+}
+
+TEST_P(IVFNMTest, ivf_basic) {
     assert(!xb.empty());
-
-    if (index_mode_ != knowhere::IndexMode::MODE_CPU) {
-        return;
-    }
 
     // null faiss index
     ASSERT_ANY_THROW(index_->AddWithoutIds(base_dataset, conf_));
@@ -87,30 +100,32 @@ TEST_P(IVFNMCPUTest, ivf_basic_cpu) {
 
     index_->SetIndexSize(nq * dim * sizeof(float));
 
-    knowhere::BinarySet bs = index_->Serialize(conf_);
-
-    int64_t dim = base_dataset->Get<int64_t>(knowhere::meta::DIM);
-    int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
-    auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
-    knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
-    bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
-    bptr->size = dim * rows * sizeof(float);
-    bs.Append(RAW_DATA, bptr);
-    index_->Load(bs);
+    LoadRawData(index_, base_dataset, conf_);
 
     auto result = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result, nq, k);
 
 #ifdef KNOWHERE_GPU_VERSION
-    // copy from cpu to gpu
-    {
+    // copy cpu to gpu
+    if (index_mode_ == knowhere::IndexMode::MODE_CPU) {
+        EXPECT_ANY_THROW(knowhere::cloner::CopyCpuToGpu(index_, -1, knowhere::Config()));
         EXPECT_NO_THROW({
             auto clone_index = knowhere::cloner::CopyCpuToGpu(index_, DEVICEID, conf_);
             auto clone_result = clone_index->Query(query_dataset, conf_, nullptr);
             AssertAnns(clone_result, nq, k);
             std::cout << "clone C <=> G [" << index_type_ << "] success" << std::endl;
         });
-        EXPECT_ANY_THROW(knowhere::cloner::CopyCpuToGpu(index_, -1, knowhere::Config()));
+    }
+
+    // copy gpu to cpu
+    if (index_mode_ == knowhere::IndexMode::MODE_GPU) {
+        EXPECT_NO_THROW({
+            auto clone_index = knowhere::cloner::CopyGpuToCpu(index_, conf_);
+            LoadRawData(clone_index, base_dataset, conf_);
+            auto clone_result = clone_index->Query(query_dataset, conf_, nullptr);
+            AssertEqual(result, clone_result);
+            std::cout << "clone G <=> C [" << index_type_ << "] success" << std::endl;
+        });
     }
 #endif
 
@@ -125,36 +140,4 @@ TEST_P(IVFNMCPUTest, ivf_basic_cpu) {
 #ifdef KNOWHERE_GPU_VERSION
     knowhere::FaissGpuResourceMgr::GetInstance().Dump();
 #endif
-}
-
-TEST_P(IVFNMCPUTest, ivf_slice) {
-    assert(!xb.empty());
-
-    if (index_mode_ != knowhere::IndexMode::MODE_CPU) {
-        return;
-    }
-
-    // null faiss index
-    ASSERT_ANY_THROW(index_->AddWithoutIds(base_dataset, conf_));
-
-    index_->Train(base_dataset, conf_);
-    index_->AddWithoutIds(base_dataset, conf_);
-    EXPECT_EQ(index_->Count(), nb);
-    EXPECT_EQ(index_->Dim(), dim);
-
-    index_->SetIndexSize(nq * dim * sizeof(float));
-
-    knowhere::BinarySet bs = index_->Serialize(conf_);
-
-    int64_t dim = base_dataset->Get<int64_t>(knowhere::meta::DIM);
-    int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
-    auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
-    knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
-    bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
-    bptr->size = dim * rows * sizeof(float);
-    bs.Append(RAW_DATA, bptr);
-    index_->Load(bs);
-
-    auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, k);
 }

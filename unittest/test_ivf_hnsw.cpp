@@ -34,7 +34,7 @@ class IVFHNSWTest : public DataGen,
     SetUp() override {
         std::tie(index_type_, index_mode_) = GetParam();
         Generate(dim, nb, nq);
-        index_ = IndexFactory(index_type_, index_mode_);
+        index_ = std::make_shared<knowhere::IVFHNSW>();
         conf_ = ParamGenerator::GetInstance().Gen(index_type_);
     }
 
@@ -49,13 +49,13 @@ class IVFHNSWTest : public DataGen,
     knowhere::IndexType index_type_;
     knowhere::IndexMode index_mode_;
     knowhere::Config conf_;
-    knowhere::IVFPtr index_ = nullptr;
+    knowhere::VecIndexPtr index_ = nullptr;
 };
 
-INSTANTIATE_TEST_CASE_P(IVFParameters,
-                        IVFHNSWTest,
-                        Values(std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFHNSW,
-                                               knowhere::IndexMode::MODE_CPU)));
+INSTANTIATE_TEST_CASE_P(
+    IVFParameters,
+    IVFHNSWTest,
+    Values(std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFHNSW, knowhere::IndexMode::MODE_CPU)));
 
 TEST_P(IVFHNSWTest, ivfhnsw_basic_cpu) {
     assert(!xb.empty());

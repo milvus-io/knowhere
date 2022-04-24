@@ -94,7 +94,7 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
                 return std::make_shared<knowhere::CPUSPTAGRNG>("BKT");
 #endif
             } else {
-                return nullptr;
+                KNOWHERE_THROW_FORMAT("Invalid index type %s", type.c_str());
             }
         }
 #ifdef KNOWHERE_GPU_VERSION
@@ -115,12 +115,12 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
             } else if (type == IndexEnum::INDEX_FAISS_IVFSQ8H) {
                 return std::make_shared<knowhere::IVFSQHybrid>(gpu_device);
             } else {
-                return nullptr;
+                KNOWHERE_THROW_FORMAT("Invalid index type %s", type.c_str());
             }
         }
 #endif
         default:
-            return nullptr;
+            KNOWHERE_THROW_FORMAT("Invalid index mode %d", (int)mode);
     }
 }
 

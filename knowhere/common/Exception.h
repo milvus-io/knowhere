@@ -28,14 +28,12 @@ class KnowhereException : public std::exception {
     std::string msg_;
 };
 
-#define KNOHWERE_ERROR_MSG(MSG) printf("%s", KnowhereException(MSG, __PRETTY_FUNCTION__, __FILE__, __LINE__).what())
-
 #define KNOWHERE_THROW_MSG(MSG)                                                                  \
     do {                                                                                         \
         throw KnowhereException(MSG, __PRETTY_FUNCTION__, __FILE__, __LINE__); \
     } while (false)
 
-#define KNOHERE_THROW_FORMAT(FMT, ...)                                             \
+#define KNOWHERE_THROW_FORMAT(FMT, ...)                                             \
     do {                                                                           \
         std::string __s;                                                           \
         int __size = snprintf(nullptr, 0, FMT, __VA_ARGS__);                       \
