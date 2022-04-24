@@ -133,6 +133,50 @@ IVF::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::Bit
     }
 }
 
+DatasetPtr
+IVF::QueryByRange(const DatasetPtr& dataset,
+                  const Config& config,
+                  const faiss::BitsetView bitset) {
+    if (!index_ || !index_->is_trained) {
+        KNOWHERE_THROW_MSG("index not initialize or trained");
+    }
+    GET_TENSOR_DATA(dataset)
+
+    auto radius = config[meta::RADIUS].get<float>();
+
+    int64_t* p_id = nullptr;
+    float* p_dist = nullptr;
+    size_t* p_lims = nullptr;
+
+    auto release_when_exception = [&]() {
+        if (p_id != nullptr) {
+            free(p_id);
+        }
+        if (p_dist != nullptr) {
+            free(p_dist);
+        }
+        if (p_lims != nullptr) {
+            free(p_lims);
+        }
+    };
+
+    try {
+        QueryByRangeImpl(rows, reinterpret_cast<const float*>(p_data), radius, p_dist, p_id, p_lims, config, bitset);
+
+        auto ret_ds = std::make_shared<Dataset>();
+        ret_ds->Set(meta::IDS, p_id);
+        ret_ds->Set(meta::DISTANCE, p_dist);
+        ret_ds->Set(meta::LIMS, p_lims);
+        return ret_ds;
+    } catch (faiss::FaissException& e) {
+        release_when_exception();
+        KNOWHERE_THROW_MSG(e.what());
+    } catch (std::exception& e) {
+        release_when_exception();
+        KNOWHERE_THROW_MSG(e.what());
+    }
+}
+
 #if 0
 DatasetPtr
 IVF::QueryById(const DatasetPtr& dataset_ptr, const Config& config) {
@@ -349,6 +393,42 @@ IVF::QueryImpl(int64_t n,
 #endif
     //     LOG_KNOWHERE_DEBUG_ << "IndexIVF::QueryImpl finished, show statistics:";
     //     LOG_KNOWHERE_DEBUG_ << GetStatistics()->ToString();
+}
+
+void
+IVF::QueryByRangeImpl(int64_t n,
+                      const float* data,
+                      float radius,
+                      float*& distances,
+                      int64_t*& labels,
+                      size_t*& lims,
+                      const Config& config,
+                      const faiss::BitsetView bitset) {
+    auto params = GenParams(config);
+    auto ivf_index = dynamic_cast<faiss::IndexIVF*>(index_.get());
+    ivf_index->nprobe = std::min(params->nprobe, ivf_index->invlists->nlist);
+    if (params->nprobe > 1 && n <= 4) {
+        ivf_index->parallel_mode = 1;
+    } else {
+        ivf_index->parallel_mode = 0;
+    }
+
+    if (index_->metric_type == faiss::MetricType::METRIC_L2) {
+        radius *= radius;
+    }
+
+    faiss::RangeSearchResult res(n);
+    ivf_index->range_search(n, reinterpret_cast<const float*>(data), radius, &res, bitset);
+
+    distances = res.distances;
+    labels = res.labels;
+    lims = res.lims;
+
+    LOG_KNOWHERE_DEBUG_ << "Range search result num: " << lims[n];
+
+    res.distances = nullptr;
+    res.labels = nullptr;
+    res.lims = nullptr;
 }
 
 void

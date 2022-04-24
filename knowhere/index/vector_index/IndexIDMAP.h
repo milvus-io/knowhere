@@ -46,7 +46,7 @@ class IDMAP : public VecIndex, public FaissBaseIndex {
     Query(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
 
     DatasetPtr
-    QueryByRange(const DatasetPtr& dataset, const Config& config, const faiss::BitsetView bitset) override;
+    QueryByRange(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
 
     int64_t
     Count() override;

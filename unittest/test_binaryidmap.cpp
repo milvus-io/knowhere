@@ -39,9 +39,13 @@ class BinaryIDMAPTest : public DataGen,
     template <class C>
     void RunRangeSearchBF(
         std::vector<int64_t>& golden_labels,
+        std::vector<float>& golden_distances,
+        std::vector<size_t>& golden_lims,
         float radius,
         binary_float_func_ptr func,
         const faiss::BitsetView bitset) {
+
+        golden_lims.push_back(0);
         for (auto i = 0; i < nq; ++i) {
             const uint8_t* pq = reinterpret_cast<uint8_t*>(xq_bin.data()) + i * dim / 8;
             for (auto j = 0; j < nb; ++j) {
@@ -50,9 +54,11 @@ class BinaryIDMAPTest : public DataGen,
                     auto dist = func(pq, pb, dim/8);
                     if (C::cmp(dist, radius)) {
                         golden_labels.push_back(j);
+                        golden_distances.push_back(dist);
                     }
                 }
             }
+            golden_lims.push_back(golden_labels.size());
         }
     }
 
@@ -60,14 +66,20 @@ class BinaryIDMAPTest : public DataGen,
     void CheckRangeSearchResult(
         const knowhere::DatasetPtr& result,
         const float radius,
-        const std::vector<int64_t>& golden_labels) {
+        const std::vector<int64_t>& golden_labels,
+        const std::vector<float>& golden_distances,
+        const std::vector<size_t>& golden_lims) {
+
         auto lims = result->Get<size_t*>(knowhere::meta::LIMS);
         auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
         auto distances = result->Get<float*>(knowhere::meta::DISTANCE);
-        ASSERT_EQ(lims[nq], golden_labels.size());
-        for (auto i = 0; i < lims[nq]; ++i) {
-            ASSERT_EQ(golden_labels[i], ids[i]);
-            ASSERT_TRUE(C::cmp(distances[i], radius));
+
+        for (int64_t i = 0; i < nq; i++) {
+            ASSERT_EQ(golden_lims[i+1], lims[i+1]);
+            for (auto j = lims[i]; j < lims[i+1]; j++) {
+                ASSERT_EQ(golden_labels[j], ids[j]);
+                ASSERT_TRUE(C::cmp(distances[j], radius));
+            }
         }
     }
 
@@ -218,23 +230,18 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_hamming) {
 
     auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
 
-    // test without bitset
-    {
+    auto test_range_search_hamming = [&](float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
-        RunRangeSearchBF<CMin<float>>(golden_labels, hamming_radius, hamming_dis, nullptr);
+        std::vector<float> golden_distances;
+        std::vector<size_t> golden_lims;
+        RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, radius, hamming_dis, bitset);
 
-        auto result = index_->QueryByRange(qd, conf, nullptr);
-        CheckRangeSearchResult<CMin<float>>(result, hamming_radius, golden_labels);
-    }
+        auto result = index_->QueryByRange(qd, conf, bitset);
+        CheckRangeSearchResult<CMin<float>>(result, radius, golden_labels, golden_distances, golden_lims);
+    };
 
-    // test with bitset
-    {
-        std::vector<int64_t> golden_labels;
-        RunRangeSearchBF<CMin<float>>(golden_labels, hamming_radius, hamming_dis, *bitset);
-
-        auto result = index_->QueryByRange(qd, conf, *bitset);
-        CheckRangeSearchResult<CMin<float>>(result, hamming_radius, golden_labels);
-    }
+    test_range_search_hamming(hamming_radius, nullptr);
+    test_range_search_hamming(hamming_radius, *bitset);
 }
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_jaccard) {
@@ -259,23 +266,18 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_jaccard) {
 
     auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
 
-    // test without bitset
-    {
+    auto test_range_search_jaccard = [&](float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
-        RunRangeSearchBF<CMin<float>>(golden_labels, jaccard_radius, jaccard_dis, nullptr);
+        std::vector<float> golden_distances;
+        std::vector<size_t> golden_lims;
+        RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, radius, jaccard_dis, bitset);
 
-        auto result = index_->QueryByRange(qd, conf, nullptr);
-        CheckRangeSearchResult<CMin<float>>(result, jaccard_radius, golden_labels);
-    }
+        auto result = index_->QueryByRange(qd, conf, bitset);
+        CheckRangeSearchResult<CMin<float>>(result, radius, golden_labels, golden_distances, golden_lims);
+    };
 
-    // test with bitset
-    {
-        std::vector<int64_t> golden_labels;
-        RunRangeSearchBF<CMin<float>>(golden_labels, jaccard_radius, jaccard_dis, *bitset);
-
-        auto result = index_->QueryByRange(qd, conf, *bitset);
-        CheckRangeSearchResult<CMin<float>>(result, jaccard_radius, golden_labels);
-    }
+    test_range_search_jaccard(jaccard_radius, nullptr);
+    test_range_search_jaccard(jaccard_radius, *bitset);
 }
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_tanimoto) {
@@ -293,7 +295,6 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_tanimoto) {
         return (-log2(1 - v));
     };
 
-
     index_->Train(base_dataset, conf);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
     EXPECT_EQ(index_->Count(), nb);
@@ -301,23 +302,18 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_tanimoto) {
 
     auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
 
-    // test without bitset
-    {
+    auto test_range_search_tanimoto = [&](float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
-        RunRangeSearchBF<CMin<float>>(golden_labels, tanimoto_radius, tanimoto_dis, nullptr);
+        std::vector<float> golden_distances;
+        std::vector<size_t> golden_lims;
+        RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, radius, tanimoto_dis, bitset);
 
-        auto result = index_->QueryByRange(qd, conf, nullptr);
-        CheckRangeSearchResult<CMin<float>>(result, tanimoto_radius, golden_labels);
-    }
+        auto result = index_->QueryByRange(qd, conf, bitset);
+        CheckRangeSearchResult<CMin<float>>(result, radius, golden_labels, golden_distances, golden_lims);
+    };
 
-    // test with bitset
-    {
-        std::vector<int64_t> golden_labels;
-        RunRangeSearchBF<CMin<float>>(golden_labels, tanimoto_radius, tanimoto_dis, *bitset);
-
-        auto result = index_->QueryByRange(qd, conf, *bitset);
-        CheckRangeSearchResult<CMin<float>>(result, tanimoto_radius, golden_labels);
-    }
+    test_range_search_tanimoto(tanimoto_radius, nullptr);
+    test_range_search_tanimoto(tanimoto_radius, *bitset);
 }
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_superstructure) {
