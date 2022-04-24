@@ -14,7 +14,7 @@
 #include <memory>
 
 #include "knowhere/index/IndexType.h"
-#include "knowhere/index/vector_index/VecIndex.h"
+#include "knowhere/index/VecIndex.h"
 
 namespace knowhere {
 

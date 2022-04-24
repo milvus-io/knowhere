@@ -16,7 +16,7 @@
 #include "hnswlib/hnswlib.h"
 
 #include "knowhere/common/Exception.h"
-#include "knowhere/index/vector_index/VecIndex.h"
+#include "knowhere/index/VecIndex.h"
 
 namespace knowhere {
 
