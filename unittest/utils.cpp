@@ -9,15 +9,16 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
-#include "unittest/utils.h"
-#include "knowhere/index/vector_index/adapter/VectorAdapter.h"
-
 #include <gtest/gtest.h>
 #include <math.h>
 #include <memory>
 #include <random>
 #include <string>
 #include <utility>
+
+#include "knowhere/index/vector_index/adapter/VectorAdapter.h"
+#include "knowhere/utils/BitsetView.h"
+#include "unittest/utils.h"
 
 void
 DataGen::Init_with_default(const bool is_binary) {
@@ -49,6 +50,12 @@ DataGen::Generate(const int dim, const int nb, const int nq, const bool is_binar
 
     id_dataset = knowhere::GenDataset(nq, dim, nullptr);
     xid_dataset = knowhere::GenDataset(nq, dim, nullptr);
+
+    bitset_data.resize(nb/8);
+    for (int64_t i = 0; i < nq; ++i) {
+        set_bit(bitset_data.data(), i);
+    }
+    bitset = std::make_shared<faiss::BitsetView>(bitset_data.data(), nb);
 }
 
 void

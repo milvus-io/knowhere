@@ -117,13 +117,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_basic) {
     AssertAnns(result2, nq, k);
     // PrintResult(re_result, nq, k);
 
-    std::shared_ptr<uint8_t[]> data(new uint8_t[nb/8]);
-    for (int64_t i = 0; i < nq; ++i) {
-        set_bit(data.get(), i);
-    }
-    auto bitset = faiss::BitsetView(data.get(), nb);
-
-    auto result_bs_1 = index_->Query(query_dataset, conf, bitset);
+    auto result_bs_1 = index_->Query(query_dataset, conf, *bitset);
     AssertAnns(result_bs_1, nq, k, CheckMode::CHECK_NOT_EQUAL);
 
     // auto result4 = index_->SearchById(id_dataset, conf);
@@ -174,12 +168,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_serialize) {
     // PrintResult(result2, nq, k);
 
     // query with bitset
-    std::shared_ptr<uint8_t[]> bs_data(new uint8_t[nb/8]);
-    for (int64_t i = 0; i < nq; ++i) {
-        set_bit(bs_data.get(), i);
-    }
-    auto bitset = faiss::BitsetView(bs_data.get(), nb);
-    auto result_bs_1 = index_->Query(query_dataset, conf, bitset);
+    auto result_bs_1 = index_->Query(query_dataset, conf, *bitset);
     AssertAnns(result_bs_1, nq, k, CheckMode::CHECK_NOT_EQUAL);
 }
 
@@ -229,12 +218,6 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_hamming) {
 
     auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
 
-    std::shared_ptr<uint8_t[]> data(new uint8_t[nb / 8]);
-    for (int64_t i = 0; i < nb; i += 2) {
-        set_bit(data.get(), i);
-    }
-    auto bitset = faiss::BitsetView(data.get(), nb);
-
     // test without bitset
     {
         std::vector<int64_t> golden_labels;
@@ -247,9 +230,9 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_hamming) {
     // test with bitset
     {
         std::vector<int64_t> golden_labels;
-        RunRangeSearchBF<CMin<float>>(golden_labels, hamming_radius, hamming_dis, bitset);
+        RunRangeSearchBF<CMin<float>>(golden_labels, hamming_radius, hamming_dis, *bitset);
 
-        auto result = index_->QueryByRange(qd, conf, bitset);
+        auto result = index_->QueryByRange(qd, conf, *bitset);
         CheckRangeSearchResult<CMin<float>>(result, hamming_radius, golden_labels);
     }
 }
@@ -276,12 +259,6 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_jaccard) {
 
     auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
 
-    std::shared_ptr<uint8_t[]> data(new uint8_t[nb / 8]);
-    for (int64_t i = 0; i < nb; i += 2) {
-        set_bit(data.get(), i);
-    }
-    auto bitset = faiss::BitsetView(data.get(), nb);
-
     // test without bitset
     {
         std::vector<int64_t> golden_labels;
@@ -294,9 +271,9 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_jaccard) {
     // test with bitset
     {
         std::vector<int64_t> golden_labels;
-        RunRangeSearchBF<CMin<float>>(golden_labels, jaccard_radius, jaccard_dis, bitset);
+        RunRangeSearchBF<CMin<float>>(golden_labels, jaccard_radius, jaccard_dis, *bitset);
 
-        auto result = index_->QueryByRange(qd, conf, bitset);
+        auto result = index_->QueryByRange(qd, conf, *bitset);
         CheckRangeSearchResult<CMin<float>>(result, jaccard_radius, golden_labels);
     }
 }
@@ -324,12 +301,6 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_tanimoto) {
 
     auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
 
-    std::shared_ptr<uint8_t[]> data(new uint8_t[nb / 8]);
-    for (int64_t i = 0; i < nb; i += 2) {
-        set_bit(data.get(), i);
-    }
-    auto bitset = faiss::BitsetView(data.get(), nb);
-
     // test without bitset
     {
         std::vector<int64_t> golden_labels;
@@ -342,9 +313,9 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_tanimoto) {
     // test with bitset
     {
         std::vector<int64_t> golden_labels;
-        RunRangeSearchBF<CMin<float>>(golden_labels, tanimoto_radius, tanimoto_dis, bitset);
+        RunRangeSearchBF<CMin<float>>(golden_labels, tanimoto_radius, tanimoto_dis, *bitset);
 
-        auto result = index_->QueryByRange(qd, conf, bitset);
+        auto result = index_->QueryByRange(qd, conf, *bitset);
         CheckRangeSearchResult<CMin<float>>(result, tanimoto_radius, golden_labels);
     }
 }

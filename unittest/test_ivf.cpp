@@ -43,11 +43,11 @@ class IVFTest : public DataGen,
  protected:
     void
     SetUp() override {
+        Init_with_default();
 #ifdef KNOWHERE_GPU_VERSION
         knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
 #endif
         std::tie(index_type_, index_mode_) = GetParam();
-        Generate(DIM, NB, NQ);
         index_ = knowhere::VecIndexFactory::GetInstance().CreateVecIndex(index_type_, index_mode_);
         conf_ = ParamGenerator::GetInstance().Gen(index_type_);
         // conf_->Dump();
@@ -93,12 +93,7 @@ TEST_P(IVFTest, ivf_basic) {
     AssertAnns(result, nq, k);
     // PrintResult(result, nq, k);
 
-    std::shared_ptr<uint8_t[]> data(new uint8_t[nb/8]);
-    for (int64_t i = 0; i < nq; ++i) {
-        set_bit(data.get(), i);
-    }
-    auto bitset = faiss::BitsetView(data.get(), nb);
-    auto result_bs_1 = index_->Query(query_dataset, conf_, bitset);
+    auto result_bs_1 = index_->Query(query_dataset, conf_, *bitset);
     AssertAnns(result_bs_1, nq, k, CheckMode::CHECK_NOT_EQUAL);
     // PrintResult(result, nq, k);
 
