@@ -43,10 +43,10 @@ class BinaryIDMAP : public VecIndex, public FaissBaseBinaryIndex {
     AddWithoutIds(const DatasetPtr&, const Config&) override;
 
     DatasetPtr
-    Query(const DatasetPtr&, const Config&, const faiss::BitsetView bitset) override;
+    Query(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
 
     DatasetPtr
-    QueryByRange(const DatasetPtr&, const Config&, const faiss::BitsetView bitset) override;
+    QueryByRange(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
 
     int64_t
     Count() override;

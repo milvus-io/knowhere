@@ -141,10 +141,11 @@ struct IndexBinaryIVF : IndexBinary {
     void range_search_preassigned(
             idx_t n,
             const uint8_t* x,
-            int radius,
+            float radius,
             const idx_t* assign,
             const int32_t* centroid_dis,
-            RangeSearchResult* result) const;
+            RangeSearchResult* result,
+            const BitsetView bitset = nullptr) const;
 
     void reconstruct(idx_t key, uint8_t* recons) const override;
 
@@ -222,7 +223,7 @@ struct BinaryInvertedListScanner {
     virtual void set_list(idx_t list_no, uint8_t coarse_dis) = 0;
 
     /// compute a single query-to-code distance
-    virtual uint32_t distance_to_code(const uint8_t* code) const = 0;
+    virtual float distance_to_code(const uint8_t* code) const = 0;
 
     /** compute the distances to codes. (distances, labels) should be
      * organized as a min- or max-heap
@@ -247,8 +248,9 @@ struct BinaryInvertedListScanner {
             size_t n,
             const uint8_t* codes,
             const idx_t* ids,
-            int radius,
-            RangeQueryResult& result) const = 0;
+            float radius,
+            RangeQueryResult& result,
+            const BitsetView bitset = nullptr) const = 0;
 
     virtual ~BinaryInvertedListScanner() {}
 };

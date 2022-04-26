@@ -78,10 +78,52 @@ BinaryIVF::Query(const DatasetPtr& dataset_ptr, const Config& config, const fais
         QueryImpl(rows, reinterpret_cast<const uint8_t*>(p_data), k, p_dist, p_id, config, bitset);
 
         auto ret_ds = std::make_shared<Dataset>();
-
         ret_ds->Set(meta::IDS, p_id);
         ret_ds->Set(meta::DISTANCE, p_dist);
+        return ret_ds;
+    } catch (faiss::FaissException& e) {
+        release_when_exception();
+        KNOWHERE_THROW_MSG(e.what());
+    } catch (std::exception& e) {
+        release_when_exception();
+        KNOWHERE_THROW_MSG(e.what());
+    }
+}
 
+DatasetPtr
+BinaryIVF::QueryByRange(const DatasetPtr& dataset,
+                        const Config& config,
+                        const faiss::BitsetView bitset) {
+    if (!index_ || !index_->is_trained) {
+        KNOWHERE_THROW_MSG("index not initialize or trained");
+    }
+    GET_TENSOR_DATA(dataset)
+
+    auto radius = config[meta::RADIUS].get<float>();
+
+    int64_t* p_id = nullptr;
+    float* p_dist = nullptr;
+    size_t* p_lims = nullptr;
+
+    auto release_when_exception = [&]() {
+        if (p_id != nullptr) {
+            free(p_id);
+        }
+        if (p_dist != nullptr) {
+            free(p_dist);
+        }
+        if (p_lims != nullptr) {
+            free(p_lims);
+        }
+    };
+
+    try {
+        QueryByRangeImpl(rows, reinterpret_cast<const uint8_t*>(p_data), radius, p_dist, p_id, p_lims, config, bitset);
+
+        auto ret_ds = std::make_shared<Dataset>();
+        ret_ds->Set(meta::IDS, p_id);
+        ret_ds->Set(meta::DISTANCE, p_dist);
+        ret_ds->Set(meta::LIMS, p_lims);
         return ret_ds;
     } catch (faiss::FaissException& e) {
         release_when_exception();
@@ -221,13 +263,40 @@ BinaryIVF::QueryImpl(int64_t n,
     }
 #endif
 
-    // if hamming, it need transform int32 to float
+    // convert int32 to float for hamming
     if (ivf_index->metric_type == faiss::METRIC_Hamming) {
         int64_t num = n * k;
         for (int64_t i = 0; i < num; i++) {
             distances[i] = static_cast<float>(i_distances[i]);
         }
     }
+}
+
+void
+BinaryIVF::QueryByRangeImpl(int64_t n,
+                            const uint8_t* data,
+                            float radius,
+                            float*& distances,
+                            int64_t*& labels,
+                            size_t*& lims,
+                            const Config& config,
+                            const faiss::BitsetView bitset) {
+    auto params = GenParams(config);
+    auto ivf_index = dynamic_cast<faiss::IndexBinaryIVF*>(index_.get());
+    ivf_index->nprobe = params->nprobe;
+
+    faiss::RangeSearchResult res(n);
+    index_->range_search(n, data, radius, &res, bitset);
+
+    distances = res.distances;
+    labels = res.labels;
+    lims = res.lims;
+
+    LOG_KNOWHERE_DEBUG_ << "Range search result num: " << lims[n];
+
+    res.distances = nullptr;
+    res.labels = nullptr;
+    res.lims = nullptr;
 }
 
 }  // namespace knowhere
