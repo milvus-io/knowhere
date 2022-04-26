@@ -234,13 +234,14 @@ void exhaustive_inner_product_seq(
 #pragma omp for
         for (int64_t i = 0; i < nx; i++) {
             const float* x_i = x + i * d;
+            const float* y_j = y;
             resi.begin(i);
             for (size_t j = 0; j < ny; j++) {
-                const float* y_j = y + j * d;
                 if (bitset.empty() || !bitset.test(j)) {
                     float ip = fvec_inner_product(x_i, y_j, d);
                     resi.add_result(ip, j);
                 }
+                y_j += d;
             }
             resi.end();
         }
@@ -265,13 +266,14 @@ void exhaustive_L2sqr_seq(
 #pragma omp for
         for (int64_t i = 0; i < nx; i++) {
             const float* x_i = x + i * d;
+            const float* y_j = y;
             resi.begin(i);
             for (size_t j = 0; j < ny; j++) {
-                const float* y_j = y + j * d;
                 if (bitset.empty() || !bitset.test(j)) {
                     float disij = fvec_L2sqr(x_i, y_j, d);
                     resi.add_result(disij, j);
                 }
+                y_j += d;
             }
             resi.end();
         }
@@ -295,8 +297,7 @@ void exhaustive_inner_product_blas(
     /* block sizes */
     const size_t bs_x = distance_compute_blas_query_bs;
     const size_t bs_y = distance_compute_blas_database_bs;
-    float* ip_block = new float[bs_x * bs_y];
-    ScopeDeleter<float> del1(ip_block);
+    std::unique_ptr<float[]> ip_block(new float[bs_x * bs_y]);
 
     for (size_t i0 = 0; i0 < nx; i0 += bs_x) {
         size_t i1 = i0 + bs_x;
@@ -324,11 +325,11 @@ void exhaustive_inner_product_blas(
                        x + i0 * d,
                        &di,
                        &zero,
-                       ip_block,
+                       ip_block.get(),
                        &nyi);
             }
 
-            res.add_results(j0, j1, ip_block, bitset);
+            res.add_results(j0, j1, ip_block.get(), bitset);
         }
         res.end_multiple();
         InterruptCallback::check();

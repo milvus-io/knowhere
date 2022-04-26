@@ -50,6 +50,9 @@ class IVF : public VecIndex, public FaissBaseIndex {
     DatasetPtr
     Query(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
 
+    DatasetPtr
+    QueryByRange(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
+
 #if 0
     DatasetPtr
     QueryById(const DatasetPtr& dataset, const Config& config) override;
@@ -92,6 +95,10 @@ class IVF : public VecIndex, public FaissBaseIndex {
 
     virtual void
     QueryImpl(int64_t, const float*, int64_t, float*, int64_t*, const Config&, const faiss::BitsetView);
+
+    virtual void
+    QueryByRangeImpl(int64_t, const float*, float, float*&, int64_t*&, size_t*&, const Config&,
+                     const faiss::BitsetView);
 
     void
     SealImpl() override;
