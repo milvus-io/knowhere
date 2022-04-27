@@ -302,7 +302,6 @@ TEST_P(IDMAPTest, idmap_slice) {
 TEST_P(IDMAPTest, idmap_range_search_l2) {
     knowhere::Config conf{
         {knowhere::meta::DIM, dim},
-        {knowhere::meta::RADIUS, radius},
         {knowhere::Metric::TYPE, knowhere::Metric::L2}
     };
 
@@ -325,8 +324,8 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
     auto old_blas_threshold = knowhere::KnowhereConfig::GetBlasThreshold();
     for (int64_t blas_threshold : {0, 20}) {
         knowhere::KnowhereConfig::SetBlasThreshold(blas_threshold);
-        //for (float radius: {4.0, 5.0, 6.0}) {
-        for (float radius: {2.8}) {
+        for (float radius: {4.0, 4.5, 5.0}) {
+            conf[knowhere::meta::RADIUS] = radius;
             test_range_search_l2(radius, nullptr);
             test_range_search_l2(radius, *bitset);
         }
@@ -337,7 +336,6 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
 TEST_P(IDMAPTest, idmap_range_search_ip) {
     knowhere::Config conf{
         {knowhere::meta::DIM, dim},
-        {knowhere::meta::RADIUS, radius},
         {knowhere::Metric::TYPE, knowhere::Metric::IP}
     };
 
@@ -360,8 +358,7 @@ TEST_P(IDMAPTest, idmap_range_search_ip) {
     auto old_blas_threshold = knowhere::KnowhereConfig::GetBlasThreshold();
     for (int64_t blas_threshold : {0, 20}) {
         knowhere::KnowhereConfig::SetBlasThreshold(blas_threshold);
-        //for (float radius: {30.0, 40.0, 45.0}) {
-        for (float radius: {20}) {
+        for (float radius: {30.0, 40.0, 45.0}) {
             conf[knowhere::meta::RADIUS] = radius;
             test_range_search_ip(radius, nullptr);
             test_range_search_ip(radius, *bitset);
