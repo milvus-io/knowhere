@@ -45,7 +45,11 @@ IndexBinaryIVF::IndexBinaryIVF(IndexBinary* quantizer, size_t d, size_t nlist)
     cp.niter = 10;
 }
 
-IndexBinaryIVF::IndexBinaryIVF(IndexBinary *quantizer, size_t d, size_t nlist, MetricType metric)
+IndexBinaryIVF::IndexBinaryIVF(
+        IndexBinary* quantizer,
+        size_t d,
+        size_t nlist,
+        MetricType metric)
         : IndexBinary(d, metric),
           invlists(new ArrayInvertedLists(nlist, code_size)),
           own_invlists(true),
@@ -55,7 +59,7 @@ IndexBinaryIVF::IndexBinaryIVF(IndexBinary *quantizer, size_t d, size_t nlist, M
           nlist(nlist),
           own_fields(false),
           clustering_index(nullptr) {
-    FAISS_THROW_IF_NOT (d == quantizer->d);
+    FAISS_THROW_IF_NOT(d == quantizer->d);
     is_trained = quantizer->is_trained && (quantizer->ntotal == nlist);
 
     cp.niter = 10;
@@ -357,7 +361,7 @@ struct IVFBinaryScannerL2 : BinaryInvertedListScanner {
         this->list_no = list_no;
     }
 
-    uint32_t distance_to_code(const uint8_t* code) const override {
+    float distance_to_code(const uint8_t* code) const override {
         return hc.compute(code);
     }
 
@@ -374,7 +378,7 @@ struct IVFBinaryScannerL2 : BinaryInvertedListScanner {
         size_t nup = 0;
         for (size_t j = 0; j < n; j++) {
             if (bitset.empty() || !bitset.test(ids[j])) {
-                uint32_t dis = hc.compute(codes);
+                float dis = hc.compute(codes);
                 if (dis < simi[0]) {
                     idx_t id = store_pairs ? lo_build(list_no, j) : ids[j];
                     heap_replace_top<C>(k, simi, idxi, dis, id);
@@ -390,14 +394,17 @@ struct IVFBinaryScannerL2 : BinaryInvertedListScanner {
             size_t n,
             const uint8_t* codes,
             const idx_t* ids,
-            int radius,
-            RangeQueryResult& result) const override {
+            float radius,
+            RangeQueryResult& result,
+            const BitsetView bitset) const override {
         size_t nup = 0;
         for (size_t j = 0; j < n; j++) {
-            uint32_t dis = hc.compute(codes);
-            if (dis < radius) {
-                int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
-                result.add(dis, id);
+            if (bitset.empty() || !bitset.test(ids[j])) {
+                float dis = hc.compute(codes);
+                if (dis < radius) {
+                    int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
+                    result.add(dis, id);
+                }
             }
             codes += code_size;
         }
@@ -410,10 +417,10 @@ struct IVFBinaryScannerJaccard: BinaryInvertedListScanner {
     size_t code_size;
 
     IVFBinaryScannerJaccard(size_t code_size)
-            : code_size (code_size) {}
+            : code_size(code_size) {}
 
-    void set_query(const uint8_t *query_vector) override {
-        hc.set (query_vector, code_size);
+    void set_query(const uint8_t* query_vector) override {
+        hc.set(query_vector, code_size);
     }
 
     idx_t list_no;
@@ -421,15 +428,16 @@ struct IVFBinaryScannerJaccard: BinaryInvertedListScanner {
         this->list_no = list_no;
     }
 
-    uint32_t distance_to_code(const uint8_t *code) const override {
-        return 0;
+    float distance_to_code(const uint8_t* code) const override {
+        return hc.compute(code);
     }
 
     size_t scan_codes(
             size_t n,
-            const uint8_t *codes,
-            const idx_t *ids,
-            int32_t *simi, idx_t *idxi,
+            const uint8_t* codes,
+            const idx_t* ids,
+            int32_t* simi,
+            idx_t* idxi,
             size_t k,
             const BitsetView bitset) const override {
         using C = CMax<float, idx_t>;
@@ -438,10 +446,9 @@ struct IVFBinaryScannerJaccard: BinaryInvertedListScanner {
         for (size_t j = 0; j < n; j++) {
             if (bitset.empty() || !bitset.test(ids[j])) {
                 float dis = hc.compute(codes);
-
                 if (dis < psimi[0]) {
                     idx_t id = store_pairs ? lo_build(list_no, j) : ids[j];
-                    heap_replace_top<C> (k, psimi, idxi, dis, id);
+                    heap_replace_top<C>(k, psimi, idxi, dis, id);
                     nup++;
                 }
             }
@@ -454,14 +461,24 @@ struct IVFBinaryScannerJaccard: BinaryInvertedListScanner {
             size_t n,
             const uint8_t *codes,
             const idx_t *ids,
-            int radius,
-            RangeQueryResult &result) const override {
-        // not yet
+            float radius,
+            RangeQueryResult &result,
+            const BitsetView bitset) const override {
+        for (size_t j = 0; j < n; j++) {
+            if (bitset.empty() || !bitset.test(ids[j])) {
+                float dis = hc.compute(codes);
+                if (dis < radius) {
+                    idx_t id = store_pairs ? lo_build(list_no, j) : ids[j];
+                    result.add(dis, id);
+                }
+            }
+            codes += code_size;
+        }
     }
 };
 
 template <bool store_pairs>
-BinaryInvertedListScanner *select_IVFBinaryScannerL2 (size_t code_size) {
+BinaryInvertedListScanner* select_IVFBinaryScannerL2(size_t code_size) {
 #define HC(name) return new IVFBinaryScannerL2<name>(code_size, store_pairs)
     switch (code_size) {
         case 4: HC(HammingComputer4);
@@ -476,22 +493,22 @@ BinaryInvertedListScanner *select_IVFBinaryScannerL2 (size_t code_size) {
 }
 
 template <bool store_pairs>
-BinaryInvertedListScanner *select_IVFBinaryScannerJaccard (size_t code_size) {
-    switch (code_size) {
+BinaryInvertedListScanner* select_IVFBinaryScannerJaccard(size_t code_size) {
 #define HANDLE_CS(cs)                                                  \
 case cs:                                                            \
     return new IVFBinaryScannerJaccard<JaccardComputer ## cs, store_pairs>(cs);
+    switch (code_size) {
         HANDLE_CS(16)
         HANDLE_CS(32)
         HANDLE_CS(64)
         HANDLE_CS(128)
         HANDLE_CS(256)
         HANDLE_CS(512)
-#undef HANDLE_CS
         default:
             return new IVFBinaryScannerJaccard<JaccardComputerDefault,
                     store_pairs>(code_size);
     }
+#undef HANDLE_CS
 }
 
 void search_knn_hamming_heap(
@@ -806,6 +823,12 @@ void search_knn_hamming_count_1(
 BinaryInvertedListScanner* IndexBinaryIVF::get_InvertedListScanner(
         bool store_pairs) const {
     switch (metric_type) {
+        case METRIC_Hamming:
+            if (store_pairs) {
+                return select_IVFBinaryScannerL2<true>(code_size);
+            } else {
+                return select_IVFBinaryScannerL2<false>(code_size);
+            }
         case METRIC_Jaccard:
         case METRIC_Tanimoto:
             if (store_pairs) {
@@ -818,11 +841,7 @@ BinaryInvertedListScanner* IndexBinaryIVF::get_InvertedListScanner(
             // unsupported
             return nullptr;
         default:
-            if (store_pairs) {
-                return select_IVFBinaryScannerL2<true>(code_size);
-            } else {
-                return select_IVFBinaryScannerL2<false>(code_size);
-            }
+            return nullptr;
     }
 }
 
@@ -893,7 +912,24 @@ void IndexBinaryIVF::range_search(
     t0 = getmillisecs();
     invlists->prefetch_lists(idx.get(), n * nprobe);
 
-    range_search_preassigned(n, x, radius, idx.get(), coarse_dis.get(), res);
+    if (metric_type == METRIC_Tanimoto) {
+        radius = Tanimoto_2_Jaccard(radius);
+    }
+
+    range_search_preassigned(
+            n,
+            x,
+            radius,
+            idx.get(),
+            coarse_dis.get(),
+            res,
+            bitset);
+
+    if (metric_type == METRIC_Tanimoto) {
+        for (auto i = 0; i < res->lims[n]; i++) {
+            res->distances[i] = Jaccard_2_Tanimoto(res->distances[i]);
+        }
+    }
 
     indexIVF_stats.search_time += getmillisecs() - t0;
 }
@@ -901,10 +937,11 @@ void IndexBinaryIVF::range_search(
 void IndexBinaryIVF::range_search_preassigned(
         idx_t n,
         const uint8_t* x,
-        int radius,
+        float radius,
         const idx_t* assign,
         const int32_t* centroid_dis,
-        RangeSearchResult* res) const {
+        RangeSearchResult* res,
+        const BitsetView bitset) const {
     const size_t nprobe = std::min(nlist, this->nprobe);
     bool store_pairs = false;
     size_t nlistv = 0, ndis = 0;
@@ -942,7 +979,7 @@ void IndexBinaryIVF::range_search_preassigned(
             nlistv++;
             ndis += list_size;
             scanner->scan_codes_range(
-                    list_size, scodes.get(), ids.get(), radius, qres);
+                    list_size, scodes.get(), ids.get(), radius, qres, bitset);
         };
 
 #pragma omp for

@@ -178,7 +178,7 @@ BinaryIDMAP::QueryImpl(int64_t n,
     auto i_distances = reinterpret_cast<int32_t*>(distances);
     index_->search(n, data, k, i_distances, labels, bitset);
 
-    // for hamming, need to transform int32 to float
+    // convert int32 to float for hamming
     if (index_->metric_type == faiss::METRIC_Hamming) {
         int64_t num = n * k;
         for (int64_t i = 0; i < num; i++) {

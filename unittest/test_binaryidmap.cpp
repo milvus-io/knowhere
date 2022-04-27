@@ -29,6 +29,14 @@ class BinaryIDMAPTest : public DataGen,
     void
     SetUp() override {
         Init_with_default(true);
+
+        conf_ = knowhere::Config{
+            {knowhere::meta::DIM, dim},
+            {knowhere::meta::TOPK, k},
+            {knowhere::meta::RADIUS, radius},
+            {knowhere::Metric::TYPE, knowhere::Metric::HAMMING},
+            {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
+        };
         index_mode_ = GetParam();
         index_ = std::make_shared<knowhere::BinaryIDMAP>();
     }
@@ -84,6 +92,7 @@ class BinaryIDMAPTest : public DataGen,
     }
 
  protected:
+    knowhere::Config conf_;
     knowhere::BinaryIDMAPPtr index_ = nullptr;
     knowhere::IndexMode index_mode_;
 };
@@ -100,36 +109,30 @@ INSTANTIATE_TEST_CASE_P(
 TEST_P(BinaryIDMAPTest, binaryidmap_basic) {
     ASSERT_TRUE(!xb_bin.empty());
 
-    knowhere::Config conf{
-        {knowhere::meta::DIM, dim},
-        {knowhere::meta::TOPK, k},
-        {knowhere::Metric::TYPE, knowhere::Metric::HAMMING},
-    };
-
     // null faiss index
     {
-        ASSERT_ANY_THROW(index_->Serialize(conf));
-        ASSERT_ANY_THROW(index_->Query(query_dataset, conf, nullptr));
-        ASSERT_ANY_THROW(index_->AddWithoutIds(nullptr, conf));
+        ASSERT_ANY_THROW(index_->Serialize(conf_));
+        ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
+        ASSERT_ANY_THROW(index_->AddWithoutIds(nullptr, conf_));
     }
 
-    index_->Train(base_dataset, conf);
-    index_->AddWithoutIds(base_dataset, conf);
+    index_->Train(base_dataset, conf_);
+    index_->AddWithoutIds(base_dataset, conf_);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
     ASSERT_TRUE(index_->GetRawVectors() != nullptr);
-    auto result = index_->Query(query_dataset, conf, nullptr);
+    auto result = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result, nq, k);
     // PrintResult(result, nq, k);
 
-    auto binaryset = index_->Serialize(conf);
+    auto binaryset = index_->Serialize(conf_);
     auto new_index = std::make_shared<knowhere::BinaryIDMAP>();
     new_index->Load(binaryset);
-    auto result2 = new_index->Query(query_dataset, conf, nullptr);
+    auto result2 = new_index->Query(query_dataset, conf_, nullptr);
     AssertAnns(result2, nq, k);
     // PrintResult(re_result, nq, k);
 
-    auto result_bs_1 = index_->Query(query_dataset, conf, *bitset);
+    auto result_bs_1 = index_->Query(query_dataset, conf_, *bitset);
     AssertAnns(result_bs_1, nq, k, CheckMode::CHECK_NOT_EQUAL);
 
     // auto result4 = index_->SearchById(id_dataset, conf);
@@ -147,21 +150,15 @@ TEST_P(BinaryIDMAPTest, binaryidmap_serialize) {
         reader(ret, bin->size);
     };
 
-    knowhere::Config conf{
-        {knowhere::meta::DIM, dim},
-        {knowhere::meta::TOPK, k},
-        {knowhere::Metric::TYPE, knowhere::Metric::HAMMING},
-    };
-
     // serialize index
-    index_->Train(base_dataset, conf);
+    index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
-    auto result1 = index_->Query(query_dataset, conf, nullptr);
+    auto result1 = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result1, nq, k);
     // PrintResult(result1, nq, k);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
-    auto binaryset = index_->Serialize(conf);
+    auto binaryset = index_->Serialize(conf_);
     auto bin = binaryset.GetByName("BinaryIVF");
 
     std::string filename = temp_path("/tmp/bianryidmap_test_serialize.bin");
@@ -175,55 +172,45 @@ TEST_P(BinaryIDMAPTest, binaryidmap_serialize) {
     index_->Load(binaryset);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
-    auto result2 = index_->Query(query_dataset, conf, nullptr);
+    auto result2 = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result2, nq, k);
     // PrintResult(result2, nq, k);
 
     // query with bitset
-    auto result_bs_1 = index_->Query(query_dataset, conf, *bitset);
+    auto result_bs_1 = index_->Query(query_dataset, conf_, *bitset);
     AssertAnns(result_bs_1, nq, k, CheckMode::CHECK_NOT_EQUAL);
 }
 
 TEST_P(BinaryIDMAPTest, binaryidmap_slice) {
-    knowhere::Config conf{
-        {knowhere::meta::DIM, dim},
-        {knowhere::meta::TOPK, k},
-        {knowhere::Metric::TYPE, knowhere::Metric::HAMMING},
-        {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
-    };
-
     // serialize index
-    index_->Train(base_dataset, conf);
+    index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
-    auto result1 = index_->Query(query_dataset, conf, nullptr);
+    auto result1 = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result1, nq, k);
     // PrintResult(result1, nq, k);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
-    auto binaryset = index_->Serialize(conf);
+    auto binaryset = index_->Serialize(conf_);
 
     index_->Load(binaryset);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
-    auto result2 = index_->Query(query_dataset, conf, nullptr);
+    auto result2 = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result2, nq, k);
     // PrintResult(result2, nq, k);
 }
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_hamming) {
-    int hamming_radius = 20;
-    knowhere::Config conf{
-        {knowhere::meta::DIM, dim},
-        {knowhere::meta::RADIUS, hamming_radius},
-        {knowhere::Metric::TYPE, knowhere::Metric::HAMMING},
-    };
+    int hamming_radius = 50;
+    conf_[knowhere::meta::RADIUS] = hamming_radius;
+    conf_[knowhere::Metric::TYPE] = knowhere::Metric::HAMMING;
 
     // hamming
     auto hamming_dis = [](const uint8_t* pa, const uint8_t* pb, const size_t code_size) -> float {
         return faiss::xor_popcnt(pa, pb, code_size);
     };
 
-    index_->Train(base_dataset, conf);
+    index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
@@ -236,7 +223,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_hamming) {
         std::vector<size_t> golden_lims;
         RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, radius, hamming_dis, bitset);
 
-        auto result = index_->QueryByRange(qd, conf, bitset);
+        auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMin<float>>(result, radius, golden_labels, golden_distances, golden_lims);
     };
 
@@ -246,11 +233,8 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_hamming) {
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_jaccard) {
     float jaccard_radius = 0.5;
-    knowhere::Config conf{
-        {knowhere::meta::DIM, dim},
-        {knowhere::meta::RADIUS, jaccard_radius},
-        {knowhere::Metric::TYPE, knowhere::Metric::JACCARD},
-    };
+    conf_[knowhere::meta::RADIUS] = jaccard_radius;
+    conf_[knowhere::Metric::TYPE] = knowhere::Metric::JACCARD;
 
     auto jaccard_dis = [](const uint8_t* pa, const uint8_t* pb, const size_t code_size) -> float {
         auto and_value = faiss::and_popcnt(pa, pb, code_size);
@@ -259,7 +243,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_jaccard) {
     };
 
     // serialize index
-    index_->Train(base_dataset, conf);
+    index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
@@ -272,7 +256,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_jaccard) {
         std::vector<size_t> golden_lims;
         RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, radius, jaccard_dis, bitset);
 
-        auto result = index_->QueryByRange(qd, conf, bitset);
+        auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMin<float>>(result, radius, golden_labels, golden_distances, golden_lims);
     };
 
@@ -282,11 +266,8 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_jaccard) {
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_tanimoto) {
     float tanimoto_radius = 1.0;
-    knowhere::Config conf{
-        {knowhere::meta::DIM, dim},
-        {knowhere::meta::RADIUS, tanimoto_radius},
-        {knowhere::Metric::TYPE, knowhere::Metric::TANIMOTO},
-    };
+    conf_[knowhere::meta::RADIUS] = tanimoto_radius;
+    conf_[knowhere::Metric::TYPE] = knowhere::Metric::TANIMOTO;
 
     auto tanimoto_dis = [](const uint8_t* pa, const uint8_t* pb, const size_t code_size) -> float {
         auto and_value = faiss::and_popcnt(pa, pb, code_size);
@@ -295,7 +276,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_tanimoto) {
         return (-log2(1 - v));
     };
 
-    index_->Train(base_dataset, conf);
+    index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
@@ -308,7 +289,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_tanimoto) {
         std::vector<size_t> golden_lims;
         RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, radius, tanimoto_dis, bitset);
 
-        auto result = index_->QueryByRange(qd, conf, bitset);
+        auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMin<float>>(result, radius, golden_labels, golden_distances, golden_lims);
     };
 
@@ -317,33 +298,25 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_tanimoto) {
 }
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_superstructure) {
-    knowhere::Config conf{
-        {knowhere::meta::DIM, dim},
-        {knowhere::meta::RADIUS, radius},
-        {knowhere::Metric::TYPE, knowhere::Metric::SUPERSTRUCTURE},
-    };
+    conf_[knowhere::Metric::TYPE] = knowhere::Metric::SUPERSTRUCTURE;
 
-    index_->Train(base_dataset, conf);
+    index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
     auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
-    ASSERT_ANY_THROW(index_->QueryByRange(qd, conf, nullptr));
+    ASSERT_ANY_THROW(index_->QueryByRange(qd, conf_, nullptr));
 }
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_substructure) {
-    knowhere::Config conf{
-        {knowhere::meta::DIM, dim},
-        {knowhere::meta::RADIUS, radius},
-        {knowhere::Metric::TYPE, knowhere::Metric::SUBSTRUCTURE},
-    };
+    conf_[knowhere::Metric::TYPE] = knowhere::Metric::SUBSTRUCTURE;
 
-    index_->Train(base_dataset, conf);
+    index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
     auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
-    ASSERT_ANY_THROW(index_->QueryByRange(qd, conf, nullptr));
+    ASSERT_ANY_THROW(index_->QueryByRange(qd, conf_, nullptr));
 }

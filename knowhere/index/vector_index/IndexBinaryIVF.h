@@ -36,19 +36,22 @@ class BinaryIVF : public VecIndex, public FaissBaseBinaryIndex {
     }
 
     BinarySet
-    Serialize(const Config& config) override;
+    Serialize(const Config&) override;
 
     void
-    Load(const BinarySet& index_binary) override;
+    Load(const BinarySet&) override;
 
     void
-    Train(const DatasetPtr& dataset_ptr, const Config& config) override;
+    Train(const DatasetPtr&, const Config&) override;
 
     void
     AddWithoutIds(const DatasetPtr&, const Config&) override;
 
     DatasetPtr
-    Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::BitsetView bitset) override;
+    Query(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
+
+    DatasetPtr
+    QueryByRange(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
 
     int64_t
     Count() override;
@@ -79,6 +82,16 @@ class BinaryIVF : public VecIndex, public FaissBaseBinaryIndex {
               int64_t* labels,
               const Config& config,
               const faiss::BitsetView bitset);
+
+    virtual void
+    QueryByRangeImpl(int64_t n,
+                     const uint8_t* data,
+                     float radius,
+                     float*& distances,
+                     int64_t*& labels,
+                     size_t*& lims,
+                     const Config& config,
+                     const faiss::BitsetView bitset);
 };
 
 using BinaryIVFIndexPtr = std::shared_ptr<BinaryIVF>;
