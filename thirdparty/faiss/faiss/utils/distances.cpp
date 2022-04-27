@@ -403,21 +403,19 @@ void exhaustive_L2sqr_blas(
                 float* ip_line = ip_block.get() + (i - i0) * (j1 - j0);
 
                 for (size_t j = j0; j < j1; j++) {
-                    if (bitset.empty() || !bitset.test(j)) {
-                        float ip = *ip_line;
-                        float dis = x_norms[i] + y_norms[j] - 2 * ip;
+                    float ip = *ip_line;
+                    float dis = x_norms[i] + y_norms[j] - 2 * ip;
 
-                        // negative values can occur for identical vectors
-                        // due to roundoff errors
-                        if (dis < 0)
-                            dis = 0;
+                    // negative values can occur for identical vectors
+                    // due to roundoff errors
+                    if (dis < 0)
+                        dis = 0;
 
-                        *ip_line = dis;
-                    }
+                    *ip_line = dis;
                     ip_line++;
                 }
             }
-            res.add_results(j0, j1, ip_block.get());
+            res.add_results(j0, j1, ip_block.get(), bitset);
         }
         res.end_multiple();
         InterruptCallback::check();
