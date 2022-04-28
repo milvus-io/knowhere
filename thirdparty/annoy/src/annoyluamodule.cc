@@ -21,7 +21,7 @@
 #include "kissrandom.h"
 
 #if LUA_VERSION_NUM == 501
-#define compat_setfuncs(L, funcs) luaL_register(L, nullptr, funcs)
+#define compat_setfuncs(L, funcs) luaL_register(L, NULL, funcs)
 #define compat_rawlen lua_objlen
 #else
 #define compat_setfuncs(L, funcs) luaL_setfuncs(L, funcs, 0)
@@ -33,7 +33,7 @@ class LuaAnnoy {
 public:
   typedef int32_t AnnoyS;
   typedef float AnnoyT;
-  typedef AnnoyIndex<AnnoyS, AnnoyT, Distance, Kiss64Random> Impl;
+  typedef AnnoyIndex<AnnoyS, AnnoyT, Distance, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy> Impl;
   typedef LuaAnnoy<Distance> ThisClass;
 
   class LuaArrayProxy {
@@ -118,9 +118,10 @@ public:
   }
 
   static int build(lua_State* L) {
+    int nargs = lua_gettop(L);
     Impl* self = getAnnoy(L, 1);
     int n_trees = luaL_checkinteger(L, 2);
-    self->build(n_trees);
+    self->build(n_trees, 1);
     lua_pushboolean(L, true);
     return 1;
   }
@@ -203,7 +204,7 @@ public:
     Searcher s(L);
     int item = getItemIndex(L, 2, s.self->get_n_items());
     s.self->get_nns_by_item(item, s.n, s.search_k, &s.result,
-        s.include_distances ? &s.distances : nullptr);
+        s.include_distances ? &s.distances : NULL);
     return s.pushResults(L);
   }
 
@@ -213,7 +214,7 @@ public:
     AnnoyT* vec = &(_vec[0]);
     toVector(L, 2, s.self->get_f(), vec);
     s.self->get_nns_by_vector(vec, s.n, s.search_k, &s.result,
-        s.include_distances ? &s.distances : nullptr);
+        s.include_distances ? &s.distances : NULL);
     return s.pushResults(L);
   }
 
@@ -246,7 +247,7 @@ public:
     static const luaL_Reg funcs[] = {
       {"__gc", &ThisClass::gc},
       {"__tostring", &ThisClass::tostring},
-      {nullptr, nullptr},
+      {NULL, NULL},
     };
     return funcs;
   }
@@ -264,7 +265,7 @@ public:
       {"get_distance", &ThisClass::get_distance},
       {"get_n_items", &ThisClass::get_n_items},
       {"on_disk_build", &ThisClass::on_disk_build},
-      {nullptr, nullptr},
+      {NULL, NULL},
     };
     return funcs;
   }
@@ -304,7 +305,7 @@ static int lua_an_make(lua_State* L) {
 
 static const luaL_Reg LUA_ANNOY_FUNCS[] = {
   {"AnnoyIndex", lua_an_make},
-  {nullptr, nullptr},
+  {NULL, NULL},
 };
 
 extern "C" {

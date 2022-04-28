@@ -58,6 +58,12 @@ typedef signed __int64    int64_t;
 #include <queue>
 #include <limits>
 
+#ifdef ANNOYLIB_MULTITHREADED_BUILD
+#include <thread>
+#include <mutex>
+#include <shared_mutex>
+#endif
+
 #ifdef _MSC_VER
 // Needed for Visual Studio to disable runtime checks for mempcy
 #pragma runtime_checks("s", off)
@@ -104,46 +110,54 @@ inline void set_error_from_string(char **error, const char* msg) {
 #ifndef _MSC_VER
 #define popcount __builtin_popcountll
 #else // See #293, #358
-#define isnan(x) _isnan(x)
 #define popcount cole_popcount
 #endif
 
-#if !defined(NO_MANUAL_VECTORIZATION) && defined(__GNUC__) && (__GNUC__ >6) && defined(__AVX512F__)  // See #402
-#define USE_AVX512
-#elif !defined(NO_MANUAL_VECTORIZATION) && defined(__AVX__) && defined (__SSE__) && defined(__SSE2__) && defined(__SSE3__)
-#define USE_AVX
+// always disable USE_AVX and USE_AVX512
+// share distance calculation with faiss
+//#if !defined(NO_MANUAL_VECTORIZATION) && defined(__GNUC__) && (__GNUC__ >6) && defined(__AVX512F__)  // See #402
+//#define USE_AVX512
+//#elif !defined(NO_MANUAL_VECTORIZATION) && defined(__AVX__) && defined (__SSE__) && defined(__SSE2__) && defined(__SSE3__)
+//#define USE_AVX
+//#else
+//#endif
+//
+//#if defined(USE_AVX) || defined(USE_AVX512)
+//#if defined(_MSC_VER)
+//#include <intrin.h>
+//#elif defined(__GNUC__)
+//#include <x86intrin.h>
+//#endif
+//#endif
+
+#if !defined(__MINGW32__)
+#define FTRUNCATE_SIZE(x) static_cast<int64_t>(x)
 #else
-#endif
-
-#if defined(USE_AVX) || defined(USE_AVX512)
-#if defined(_MSC_VER)
-#include <intrin.h>
-#elif defined(__GNUC__)
-#include <x86intrin.h>
-#include "knowhere/utils/BitsetView.h"
-
-#endif
+#define FTRUNCATE_SIZE(x) (x)
 #endif
 
 #include <faiss/FaissHook.h>
+#include "knowhere/utils/BitsetView.h"
 
 using std::vector;
 using std::pair;
 using std::numeric_limits;
 using std::make_pair;
 
-inline void* remap_memory(void* _ptr, int _fd, size_t old_size, size_t new_size) {
+inline bool remap_memory_and_truncate(void** _ptr, int _fd, size_t old_size, size_t new_size) {
 #ifdef __linux__
-  _ptr = mremap(_ptr, old_size, new_size, MREMAP_MAYMOVE);
+    *_ptr = mremap(*_ptr, old_size, new_size, MREMAP_MAYMOVE);
+    bool ok = ftruncate(_fd, new_size) != -1;
 #else
-  munmap(_ptr, old_size);
+    munmap(*_ptr, old_size);
+    bool ok = ftruncate(_fd, FTRUNCATE_SIZE(new_size)) != -1;
 #ifdef MAP_POPULATE
-  _ptr = mmap(_ptr, new_size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, _fd, 0);
+    *_ptr = mmap(*_ptr, new_size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, _fd, 0);
 #else
-  _ptr = mmap(_ptr, new_size, PROT_READ | PROT_WRITE, MAP_SHARED, _fd, 0);
+    *_ptr = mmap(*_ptr, new_size, PROT_READ | PROT_WRITE, MAP_SHARED, _fd, 0);
 #endif
 #endif
-  return _ptr;
+    return ok;
 }
 
 namespace {
@@ -185,20 +199,32 @@ inline T euclidean_distance(const T* x, const T* y, int f) {
   return d;
 }
 
-//#ifdef USE_AVX
+template<>
+inline float dot<float>(const float* x, const float *y, int f) {
+  return faiss::fvec_inner_product(x, y, (size_t)f);
+}
+
+template<>
+inline float manhattan_distance<float>(const float* x, const float* y, int f) {
+  return faiss::fvec_L1(x, y, (size_t)f);
+}
+
+template<>
+inline float euclidean_distance<float>(const float* x, const float* y, int f) {
+  return faiss::fvec_L2sqr(x, y, (size_t)f);
+}
+
+#ifdef USE_AVX
 // Horizontal single sum of 256bit vector.
-#if 0 /* use FAISS distance calculation algorithm instead */
 inline float hsum256_ps_avx(__m256 v) {
   const __m128 x128 = _mm_add_ps(_mm256_extractf128_ps(v, 1), _mm256_castps256_ps128(v));
   const __m128 x64 = _mm_add_ps(x128, _mm_movehl_ps(x128, x128));
   const __m128 x32 = _mm_add_ss(x64, _mm_shuffle_ps(x64, x64, 0x55));
   return _mm_cvtss_f32(x32);
 }
-#endif
 
 template<>
 inline float dot<float>(const float* x, const float *y, int f) {
-#if 0 /* use FAISS distance calculation algorithm instead */
   float result = 0;
   if (f > 7) {
     __m256 d = _mm256_setzero_ps();
@@ -217,14 +243,10 @@ inline float dot<float>(const float* x, const float *y, int f) {
     y++;
   }
   return result;
-#else
-  return faiss::fvec_inner_product(x, y, (size_t)f);
-#endif
 }
 
 template<>
 inline float manhattan_distance<float>(const float* x, const float* y, int f) {
-#if 0 /* use FAISS distance calculation algorithm instead */
   float result = 0;
   int i = f;
   if (f > 7) {
@@ -247,14 +269,10 @@ inline float manhattan_distance<float>(const float* x, const float* y, int f) {
     y++;
   }
   return result;
-#else
-  return faiss::fvec_L1(x, y, (size_t)f);
-#endif
 }
 
 template<>
 inline float euclidean_distance<float>(const float* x, const float* y, int f) {
-#if 0 /* use FAISS distance calculation algorithm instead */
   float result=0;
   if (f > 7) {
     __m256 d = _mm256_setzero_ps();
@@ -275,14 +293,10 @@ inline float euclidean_distance<float>(const float* x, const float* y, int f) {
     y++;
   }
   return result;
-#else
-  return faiss::fvec_L2sqr(x, y, (size_t)f);
-#endif
 }
 
-//#endif
+#endif
 
-#if 0 /* use FAISS distance calculation algorithm instead */
 #ifdef USE_AVX512
 template<>
 inline float dot<float>(const float* x, const float *y, int f) {
@@ -355,7 +369,6 @@ inline float euclidean_distance<float>(const float* x, const float* y, int f) {
   return result;
 }
 
-#endif
 #endif
 
  
@@ -606,8 +619,8 @@ struct DotProduct : Angular {
     // Step one: compute the norm of each vector and store that in its extra dimension (f-1)
     for (S i = 0; i < node_count; i++) {
       Node* node = get_node_ptr<S, Node>(nodes, _s, i);
-      T norm = sqrt(dot(node->v, node->v, f));
-      if (isnan(norm)) norm = 0;
+      T d = dot(node->v, node->v, f);
+      T norm = d < 0 ? 0 : sqrt(d);
       node->dot_factor = norm;
     }
 
@@ -624,9 +637,8 @@ struct DotProduct : Angular {
     for (S i = 0; i < node_count; i++) {
       Node* node = get_node_ptr<S, Node>(nodes, _s, i);
       T node_norm = node->dot_factor;
-
-      T dot_factor = sqrt(pow(max_norm, static_cast<T>(2.0)) - pow(node_norm, static_cast<T>(2.0)));
-      if (isnan(dot_factor)) dot_factor = 0;
+      T squared_norm_diff = pow(max_norm, static_cast<T>(2.0)) - pow(node_norm, static_cast<T>(2.0));
+      T dot_factor = squared_norm_diff < 0 ? 0 : sqrt(squared_norm_diff);
 
       node->dot_factor = dot_factor;
     }
@@ -782,7 +794,7 @@ struct Euclidean : Minkowski {
   }
   template<typename T>
   static inline T normalized_distance(T distance) {
-    return distance;
+    return sqrt(std::max(distance, T(0)));
   }
   template<typename S, typename T>
   static inline void init_node(Node<S, T>* n, int f) {
@@ -826,33 +838,33 @@ struct Manhattan : Minkowski {
 template<typename S, typename T>
 class AnnoyIndexInterface {
  public:
-  // Note that the methods with an **error argument will allocate memory and write the pointer to that string if error is non-nullptr
+  // Note that the methods with an **error argument will allocate memory and write the pointer to that string if error is non-NULL
   virtual ~AnnoyIndexInterface() {};
-  virtual bool add_item(S item, const T* w, char** error=nullptr) = 0;
-  virtual bool build(int q, char** error=nullptr) = 0;
-  virtual bool unbuild(char** error=nullptr) = 0;
-  virtual bool save(const char* filename, bool prefault=false, char** error=nullptr) = 0;
+  virtual bool add_item(S item, const T* w, char** error=NULL) = 0;
+  virtual bool build(int q, int n_threads=-1, char** error=NULL) = 0;
+  virtual bool unbuild(char** error=NULL) = 0;
+  virtual bool save(const char* filename, bool prefault=false, char** error=NULL) = 0;
   virtual void unload() = 0;
-  virtual bool load(const char* filename, bool prefault=false, char** error=nullptr) = 0;
-  virtual bool load_index(void* index_data, const int64_t& index_size, char** error = nullptr) = 0;
+  virtual bool load(const char* filename, bool prefault=false, char** error=NULL) = 0;
   virtual T get_distance(S i, S j) const = 0;
-  virtual void get_nns_by_item(S item, size_t n, int64_t search_k, vector<S>* result, vector<T>* distances,
+  virtual void get_nns_by_item(S item, size_t n, int search_k, vector<S>* result, vector<T>* distances,
                                const faiss::BitsetView bitset = nullptr) const = 0;
-  virtual void get_nns_by_vector(const T* w, size_t n, int64_t search_k, vector<S>* result, vector<T>* distances,
-                               const faiss::BitsetView bitset = nullptr) const = 0;
+  virtual void get_nns_by_vector(const T* w, size_t n, int search_k, vector<S>* result, vector<T>* distances,
+                                 const faiss::BitsetView bitset = nullptr) const = 0;
   virtual S get_n_items() const = 0;
-  virtual S get_dim() const = 0;
   virtual S get_n_trees() const = 0;
-  virtual int64_t get_index_length() const = 0;
-  virtual void* get_index() const = 0;
   virtual void verbose(bool v) = 0;
   virtual void get_item(S item, T* v) const = 0;
   virtual void set_seed(int q) = 0;
-  virtual bool on_disk_build(const char* filename, char** error=nullptr) = 0;
-  virtual int64_t cal_size() = 0;
+  virtual bool on_disk_build(const char* filename, char** error=NULL) = 0;
+  virtual S get_dim() const = 0;
+  virtual S get_index_length() const = 0;
+  virtual void* get_index() const = 0;
+  virtual S cal_size() = 0;
+  virtual bool load_index(void* index_data, const S index_size, char** error = nullptr) = 0;
 };
 
-template<typename S, typename T, typename Distance, typename Random>
+template<typename S, typename T, typename Distance, typename Random, class ThreadedBuildPolicy>
   class AnnoyIndex : public AnnoyIndexInterface<S, T> {
   /*
    * We use random projection to build a forest of binary trees of all items.
@@ -869,12 +881,13 @@ protected:
   const int _f;
   size_t _s;
   S _n_items;
-  Random _random;
   void* _nodes; // Could either be mmapped, or point to a memory buffer that we reallocate
   S _n_nodes;
   S _nodes_size;
   vector<S> _roots;
   S _K;
+  bool _is_seeded;
+  int _seed;
   bool _loaded;
   bool _verbose;
   int _fd;
@@ -882,7 +895,7 @@ protected:
   bool _built;
 public:
 
-   AnnoyIndex(int f) : _f(f), _random() {
+   AnnoyIndex(int f) : _f(f) {
     _s = offsetof(Node, v) + _f * sizeof(T); // Size of each node
     _verbose = false;
     _built = false;
@@ -897,12 +910,12 @@ public:
     return _f;
   }
 
-  bool add_item(S item, const T* w, char** error=nullptr) {
+  bool add_item(S item, const T* w, char** error=NULL) {
     return add_item_impl(item, w, error);
   }
 
   template<typename W>
-  bool add_item_impl(S item, const W& w, char** error=nullptr) {
+  bool add_item_impl(S item, const W& w, char** error=NULL) {
     if (_loaded) {
       set_error_from_string(error, "You can't add an item to a loaded index");
       return false;
@@ -927,7 +940,7 @@ public:
     return true;
   }
     
-  bool on_disk_build(const char* file, char** error=nullptr) {
+  bool on_disk_build(const char* file, char** error=NULL) {
     _on_disk = true;
     _fd = open(file, O_RDWR | O_CREAT | O_TRUNC, (int) 0600);
     if (_fd == -1) {
@@ -936,7 +949,7 @@ public:
       return false;
     }
     _nodes_size = 1;
-    if (ftruncate(_fd, _s * _nodes_size) == -1) {
+    if (ftruncate(_fd, FTRUNCATE_SIZE(_s) * FTRUNCATE_SIZE(_nodes_size)) == -1) {
       set_error_from_errno(error, "Unable to truncate");
       return false;
     }
@@ -948,7 +961,7 @@ public:
     return true;
   }
     
-  bool build(int q, char** error=nullptr) {
+  bool build(int q, int n_threads=-1, char** error=NULL) {
     if (_loaded) {
       set_error_from_string(error, "You can't build a loaded index");
       return false;
@@ -962,21 +975,8 @@ public:
     D::template preprocess<T, S, Node>(_nodes, _s, _n_items, _f);
 
     _n_nodes = _n_items;
-    while (1) {
-      if (q == -1 && _n_nodes >= _n_items * 2)
-        break;
-      if (q != -1 && _roots.size() >= (size_t)q)
-        break;
-      if (_verbose) showUpdate("pass %zd...\n", _roots.size());
 
-      vector<S> indices;
-      for (S i = 0; i < _n_items; i++) {
-        if (_get(i)->n_descendants >= 1) // Issue #223
-          indices.push_back(i);
-      }
-
-      _roots.push_back(_make_tree(indices, true));
-    }
+    ThreadedBuildPolicy::template build<S, T>(this, q, n_threads);
 
     // Also, copy the roots into the last segment of the array
     // This way we can load them faster without reading the whole file
@@ -988,8 +988,9 @@ public:
     if (_verbose) showUpdate("has %ld nodes\n", _n_nodes);
     
     if (_on_disk) {
-      _nodes = remap_memory(_nodes, _fd, _s * _nodes_size, _s * _n_nodes);
-      if (ftruncate(_fd, _s * _n_nodes)) {
+      if (!remap_memory_and_truncate(&_nodes, _fd,
+          static_cast<size_t>(_s) * static_cast<size_t>(_nodes_size),
+          static_cast<size_t>(_s) * static_cast<size_t>(_n_nodes))) {
         // TODO: this probably creates an index in a corrupt state... not sure what to do
         set_error_from_errno(error, "Unable to truncate");
         return false;
@@ -1000,7 +1001,7 @@ public:
     return true;
   }
   
-  bool unbuild(char** error=nullptr) {
+  bool unbuild(char** error=NULL) {
     if (_loaded) {
       set_error_from_string(error, "You can't unbuild a loaded index");
       return false;
@@ -1013,7 +1014,7 @@ public:
     return true;
   }
 
-  bool save(const char* filename, bool prefault=false, char** error=nullptr) {
+  bool save(const char* filename, bool prefault=false, char** error=NULL) {
     if (!_built) {
       set_error_from_string(error, "You can't save an index that hasn't been built");
       return false;
@@ -1025,7 +1026,7 @@ public:
       unlink(filename);
 
       FILE *f = fopen(filename, "wb");
-      if (f == nullptr) {
+      if (f == NULL) {
         set_error_from_errno(error, "Unable to open");
         return false;
       }
@@ -1047,12 +1048,13 @@ public:
 
   void reinitialize() {
     _fd = 0;
-    _nodes = nullptr;
+    _nodes = NULL;
     _loaded = false;
     _n_items = 0;
     _n_nodes = 0;
     _nodes_size = 0;
     _on_disk = false;
+    _is_seeded = false;
     _roots.clear();
   }
 
@@ -1074,7 +1076,7 @@ public:
     if (_verbose) showUpdate("unloaded\n");
   }
 
-  bool load(const char* filename, bool prefault=false, char** error=nullptr) {
+  bool load(const char* filename, bool prefault=false, char** error=NULL) {
     _fd = open(filename, O_RDONLY, (int)0400);
     if (_fd == -1) {
       set_error_from_errno(error, "Unable to open");
@@ -1090,7 +1092,7 @@ public:
       return false;
     } else if (size % _s) {
       // Something is fishy with this index!
-      set_error_from_errno(error, "Index size is not a multiple of vector size");
+      set_error_from_errno(error, "Index size is not a multiple of vector size. Ensure you are opening using the same metric you used to create the index.");
       return false;
     }
 
@@ -1127,7 +1129,322 @@ public:
     return true;
   }
 
-  bool load_index(void* index_data, const int64_t& index_size, char** error) {
+  T get_distance(S i, S j) const {
+    return D::normalized_distance(D::distance(_get(i), _get(j), _f));
+  }
+
+  void get_nns_by_item(S item, size_t n, int search_k, vector<S>* result, vector<T>* distances,
+                       const faiss::BitsetView bitset) const {
+    // TODO: handle OOB
+    const Node* m = _get(item);
+    _get_all_nns(m->v, n, search_k, result, distances, bitset);
+  }
+
+  void get_nns_by_vector(const T* w, size_t n, int search_k, vector<S>* result, vector<T>* distances,
+                         const faiss::BitsetView bitset) const {
+    _get_all_nns(w, n, search_k, result, distances, bitset);
+  }
+
+  S get_n_items() const {
+    return _n_items;
+  }
+
+  S get_n_trees() const {
+    return (S)_roots.size();
+  }
+
+  void verbose(bool v) {
+    _verbose = v;
+  }
+
+  void get_item(S item, T* v) const {
+    // TODO: handle OOB
+    Node* m = _get(item);
+    memcpy(v, m->v, (_f) * sizeof(T));
+  }
+
+  void set_seed(int seed) {
+    _is_seeded = true;
+    _seed = seed;
+  }
+
+  void thread_build(int q, int thread_idx, ThreadedBuildPolicy& threaded_build_policy) {
+    Random _random;
+    // Each thread needs its own seed, otherwise each thread would be building the same tree(s)
+    int seed = _is_seeded ? _seed + thread_idx : thread_idx;
+    _random.set_seed(seed);
+
+    vector<S> thread_roots;
+    while (1) {
+      if (q == -1) {
+        threaded_build_policy.lock_n_nodes();
+        if (_n_nodes >= 2 * _n_items) {
+          threaded_build_policy.unlock_n_nodes();
+          break;
+        }
+        threaded_build_policy.unlock_n_nodes();
+      } else {
+        if (thread_roots.size() >= (size_t)q) {
+          break;
+        }
+      }
+
+      if (_verbose) showUpdate("pass %zd...\n", thread_roots.size());
+
+      vector<S> indices;
+      threaded_build_policy.lock_shared_nodes();
+      for (S i = 0; i < _n_items; i++) {
+        if (_get(i)->n_descendants >= 1) { // Issue #223
+          indices.push_back(i);
+        }
+      }
+      threaded_build_policy.unlock_shared_nodes();
+
+      thread_roots.push_back(_make_tree(indices, true, _random, threaded_build_policy));
+    }
+
+    threaded_build_policy.lock_roots();
+    _roots.insert(_roots.end(), thread_roots.begin(), thread_roots.end());
+    threaded_build_policy.unlock_roots();
+  }
+
+protected:
+  void _reallocate_nodes(S n) {
+    const double reallocation_factor = 1.3;
+    S new_nodes_size = std::max(n, (S) ((_nodes_size + 1) * reallocation_factor));
+    void *old = _nodes;
+    
+    if (_on_disk) {
+      if (!remap_memory_and_truncate(&_nodes, _fd, 
+          static_cast<size_t>(_s) * static_cast<size_t>(_nodes_size), 
+          static_cast<size_t>(_s) * static_cast<size_t>(new_nodes_size)) && 
+          _verbose)
+          showUpdate("File truncation error\n");
+    } else {
+      _nodes = realloc(_nodes, _s * new_nodes_size);
+      memset((char *) _nodes + (_nodes_size * _s) / sizeof(char), 0, (new_nodes_size - _nodes_size) * _s);
+    }
+    
+    _nodes_size = new_nodes_size;
+    if (_verbose) showUpdate("Reallocating to %ld nodes: old_address=%p, new_address=%p\n", new_nodes_size, old, _nodes);
+  }
+
+  void _allocate_size(S n, ThreadedBuildPolicy& threaded_build_policy) {
+    if (n > _nodes_size) {
+      threaded_build_policy.lock_nodes();
+      _reallocate_nodes(n);
+      threaded_build_policy.unlock_nodes();
+    }
+  }
+
+  void _allocate_size(S n) {
+    if (n > _nodes_size) {
+      _reallocate_nodes(n);
+    }
+  }
+
+  Node* _get(const S i) const {
+    return get_node_ptr<S, Node>(_nodes, _s, i);
+  }
+
+  double _split_imbalance(const vector<S>& left_indices, const vector<S>& right_indices) {
+    double ls = (float)left_indices.size();
+    double rs = (float)right_indices.size();
+    float f = ls / (ls + rs + 1e-9);  // Avoid 0/0
+    return std::max(f, 1-f);
+  }
+
+  S _make_tree(const vector<S>& indices, bool is_root, Random& _random, ThreadedBuildPolicy& threaded_build_policy) {
+    // The basic rule is that if we have <= _K items, then it's a leaf node, otherwise it's a split node.
+    // There's some regrettable complications caused by the problem that root nodes have to be "special":
+    // 1. We identify root nodes by the arguable logic that _n_items == n->n_descendants, regardless of how many descendants they actually have
+    // 2. Root nodes with only 1 child need to be a "dummy" parent
+    // 3. Due to the _n_items "hack", we need to be careful with the cases where _n_items <= _K or _n_items > _K
+    if (indices.size() == 1 && !is_root)
+      return indices[0];
+
+    if (indices.size() <= (size_t)_K && (!is_root || (size_t)_n_items <= (size_t)_K || indices.size() == 1)) {
+      threaded_build_policy.lock_n_nodes();
+      _allocate_size(_n_nodes + 1, threaded_build_policy);
+      S item = _n_nodes++;
+      threaded_build_policy.unlock_n_nodes();
+
+      threaded_build_policy.lock_shared_nodes();
+      Node* m = _get(item);
+      m->n_descendants = is_root ? _n_items : (S)indices.size();
+
+      // Using std::copy instead of a loop seems to resolve issues #3 and #13,
+      // probably because gcc 4.8 goes overboard with optimizations.
+      // Using memcpy instead of std::copy for MSVC compatibility. #235
+      // Only copy when necessary to avoid crash in MSVC 9. #293
+      if (!indices.empty())
+        memcpy(m->children, &indices[0], indices.size() * sizeof(S));
+
+      threaded_build_policy.unlock_shared_nodes();
+      return item;
+    }
+
+    threaded_build_policy.lock_shared_nodes();
+    vector<Node*> children;
+    for (size_t i = 0; i < indices.size(); i++) {
+      S j = indices[i];
+      Node* n = _get(j);
+      if (n)
+        children.push_back(n);
+    }
+
+    vector<S> children_indices[2];
+    Node* m = (Node*)alloca(_s);
+
+    for (int attempt = 0; attempt < 3; attempt++) {
+      children_indices[0].clear();
+      children_indices[1].clear();
+      D::create_split(children, _f, _s, _random, m);
+
+      for (size_t i = 0; i < indices.size(); i++) {
+        S j = indices[i];
+        Node* n = _get(j);
+        if (n) {
+          bool side = D::side(m, n->v, _f, _random);
+          children_indices[side].push_back(j);
+        } else {
+          showUpdate("No node for index %ld?\n", j);
+        }
+      }
+
+      if (_split_imbalance(children_indices[0], children_indices[1]) < 0.95)
+        break;
+    }
+    threaded_build_policy.unlock_shared_nodes();
+
+    // If we didn't find a hyperplane, just randomize sides as a last option
+    while (_split_imbalance(children_indices[0], children_indices[1]) > 0.99) {
+      if (_verbose)
+        showUpdate("\tNo hyperplane found (left has %ld children, right has %ld children)\n",
+          children_indices[0].size(), children_indices[1].size());
+
+      children_indices[0].clear();
+      children_indices[1].clear();
+
+      // Set the vector to 0.0
+      for (int z = 0; z < _f; z++)
+        m->v[z] = 0;
+
+      for (size_t i = 0; i < indices.size(); i++) {
+        S j = indices[i];
+        // Just randomize...
+        children_indices[_random.flip()].push_back(j);
+      }
+    }
+
+    int flip = (children_indices[0].size() > children_indices[1].size());
+
+    m->n_descendants = is_root ? _n_items : (S)indices.size();
+    for (int side = 0; side < 2; side++) {
+      // run _make_tree for the smallest child first (for cache locality)
+      m->children[side^flip] = _make_tree(children_indices[side^flip], false, _random, threaded_build_policy);
+    }
+
+    threaded_build_policy.lock_n_nodes();
+    _allocate_size(_n_nodes + 1, threaded_build_policy);
+    S item = _n_nodes++;
+    threaded_build_policy.unlock_n_nodes();
+
+    threaded_build_policy.lock_shared_nodes();
+    memcpy(_get(item), m, _s);
+    threaded_build_policy.unlock_shared_nodes();
+
+    return item;
+  }
+
+  void _get_all_nns(const T* v, size_t n, int search_k, vector<S>* result, vector<T>* distances,
+                    const faiss::BitsetView bitset) const {
+    Node* v_node = (Node *)alloca(_s);
+    D::template zero_value<Node>(v_node);
+    memcpy(v_node->v, v, sizeof(T) * _f);
+    D::init_node(v_node, _f);
+
+    std::priority_queue<pair<T, S> > q;
+
+    if (search_k == -1) {
+      search_k = n * _roots.size();
+    }
+
+    for (size_t i = 0; i < _roots.size(); i++) {
+      q.push(make_pair(Distance::template pq_initial_value<T>(), _roots[i]));
+    }
+
+    std::vector<S> nns;
+    while (nns.size() < (size_t)search_k && !q.empty()) {
+      const pair<T, S>& top = q.top();
+      T d = top.first;
+      S i = top.second;
+      Node* nd = _get(i);
+      q.pop();
+      if (nd->n_descendants == 1 && i < _n_items) {
+        if (bitset.empty() || !bitset.test((int64_t)i)) {
+          nns.push_back(i);
+        }
+      } else if (nd->n_descendants <= _K) {
+        const S* dst = nd->children;
+        //nns.insert(nns.end(), dst, &dst[nd->n_descendants]);
+        for (auto j = 0; j < nd->n_descendants; j++) {
+          if (bitset.empty() || !bitset.test((int64_t)dst[j])) {
+            nns.push_back(dst[j]);
+          }
+        }
+      } else {
+        T margin = D::margin(nd, v, _f);
+        q.push(make_pair(D::pq_distance(d, margin, 1), static_cast<S>(nd->children[1])));
+        q.push(make_pair(D::pq_distance(d, margin, 0), static_cast<S>(nd->children[0])));
+      }
+    }
+
+    // Get distances for all items
+    // To avoid calculating distance multiple times for any items, sort by id
+    std::sort(nns.begin(), nns.end());
+    vector<pair<T, S> > nns_dist;
+    S last = -1;
+    for (size_t i = 0; i < nns.size(); i++) {
+      S j = nns[i]; 
+      if (j == last)
+        continue;
+      last = j;
+      if (_get(j)->n_descendants == 1)  // This is only to guard a really obscure case, #284
+        nns_dist.push_back(make_pair(D::distance(v_node, _get(j), _f), j));
+    }
+
+    size_t m = nns_dist.size();
+    size_t p = n < m ? n : m; // Return this many items
+    std::partial_sort(nns_dist.begin(), nns_dist.begin() + p, nns_dist.end());
+    for (size_t i = 0; i < p; i++) {
+      if (distances)
+        distances->push_back(D::normalized_distance(nns_dist[i].first));
+      result->push_back(nns_dist[i].second);
+    }
+  }
+
+  S get_dim() const {
+      return _f;
+  }
+
+  S get_index_length() const {
+      return _s * _n_nodes;
+  }
+
+  void* get_index() const {
+      return _nodes;
+  }
+
+  S cal_size() {
+      S ret = 0;
+      ret += sizeof(*this);
+      ret += _roots.size() * sizeof(S);
+      ret += std::max(_n_nodes, _nodes_size) * _s;
+      return ret;
+  }
+
+  bool load_index(void* index_data, const S index_size, char** error) {
     if (index_size == -1) {
       set_error_from_errno(error, "Unable to get size");
       return false;
@@ -1140,8 +1457,8 @@ public:
       return false;
     }
 
-    _n_nodes = (S)(index_size / _s);
-//    _nodes = (Node*)malloc(_s * _n_nodes);
+    _n_nodes = (index_size / _s);
+    // _nodes = (Node*)malloc(_s * _n_nodes);
     _nodes = (Node*)malloc((size_t)index_size);
     if (_nodes == nullptr) {
         set_error_from_errno(error, "alloc failed when load_index 4 annoy");
@@ -1170,239 +1487,94 @@ public:
     if (_verbose) showUpdate("found %lu roots with degree %ld\n", _roots.size(), m);
     return true;
   }
-
-  T get_distance(S i, S j) const {
-    return D::normalized_distance(D::distance(_get(i), _get(j), _f));
-  }
-
-  void get_nns_by_item(S item, size_t n, int64_t search_k, vector<S>* result, vector<T>* distances,
-                       const faiss::BitsetView bitset) const {
-    // TODO: handle OOB
-    const Node* m = _get(item);
-    _get_all_nns(m->v, n, search_k, result, distances, bitset);
-  }
-
-  void get_nns_by_vector(const T* w, size_t n, int64_t search_k, vector<S>* result, vector<T>* distances,
-                         const faiss::BitsetView bitset) const {
-    _get_all_nns(w, n, search_k, result, distances, bitset);
-  }
-
-  S get_n_items() const {
-    return _n_items;
-  }
-
-  S get_dim() const {
-     return _f;
-  }
-
-  S get_n_trees() const {
-    return (S)_roots.size();
-  }
-
-  int64_t get_index_length() const {
-     return (int64_t)_s * _n_nodes;
-   }
-
-  void* get_index() const {
-     return _nodes;
-   }
-
-  void verbose(bool v) {
-    _verbose = v;
-  }
-
-  void get_item(S item, T* v) const {
-    // TODO: handle OOB
-    Node* m = _get(item);
-    memcpy(v, m->v, (_f) * sizeof(T));
-  }
-
-  void set_seed(int seed) {
-    _random.set_seed(seed);
-  }
-
-protected:
-  void _allocate_size(S n) {
-    if (n > _nodes_size) {
-      const double reallocation_factor = 1.3;
-      S new_nodes_size = std::max(n, (S) ((_nodes_size + 1) * reallocation_factor));
-      void *old = _nodes;
-      
-      if (_on_disk) {
-        int rc = ftruncate(_fd, _s * new_nodes_size);
-        if (_verbose && rc) showUpdate("File truncation error\n");
-        _nodes = remap_memory(_nodes, _fd, _s * _nodes_size, _s * new_nodes_size);
-      } else {
-        _nodes = realloc(_nodes, _s * new_nodes_size);
-        memset((char *) _nodes + (_nodes_size * _s) / sizeof(char), 0, (new_nodes_size - _nodes_size) * _s);
-      }
-      
-      _nodes_size = new_nodes_size;
-      if (_verbose) showUpdate("Reallocating to %ld nodes: old_address=%p, new_address=%p\n", new_nodes_size, old, _nodes);
-    }
-  }
-
-  inline Node* _get(const S i) const {
-    return get_node_ptr<S, Node>(_nodes, _s, i);
-  }
-
-  S _make_tree(const vector<S >& indices, bool is_root) {
-    // The basic rule is that if we have <= _K items, then it's a leaf node, otherwise it's a split node.
-    // There's some regrettable complications caused by the problem that root nodes have to be "special":
-    // 1. We identify root nodes by the arguable logic that _n_items == n->n_descendants, regardless of how many descendants they actually have
-    // 2. Root nodes with only 1 child need to be a "dummy" parent
-    // 3. Due to the _n_items "hack", we need to be careful with the cases where _n_items <= _K or _n_items > _K
-    if (indices.size() == 1 && !is_root)
-      return indices[0];
-
-    if (indices.size() <= (size_t)_K && (!is_root || (size_t)_n_items <= (size_t)_K || indices.size() == 1)) {
-      _allocate_size(_n_nodes + 1);
-      S item = _n_nodes++;
-      Node* m = _get(item);
-      m->n_descendants = is_root ? _n_items : (S)indices.size();
-
-      // Using std::copy instead of a loop seems to resolve issues #3 and #13,
-      // probably because gcc 4.8 goes overboard with optimizations.
-      // Using memcpy instead of std::copy for MSVC compatibility. #235
-      // Only copy when necessary to avoid crash in MSVC 9. #293
-      if (!indices.empty())
-        memcpy(m->children, &indices[0], indices.size() * sizeof(S));
-      return item;
-    }
-
-    vector<Node*> children;
-    for (size_t i = 0; i < indices.size(); i++) {
-      S j = indices[i];
-      Node* n = _get(j);
-      if (n)
-        children.push_back(n);
-    }
-
-    vector<S> children_indices[2];
-    Node* m = (Node*)alloca(_s);
-    D::create_split(children, _f, _s, _random, m);
-
-    for (size_t i = 0; i < indices.size(); i++) {
-      S j = indices[i];
-      Node* n = _get(j);
-      if (n) {
-        bool side = D::side(m, n->v, _f, _random);
-        children_indices[side].push_back(j);
-      } else {
-        showUpdate("No node for index %ld?\n", j);
-      }
-    }
-
-    // If we didn't find a hyperplane, just randomize sides as a last option
-    while (children_indices[0].size() == 0 || children_indices[1].size() == 0) {
-      if (_verbose)
-        showUpdate("\tNo hyperplane found (left has %ld children, right has %ld children)\n",
-          children_indices[0].size(), children_indices[1].size());
-      if (_verbose && indices.size() > 100000)
-        showUpdate("Failed splitting %lu items\n", indices.size());
-
-      children_indices[0].clear();
-      children_indices[1].clear();
-
-      // Set the vector to 0.0
-      for (int z = 0; z < _f; z++)
-        m->v[z] = 0;
-
-      for (size_t i = 0; i < indices.size(); i++) {
-        S j = indices[i];
-        // Just randomize...
-        children_indices[_random.flip()].push_back(j);
-      }
-    }
-
-    int flip = (children_indices[0].size() > children_indices[1].size());
-
-    m->n_descendants = is_root ? _n_items : (S)indices.size();
-    for (int side = 0; side < 2; side++) {
-      // run _make_tree for the smallest child first (for cache locality)
-      m->children[side^flip] = _make_tree(children_indices[side^flip], false);
-    }
-
-    _allocate_size(_n_nodes + 1);
-    S item = _n_nodes++;
-    memcpy(_get(item), m, _s);
-
-    return item;
-  }
-
-  void _get_all_nns(const T* v, size_t n, int64_t search_k, vector<S>* result, vector<T>* distances,
-                    const faiss::BitsetView bitset) const {
-    Node* v_node = (Node *)alloca(_s);
-    D::template zero_value<Node>(v_node);
-    memcpy(v_node->v, v, sizeof(T) * _f);
-    D::init_node(v_node, _f);
-
-    std::priority_queue<pair<T, S> > q;
-
-    if (search_k <= 0) {
-      search_k = std::max(int64_t(n * _roots.size()), int64_t(_n_items * 5 / 100));
-    }
-
-    for (size_t i = 0; i < _roots.size(); i++) {
-      q.push(make_pair(Distance::template pq_initial_value<T>(), _roots[i]));
-    }
-
-    std::vector<S> nns;
-    while (nns.size() < (size_t)search_k && !q.empty()) {
-      const pair<T, S>& top = q.top();
-      T d = top.first;
-      S i = top.second;
-      Node* nd = _get(i);
-      q.pop();
-      if (nd->n_descendants == 1 && i < _n_items) { // raw data
-        if (bitset.empty() || !bitset.test((int64_t)i))
-          nns.push_back(i);
-      } else if (nd->n_descendants <= _K) {
-        const S* dst = nd->children;
-        for (auto ii = 0; ii < nd->n_descendants; ++ ii) {
-          if (bitset.empty() || !bitset.test((int64_t)dst[ii]))
-            nns.push_back(dst[ii]);
-//            nns.insert(nns.end(), dst, &dst[nd->n_descendants]);
-        }
-      } else {
-        T margin = D::margin(nd, v, _f);
-        q.push(make_pair(D::pq_distance(d, margin, 1), static_cast<S>(nd->children[1])));
-        q.push(make_pair(D::pq_distance(d, margin, 0), static_cast<S>(nd->children[0])));
-      }
-    }
-
-    // Get distances for all items
-    // To avoid calculating distance multiple times for any items, sort by id
-    std::sort(nns.begin(), nns.end());
-    vector<pair<T, S> > nns_dist;
-    S last = -1;
-    for (size_t i = 0; i < nns.size(); i++) {
-      S j = nns[i];
-      if (j == last)
-        continue;
-      last = j;
-      if (_get(j)->n_descendants == 1)  // This is only to guard a really obscure case, #284
-        nns_dist.push_back(make_pair(D::distance(v_node, _get(j), _f), j));
-    }
-
-    size_t m = nns_dist.size();
-    size_t p = n < m ? n : m; // Return this many items
-    std::partial_sort(nns_dist.begin(), nns_dist.begin() + p, nns_dist.end());
-    for (size_t i = 0; i < p; i++) {
-      if (distances)
-        distances->push_back(D::normalized_distance(nns_dist[i].first));
-      result->push_back(nns_dist[i].second);
-    }
-  }
-
-  int64_t cal_size() {
-     int64_t ret = 0;
-     ret += sizeof(*this);
-     ret += _roots.size() * sizeof(S);
-     ret += std::max(_n_nodes, _nodes_size) * _s;
-     return ret;
-   }
 };
+
+class AnnoyIndexSingleThreadedBuildPolicy {
+public:
+  template<typename S, typename T, typename D, typename Random>
+  static void build(AnnoyIndex<S, T, D, Random, AnnoyIndexSingleThreadedBuildPolicy>* annoy, int q, int n_threads) {
+    AnnoyIndexSingleThreadedBuildPolicy threaded_build_policy;
+    annoy->thread_build(q, 0, threaded_build_policy);
+  }
+
+  void lock_n_nodes() {}
+  void unlock_n_nodes() {}
+
+  void lock_nodes() {}
+  void unlock_nodes() {}
+
+  void lock_shared_nodes() {}
+  void unlock_shared_nodes() {}
+
+  void lock_roots() {}
+  void unlock_roots() {}
+};
+
+#ifdef ANNOYLIB_MULTITHREADED_BUILD
+class AnnoyIndexMultiThreadedBuildPolicy {
+private:
+  std::shared_timed_mutex nodes_mutex;
+  std::mutex n_nodes_mutex;
+  std::mutex roots_mutex;
+
+public:
+  template<typename S, typename T, typename D, typename Random>
+  static void build(AnnoyIndex<S, T, D, Random, AnnoyIndexMultiThreadedBuildPolicy>* annoy, int q, int n_threads) {
+    AnnoyIndexMultiThreadedBuildPolicy threaded_build_policy;
+    if (n_threads == -1) {
+      // If the hardware_concurrency() value is not well defined or not computable, it returns 0.
+      // We guard against this by using at least 1 thread.
+      n_threads = std::max(1, (int)std::thread::hardware_concurrency());
+    }
+
+    vector<std::thread> threads(n_threads);
+
+    for (int thread_idx = 0; thread_idx < n_threads; thread_idx++) {
+      int trees_per_thread = q == -1 ? -1 : (int)floor((q + thread_idx) / n_threads);
+
+      threads[thread_idx] = std::thread(
+        &AnnoyIndex<S, T, D, Random, AnnoyIndexMultiThreadedBuildPolicy>::thread_build,
+        annoy,
+        trees_per_thread,
+        thread_idx,
+        std::ref(threaded_build_policy)
+      );
+    }
+
+    for (auto& thread : threads) {
+      thread.join();
+    }
+  }
+
+  void lock_n_nodes() {
+    n_nodes_mutex.lock();
+  }
+  void unlock_n_nodes() {
+    n_nodes_mutex.unlock();
+  }
+
+  void lock_nodes() {
+    nodes_mutex.lock();
+  }
+  void unlock_nodes() {
+    nodes_mutex.unlock();
+  }
+
+  void lock_shared_nodes() {
+    nodes_mutex.lock_shared();
+  }
+  void unlock_shared_nodes() {
+    nodes_mutex.unlock_shared();
+  }
+
+  void lock_roots() {
+    roots_mutex.lock();
+  }
+  void unlock_roots() {
+    roots_mutex.unlock();
+  }
+};
+#endif
 
 #endif
 // vim: tabstop=2 shiftwidth=2

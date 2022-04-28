@@ -54,6 +54,11 @@ typedef signed __int32    int32_t;
     #define PyInt_FromLong PyLong_FromLong 
 #endif
 
+#ifdef ANNOYLIB_MULTITHREADED_BUILD
+  typedef AnnoyIndexMultiThreadedBuildPolicy AnnoyIndexThreadedBuildPolicy;
+#else
+  typedef AnnoyIndexSingleThreadedBuildPolicy AnnoyIndexThreadedBuildPolicy;
+#endif
 
 template class AnnoyIndexInterface<int32_t, float>;
 
@@ -63,7 +68,7 @@ class HammingWrapper : public AnnoyIndexInterface<int32_t, float> {
   // This is questionable from a performance point of view. Should reconsider this solution.
 private:
   int32_t _f_external, _f_internal;
-  AnnoyIndex<int32_t, uint64_t, Hamming, Kiss64Random> _index;
+  AnnoyIndex<int32_t, uint64_t, Hamming, Kiss64Random, AnnoyIndexThreadedBuildPolicy> _index;
   void _pack(const float* src, uint64_t* dst) const {
     for (int32_t i = 0; i < _f_internal; i++) {
       dst[i] = 0;
@@ -84,7 +89,7 @@ public:
     _pack(w, &w_internal[0]);
     return _index.add_item(item, &w_internal[0], error);
   };
-  bool build(int q, char** error) { return _index.build(q, error); };
+  bool build(int q, int n_threads, char** error) { return _index.build(q, n_threads, error); };
   bool unbuild(char** error) { return _index.unbuild(error); };
   bool save(const char* filename, bool prefault, char** error) { return _index.save(filename, prefault, error); };
   void unload() { _index.unload(); };
@@ -96,7 +101,7 @@ public:
       _index.get_nns_by_item(item, n, search_k, result, &distances_internal);
       distances->insert(distances->begin(), distances_internal.begin(), distances_internal.end());
     } else {
-      _index.get_nns_by_item(item, n, search_k, result, nullptr);
+      _index.get_nns_by_item(item, n, search_k, result, NULL);
     }
   };
   void get_nns_by_vector(const float* w, size_t n, int search_k, vector<int32_t>* result, vector<float>* distances) const {
@@ -107,7 +112,7 @@ public:
       _index.get_nns_by_vector(&w_internal[0], n, search_k, result, &distances_internal);
       distances->insert(distances->begin(), distances_internal.begin(), distances_internal.end());
     } else {
-      _index.get_nns_by_vector(&w_internal[0], n, search_k, result, nullptr);
+      _index.get_nns_by_vector(&w_internal[0], n, search_k, result, NULL);
     }
   };
   int32_t get_n_items() const { return _index.get_n_items(); };
@@ -133,32 +138,32 @@ typedef struct {
 static PyObject *
 py_an_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
   py_annoy *self = (py_annoy *)type->tp_alloc(type, 0);
-  if (self == nullptr) {
-    return nullptr;
+  if (self == NULL) {
+    return NULL;
   }
-  const char *metric = nullptr;
+  const char *metric = NULL;
 
-  static char const * kwlist[] = {"f", "metric", nullptr};
+  static char const * kwlist[] = {"f", "metric", NULL};
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i|s", (char**)kwlist, &self->f, &metric))
-    return nullptr;
+    return NULL;
   if (!metric) {
     // This keeps coming up, see #368 etc
     PyErr_WarnEx(PyExc_FutureWarning, "The default argument for metric will be removed "
 		 "in future version of Annoy. Please pass metric='angular' explicitly.", 1);
-    self->ptr = new AnnoyIndex<int32_t, float, Angular, Kiss64Random>(self->f);
+    self->ptr = new AnnoyIndex<int32_t, float, Angular, Kiss64Random, AnnoyIndexThreadedBuildPolicy>(self->f);
   } else if (!strcmp(metric, "angular")) {
-   self->ptr = new AnnoyIndex<int32_t, float, Angular, Kiss64Random>(self->f);
+   self->ptr = new AnnoyIndex<int32_t, float, Angular, Kiss64Random, AnnoyIndexThreadedBuildPolicy>(self->f);
   } else if (!strcmp(metric, "euclidean")) {
-    self->ptr = new AnnoyIndex<int32_t, float, Euclidean, Kiss64Random>(self->f);
+    self->ptr = new AnnoyIndex<int32_t, float, Euclidean, Kiss64Random, AnnoyIndexThreadedBuildPolicy>(self->f);
   } else if (!strcmp(metric, "manhattan")) {
-    self->ptr = new AnnoyIndex<int32_t, float, Manhattan, Kiss64Random>(self->f);
+    self->ptr = new AnnoyIndex<int32_t, float, Manhattan, Kiss64Random, AnnoyIndexThreadedBuildPolicy>(self->f);
   } else if (!strcmp(metric, "hamming")) {
     self->ptr = new HammingWrapper(self->f);
   } else if (!strcmp(metric, "dot")) {
-    self->ptr = new AnnoyIndex<int32_t, float, DotProduct, Kiss64Random>(self->f);
+    self->ptr = new AnnoyIndex<int32_t, float, DotProduct, Kiss64Random, AnnoyIndexThreadedBuildPolicy>(self->f);
   } else {
     PyErr_SetString(PyExc_ValueError, "No such metric");
-    return nullptr;
+    return NULL;
   }
 
   return (PyObject *)self;
@@ -168,11 +173,11 @@ py_an_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
 static int 
 py_an_init(py_annoy *self, PyObject *args, PyObject *kwargs) {
   // Seems to be needed for Python 3
-  const char *metric = nullptr;
+  const char *metric = NULL;
   int f;
-  static char const * kwlist[] = {"f", "metric", nullptr};
+  static char const * kwlist[] = {"f", "metric", NULL};
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i|s", (char**)kwlist, &f, &metric))
-    return (int) nullptr;
+    return (int) NULL;
   return 0;
 }
 
@@ -187,7 +192,7 @@ py_an_dealloc(py_annoy* self) {
 static PyMemberDef py_annoy_members[] = {
   {(char*)"f", T_INT, offsetof(py_annoy, f), 0,
    (char*)""},
-  {nullptr}	/* Sentinel */
+  {NULL}	/* Sentinel */
 };
 
 
@@ -196,15 +201,15 @@ py_an_load(py_annoy *self, PyObject *args, PyObject *kwargs) {
   char *filename, *error;
   bool prefault = false;
   if (!self->ptr) 
-    return nullptr;
-  static char const * kwlist[] = {"fn", "prefault", nullptr};
+    return NULL;
+  static char const * kwlist[] = {"fn", "prefault", NULL};
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|b", (char**)kwlist, &filename, &prefault))
-    return nullptr;
+    return NULL;
 
   if (!self->ptr->load(filename, prefault, &error)) {
     PyErr_SetString(PyExc_IOError, error);
     free(error);
-    return nullptr;
+    return NULL;
   }
   Py_RETURN_TRUE;
 }
@@ -215,15 +220,15 @@ py_an_save(py_annoy *self, PyObject *args, PyObject *kwargs) {
   char *filename, *error;
   bool prefault = false;
   if (!self->ptr) 
-    return nullptr;
-  static char const * kwlist[] = {"fn", "prefault", nullptr};
+    return NULL;
+  static char const * kwlist[] = {"fn", "prefault", NULL};
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|b", (char**)kwlist, &filename, &prefault))
-    return nullptr;
+    return NULL;
 
   if (!self->ptr->save(filename, prefault, &error)) {
     PyErr_SetString(PyExc_IOError, error);
     free(error);
-    return nullptr;
+    return NULL;
   }
   Py_RETURN_TRUE;
 }
@@ -265,21 +270,21 @@ static PyObject*
 py_an_get_nns_by_item(py_annoy *self, PyObject *args, PyObject *kwargs) {
   int32_t item, n, search_k=-1, include_distances=0;
   if (!self->ptr) 
-    return nullptr;
+    return NULL;
 
-  static char const * kwlist[] = {"i", "n", "search_k", "include_distances", nullptr};
+  static char const * kwlist[] = {"i", "n", "search_k", "include_distances", NULL};
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ii|ii", (char**)kwlist, &item, &n, &search_k, &include_distances))
-    return nullptr;
+    return NULL;
 
   if (!check_constraints(self, item, false)) {
-    return nullptr;
+    return NULL;
   }
 
   vector<int32_t> result;
   vector<float> distances;
 
   Py_BEGIN_ALLOW_THREADS;
-  self->ptr->get_nns_by_item(item, n, search_k, &result, include_distances ? &distances : nullptr);
+  self->ptr->get_nns_by_item(item, n, search_k, &result, include_distances ? &distances : NULL);
   Py_END_ALLOW_THREADS;
 
   return get_nns_to_python(result, distances, include_distances);
@@ -315,22 +320,22 @@ py_an_get_nns_by_vector(py_annoy *self, PyObject *args, PyObject *kwargs) {
   PyObject* v;
   int32_t n, search_k=-1, include_distances=0;
   if (!self->ptr) 
-    return nullptr;
+    return NULL;
 
-  static char const * kwlist[] = {"vector", "n", "search_k", "include_distances", nullptr};
+  static char const * kwlist[] = {"vector", "n", "search_k", "include_distances", NULL};
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Oi|ii", (char**)kwlist, &v, &n, &search_k, &include_distances))
-    return nullptr;
+    return NULL;
 
   vector<float> w(self->f);
   if (!convert_list_to_vector(v, self->f, &w)) {
-    return nullptr;
+    return NULL;
   }
 
   vector<int32_t> result;
   vector<float> distances;
 
   Py_BEGIN_ALLOW_THREADS;
-  self->ptr->get_nns_by_vector(&w[0], n, search_k, &result, include_distances ? &distances : nullptr);
+  self->ptr->get_nns_by_vector(&w[0], n, search_k, &result, include_distances ? &distances : NULL);
   Py_END_ALLOW_THREADS;
 
   return get_nns_to_python(result, distances, include_distances);
@@ -341,12 +346,12 @@ static PyObject*
 py_an_get_item_vector(py_annoy *self, PyObject *args) {
   int32_t item;
   if (!self->ptr) 
-    return nullptr;
+    return NULL;
   if (!PyArg_ParseTuple(args, "i", &item))
-    return nullptr;
+    return NULL;
 
   if (!check_constraints(self, item, false)) {
-    return nullptr;
+    return NULL;
   }
 
   vector<float> v(self->f);
@@ -365,24 +370,24 @@ py_an_add_item(py_annoy *self, PyObject *args, PyObject* kwargs) {
   PyObject* v;
   int32_t item;
   if (!self->ptr) 
-    return nullptr;
-  static char const * kwlist[] = {"i", "vector", nullptr};
+    return NULL;
+  static char const * kwlist[] = {"i", "vector", NULL};
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iO", (char**)kwlist, &item, &v))
-    return nullptr;
+    return NULL;
 
   if (!check_constraints(self, item, true)) {
-    return nullptr;
+    return NULL;
   }
 
   vector<float> w(self->f);
   if (!convert_list_to_vector(v, self->f, &w)) {
-    return nullptr;
+    return NULL;
   }
   char* error;
   if (!self->ptr->add_item(item, &w[0], &error)) {
     PyErr_SetString(PyExc_Exception, error);
     free(error);
-    return nullptr;
+    return NULL;
   }
 
   Py_RETURN_NONE;
@@ -392,15 +397,15 @@ static PyObject *
 py_an_on_disk_build(py_annoy *self, PyObject *args, PyObject *kwargs) {
   char *filename, *error;
   if (!self->ptr)
-    return nullptr;
-  static char const * kwlist[] = {"fn", nullptr};
+    return NULL;
+  static char const * kwlist[] = {"fn", NULL};
   if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", (char**)kwlist, &filename))
-    return nullptr;
+    return NULL;
 
   if (!self->ptr->on_disk_build(filename, &error)) {
     PyErr_SetString(PyExc_IOError, error);
     free(error);
-    return nullptr;
+    return NULL;
   }
   Py_RETURN_TRUE;
 }
@@ -408,21 +413,22 @@ py_an_on_disk_build(py_annoy *self, PyObject *args, PyObject *kwargs) {
 static PyObject *
 py_an_build(py_annoy *self, PyObject *args, PyObject *kwargs) {
   int q;
+  int n_jobs = -1;
   if (!self->ptr) 
-    return nullptr;
-  static char const * kwlist[] = {"n_trees", nullptr};
-  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i", (char**)kwlist, &q))
-    return nullptr;
+    return NULL;
+  static char const * kwlist[] = {"n_trees", "n_jobs", NULL};
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i|i", (char**)kwlist, &q, &n_jobs))
+    return NULL;
 
   bool res;
   char* error;
   Py_BEGIN_ALLOW_THREADS;
-  res = self->ptr->build(q, &error);
+  res = self->ptr->build(q, n_jobs, &error);
   Py_END_ALLOW_THREADS;
   if (!res) {
     PyErr_SetString(PyExc_Exception, error);
     free(error);
-    return nullptr;
+    return NULL;
   }
 
   Py_RETURN_TRUE;
@@ -432,13 +438,13 @@ py_an_build(py_annoy *self, PyObject *args, PyObject *kwargs) {
 static PyObject *
 py_an_unbuild(py_annoy *self) {
   if (!self->ptr) 
-    return nullptr;
+    return NULL;
 
   char* error;
   if (!self->ptr->unbuild(&error)) {
     PyErr_SetString(PyExc_Exception, error);
     free(error);
-    return nullptr;
+    return NULL;
   }
 
   Py_RETURN_TRUE;
@@ -448,7 +454,7 @@ py_an_unbuild(py_annoy *self) {
 static PyObject *
 py_an_unload(py_annoy *self) {
   if (!self->ptr) 
-    return nullptr;
+    return NULL;
 
   self->ptr->unload();
 
@@ -460,12 +466,12 @@ static PyObject *
 py_an_get_distance(py_annoy *self, PyObject *args) {
   int32_t i, j;
   if (!self->ptr) 
-    return nullptr;
+    return NULL;
   if (!PyArg_ParseTuple(args, "ii", &i, &j))
-    return nullptr;
+    return NULL;
 
   if (!check_constraints(self, i, false) || !check_constraints(self, j, false)) {
-    return nullptr;
+    return NULL;
   }
 
   double d = self->ptr->get_distance(i,j);
@@ -476,7 +482,7 @@ py_an_get_distance(py_annoy *self, PyObject *args) {
 static PyObject *
 py_an_get_n_items(py_annoy *self) {
   if (!self->ptr) 
-    return nullptr;
+    return NULL;
 
   int32_t n = self->ptr->get_n_items();
   return PyInt_FromLong(n);
@@ -485,7 +491,7 @@ py_an_get_n_items(py_annoy *self) {
 static PyObject *
 py_an_get_n_trees(py_annoy *self) {
   if (!self->ptr) 
-    return nullptr;
+    return NULL;
 
   int32_t n = self->ptr->get_n_trees();
   return PyInt_FromLong(n);
@@ -495,9 +501,9 @@ static PyObject *
 py_an_verbose(py_annoy *self, PyObject *args) {
   int verbose;
   if (!self->ptr) 
-    return nullptr;
+    return NULL;
   if (!PyArg_ParseTuple(args, "i", &verbose))
-    return nullptr;
+    return NULL;
 
   self->ptr->verbose((bool)verbose);
 
@@ -509,9 +515,9 @@ static PyObject *
 py_an_set_seed(py_annoy *self, PyObject *args) {
   int q;
   if (!self->ptr)
-    return nullptr;
+    return NULL;
   if (!PyArg_ParseTuple(args, "i", &q))
-    return nullptr;
+    return NULL;
 
   self->ptr->set_seed(q);
 
@@ -527,7 +533,7 @@ static PyMethodDef AnnoyMethods[] = {
   {"get_item_vector",(PyCFunction)py_an_get_item_vector, METH_VARARGS, "Returns the vector for item `i` that was previously added."},
   {"add_item",(PyCFunction)py_an_add_item, METH_VARARGS | METH_KEYWORDS, "Adds item `i` (any nonnegative integer) with vector `v`.\n\nNote that it will allocate memory for `max(i)+1` items."},
   {"on_disk_build",(PyCFunction)py_an_on_disk_build, METH_VARARGS | METH_KEYWORDS, "Build will be performed with storage on disk instead of RAM."},
-  {"build",(PyCFunction)py_an_build, METH_VARARGS | METH_KEYWORDS, "Builds a forest of `n_trees` trees.\n\nMore trees give higher precision when querying. After calling `build`,\nno more items can be added."},
+  {"build",(PyCFunction)py_an_build, METH_VARARGS | METH_KEYWORDS, "Builds a forest of `n_trees` trees.\n\nMore trees give higher precision when querying. After calling `build`,\nno more items can be added. `n_jobs` specifies the number of threads used to build the trees. `n_jobs=-1` uses all available CPU cores."},
   {"unbuild",(PyCFunction)py_an_unbuild, METH_NOARGS, "Unbuilds the tree in order to allows adding new items.\n\nbuild() has to be called again afterwards in order to\nrun queries."},
   {"unload",(PyCFunction)py_an_unload, METH_NOARGS, "Unloads an index from disk."},
   {"get_distance",(PyCFunction)py_an_get_distance, METH_VARARGS, "Returns the distance between items `i` and `j`."},
@@ -535,12 +541,12 @@ static PyMethodDef AnnoyMethods[] = {
   {"get_n_trees",(PyCFunction)py_an_get_n_trees, METH_NOARGS, "Returns the number of trees in the index."},
   {"verbose",(PyCFunction)py_an_verbose, METH_VARARGS, ""},
   {"set_seed",(PyCFunction)py_an_set_seed, METH_VARARGS, "Sets the seed of Annoy's random number generator."},
-  {nullptr, nullptr, 0, nullptr}		 /* Sentinel */
+  {NULL, NULL, 0, NULL}		 /* Sentinel */
 };
 
 
 static PyTypeObject PyAnnoyType = {
-  PyVarObject_HEAD_INIT(nullptr, 0)
+  PyVarObject_HEAD_INIT(NULL, 0)
   "annoy.Annoy",          /*tp_name*/
   sizeof(py_annoy),       /*tp_basicsize*/
   0,                      /*tp_itemsize*/
@@ -581,7 +587,7 @@ static PyTypeObject PyAnnoyType = {
 };
 
 static PyMethodDef module_methods[] = {
-  {nullptr}	/* Sentinel */
+  {NULL}	/* Sentinel */
 };
 
 #if PY_MAJOR_VERSION >= 3
@@ -591,10 +597,10 @@ static PyMethodDef module_methods[] = {
     ANNOY_DOC,           /* m_doc */
     -1,                  /* m_size */
     module_methods,      /* m_methods */
-    nullptr,                /* m_reload */
-    nullptr,                /* m_traverse */
-    nullptr,                /* m_clear */
-    nullptr,                /* m_free */
+    NULL,                /* m_reload */
+    NULL,                /* m_traverse */
+    NULL,                /* m_clear */
+    NULL,                /* m_free */
   };
 #endif
 
@@ -602,7 +608,7 @@ PyObject *create_module(void) {
   PyObject *m;
 
   if (PyType_Ready(&PyAnnoyType) < 0)
-    return nullptr;
+    return NULL;
 
 #if PY_MAJOR_VERSION >= 3
   m = PyModule_Create(&moduledef);
@@ -610,8 +616,8 @@ PyObject *create_module(void) {
   m = Py_InitModule("annoylib", module_methods);
 #endif
 
-  if (m == nullptr)
-    return nullptr;
+  if (m == NULL)
+    return NULL;
 
   Py_INCREF(&PyAnnoyType);
   PyModule_AddObject(m, "Annoy", (PyObject *)&PyAnnoyType);

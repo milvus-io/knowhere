@@ -63,9 +63,9 @@ IndexAnnoy::Load(const BinarySet& index_binary) {
     memcpy(&dim, dim_data->data.get(), static_cast<size_t>(dim_data->size));
 
     if (metric_type_ == Metric::L2) {
-        index_ = std::make_shared<AnnoyIndex<int64_t, float, ::Euclidean, ::Kiss64Random>>(dim);
+        index_ = std::make_shared<AnnoyIndex<int64_t, float, ::Euclidean, ::Kiss64Random, ThreadedBuildPolicy>>(dim);
     } else if (metric_type_ == Metric::IP) {
-        index_ = std::make_shared<AnnoyIndex<int64_t, float, ::DotProduct, ::Kiss64Random>>(dim);
+        index_ = std::make_shared<AnnoyIndex<int64_t, float, ::DotProduct, ::Kiss64Random, ThreadedBuildPolicy>>(dim);
     } else {
         KNOWHERE_THROW_MSG("metric not supported " + metric_type_);
     }
@@ -91,9 +91,9 @@ IndexAnnoy::BuildAll(const DatasetPtr& dataset_ptr, const Config& config) {
 
     metric_type_ = config[Metric::TYPE];
     if (metric_type_ == Metric::L2) {
-        index_ = std::make_shared<AnnoyIndex<int64_t, float, ::Euclidean, ::Kiss64Random>>(dim);
+        index_ = std::make_shared<AnnoyIndex<int64_t, float, ::Euclidean, ::Kiss64Random, ThreadedBuildPolicy>>(dim);
     } else if (metric_type_ == Metric::IP) {
-        index_ = std::make_shared<AnnoyIndex<int64_t, float, ::DotProduct, ::Kiss64Random>>(dim);
+        index_ = std::make_shared<AnnoyIndex<int64_t, float, ::DotProduct, ::Kiss64Random, ThreadedBuildPolicy>>(dim);
     } else {
         KNOWHERE_THROW_MSG("metric not supported " + metric_type_);
     }
