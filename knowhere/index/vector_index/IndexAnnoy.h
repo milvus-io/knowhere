@@ -21,6 +21,8 @@
 
 namespace knowhere {
 
+using ThreadedBuildPolicy = AnnoyIndexSingleThreadedBuildPolicy;
+
 class IndexAnnoy : public VecIndex {
  public:
     IndexAnnoy() {
