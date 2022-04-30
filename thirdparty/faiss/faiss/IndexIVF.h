@@ -226,8 +226,7 @@ struct IndexIVF : Index, Level1Quantizer {
             idx_t n,
             const float* x,
             const uint8_t* arranged_codes,
-            std::vector<size_t> prefix_sum,
-            bool is_sq8,
+            const size_t* prefix_sum,
             idx_t k,
             const idx_t* assign,
             const float* centroid_dis,
@@ -236,7 +235,7 @@ struct IndexIVF : Index, Level1Quantizer {
             bool store_pairs,
             const IVFSearchParameters* params = nullptr,
             IndexIVFStats* stats = nullptr,
-            const BitsetView bitset = nullptr);
+            const BitsetView bitset = nullptr) const;
 
     /** assign the vectors, then call search_preassign */
     void search(
@@ -252,12 +251,11 @@ struct IndexIVF : Index, Level1Quantizer {
             idx_t n,
             const float* x,
             const uint8_t* arranged_codes,
-            std::vector<size_t> prefix_sum,
-            bool is_sq8,
+            const size_t* prefix_sum,
             idx_t k,
             float* distances,
             idx_t* labels,
-            const BitsetView bitset = nullptr);
+            const BitsetView bitset = nullptr) const;
 
     void range_search(
             idx_t n,
