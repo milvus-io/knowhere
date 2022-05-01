@@ -264,9 +264,32 @@ struct IndexIVF : Index, Level1Quantizer {
             RangeSearchResult* result,
             const BitsetView bitset = nullptr) const override;
 
+    void range_search_without_codes(
+            idx_t n,
+            const float* x,
+            const uint8_t* arranged_codes,
+            const size_t* prefix_sum,
+            float radius,
+            RangeSearchResult* result,
+            const BitsetView bitset = nullptr) const;
+
     void range_search_preassigned(
             idx_t nx,
             const float* x,
+            float radius,
+            const idx_t* keys,
+            const float* coarse_dis,
+            RangeSearchResult* result,
+            bool store_pairs = false,
+            const IVFSearchParameters* params = nullptr,
+            IndexIVFStats* stats = nullptr,
+            const BitsetView bitset = nullptr) const;
+
+    void range_search_preassigned_without_codes(
+            idx_t nx,
+            const float* x,
+            const uint8_t* arranged_codes,
+            const size_t* prefix_sum,
             float radius,
             const idx_t* keys,
             const float* coarse_dis,

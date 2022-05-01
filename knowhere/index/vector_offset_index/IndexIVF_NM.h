@@ -49,7 +49,10 @@ class IVF_NM : public VecIndex, public OffsetBaseIndex {
     AddWithoutIds(const DatasetPtr&, const Config&) override;
 
     DatasetPtr
-    Query(const DatasetPtr&, const Config&, const faiss::BitsetView bitset) override;
+    Query(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
+
+    DatasetPtr
+    QueryByRange(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
 
 #if 0
     DatasetPtr
@@ -92,7 +95,11 @@ class IVF_NM : public VecIndex, public OffsetBaseIndex {
     GenParams(const Config&);
 
     virtual void
-    QueryImpl(int64_t, const float*, int64_t, float*, int64_t*, const Config&, const faiss::BitsetView bitset);
+    QueryImpl(int64_t, const float*, int64_t, float*, int64_t*, const Config&, const faiss::BitsetView);
+
+    virtual void
+    QueryByRangeImpl(int64_t, const float*, float, float*&, int64_t*&, size_t*&, const Config&,
+                     const faiss::BitsetView);
 
     void
     SealImpl() override;

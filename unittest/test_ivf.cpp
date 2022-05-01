@@ -160,7 +160,7 @@ TEST_P(IVFTest, ivf_slice) {
     AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
 }
 
-TEST_P(IVFTest, idmap_range_search_l2) {
+TEST_P(IVFTest, ivf_range_search_l2) {
     conf_[knowhere::Metric::TYPE] = knowhere::Metric::L2;
 
     index_->Train(base_dataset, conf_);
@@ -180,7 +180,7 @@ TEST_P(IVFTest, idmap_range_search_l2) {
     }
 }
 
-TEST_P(IVFTest, idmap_range_search_ip) {
+TEST_P(IVFTest, ivf_range_search_ip) {
     conf_[knowhere::Metric::TYPE] = knowhere::Metric::IP;
 
     index_->Train(base_dataset, conf_);
