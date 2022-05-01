@@ -99,13 +99,13 @@ class IVF_NM : public VecIndex, public OffsetBaseIndex {
 
  protected:
     std::mutex mutex_;
-    std::vector<size_t> prefix_sum;
+    std::shared_ptr<size_t[]> prefix_sum_ = nullptr;
 
     // data_:    if CPU, malloc memory while loading data
     // ro_codes: if GPU, hold a ptr of read only codes so that
     //            destruction won't be done twice
     std::shared_ptr<uint8_t[]> data_ = nullptr;
-    faiss::PageLockMemoryPtr ro_codes = nullptr;
+    faiss::PageLockMemoryPtr ro_codes_ = nullptr;
 };
 
 using IVFNMPtr = std::shared_ptr<IVF_NM>;
