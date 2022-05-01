@@ -33,7 +33,7 @@ esac
 if [[ "${MACHINE}" == "Linux" ]]; then
     if [[ -x "$(command -v apt)" ]]; then
         # for Ubuntu 18.04
-        sudo apt install -y g++ gcc make ccache libssl-dev zlib1g-dev python3-dev libcurl4-openssl-dev gfortran
+        sudo apt install -y g++ gcc make ccache python3-dev gfortran
         # Pre-installation of openblas can save about 15 minutes of openblas building time.
         # But the apt-installed openblas version is 0.2.20, while the latest openblas version is 0.3.19.
         # So we only pre-install openblas in Unittest, and compile openblas-0.3.19 when release.
@@ -43,8 +43,7 @@ if [[ "${MACHINE}" == "Linux" ]]; then
     elif [[ -x "$(command -v yum)" ]]; then
         # for CentOS 7
         sudo yum install -y epel-release centos-release-scl-rh wget && \
-        sudo yum install -y git make automake ccache openssl-devel zlib-devel \
-            libcurl-devel python3-devel \
+        sudo yum install -y git make automake ccache python3-devel \
             devtoolset-7-gcc devtoolset-7-gcc-c++ devtoolset-7-gcc-gfortran \
             llvm-toolset-7.0-clang llvm-toolset-7.0-clang-tools-extra 
 
@@ -64,7 +63,7 @@ if [[ "${MACHINE}" == "Mac"  ]]; then
 fi
 
 if [[ "${MACHINE}" == "MinGw"  ]]; then
-    pacman -Su --noconfirm --needed \
+    pacman -Sy --noconfirm --needed \
     git make tar dos2unix zip unzip patch \
     mingw-w64-x86_64-toolchain \
     mingw-w64-x86_64-make \
