@@ -352,7 +352,7 @@ IVF::GenParams(const Config& config) {
 
 void
 IVF::QueryImpl(int64_t n,
-               const float* data,
+               const float* xq,
                int64_t k,
                float* distances,
                int64_t* labels,
@@ -368,7 +368,7 @@ IVF::QueryImpl(int64_t n,
         ivf_index->parallel_mode = 0;
     }
     auto ivf_stats = std::dynamic_pointer_cast<IVFStatistics>(stats);
-    ivf_index->search(n, data, k, distances, labels, bitset);
+    ivf_index->search(n, xq, k, distances, labels, bitset);
 #if 0
     stdclock::time_point after = stdclock::now();
     double search_cost = (std::chrono::duration<double, std::micro>(after - before)).count();
@@ -397,7 +397,7 @@ IVF::QueryImpl(int64_t n,
 
 void
 IVF::QueryByRangeImpl(int64_t n,
-                      const float* data,
+                      const float* xq,
                       float radius,
                       float*& distances,
                       int64_t*& labels,
@@ -418,7 +418,7 @@ IVF::QueryByRangeImpl(int64_t n,
     }
 
     faiss::RangeSearchResult res(n);
-    ivf_index->range_search(n, reinterpret_cast<const float*>(data), radius, &res, bitset);
+    ivf_index->range_search(n, xq, radius, &res, bitset);
 
     distances = res.distances;
     labels = res.labels;

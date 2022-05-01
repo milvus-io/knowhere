@@ -57,6 +57,19 @@ class IVFNMTest : public DataGen,
 #endif
     }
 
+    template <class C>
+    void CheckRangeSearchResult(
+        const knowhere::DatasetPtr& result,
+        const float radius) {
+
+        auto lims = result->Get<size_t*>(knowhere::meta::LIMS);
+        auto distances = result->Get<float*>(knowhere::meta::DISTANCE);
+
+        for (auto i = 0; i < lims[nq]; ++i) {
+            ASSERT_TRUE(C::cmp(distances[i], radius));
+        }
+    }
+
  protected:
     knowhere::IndexType index_type_;
     knowhere::IndexMode index_mode_;
@@ -87,7 +100,7 @@ LoadRawData(const knowhere::VecIndexPtr index,
     index->Load(bs);
 }
 
-TEST_P(IVFNMTest, ivf_basic) {
+TEST_P(IVFNMTest, ivfnm_basic) {
     assert(!xb.empty());
 
     // null faiss index
@@ -135,4 +148,50 @@ TEST_P(IVFNMTest, ivf_basic) {
 #ifdef KNOWHERE_GPU_VERSION
     knowhere::FaissGpuResourceMgr::GetInstance().Dump();
 #endif
+}
+
+TEST_P(IVFNMTest, ivfnm_range_search_l2) {
+    conf_[knowhere::Metric::TYPE] = knowhere::Metric::L2;
+
+    index_->Train(base_dataset, conf_);
+    index_->AddWithoutIds(base_dataset, knowhere::Config());
+    index_->SetIndexSize(nq * dim * sizeof(float));
+
+    LoadRawData(index_, base_dataset, conf_);
+
+    auto qd = knowhere::GenDataset(nq, dim, xq.data());
+
+    auto test_range_search_l2 = [&](float radius, const faiss::BitsetView bitset) {
+        conf_[knowhere::meta::RADIUS] = radius;
+        auto result = index_->QueryByRange(qd, conf_, bitset);
+        CheckRangeSearchResult<CMin<float>>(result, radius * radius);
+    };
+
+    for (float radius: {4.0, 4.5, 5.0}) {
+        test_range_search_l2(radius, nullptr);
+        test_range_search_l2(radius, *bitset);
+    }
+}
+
+TEST_P(IVFNMTest, ivfnm_range_search_ip) {
+    conf_[knowhere::Metric::TYPE] = knowhere::Metric::IP;
+
+    index_->Train(base_dataset, conf_);
+    index_->AddWithoutIds(base_dataset, knowhere::Config());
+    index_->SetIndexSize(nq * dim * sizeof(float));
+
+    LoadRawData(index_, base_dataset, conf_);
+
+    auto qd = knowhere::GenDataset(nq, dim, xq.data());
+
+    auto test_range_search_ip = [&](float radius, const faiss::BitsetView bitset) {
+        conf_[knowhere::meta::RADIUS] = radius;
+        auto result = index_->QueryByRange(qd, conf_, bitset);
+        CheckRangeSearchResult<CMax<float>>(result, radius);
+    };
+
+    for (float radius: {30.0, 35.0, 40.0}) {
+        test_range_search_ip(radius, nullptr);
+        test_range_search_ip(radius, *bitset);
+    }
 }
