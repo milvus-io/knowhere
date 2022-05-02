@@ -4,5 +4,4 @@
 *thirdparty*
 *output*
 *knowhere/utils*
-*knowhere/common/Heap*
 *unittest*

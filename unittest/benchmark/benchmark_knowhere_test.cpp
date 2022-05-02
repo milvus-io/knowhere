@@ -13,9 +13,10 @@
 #include <hdf5.h>
 #include <math.h>
 #include <vector>
+#include <unordered_set>
 
 #include "knowhere/index/IndexType.h"
-#include "knowhere/index/vector_index/VecIndexFactory.h"
+#include "knowhere/index/VecIndexFactory.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #include "unittest/utils.h"
 
@@ -167,8 +168,15 @@ print_array(const char* header, bool is_integer, const void* arr, int32_t nq, in
  * SIFT     128         1,000,000   10,000      100         Euclidean   HDF5 (501MB)
  *************************************************************************************/
 
+using idx_t = int64_t;
+using distance_t = float;
+
 class Benchmark_knowhere : public ::testing::Test {
  public:
+    double get_time_diff() {
+        return elapsed() - T0_;
+    }
+
     bool parse_ann_test_name() {
         size_t pos1, pos2;
 
@@ -198,13 +206,13 @@ class Benchmark_knowhere : public ::testing::Test {
         return true;
     }
 
-    int32_t CalcRecall(const faiss::Index::idx_t* ids, int32_t nq, int32_t k) {
+    int32_t CalcRecall(const idx_t* ids, int32_t nq, int32_t k) {
         int32_t min_k = std::min(gt_k_, k);
         int32_t hit = 0;
         for (int32_t i = 0; i < nq; i++) {
-            std::set<faiss::Index::idx_t> ground(gt_ids_ + i * gt_k_, gt_ids_ + i * gt_k_ + min_k);
+            std::unordered_set<idx_t> ground(gt_ids_ + i * gt_k_, gt_ids_ + i * gt_k_ + min_k);
             for (int32_t j = 0; j < min_k; j++) {
-                faiss::Index::idx_t id = ids[i * k + j];
+                idx_t id = ids[i * k + j];
                 if (ground.count(id) > 0) {
                     hit++;
                 }
@@ -217,12 +225,12 @@ class Benchmark_knowhere : public ::testing::Test {
         const std::string ann_file_name = ann_test_name_ + HDF5_POSTFIX;
 
         int32_t dim;
-        printf("[%.3f s] Loading HDF5 file: %s\n", elapsed() - T0_, ann_file_name.c_str());
+        printf("[%.3f s] Loading HDF5 file: %s\n", get_time_diff(), ann_file_name.c_str());
         xb_ = (float*)hdf5_read(ann_file_name, HDF5_DATASET_TRAIN, H5T_FLOAT, dim, nb_);
         assert(dim == dim_ || !"dataset does not have correct dimension");
 
         if (metric_type_ == knowhere::Metric::IP) {
-            printf("[%.3f s] Normalizing base data set \n", elapsed() - T0_);
+            printf("[%.3f s] Normalizing base data set \n", get_time_diff());
             normalize(xb_, nb_, dim_);
         }
     }
@@ -235,7 +243,7 @@ class Benchmark_knowhere : public ::testing::Test {
         assert(dim == dim_ || !"query does not have same dimension as train set");
 
         if (metric_type_ == knowhere::Metric::IP) {
-            printf("[%.3f s] Normalizing query data \n", elapsed() - T0_);
+            printf("[%.3f s] Normalizing query data \n", get_time_diff());
             normalize(xq_, nq_, dim_);
         }
     }
@@ -248,7 +256,7 @@ class Benchmark_knowhere : public ::testing::Test {
         int* gt_int = (int*)hdf5_read(ann_file_name, HDF5_DATASET_NEIGHBORS, H5T_INTEGER, gt_k_, gt_nq);
         assert(gt_nq == nq_ || !"incorrect nb of ground truth index");
 
-        gt_ids_ = new faiss::Index::idx_t[gt_k_ * nq_];
+        gt_ids_ = new idx_t[gt_k_ * nq_];
         for (int32_t i = 0; i < gt_k_ * nq_; i++) {
             gt_ids_[i] = gt_int[i];
         }
@@ -278,61 +286,119 @@ class Benchmark_knowhere : public ::testing::Test {
         FileIOWriter writer(filename);
         binary_set_ = index_->Serialize(conf);
 
-        knowhere::BinaryPtr bin = binary_set_.GetByName(binary_header_);
-        writer(static_cast<void*>(bin->data.get()), bin->size);
+        const auto& m = binary_set_.binary_map_;
+        for (auto it = m.begin(); it != m.end(); ++it) {
+            const std::string& name = it->first;
+            size_t name_size = name.length();
+            const knowhere::BinaryPtr data = it->second;
+            size_t data_size = data->size;
+
+            writer(&name_size, sizeof(size_t));
+            writer(&data->size, sizeof(data->size));
+            writer((void*)name.c_str(), name_size);
+            writer(data->data.get(), data->size);
+        }
     }
 
     void read_index(const std::string& filename) {
         binary_set_.clear();
 
         FileIOReader reader(filename);
-        int64_t size = reader.size();
+        int64_t file_size = reader.size();
+        if (file_size < 0) {
+            throw knowhere::KnowhereException(filename + " not exist");
+        }
 
-        auto load_data = new uint8_t[size];
-        reader(load_data, size);
+        int64_t offset = 0;
+        while (offset < file_size) {
+            size_t name_size, data_size;
+            reader(&name_size, sizeof(size_t));
+            offset += sizeof(size_t);
+            reader(&data_size, sizeof(size_t));
+            offset += sizeof(size_t);
 
-        std::shared_ptr<uint8_t[]> data_ptr(load_data);
-        binary_set_.Append(binary_header_, data_ptr, size);
+            std::string name;
+            name.resize(name_size);
+            reader(name.data(), name_size);
+            offset += name_size;
+            auto data = new uint8_t[data_size];
+            reader(data, data_size);
+            offset += data_size;
+
+            std::shared_ptr<uint8_t[]> data_ptr(data);
+            binary_set_.Append(name, data_ptr, data_size);
+        }
+    }
+
+    std::string get_index_name(const std::vector<int32_t>& params) {
+        std::string params_str = "";
+        for (size_t i = 0; i < params.size(); i++) {
+            params_str += "_" + std::to_string(params[i]);
+        }
+        return ann_test_name_ + "_" + index_type_ + params_str + ".index";
     }
 
     void create_cpu_index(
-        const std::string index_file_name,
-        const knowhere::Config conf) {
+        const std::string& index_file_name,
+        const knowhere::Config& conf) {
 
-        printf("[%.3f s] Creating CPU index \"%s\"\n", elapsed() - T0_, index_type_.c_str());
+        printf("[%.3f s] Creating CPU index \"%s\"\n", get_time_diff(), index_type_.c_str());
         auto& factory = knowhere::VecIndexFactory::GetInstance();
         index_ = factory.CreateVecIndex(index_type_);
 
         try {
-            printf("[%.3f s] Reading index file: %s\n", elapsed() - T0_, index_file_name.c_str());
+            printf("[%.3f s] Reading index file: %s\n", get_time_diff(), index_file_name.c_str());
             read_index(index_file_name);
         } catch (...) {
-            printf("[%.3f s] Building all on %d vectors\n", elapsed() - T0_, nb_);
+            printf("[%.3f s] Building all on %d vectors\n", get_time_diff(), nb_);
             knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nb_, dim_, xb_);
             index_->BuildAll(ds_ptr, conf);
 
-            printf("[%.3f s] Writing index file: %s\n", elapsed() - T0_, index_file_name.c_str());
+            printf("[%.3f s] Writing index file: %s\n", get_time_diff(), index_file_name.c_str());
             write_index(index_file_name, conf);
         }
     }
 
+    void test_idmap(const knowhere::Config& cfg) {
+        auto conf = cfg;
+
+        printf("\n[%0.3f s] %s | %s \n",
+               get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+        printf("================================================================================\n");
+        for (auto nq : NQs_) {
+            knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
+            for (auto k : TOPKs_) {
+                conf[knowhere::meta::TOPK] = k;
+
+                double t_start = elapsed(), t_end;
+                auto result = index_->Query(ds_ptr, conf, nullptr);
+                t_end = elapsed();
+
+                auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
+                int32_t hit = CalcRecall(ids, nq, k);
+                printf("  nq = %4d, k = %4d, elapse = %.4fs, R@ = %.4f\n",
+                       nq, k, (t_end - t_start), (hit / float(nq * std::min(gt_k_, k))));
+            }
+        }
+        printf("================================================================================\n");
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+    }
+
     void test_ivf(
         const knowhere::Config& cfg,
-        const std::vector<int32_t>& nqs,
-        const std::vector<int32_t>& topks,
         const std::vector<int32_t>& nprobes) {
 
         auto conf = cfg;
         auto nlist = conf[knowhere::IndexParams::nlist].get<int64_t>();
 
         printf("\n[%0.3f s] %s | %s | nlist=%ld\n",
-               elapsed() - T0_, ann_test_name_.c_str(), index_type_.c_str(), nlist);
+               get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(), nlist);
         printf("================================================================================\n");
         for (auto nprobe : nprobes) {
             conf[knowhere::IndexParams::nprobe] = nprobe;
-            for (auto nq : nqs) {
+            for (auto nq : NQs_) {
                 knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
-                for (auto k : topks) {
+                for (auto k : TOPKs_) {
                     conf[knowhere::meta::TOPK] = k;
 
                     double t_start = elapsed(), t_end;
@@ -347,13 +413,11 @@ class Benchmark_knowhere : public ::testing::Test {
             }
         }
         printf("================================================================================\n");
-        printf("[%.3f s] Test '%s/%s' done\n\n", elapsed() - T0_, ann_test_name_.c_str(), index_type_.c_str());
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
     }
 
     void test_hnsw(
         const knowhere::Config& cfg,
-        const std::vector<int32_t>& nqs,
-        const std::vector<int32_t>& topks,
         const std::vector<int32_t>& efs) {
 
         auto conf = cfg;
@@ -361,13 +425,13 @@ class Benchmark_knowhere : public ::testing::Test {
         auto efConstruction = conf[knowhere::IndexParams::efConstruction].get<int64_t>();
 
         printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld\n",
-               elapsed() - T0_, ann_test_name_.c_str(), index_type_.c_str(), M, efConstruction);
+               get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(), M, efConstruction);
         printf("================================================================================\n");
         for (auto ef: efs) {
             conf[knowhere::IndexParams::ef] = ef;
-            for (auto nq : nqs) {
+            for (auto nq : NQs_) {
                 knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
-                for (auto k : topks) {
+                for (auto k : TOPKs_) {
                     conf[knowhere::meta::TOPK] = k;
 
                     double t_start = elapsed(), t_end;
@@ -382,7 +446,39 @@ class Benchmark_knowhere : public ::testing::Test {
             }
         }
         printf("================================================================================\n");
-        printf("[%.3f s] Test '%s/%s' done\n\n", elapsed() - T0_, ann_test_name_.c_str(), index_type_.c_str());
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+    }
+
+    void test_annoy(
+        const knowhere::Config& cfg,
+        const std::vector<int32_t>& search_ks) {
+
+        auto conf = cfg;
+        auto n_trees = conf[knowhere::IndexParams::n_trees].get<int64_t>();
+
+        printf("\n[%0.3f s] %s | %s | n_trees=%ld \n",
+               get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(), n_trees);
+        printf("================================================================================\n");
+        for (auto sk: search_ks) {
+            conf[knowhere::IndexParams::search_k] = sk;
+            for (auto nq : NQs_) {
+                knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
+                for (auto k : TOPKs_) {
+                    conf[knowhere::meta::TOPK] = k;
+
+                    double t_start = elapsed(), t_end;
+                    auto result = index_->Query(ds_ptr, conf, nullptr);
+                    t_end = elapsed();
+
+                    auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
+                    int32_t hit = CalcRecall(ids, nq, k);
+                    printf("  search_k = %4d, nq = %4d, k = %4d, elapse = %.4fs, R@ = %.4f\n",
+                           sk, nq, k, (t_end - t_start), (hit / float(nq * std::min(gt_k_, k))));
+                }
+            }
+        }
+        printf("================================================================================\n");
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
     }
 
  protected:
@@ -393,15 +489,17 @@ class Benchmark_knowhere : public ::testing::Test {
             assert(true);
         }
 
-        printf("[%.3f s] Loading base data\n", elapsed() - T0_);
+        printf("[%.3f s] Loading base data\n", get_time_diff());
         load_base_data();
 
-        printf("[%.3f s] Loading queries\n", elapsed() - T0_);
+        printf("[%.3f s] Loading queries\n", get_time_diff());
         load_query_data();
 
-        printf("[%.3f s] Loading ground truth\n", elapsed() - T0_);
+        printf("[%.3f s] Loading ground truth\n", get_time_diff());
         load_ground_truth();
 
+        cfg_[knowhere::Metric::TYPE] = metric_type_;
+        cfg_[knowhere::meta::DIM] = dim_;
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AUTO);
     }
 
@@ -419,35 +517,49 @@ class Benchmark_knowhere : public ::testing::Test {
     int32_t nb_;
     int32_t nq_;
     int32_t gt_k_;
-    faiss::Index::distance_t* xb_;
-    faiss::Index::distance_t* xq_;
-    faiss::Index::idx_t* gt_ids_;  // ground-truth index
+    distance_t* xb_;
+    distance_t* xq_;
+    idx_t* gt_ids_;  // ground-truth index
 
+    knowhere::BinarySet binary_set_;
     knowhere::IndexType index_type_;
     knowhere::VecIndexPtr index_ = nullptr;
-    knowhere::BinarySet binary_set_;
-    std::string binary_header_;
+    knowhere::Config cfg_;
+
+    const std::vector<int32_t> NQs_ = {10000};
+    const std::vector<int32_t> TOPKs_ = {10};
+
+    // IVF index params
+    const std::vector<int32_t> NLISTs_ = {1024};
+
+    // HNSW index params
+    const std::vector<int32_t> Ms_ = {16};
+    const std::vector<int32_t> EFCONs_ = {100};
+
+    // ANNOY index params
+    const std::vector<int32_t> N_TREEs_ = {32};
 };
 
+TEST_F(Benchmark_knowhere, TEST_IDMAP) {
+    index_type_ = knowhere::IndexEnum::INDEX_FAISS_IDMAP;
+
+    knowhere::Config conf = cfg_;
+    std::string index_file_name = get_index_name({});
+    create_cpu_index(index_file_name, conf);
+    index_->Load(binary_set_);
+    test_idmap(conf);
+}
+
 TEST_F(Benchmark_knowhere, TEST_IVFFLAT_NM) {
-    const std::vector<int32_t> nlists = {1024};
-    const std::vector<int32_t> nqs = {10000};
-    const std::vector<int32_t> topks = {10};
     const std::vector<int32_t> nprobes = {1, 2, 4, 8, 16, 32, 64, 128, 256};
 
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
-    binary_header_ = "IVF";
 
-    for (auto nlist : nlists) {
-        std::string index_file_name = ann_test_name_ + "_" + index_type_ + "_" + std::to_string(nlist) + ".index";
-
-        auto cfg = knowhere::Config{
-            {knowhere::Metric::TYPE, metric_type_},
-            {knowhere::meta::DIM, dim_},
-            {knowhere::IndexParams::nlist, nlist},
-        };
-
-        create_cpu_index(index_file_name, cfg);
+    knowhere::Config conf = cfg_;
+    for (auto nlist : NLISTs_) {
+        std::string index_file_name = get_index_name({nlist});
+        conf[knowhere::IndexParams::nlist] = nlist;
+        create_cpu_index(index_file_name, conf);
 
         // IVFFLAT_NM should load raw data
         knowhere::BinaryPtr bin = std::make_shared<knowhere::Binary>();
@@ -456,61 +568,54 @@ TEST_F(Benchmark_knowhere, TEST_IVFFLAT_NM) {
         binary_set_.Append(RAW_DATA, bin);
 
         index_->Load(binary_set_);
-        test_ivf(cfg, nqs, topks, nprobes);
+        test_ivf(conf, nprobes);
     }
 }
 
 TEST_F(Benchmark_knowhere, TEST_IVFSQ8) {
-    const std::vector<int32_t> nlists = {1024};
-    const std::vector<int32_t> nqs = {10000};
-    const std::vector<int32_t> topks = {10};
     const std::vector<int32_t> nprobes = {1, 2, 4, 8, 16, 32, 64, 128, 256};
 
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFSQ8;
-    binary_header_ = "IVF";
 
-    for (auto nlist : nlists) {
-        std::string index_file_name = ann_test_name_ + "_" + index_type_ + "_" + std::to_string(nlist) + ".index";
-
-        auto cfg = knowhere::Config{
-            {knowhere::Metric::TYPE, metric_type_},
-            {knowhere::meta::DIM, dim_},
-            {knowhere::IndexParams::nlist, nlist},
-        };
-
-        create_cpu_index(index_file_name, cfg);
-
+    knowhere::Config conf = cfg_;
+    for (auto nlist : NLISTs_) {
+        std::string index_file_name = get_index_name({nlist});
+        conf[knowhere::IndexParams::nlist] = nlist;
+        create_cpu_index(index_file_name, conf);
         index_->Load(binary_set_);
-        test_ivf(cfg, nqs, topks, nprobes);
+        test_ivf(conf, nprobes);
     }
 }
 
 TEST_F(Benchmark_knowhere, TEST_HNSW) {
-    const std::vector<int32_t> ms = {16};
-    const std::vector<int32_t> efCons = {100};
-    const std::vector<int32_t> nqs = {10000};
-    const std::vector<int32_t> topks = {10};
     const std::vector<int32_t> efs = {16, 32, 64, 128, 256};
 
     index_type_ = knowhere::IndexEnum::INDEX_HNSW;
-    binary_header_ = "HNSW";
 
-    for (auto M : ms) {
-        for (auto efc : efCons) {
-            std::string index_file_name =
-                ann_test_name_ + "_" + index_type_ + "_" + std::to_string(M) + "_" + std::to_string(efc) + ".index";
-
-            auto cfg = knowhere::Config{
-                {knowhere::Metric::TYPE, metric_type_},
-                {knowhere::meta::DIM, dim_},
-                {knowhere::IndexParams::efConstruction, efc},
-                {knowhere::IndexParams::M, M},
-            };
-
-            create_cpu_index(index_file_name, cfg);
-
+    knowhere::Config conf = cfg_;
+    for (auto M : Ms_) {
+        conf[knowhere::IndexParams::M] = M;
+        for (auto efc : EFCONs_) {
+            std::string index_file_name = get_index_name({M, efc});
+            conf[knowhere::IndexParams::efConstruction] = efc;
+            create_cpu_index(index_file_name, conf);
             index_->Load(binary_set_);
-            test_hnsw(cfg, nqs, topks, efs);
+            test_hnsw(conf, efs);
         }
+    }
+}
+
+TEST_F(Benchmark_knowhere, TEST_ANNOY) {
+    const std::vector<int32_t> search_ks = {16, 32, 64, 128, 256};
+
+    index_type_ = knowhere::IndexEnum::INDEX_ANNOY;
+
+    knowhere::Config conf = cfg_;
+    for (auto n : N_TREEs_) {
+        conf[knowhere::IndexParams::n_trees] = n;
+        std::string index_file_name = get_index_name({n});
+        create_cpu_index(index_file_name, conf);
+        index_->Load(binary_set_);
+        test_annoy(conf, search_ks);
     }
 }
