@@ -1,0 +1,109 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+[==========] Running 4 tests from 1 test case.
+[----------] Global test environment set-up.
+[----------] 4 tests from Benchmark_faiss
+[ RUN      ] Benchmark_faiss.TEST_IDMAP
+[0.000 s] Loading base data
+[0.000 s] Loading HDF5 file: sift-128-euclidean.hdf5
+[0.202 s] Loading queries
+[0.204 s] Loading ground truth
+2022-05-02 22:30:22,241 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS expect simdType::AUTO
+2022-05-02 22:30:22,241 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS hook AVX2
+[0.210 s] Reading index file: sift-128-euclidean_Flat.index
+[0.210 s] Creating CPU index "Flat" d=128
+[0.210 s] Training on 1000000 vectors
+[0.210 s] Indexing on 1000000 vectors
+[0.399 s] Writing index file: sift-128-euclidean_Flat.index
+
+[0.592 s] sift-128-euclidean | Flat 
+================================================================================
+  nq = 10000, k =   10, elapse = 167.4097s, R@ = 0.9993
+================================================================================
+[168.052 s] Test 'sift-128-euclidean/Flat' done
+
+[       OK ] Benchmark_faiss.TEST_IDMAP (168071 ms)
+[ RUN      ] Benchmark_faiss.TEST_IVFFLAT
+[0.000 s] Loading base data
+[0.000 s] Loading HDF5 file: sift-128-euclidean.hdf5
+[0.162 s] Loading queries
+[0.163 s] Loading ground truth
+2022-05-02 22:33:10,271 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS expect simdType::AUTO
+2022-05-02 22:33:10,271 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS hook AVX2
+[0.168 s] Reading index file: sift-128-euclidean_IVF1024_Flat.index
+[0.168 s] Creating CPU index "IVF1024,Flat" d=128
+[0.169 s] Training on 1000000 vectors
+[25.026 s] Indexing on 1000000 vectors
+[34.349 s] Writing index file: sift-128-euclidean_IVF1024_Flat.index
+
+[34.568 s] sift-128-euclidean | IVF1024,Flat | nlist=1024
+================================================================================
+  nprobe =    1, nq = 10000, k =   10, elapse = 0.3801s, R@ = 0.3704
+  nprobe =    2, nq = 10000, k =   10, elapse = 0.5364s, R@ = 0.5364
+  nprobe =    4, nq = 10000, k =   10, elapse = 0.9720s, R@ = 0.7017
+  nprobe =    8, nq = 10000, k =   10, elapse = 1.8001s, R@ = 0.8389
+  nprobe =   16, nq = 10000, k =   10, elapse = 3.3564s, R@ = 0.9311
+  nprobe =   32, nq = 10000, k =   10, elapse = 6.5182s, R@ = 0.9789
+  nprobe =   64, nq = 10000, k =   10, elapse = 12.6410s, R@ = 0.9952
+  nprobe =  128, nq = 10000, k =   10, elapse = 24.7558s, R@ = 0.9988
+  nprobe =  256, nq = 10000, k =   10, elapse = 48.4756s, R@ = 0.9992
+================================================================================
+[134.354 s] Test 'sift-128-euclidean/IVF1024,Flat' done
+
+[       OK ] Benchmark_faiss.TEST_IVFFLAT (134372 ms)
+[ RUN      ] Benchmark_faiss.TEST_IVFSQ8
+[0.000 s] Loading base data
+[0.000 s] Loading HDF5 file: sift-128-euclidean.hdf5
+[0.157 s] Loading queries
+[0.158 s] Loading ground truth
+2022-05-02 22:35:24,635 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS expect simdType::AUTO
+2022-05-02 22:35:24,635 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS hook AVX2
+[0.161 s] Reading index file: sift-128-euclidean_IVF1024_SQ8.index
+[0.161 s] Creating CPU index "IVF1024,SQ8" d=128
+[0.162 s] Training on 1000000 vectors
+[26.159 s] Indexing on 1000000 vectors
+[35.476 s] Writing index file: sift-128-euclidean_IVF1024_SQ8.index
+
+[35.535 s] sift-128-euclidean | IVF1024,SQ8 | nlist=1024
+================================================================================
+  nprobe =    1, nq = 10000, k =   10, elapse = 0.2146s, R@ = 0.3699
+  nprobe =    2, nq = 10000, k =   10, elapse = 0.2874s, R@ = 0.5353
+  nprobe =    4, nq = 10000, k =   10, elapse = 0.4423s, R@ = 0.6994
+  nprobe =    8, nq = 10000, k =   10, elapse = 0.8686s, R@ = 0.8342
+  nprobe =   16, nq = 10000, k =   10, elapse = 1.5119s, R@ = 0.9232
+  nprobe =   32, nq = 10000, k =   10, elapse = 2.7660s, R@ = 0.9679
+  nprobe =   64, nq = 10000, k =   10, elapse = 5.2015s, R@ = 0.9825
+  nprobe =  128, nq = 10000, k =   10, elapse = 10.1502s, R@ = 0.9857
+  nprobe =  256, nq = 10000, k =   10, elapse = 19.3201s, R@ = 0.9861
+================================================================================
+[76.647 s] Test 'sift-128-euclidean/IVF1024,SQ8' done
+
+[       OK ] Benchmark_faiss.TEST_IVFSQ8 (76664 ms)
+[ RUN      ] Benchmark_faiss.TEST_HNSW
+[0.000 s] Loading base data
+[0.000 s] Loading HDF5 file: sift-128-euclidean.hdf5
+[0.157 s] Loading queries
+[0.158 s] Loading ground truth
+2022-05-02 22:36:41,300 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS expect simdType::AUTO
+2022-05-02 22:36:41,300 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS hook AVX2
+[0.161 s] Reading index file: sift-128-euclidean_HNSW16_100_Flat.index
+[0.161 s] Creating CPU index "HNSW16,Flat" d=128
+[0.162 s] Training on 1000000 vectors
+[0.162 s] Indexing on 1000000 vectors
+[31.356 s] Writing index file: sift-128-euclidean_HNSW16_100_Flat.index
+
+[31.608 s] sift-128-euclidean | HNSW16,Flat | M=16 | efConstruction=100
+================================================================================
+  ef =   16, nq = 10000, k =   10, elapse = 0.1279s, R@ = 0.6636
+  ef =   32, nq = 10000, k =   10, elapse = 0.1465s, R@ = 0.6636
+  ef =   64, nq = 10000, k =   10, elapse = 0.1441s, R@ = 0.6636
+  ef =  128, nq = 10000, k =   10, elapse = 0.1276s, R@ = 0.6636
+  ef =  256, nq = 10000, k =   10, elapse = 0.1274s, R@ = 0.6636
+================================================================================
+[32.472 s] Test 'sift-128-euclidean/HNSW16,Flat' done
+
+[       OK ] Benchmark_faiss.TEST_HNSW (32491 ms)
+[----------] 4 tests from Benchmark_faiss (411598 ms total)
+
+[----------] Global test environment tear-down
+[==========] 4 tests from 1 test case ran. (411598 ms total)
+[  PASSED  ] 4 tests.

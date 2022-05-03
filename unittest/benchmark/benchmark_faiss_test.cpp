@@ -13,6 +13,7 @@
 #include <hdf5.h>
 #include <math.h>
 #include <vector>
+#include <unordered_set>
 
 #include <faiss/AutoTune.h>
 #include <faiss/index_factory.h>
@@ -168,8 +169,15 @@ print_array(const char* header, bool is_integer, const void* arr, int32_t nq, in
  * SIFT     128         1,000,000   10,000      100         Euclidean   HDF5 (501MB)
  *************************************************************************************/
 
+using idx_t = faiss::Index::idx_t;
+using distance_t = faiss::Index::distance_t;
+
 class Benchmark_faiss : public ::testing::Test {
  public:
+    double get_time_diff() {
+        return elapsed() - T0_;
+    }
+
     bool parse_ann_test_name() {
         size_t pos1, pos2;
 
@@ -199,13 +207,13 @@ class Benchmark_faiss : public ::testing::Test {
         return true;
     }
 
-    int32_t CalcRecall(const faiss::Index::idx_t* ids, int32_t nq, int32_t k) {
+    int32_t CalcRecall(const idx_t* ids, int32_t nq, int32_t k) {
         int32_t min_k = std::min(gt_k_, k);
         int32_t hit = 0;
         for (int32_t i = 0; i < nq; i++) {
-            std::set<faiss::Index::idx_t> ground(gt_ids_ + i * gt_k_, gt_ids_ + i * gt_k_ + min_k);
+            std::unordered_set<idx_t> ground(gt_ids_ + i * gt_k_, gt_ids_ + i * gt_k_ + min_k);
             for (int32_t j = 0; j < min_k; j++) {
-                faiss::Index::idx_t id = ids[i * k + j];
+                idx_t id = ids[i * k + j];
                 if (ground.count(id) > 0) {
                     hit++;
                 }
@@ -218,12 +226,12 @@ class Benchmark_faiss : public ::testing::Test {
         const std::string ann_file_name = ann_test_name_ + HDF5_POSTFIX;
 
         int32_t dim;
-        printf("[%.3f s] Loading HDF5 file: %s\n", elapsed() - T0_, ann_file_name.c_str());
+        printf("[%.3f s] Loading HDF5 file: %s\n", get_time_diff(), ann_file_name.c_str());
         xb_ = (float*)hdf5_read(ann_file_name, HDF5_DATASET_TRAIN, H5T_FLOAT, dim, nb_);
         assert(dim == dim_ || !"dataset does not have correct dimension");
 
         if (metric_type_ == faiss::METRIC_INNER_PRODUCT) {
-            printf("[%.3f s] Normalizing base data set \n", elapsed() - T0_);
+            printf("[%.3f s] Normalizing base data set \n", get_time_diff());
             normalize(xb_, nb_, dim_);
         }
     }
@@ -236,7 +244,7 @@ class Benchmark_faiss : public ::testing::Test {
         assert(dim == dim_ || !"query does not have same dimension as train set");
 
         if (metric_type_ == faiss::METRIC_INNER_PRODUCT) {
-            printf("[%.3f s] Normalizing query data \n", elapsed() - T0_);
+            printf("[%.3f s] Normalizing query data \n", get_time_diff());
             normalize(xq_, nq_, dim_);
         }
     }
@@ -249,7 +257,7 @@ class Benchmark_faiss : public ::testing::Test {
         int* gt_int = (int*)hdf5_read(ann_file_name, HDF5_DATASET_NEIGHBORS, H5T_INTEGER, gt_k_, gt_nq);
         assert(gt_nq == nq_ || !"incorrect nb of ground truth index");
 
-        gt_ids_ = new faiss::Index::idx_t[gt_k_ * nq_];
+        gt_ids_ = new idx_t[gt_k_ * nq_];
         for (int32_t i = 0; i < gt_k_ * nq_; i++) {
             gt_ids_[i] = gt_int[i];
         }
@@ -278,44 +286,66 @@ class Benchmark_faiss : public ::testing::Test {
         index_ = faiss::read_index(filename.c_str());
     }
 
-    void create_cpu_index(const std::string index_file_name) {
-
+    void create_cpu_index(const std::string& index_file_name) {
         try {
-            printf("[%.3f s] Reading index file: %s\n", elapsed() - T0_, index_file_name.c_str());
+            printf("[%.3f s] Reading index file: %s\n", get_time_diff(), index_file_name.c_str());
             read_index(index_file_name);
         } catch (...) {
-            printf("[%.3f s] Creating CPU index \"%s\" d=%d\n", elapsed() - T0_, index_key_.c_str(), dim_);
+            printf("[%.3f s] Creating CPU index \"%s\" d=%d\n", get_time_diff(), index_key_.c_str(), dim_);
             index_ = faiss::index_factory(dim_, index_key_.c_str(), metric_type_);
 
-            printf("[%.3f s] Training on %d vectors\n", elapsed() - T0_, nb_);
+            printf("[%.3f s] Training on %d vectors\n", get_time_diff(), nb_);
             index_->train(nb_, xb_);
 
-            printf("[%.3f s] Indexing on %d vectors\n", elapsed() - T0_, nb_);
+            printf("[%.3f s] Indexing on %d vectors\n", get_time_diff(), nb_);
             index_->add(nb_, xb_);
 
-            printf("[%.3f s] Writing index file: %s\n", elapsed() - T0_, index_file_name.c_str());
+            printf("[%.3f s] Writing index file: %s\n", get_time_diff(), index_file_name.c_str());
             write_index(index_file_name);
         }
     }
 
+    void test_idmap() {
+        idx_t* I = new idx_t[NQs_.back() * TOPKs_.back()];
+        distance_t* D = new distance_t[NQs_.back() * TOPKs_.back()];
+
+        printf("\n[%0.3f s] %s | %s \n",
+               get_time_diff(), ann_test_name_.c_str(), index_key_.c_str());
+        printf("================================================================================\n");
+        for (auto nq : NQs_) {
+            for (auto k : TOPKs_) {
+                double t_start = elapsed(), t_end;
+                index_->search(nq, xq_, k, D, I);
+                t_end = elapsed();
+
+                int32_t hit = CalcRecall(I, nq, k);
+                printf("  nq = %4d, k = %4d, elapse = %.4fs, R@ = %.4f\n",
+                       nq, k, (t_end - t_start), (hit / float(nq * std::min(gt_k_, k))));
+            }
+        }
+        printf("================================================================================\n");
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_key_.c_str());
+
+        delete[] I;
+        delete[] D;
+    }
+
     void test_ivf(
-        const int64_t nlist,
-        const std::vector<int32_t>& nqs,
-        const std::vector<int32_t>& topks,
+        const int32_t nlist,
         const std::vector<int32_t>& nprobes) {
 
-        faiss::Index::idx_t* I = new faiss::Index::idx_t[nqs.back() * topks.back()];
-        faiss::Index::distance_t* D = new faiss::Index::distance_t[nqs.back() * topks.back()];
+        idx_t* I = new idx_t[NQs_.back() * TOPKs_.back()];
+        distance_t* D = new distance_t[NQs_.back() * TOPKs_.back()];
 
-        printf("\n[%0.3f s] %s | %s | nlist=%ld\n",
-               elapsed() - T0_, ann_test_name_.c_str(), index_key_.c_str(), nlist);
+        printf("\n[%0.3f s] %s | %s | nlist=%d\n",
+               get_time_diff(), ann_test_name_.c_str(), index_key_.c_str(), nlist);
         printf("================================================================================\n");
         for (auto nprobe : nprobes) {
             faiss::ParameterSpace params;
             std::string nprobe_str = "nprobe=" + std::to_string(nprobe);
             params.set_index_parameters(index_, nprobe_str.c_str());
-            for (auto nq : nqs) {
-                for (auto k : topks) {
+            for (auto nq : NQs_) {
+                for (auto k : TOPKs_) {
                     double t_start = elapsed(), t_end;
                     index_->search(nq, xq_, k, D, I);
                     t_end = elapsed();
@@ -327,7 +357,7 @@ class Benchmark_faiss : public ::testing::Test {
             }
         }
         printf("================================================================================\n");
-        printf("[%.3f s] Test '%s/%s' done\n\n", elapsed() - T0_, ann_test_name_.c_str(), index_key_.c_str());
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_key_.c_str());
 
         delete[] I;
         delete[] D;
@@ -336,19 +366,17 @@ class Benchmark_faiss : public ::testing::Test {
     void test_hnsw(
         const int64_t M,
         const int64_t efConstruction,
-        const std::vector<int32_t>& nqs,
-        const std::vector<int32_t>& topks,
         const std::vector<int32_t>& efs) {
 
-        faiss::Index::idx_t* I = new faiss::Index::idx_t[nqs.back() * topks.back()];
-        faiss::Index::distance_t* D = new faiss::Index::distance_t[nqs.back() * topks.back()];
+        idx_t* I = new idx_t[NQs_.back() * TOPKs_.back()];
+        distance_t* D = new distance_t[NQs_.back() * TOPKs_.back()];
 
         printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld\n",
-               elapsed() - T0_, ann_test_name_.c_str(), index_key_.c_str(), M, efConstruction);
+               get_time_diff(), ann_test_name_.c_str(), index_key_.c_str(), M, efConstruction);
         printf("================================================================================\n");
         for (auto ef: efs) {
-            for (auto nq : nqs) {
-                for (auto k : topks) {
+            for (auto nq : NQs_) {
+                for (auto k : TOPKs_) {
                     double t_start = elapsed(), t_end;
                     index_->search(nq_, xq_, k, D, I);
                     t_end = elapsed();
@@ -360,7 +388,7 @@ class Benchmark_faiss : public ::testing::Test {
             }
         }
         printf("================================================================================\n");
-        printf("[%.3f s] Test '%s/%s' done\n\n", elapsed() - T0_, ann_test_name_.c_str(), index_key_.c_str());
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_key_.c_str());
 
         delete[] I;
         delete[] D;
@@ -374,13 +402,13 @@ class Benchmark_faiss : public ::testing::Test {
             assert(true);
         }
 
-        printf("[%.3f s] Loading base data\n", elapsed() - T0_);
+        printf("[%.3f s] Loading base data\n", get_time_diff());
         load_base_data();
 
-        printf("[%.3f s] Loading queries\n", elapsed() - T0_);
+        printf("[%.3f s] Loading queries\n", get_time_diff());
         load_query_data();
 
-        printf("[%.3f s] Loading ground truth\n", elapsed() - T0_);
+        printf("[%.3f s] Loading ground truth\n", get_time_diff());
         load_ground_truth();
 
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AUTO);
@@ -400,68 +428,71 @@ class Benchmark_faiss : public ::testing::Test {
     int32_t nb_;
     int32_t nq_;
     int32_t gt_k_;
-    faiss::Index::distance_t* xb_;
-    faiss::Index::distance_t* xq_;
-    faiss::Index::idx_t* gt_ids_;  // ground-truth index
+    distance_t* xb_;
+    distance_t* xq_;
+    idx_t* gt_ids_;  // ground-truth index
 
     std::string index_key_;
     faiss::Index* index_ = nullptr;
+
+    const std::vector<int32_t> NQs_ = {10000};
+    const std::vector<int32_t> TOPKs_ = {10};
+
+    // IVF index params
+    const std::vector<int32_t> NLISTs_ = {1024};
+
+    // HNSW index params
+    const std::vector<int32_t> Ms_ = {16};
+    const std::vector<int32_t> EFCONs_ = {100};
 };
 
+TEST_F(Benchmark_faiss, TEST_IDMAP) {
+    std::string index_type = "Flat";
+
+    index_key_ = index_type;
+    std::string index_file_name = ann_test_name_ + "_" + index_type + ".index";
+    create_cpu_index(index_file_name);
+    test_idmap();
+}
+
 TEST_F(Benchmark_faiss, TEST_IVFFLAT) {
-    const std::vector<int32_t> nlists = {1024};
-    const std::vector<int32_t> nqs = {10000};
-    const std::vector<int32_t> topks = {10};
     const std::vector<int32_t> nprobes = {1, 2, 4, 8, 16, 32, 64, 128, 256};
 
     std::string index_type = "Flat";
 
-    for (auto nlist : nlists) {
+    for (auto nlist : NLISTs_) {
         index_key_ = "IVF" + std::to_string(nlist) + "," + index_type;
         std::string index_file_name = ann_test_name_ + "_IVF" + std::to_string(nlist) + "_" + index_type + ".index";
-
         create_cpu_index(index_file_name);
-
-        test_ivf(nlist, nqs, topks, nprobes);
+        test_ivf(nlist, nprobes);
     }
 }
 
 TEST_F(Benchmark_faiss, TEST_IVFSQ8) {
-    const std::vector<int32_t> nlists = {1024};
-    const std::vector<int32_t> nqs = {10000};
-    const std::vector<int32_t> topks = {10};
     const std::vector<int32_t> nprobes = {1, 2, 4, 8, 16, 32, 64, 128, 256};
 
     std::string index_type = "SQ8";
 
-    for (auto nlist : nlists) {
+    for (auto nlist : NLISTs_) {
         index_key_ = "IVF" + std::to_string(nlist) + "," + index_type;
         std::string index_file_name = ann_test_name_ + "_IVF" + std::to_string(nlist) + "_" + index_type + ".index";
-
         create_cpu_index(index_file_name);
-
-        test_ivf(nlist, nqs, topks, nprobes);
+        test_ivf(nlist, nprobes);
     }
 }
 
 TEST_F(Benchmark_faiss, TEST_HNSW) {
-    const std::vector<int32_t> ms = {16};
-    const std::vector<int32_t> efCons = {100};
-    const std::vector<int32_t> nqs = {10000};
-    const std::vector<int32_t> topks = {10};
     const std::vector<int32_t> efs = {16, 32, 64, 128, 256};
 
     std::string index_type = "Flat";
 
-    for (auto M : ms) {
+    for (auto M : Ms_) {
         index_key_ = "HNSW" + std::to_string(M) + "," + index_type;
-        for (auto efc : efCons) {
+        for (auto efc : EFCONs_) {
             std::string index_file_name =
                 ann_test_name_ + "_HNSW" + std::to_string(M) + "_" + std::to_string(efc) + "_" + index_type + ".index";
-
             create_cpu_index(index_file_name);
-
-            test_hnsw(M, efc, nqs, topks, efs);
+            test_hnsw(M, efc, efs);
         }
     }
 }
