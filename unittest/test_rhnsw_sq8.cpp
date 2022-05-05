@@ -121,7 +121,7 @@ TEST_P(RHNSWSQ8Test, HNSW_serialize) {
         index_->Train(base_dataset, conf);
         index_->AddWithoutIds(base_dataset, conf);
         auto binaryset = index_->Serialize(conf);
-        auto bin_idx = binaryset.GetByName(index_->index_type() + "_Index");
+        auto bin_idx = binaryset.GetByName(std::string(index_->index_type()) + "_Index");
         auto bin_dat = binaryset.GetByName(QUANTIZATION_DATA);
 
         std::string filename_idx = temp_path("/tmp/RHNSWSQ_test_serialize_idx.bin");
@@ -135,7 +135,7 @@ TEST_P(RHNSWSQ8Test, HNSW_serialize) {
         auto new_idx = std::make_shared<knowhere::IndexRHNSWSQ>();
         std::shared_ptr<uint8_t[]> dat(load_dat);
         std::shared_ptr<uint8_t[]> idx(load_idx);
-        binaryset.Append(new_idx->index_type() + "_Index", idx, bin_idx->size);
+        binaryset.Append(std::string(new_idx->index_type()) + "_Index", idx, bin_idx->size);
         binaryset.Append(QUANTIZATION_DATA, dat, bin_dat->size);
 
         new_idx->Load(binaryset);

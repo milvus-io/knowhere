@@ -9,6 +9,8 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
+#include <string>
+
 #include "common/Exception.h"
 #include "common/Log.h"
 #include "index/vector_index/ConfAdapterMgr.h"
@@ -29,7 +31,7 @@ AdapterMgr::GetAdapter(const IndexType type) {
     try {
         return collection_.at(type)();
     } catch (...) {
-        KNOWHERE_THROW_MSG("Can not find confadapter: " + type);
+        KNOWHERE_THROW_MSG("Can not find confadapter: " + std::string(type));
     }
 }
 

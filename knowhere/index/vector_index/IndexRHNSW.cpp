@@ -10,10 +10,8 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <algorithm>
-#include <cassert>
 #include <chrono>
-#include <iterator>
-#include <utility>
+#include <string>
 #include <vector>
 
 #include "common/Exception.h"
@@ -32,7 +30,7 @@ IndexRHNSW::Serialize(const Config& config) {
 
     try {
         MemoryIOWriter writer;
-        writer.name = this->index_type() + "_Index";
+        writer.name = std::string(this->index_type()) + "_Index";
         faiss::write_index(index_.get(), &writer);
         std::shared_ptr<uint8_t[]> data(writer.data_);
 
@@ -49,7 +47,7 @@ IndexRHNSW::Load(const BinarySet& index_binary) {
     try {
         Assemble(const_cast<BinarySet&>(index_binary));
         MemoryIOReader reader;
-        reader.name = this->index_type() + "_Index";
+        reader.name = std::string(this->index_type()) + "_Index";
         auto binary = index_binary.GetByName(reader.name);
 
         reader.total = static_cast<size_t>(binary->size);
