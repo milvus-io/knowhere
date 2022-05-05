@@ -16,7 +16,7 @@ namespace knowhere {
 
 faiss::MetricType
 GetMetricType(const Config& cfg) {
-    MetricType type = cfg[meta::METRIC_TYPE].get<MetricType>();
+    auto type = GetMetaMetricType(cfg);
     if (type == MetricEnum::L2) {
         return faiss::METRIC_L2;
     } else if (type == MetricEnum::IP) {

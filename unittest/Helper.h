@@ -29,7 +29,7 @@
 #include "knowhere/index/vector_offset_index/gpu/IndexGPUIVF_NM.h"
 #endif
 
-constexpr int DEVICEID = 0;
+constexpr int DEVICE_ID = 0;
 constexpr int64_t DIM = 128;
 constexpr int64_t NB = 10000;
 constexpr int64_t NQ = 10;
@@ -53,7 +53,7 @@ class ParamGenerator {
                 {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
-                {knowhere::meta::DEVICEID, DEVICEID},
+                {knowhere::meta::DEVICE_ID, DEVICE_ID},
                 {knowhere::IndexParams::nlist, 100},
                 {knowhere::IndexParams::nprobe, 4},
                 {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
@@ -63,7 +63,7 @@ class ParamGenerator {
                 {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
-                {knowhere::meta::DEVICEID, DEVICEID},
+                {knowhere::meta::DEVICE_ID, DEVICE_ID},
                 {knowhere::IndexParams::nlist, 100},
                 {knowhere::IndexParams::nprobe, 4},
                 {knowhere::IndexParams::m, 4},
@@ -76,7 +76,7 @@ class ParamGenerator {
                 {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
-                {knowhere::meta::DEVICEID, DEVICEID},
+                {knowhere::meta::DEVICE_ID, DEVICE_ID},
                 {knowhere::IndexParams::nlist, 100},
                 {knowhere::IndexParams::nprobe, 4},
                 {knowhere::IndexParams::nbits, 8},
@@ -87,7 +87,7 @@ class ParamGenerator {
                 {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
-                {knowhere::meta::DEVICEID, DEVICEID},
+                {knowhere::meta::DEVICE_ID, DEVICE_ID},
                 {knowhere::IndexParams::nlist, 100},
                 {knowhere::IndexParams::nprobe, 4},
                 {knowhere::IndexParams::M, 16},
@@ -109,7 +109,7 @@ class TestGpuIndexBase : public ::testing::Test {
     void
     SetUp() override {
 #ifdef KNOWHERE_GPU_VERSION
-        knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
+        knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICE_ID, PINMEM, TEMPMEM, RESNUM);
 #endif
     }
 

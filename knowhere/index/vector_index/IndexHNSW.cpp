@@ -87,11 +87,10 @@ IndexHNSW::Load(const BinarySet& index_binary) {
 void
 IndexHNSW::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     try {
-        auto dim = dataset_ptr->Get<int64_t>(meta::DIM);
-        auto rows = dataset_ptr->Get<int64_t>(meta::ROWS);
+        GET_TENSOR_DATA_DIM(dataset_ptr)
 
         hnswlib::SpaceInterface<float>* space;
-        std::string metric_type = config[meta::METRIC_TYPE];
+        std::string metric_type = GetMetaMetricType(config);
         if (metric_type == MetricEnum::L2) {
             space = new hnswlib::L2Space(dim);
         } else if (metric_type == MetricEnum::IP) {
@@ -138,7 +137,7 @@ IndexHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fais
     }
     GET_TENSOR_DATA_DIM(dataset_ptr)
 
-    size_t k = config[meta::TOPK].get<int64_t>();
+    auto k = GetMetaTopk(config);
     size_t id_size = sizeof(int64_t) * k;
     size_t dist_size = sizeof(float) * k;
     auto p_id = static_cast<int64_t*>(malloc(id_size * rows));

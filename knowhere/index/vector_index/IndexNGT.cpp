@@ -124,7 +124,7 @@ IndexNGT::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss
     }
     GET_TENSOR_DATA(dataset_ptr);
 
-    int k = config[meta::TOPK].get<int>();
+    auto k = GetMetaTopk(config);
     auto epsilon = config[IndexParams::epsilon].get<float>();
     auto edge_size = config[IndexParams::max_search_edges].get<int>();
     if (edge_size == -1) {  // pass -1

@@ -84,7 +84,7 @@ TEST_F(NSGInterfaceTest, basic_test) {
         ASSERT_ANY_THROW(index_->AddWithoutIds(base_dataset, search_conf));
     }
 
-    train_conf[knowhere::meta::DEVICEID] = -1;
+    knowhere::SetMetaDeviceID(train_conf, -1);
     index_->BuildAll(base_dataset, train_conf);
 
     // Serialize and Load before Query
@@ -105,7 +105,7 @@ TEST_F(NSGInterfaceTest, basic_test) {
 
     /* test NSG GPU train */
     auto new_index = std::make_shared<knowhere::NSG_NM>(DEVICE_GPU0);
-    train_conf[knowhere::meta::DEVICEID] = DEVICE_GPU0;
+    knowhere::SetMetaDeviceID(train_conf, DEVICE_GPU0);
     new_index->BuildAll(base_dataset, train_conf);
 
     // Serialize and Load before Query
@@ -146,7 +146,7 @@ TEST_F(NSGInterfaceTest, compare_test) {
 TEST_F(NSGInterfaceTest, delete_test) {
     assert(!xb.empty());
 
-    train_conf[knowhere::meta::DEVICEID] = DEVICE_GPU0;
+    knowhere::SetMetaDeviceID(train_conf, DEVICE_GPU0);
     index_->BuildAll(base_dataset, train_conf);
 
     // Serialize and Load before Query
@@ -203,7 +203,7 @@ TEST_F(NSGInterfaceTest, slice_test) {
         ASSERT_ANY_THROW(index_->AddWithoutIds(base_dataset, search_conf));
     }
 
-    train_conf[knowhere::meta::DEVICEID] = -1;
+    knowhere::SetMetaDeviceID(train_conf, -1);
     index_->BuildAll(base_dataset, train_conf);
 
     // Serialize and Load before Query
@@ -224,7 +224,7 @@ TEST_F(NSGInterfaceTest, slice_test) {
 
     /* test NSG GPU train */
     auto new_index_1 = std::make_shared<knowhere::NSG_NM>(DEVICE_GPU0);
-    train_conf[knowhere::meta::DEVICEID] = DEVICE_GPU0;
+    knowhere::SetMetaDeviceID(train_conf, DEVICE_GPU0);
     new_index_1->BuildAll(base_dataset, train_conf);
 
     // Serialize and Load before Query

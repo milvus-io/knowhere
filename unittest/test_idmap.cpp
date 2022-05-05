@@ -309,7 +309,7 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
     for (int64_t blas_threshold : {0, 20}) {
         knowhere::KnowhereConfig::SetBlasThreshold(blas_threshold);
         for (float radius: {4.0, 4.5, 5.0}) {
-            conf[knowhere::meta::RADIUS] = radius;
+            knowhere::SetMetaRadius(conf, radius);
             test_range_search_l2(radius, nullptr);
             test_range_search_l2(radius, *bitset);
         }
@@ -343,7 +343,7 @@ TEST_P(IDMAPTest, idmap_range_search_ip) {
     for (int64_t blas_threshold : {0, 20}) {
         knowhere::KnowhereConfig::SetBlasThreshold(blas_threshold);
         for (float radius: {30.0, 40.0, 45.0}) {
-            conf[knowhere::meta::RADIUS] = radius;
+            knowhere::SetMetaRadius(conf, radius);
             test_range_search_ip(radius, nullptr);
             test_range_search_ip(radius, *bitset);
         }

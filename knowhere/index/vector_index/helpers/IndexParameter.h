@@ -18,17 +18,19 @@
 
 namespace knowhere {
 
+using MetaType = std::string_view;
+
 namespace meta {
-constexpr const char* METRIC_TYPE = "metric_type";
-constexpr const char* DIM = "dim";
-constexpr const char* TENSOR = "tensor";
-constexpr const char* ROWS = "rows";
-constexpr const char* IDS = "ids";
-constexpr const char* DISTANCE = "distance";
-constexpr const char* TOPK = "k";
-constexpr const char* LIMS = "lims";
-constexpr const char* RADIUS = "radius";
-constexpr const char* DEVICEID = "gpu_id";
+constexpr MetaType METRIC_TYPE = "metric_type";
+constexpr MetaType DIM = "dim";
+constexpr MetaType TENSOR = "tensor";
+constexpr MetaType ROWS = "rows";
+constexpr MetaType IDS = "ids";
+constexpr MetaType DISTANCE = "distance";
+constexpr MetaType LIMS = "lims";
+constexpr MetaType TOPK = "k";
+constexpr MetaType RADIUS = "radius";
+constexpr MetaType DEVICE_ID = "gpu_id";
 };  // namespace meta
 
 namespace IndexParams {
@@ -82,7 +84,79 @@ constexpr MetricType SUBSTRUCTURE = "SUBSTRUCTURE";
 constexpr MetricType SUPERSTRUCTURE = "SUPERSTRUCTURE";
 }  // namespace MetricEnum
 
-extern faiss::MetricType
+template<typename T>
+T
+GetValueFromConfig(const Config& cfg, const std::string& key) {
+    return cfg.at(key).get<T>();
+}
+
+template<typename T>
+void
+SetValueToConfig(Config& cfg, const std::string& key, const T value) {
+    cfg[key] = value;
+}
+
+faiss::MetricType
 GetMetricType(const Config& cfg);
+
+inline std::string
+GetMetaMetricType(const Config& cfg) {
+    return GetValueFromConfig<std::string>(cfg, std::string(meta::METRIC_TYPE));
+}
+
+inline void
+SetMetaMetricType(Config& cfg, MetricType value) {
+    SetValueToConfig<std::string>(cfg, std::string(meta::METRIC_TYPE), std::string(value));
+}
+
+inline int64_t
+GetMetaRows(const Config& cfg) {
+    return GetValueFromConfig<int64_t>(cfg, std::string(meta::ROWS));
+}
+
+inline void
+SetMetaRows(Config& cfg, int64_t value) {
+    SetValueToConfig<int64_t>(cfg, std::string(meta::ROWS), value);
+}
+
+inline int64_t
+GetMetaDim(const Config& cfg) {
+    return GetValueFromConfig<int64_t>(cfg, std::string(meta::DIM));
+}
+
+inline void
+SetMetaDim(Config& cfg, int64_t value) {
+    SetValueToConfig<int64_t>(cfg, std::string(meta::DIM), value);
+}
+
+inline int64_t
+GetMetaTopk(const Config& cfg) {
+    return GetValueFromConfig<int64_t>(cfg, std::string(meta::TOPK));
+}
+
+inline void
+SetMetaTopk(Config& cfg, int64_t value) {
+    SetValueToConfig<int64_t>(cfg, std::string(meta::TOPK), value);
+}
+
+inline float
+GetMetaRadius(const Config& cfg) {
+    return GetValueFromConfig<float>(cfg, std::string(meta::RADIUS));
+}
+
+inline void
+SetMetaRadius(Config& cfg, float value) {
+    SetValueToConfig<float>(cfg, std::string(meta::RADIUS), value);
+}
+
+inline int64_t
+GetMetaDeviceID(const Config& cfg) {
+    return GetValueFromConfig<int64_t>(cfg, std::string(meta::DEVICE_ID));
+}
+
+inline void
+SetMetaDeviceID(Config& cfg, int64_t value) {
+    SetValueToConfig<int64_t>(cfg, std::string(meta::DEVICE_ID), value);
+}
 
 }  // namespace knowhere
