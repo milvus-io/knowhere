@@ -31,9 +31,9 @@ class RHNSWSQ8Test : public DataGen, public TestWithParam<std::string> {
                                   //        Generate(2, 10, 2);  // dim = 64, nb = 10000, nq = 10
         index_ = std::make_shared<knowhere::IndexRHNSWSQ>();
         conf = knowhere::Config{
-            {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
-            {knowhere::meta::DIM, 64},
-            {knowhere::meta::TOPK, 10},
+            {knowhere::Meta::METRIC_TYPE, knowhere::MetricEnum::L2},
+            {knowhere::Meta::DIM, 64},
+            {knowhere::Meta::TOPK, 10},
             {knowhere::IndexParams::M, 16},
             {knowhere::IndexParams::efConstruction, 200},
             {knowhere::IndexParams::ef, 200},
@@ -86,8 +86,8 @@ TEST_P(RHNSWSQ8Test, HNSW_delete) {
 
     /*
      * delete result checked by eyes
-    auto ids1 = result1->Get<int64_t*>(knowhere::meta::IDS);
-    auto ids2 = result2->Get<int64_t*>(knowhere::meta::IDS);
+    auto ids1 = result1->Get<int64_t*>(knowhere::Meta::IDS);
+    auto ids2 = result2->Get<int64_t*>(knowhere::Meta::IDS);
     std::cout << std::endl;
     for (int i = 0; i < nq; ++ i) {
         std::cout << "ids1: ";
@@ -142,7 +142,7 @@ TEST_P(RHNSWSQ8Test, HNSW_serialize) {
         EXPECT_EQ(new_idx->Count(), nb);
         EXPECT_EQ(new_idx->Dim(), dim);
         auto result = new_idx->Query(query_dataset, conf, nullptr);
-        // AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
+        // AssertAnns(result, nq, conf[knowhere::Meta::TOPK]);
     }
 }
 
@@ -156,6 +156,6 @@ TEST_P(RHNSWSQ8Test, HNSW_slice) {
         EXPECT_EQ(new_idx->Count(), nb);
         EXPECT_EQ(new_idx->Dim(), dim);
         auto result = new_idx->Query(query_dataset, conf, nullptr);
-        // AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
+        // AssertAnns(result, nq, conf[knowhere::Meta::TOPK]);
     }
 }

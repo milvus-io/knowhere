@@ -124,7 +124,7 @@ IndexNGT::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss
     }
     GET_TENSOR_DATA(dataset_ptr);
 
-    int k = config[meta::TOPK].get<int>();
+    int k = config[Meta::TOPK].get<int>();
     auto epsilon = config[IndexParams::epsilon].get<float>();
     auto edge_size = config[IndexParams::max_search_edges].get<int>();
     if (edge_size == -1) {  // pass -1
@@ -187,8 +187,8 @@ IndexNGT::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss
     }
 
     auto res_ds = std::make_shared<Dataset>();
-    res_ds->Set(meta::IDS, p_id);
-    res_ds->Set(meta::DISTANCE, p_dist);
+    res_ds->Set(Meta::IDS, p_id);
+    res_ds->Set(Meta::DISTANCE, p_dist);
     return res_ds;
 }
 

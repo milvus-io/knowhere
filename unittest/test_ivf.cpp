@@ -65,8 +65,8 @@ class IVFTest : public DataGen,
         const knowhere::DatasetPtr& result,
         const float radius) {
 
-        auto lims = result->Get<size_t*>(knowhere::meta::LIMS);
-        auto distances = result->Get<float*>(knowhere::meta::DISTANCE);
+        auto lims = result->Get<size_t*>(knowhere::Meta::LIMS);
+        auto distances = result->Get<float*>(knowhere::Meta::DISTANCE);
 
         for (auto i = 0; i < lims[nq]; ++i) {
             ASSERT_TRUE(C::cmp(distances[i], radius));
@@ -144,7 +144,7 @@ TEST_P(IVFTest, ivf_serialize) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
     auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
+    AssertAnns(result, nq, conf_[knowhere::Meta::TOPK]);
 }
 
 TEST_P(IVFTest, ivf_slice) {
@@ -157,11 +157,11 @@ TEST_P(IVFTest, ivf_slice) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
     auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
+    AssertAnns(result, nq, conf_[knowhere::Meta::TOPK]);
 }
 
 TEST_P(IVFTest, ivf_range_search_l2) {
-    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::L2;
+    conf_[knowhere::Meta::METRIC_TYPE] = knowhere::MetricEnum::L2;
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
@@ -169,7 +169,7 @@ TEST_P(IVFTest, ivf_range_search_l2) {
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
     auto test_range_search_l2 = [&](float radius, const faiss::BitsetView bitset) {
-        conf_[knowhere::meta::RADIUS] = radius;
+        conf_[knowhere::Meta::RADIUS] = radius;
         auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMin<float>>(result, radius * radius);
     };
@@ -181,7 +181,7 @@ TEST_P(IVFTest, ivf_range_search_l2) {
 }
 
 TEST_P(IVFTest, ivf_range_search_ip) {
-    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::IP;
+    conf_[knowhere::Meta::METRIC_TYPE] = knowhere::MetricEnum::IP;
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
@@ -189,7 +189,7 @@ TEST_P(IVFTest, ivf_range_search_ip) {
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
     auto test_range_search_ip = [&](float radius, const faiss::BitsetView bitset) {
-        conf_[knowhere::meta::RADIUS] = radius;
+        conf_[knowhere::Meta::RADIUS] = radius;
         auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMax<float>>(result, radius);
     };
@@ -214,12 +214,12 @@ TEST_P(IVFTest, clone_test) {
     index_->SetIndexSize(nq * dim * sizeof(float));
 
     auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
+    AssertAnns(result, nq, conf_[knowhere::Meta::TOPK]);
     // PrintResult(result, nq, k);
 
     auto AssertEqual = [&](knowhere::DatasetPtr p1, knowhere::DatasetPtr p2) {
-        auto ids_p1 = p1->Get<int64_t*>(knowhere::meta::IDS);
-        auto ids_p2 = p2->Get<int64_t*>(knowhere::meta::IDS);
+        auto ids_p1 = p1->Get<int64_t*>(knowhere::Meta::IDS);
+        auto ids_p2 = p2->Get<int64_t*>(knowhere::Meta::IDS);
 
         for (int i = 0; i < nq * k; ++i) {
             EXPECT_EQ(*((int64_t*)(ids_p2) + i), *((int64_t*)(ids_p1) + i));
@@ -281,7 +281,7 @@ TEST_P(IVFTest, gpu_seal_test) {
     index_->SetIndexSize(nq * dim * sizeof(float));
 
     auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
+    AssertAnns(result, nq, conf_[knowhere::Meta::TOPK]);
     ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
     ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
 
@@ -307,7 +307,7 @@ TEST_P(IVFTest, invalid_gpu_source) {
     }
 
     auto invalid_conf = ParamGenerator::GetInstance().Gen(index_type_);
-    invalid_conf[knowhere::meta::DEVICEID] = -1;
+    invalid_conf[knowhere::Meta::DEVICEID] = -1;
 
     // if (index_type_ == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
     //     null faiss index

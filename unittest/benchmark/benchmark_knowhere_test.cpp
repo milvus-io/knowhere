@@ -368,13 +368,13 @@ class Benchmark_knowhere : public ::testing::Test {
         for (auto nq : NQs_) {
             knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
             for (auto k : TOPKs_) {
-                conf[knowhere::meta::TOPK] = k;
+                conf[knowhere::Meta::TOPK] = k;
 
                 double t_start = elapsed(), t_end;
                 auto result = index_->Query(ds_ptr, conf, nullptr);
                 t_end = elapsed();
 
-                auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
+                auto ids = result->Get<int64_t*>(knowhere::Meta::IDS);
                 int32_t hit = CalcRecall(ids, nq, k);
                 printf("  nq = %4d, k = %4d, elapse = %.4fs, R@ = %.4f\n",
                        nq, k, (t_end - t_start), (hit / float(nq * std::min(gt_k_, k))));
@@ -400,13 +400,13 @@ class Benchmark_knowhere : public ::testing::Test {
             for (auto nq : NQs_) {
                 knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
                 for (auto k : TOPKs_) {
-                    conf[knowhere::meta::TOPK] = k;
+                    conf[knowhere::Meta::TOPK] = k;
 
                     double t_start = elapsed(), t_end;
                     auto result = index_->Query(ds_ptr, conf, nullptr);
                     t_end = elapsed();
 
-                    auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
+                    auto ids = result->Get<int64_t*>(knowhere::Meta::IDS);
                     int32_t hit = CalcRecall(ids, nq, k);
                     printf("  nprobe = %4d, nq = %4d, k = %4d, elapse = %.4fs, R@ = %.4f\n",
                            nprobe, nq, k, (t_end - t_start), (hit / float(nq * std::min(gt_k_, k))));
@@ -434,13 +434,13 @@ class Benchmark_knowhere : public ::testing::Test {
             for (auto nq : NQs_) {
                 knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
                 for (auto k : TOPKs_) {
-                    conf[knowhere::meta::TOPK] = k;
+                    conf[knowhere::Meta::TOPK] = k;
 
                     double t_start = elapsed(), t_end;
                     auto result = index_->Query(ds_ptr, conf, nullptr);
                     t_end = elapsed();
 
-                    auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
+                    auto ids = result->Get<int64_t*>(knowhere::Meta::IDS);
                     int32_t hit = CalcRecall(ids, nq, k);
                     printf("  ef = %4d, nq = %4d, k = %4d, elapse = %.4fs, R@ = %.4f\n",
                            ef, nq, k, (t_end - t_start), (hit / float(nq * std::min(gt_k_, k))));
@@ -467,13 +467,13 @@ class Benchmark_knowhere : public ::testing::Test {
             for (auto nq : NQs_) {
                 knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
                 for (auto k : TOPKs_) {
-                    conf[knowhere::meta::TOPK] = k;
+                    conf[knowhere::Meta::TOPK] = k;
 
                     double t_start = elapsed(), t_end;
                     auto result = index_->Query(ds_ptr, conf, nullptr);
                     t_end = elapsed();
 
-                    auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
+                    auto ids = result->Get<int64_t*>(knowhere::Meta::IDS);
                     int32_t hit = CalcRecall(ids, nq, k);
                     printf("  search_k = %4d, nq = %4d, k = %4d, elapse = %.4fs, R@ = %.4f\n",
                            sk, nq, k, (t_end - t_start), (hit / float(nq * std::min(gt_k_, k))));
@@ -502,8 +502,8 @@ class Benchmark_knowhere : public ::testing::Test {
         printf("[%.3f s] Loading ground truth\n", get_time_diff());
         load_ground_truth();
 
-        cfg_[knowhere::meta::METRIC_TYPE] = metric_type_;
-        cfg_[knowhere::meta::DIM] = dim_;
+        cfg_[knowhere::Meta::METRIC_TYPE] = metric_type_;
+        cfg_[knowhere::Meta::DIM] = dim_;
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AUTO);
     }
 

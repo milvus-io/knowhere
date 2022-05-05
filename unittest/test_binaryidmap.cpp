@@ -31,10 +31,10 @@ class BinaryIDMAPTest : public DataGen,
         Init_with_default(true);
 
         conf_ = knowhere::Config{
-            {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::HAMMING},
-            {knowhere::meta::DIM, dim},
-            {knowhere::meta::TOPK, k},
-            {knowhere::meta::RADIUS, radius},
+            {knowhere::Meta::METRIC_TYPE, knowhere::MetricEnum::HAMMING},
+            {knowhere::Meta::DIM, dim},
+            {knowhere::Meta::TOPK, k},
+            {knowhere::Meta::RADIUS, radius},
             {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
         };
         index_mode_ = GetParam();
@@ -78,9 +78,9 @@ class BinaryIDMAPTest : public DataGen,
         const std::vector<float>& golden_distances,
         const std::vector<size_t>& golden_lims) {
 
-        auto lims = result->Get<size_t*>(knowhere::meta::LIMS);
-        auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
-        auto distances = result->Get<float*>(knowhere::meta::DISTANCE);
+        auto lims = result->Get<size_t*>(knowhere::Meta::LIMS);
+        auto ids = result->Get<int64_t*>(knowhere::Meta::IDS);
+        auto distances = result->Get<float*>(knowhere::Meta::DISTANCE);
 
         for (int64_t i = 0; i < nq; i++) {
             ASSERT_EQ(golden_lims[i+1], lims[i+1]);
@@ -202,8 +202,8 @@ TEST_P(BinaryIDMAPTest, binaryidmap_slice) {
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_hamming) {
     int hamming_radius = 50;
-    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::HAMMING;
-    conf_[knowhere::meta::RADIUS] = hamming_radius;
+    conf_[knowhere::Meta::METRIC_TYPE] = knowhere::MetricEnum::HAMMING;
+    conf_[knowhere::Meta::RADIUS] = hamming_radius;
 
     // hamming
     auto hamming_dis = [](const uint8_t* pa, const uint8_t* pb, const size_t code_size) -> float {
@@ -233,8 +233,8 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_hamming) {
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_jaccard) {
     float jaccard_radius = 0.5;
-    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::JACCARD;
-    conf_[knowhere::meta::RADIUS] = jaccard_radius;
+    conf_[knowhere::Meta::METRIC_TYPE] = knowhere::MetricEnum::JACCARD;
+    conf_[knowhere::Meta::RADIUS] = jaccard_radius;
 
     auto jaccard_dis = [](const uint8_t* pa, const uint8_t* pb, const size_t code_size) -> float {
         auto and_value = faiss::and_popcnt(pa, pb, code_size);
@@ -266,8 +266,8 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_jaccard) {
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_tanimoto) {
     float tanimoto_radius = 1.0;
-    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::TANIMOTO;
-    conf_[knowhere::meta::RADIUS] = tanimoto_radius;
+    conf_[knowhere::Meta::METRIC_TYPE] = knowhere::MetricEnum::TANIMOTO;
+    conf_[knowhere::Meta::RADIUS] = tanimoto_radius;
 
     auto tanimoto_dis = [](const uint8_t* pa, const uint8_t* pb, const size_t code_size) -> float {
         auto and_value = faiss::and_popcnt(pa, pb, code_size);
@@ -298,7 +298,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_tanimoto) {
 }
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_superstructure) {
-    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::SUPERSTRUCTURE;
+    conf_[knowhere::Meta::METRIC_TYPE] = knowhere::MetricEnum::SUPERSTRUCTURE;
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
@@ -310,7 +310,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_superstructure) {
 }
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_substructure) {
-    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::SUBSTRUCTURE;
+    conf_[knowhere::Meta::METRIC_TYPE] = knowhere::MetricEnum::SUBSTRUCTURE;
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());

@@ -32,10 +32,10 @@ class BinaryIVFTest : public DataGen,
         Init_with_default(true);
 
         conf_ = knowhere::Config{
-            {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::HAMMING},
-            {knowhere::meta::DIM, dim},
-            {knowhere::meta::TOPK, k},
-            {knowhere::meta::RADIUS, radius},
+            {knowhere::Meta::METRIC_TYPE, knowhere::MetricEnum::HAMMING},
+            {knowhere::Meta::DIM, dim},
+            {knowhere::Meta::TOPK, k},
+            {knowhere::Meta::RADIUS, radius},
             {knowhere::IndexParams::nlist, 16},
             {knowhere::IndexParams::nprobe, 8},
         };
@@ -53,8 +53,8 @@ class BinaryIVFTest : public DataGen,
         const knowhere::DatasetPtr& result,
         const float radius) {
 
-        auto lims = result->Get<size_t*>(knowhere::meta::LIMS);
-        auto distances = result->Get<float*>(knowhere::meta::DISTANCE);
+        auto lims = result->Get<size_t*>(knowhere::Meta::LIMS);
+        auto distances = result->Get<float*>(knowhere::Meta::DISTANCE);
 
         for (int64_t i = 0; i < lims[nq]; i++) {
             ASSERT_TRUE(C::cmp(distances[i], radius));
@@ -87,7 +87,7 @@ TEST_P(BinaryIVFTest, binaryivf_basic) {
     EXPECT_EQ(index_->Dim(), dim);
 
     auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
+    AssertAnns(result, nq, conf_[knowhere::Meta::TOPK]);
     // PrintResult(result, nq, k);
 
     auto result2 = index_->Query(query_dataset, conf_, *bitset);
@@ -125,7 +125,7 @@ TEST_P(BinaryIVFTest, binaryivf_serialize) {
     //     index_->set_index_model(model);
     //     index_->Add(base_dataset, conf_);
     //     auto result = index_->Query(query_dataset, conf_);
-    //     AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
+    //     AssertAnns(result, nq, conf_[knowhere::Meta::TOPK]);
     // }
 
     {
@@ -148,7 +148,7 @@ TEST_P(BinaryIVFTest, binaryivf_serialize) {
         EXPECT_EQ(index_->Count(), nb);
         EXPECT_EQ(index_->Dim(), dim);
         auto result = index_->Query(query_dataset, conf_, nullptr);
-        AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
+        AssertAnns(result, nq, conf_[knowhere::Meta::TOPK]);
         // PrintResult(result, nq, k);
     }
 }
@@ -162,14 +162,14 @@ TEST_P(BinaryIVFTest, binaryivf_slice) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
     auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
+    AssertAnns(result, nq, conf_[knowhere::Meta::TOPK]);
     // PrintResult(result, nq, k);
 }
 
 TEST_P(BinaryIVFTest, binaryivf_range_search_hamming) {
     int hamming_radius = 50;
-    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::HAMMING;
-    conf_[knowhere::meta::RADIUS] = hamming_radius;
+    conf_[knowhere::Meta::METRIC_TYPE] = knowhere::MetricEnum::HAMMING;
+    conf_[knowhere::Meta::RADIUS] = hamming_radius;
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
@@ -189,8 +189,8 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_hamming) {
 
 TEST_P(BinaryIVFTest, binaryivf_range_search_jaccard) {
     float jaccard_radius = 0.5;
-    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::JACCARD;
-    conf_[knowhere::meta::RADIUS] = jaccard_radius;
+    conf_[knowhere::Meta::METRIC_TYPE] = knowhere::MetricEnum::JACCARD;
+    conf_[knowhere::Meta::RADIUS] = jaccard_radius;
 
     // serialize index
     index_->Train(base_dataset, conf_);
@@ -211,8 +211,8 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_jaccard) {
 
 TEST_P(BinaryIVFTest, binaryivf_range_search_tanimoto) {
     float tanimoto_radius = 1.0;
-    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::TANIMOTO;
-    conf_[knowhere::meta::RADIUS] = tanimoto_radius;
+    conf_[knowhere::Meta::METRIC_TYPE] = knowhere::MetricEnum::TANIMOTO;
+    conf_[knowhere::Meta::RADIUS] = tanimoto_radius;
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
@@ -231,11 +231,11 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_tanimoto) {
 }
 
 TEST_P(BinaryIVFTest, binaryivf_range_search_superstructure) {
-    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::SUPERSTRUCTURE;
+    conf_[knowhere::Meta::METRIC_TYPE] = knowhere::MetricEnum::SUPERSTRUCTURE;
     ASSERT_ANY_THROW(index_->Train(base_dataset, conf_));
 }
 
 TEST_P(BinaryIVFTest, binaryivf_range_search_substructure) {
-    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::SUBSTRUCTURE;
+    conf_[knowhere::Meta::METRIC_TYPE] = knowhere::MetricEnum::SUBSTRUCTURE;
     ASSERT_ANY_THROW(index_->Train(base_dataset, conf_));
 }

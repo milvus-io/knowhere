@@ -117,9 +117,9 @@ class IDMAPTest : public DataGen, public TestWithParam<knowhere::IndexMode> {
         const std::vector<float>& golden_distances,
         const std::vector<size_t>& golden_lims) {
 
-        auto lims = result->Get<size_t*>(knowhere::meta::LIMS);
-        auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
-        auto distances = result->Get<float*>(knowhere::meta::DISTANCE);
+        auto lims = result->Get<size_t*>(knowhere::Meta::LIMS);
+        auto ids = result->Get<int64_t*>(knowhere::Meta::IDS);
+        auto distances = result->Get<float*>(knowhere::Meta::DISTANCE);
 
         for (int64_t i = 0; i < nq; i++) {
             if (golden_lims[i+1] != lims[i+1]) {
@@ -159,9 +159,9 @@ TEST_P(IDMAPTest, idmap_basic) {
     ASSERT_TRUE(!xb.empty());
 
     knowhere::Config conf{
-        {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
-        {knowhere::meta::DIM, dim},
-        {knowhere::meta::TOPK, k},
+        {knowhere::Meta::METRIC_TYPE, knowhere::MetricEnum::L2},
+        {knowhere::Meta::DIM, dim},
+        {knowhere::Meta::TOPK, k},
     };
 
     // null faiss index
@@ -211,9 +211,9 @@ TEST_P(IDMAPTest, idmap_serialize) {
     };
 
     knowhere::Config conf{
-        {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
-        {knowhere::meta::DIM, dim},
-        {knowhere::meta::TOPK, k},
+        {knowhere::Meta::METRIC_TYPE, knowhere::MetricEnum::L2},
+        {knowhere::Meta::DIM, dim},
+        {knowhere::Meta::TOPK, k},
     };
 
     index_->Train(base_dataset, conf);
@@ -252,9 +252,9 @@ TEST_P(IDMAPTest, idmap_serialize) {
 
 TEST_P(IDMAPTest, idmap_slice) {
     knowhere::Config conf{
-        {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
-        {knowhere::meta::DIM, dim},
-        {knowhere::meta::TOPK, k},
+        {knowhere::Meta::METRIC_TYPE, knowhere::MetricEnum::L2},
+        {knowhere::Meta::DIM, dim},
+        {knowhere::Meta::TOPK, k},
         {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
     };
 
@@ -285,8 +285,8 @@ TEST_P(IDMAPTest, idmap_slice) {
 
 TEST_P(IDMAPTest, idmap_range_search_l2) {
     knowhere::Config conf{
-        {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
-        {knowhere::meta::DIM, dim},
+        {knowhere::Meta::METRIC_TYPE, knowhere::MetricEnum::L2},
+        {knowhere::Meta::DIM, dim},
     };
 
     index_->Train(base_dataset, conf);
@@ -308,8 +308,8 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
     auto old_blas_threshold = knowhere::KnowhereConfig::GetBlasThreshold();
     for (int64_t blas_threshold : {0, 20}) {
         knowhere::KnowhereConfig::SetBlasThreshold(blas_threshold);
-        for (float radius: {4.0, 4.5, 5.0}) {
-            conf[knowhere::meta::RADIUS] = radius;
+        for (float radius: {4.1, 4.6, 5.1}) {
+            conf[knowhere::Meta::RADIUS] = radius;
             test_range_search_l2(radius, nullptr);
             test_range_search_l2(radius, *bitset);
         }
@@ -319,8 +319,8 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
 
 TEST_P(IDMAPTest, idmap_range_search_ip) {
     knowhere::Config conf{
-        {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::IP},
-        {knowhere::meta::DIM, dim},
+        {knowhere::Meta::METRIC_TYPE, knowhere::MetricEnum::IP},
+        {knowhere::Meta::DIM, dim},
     };
 
     index_->Train(base_dataset, conf);
@@ -343,7 +343,7 @@ TEST_P(IDMAPTest, idmap_range_search_ip) {
     for (int64_t blas_threshold : {0, 20}) {
         knowhere::KnowhereConfig::SetBlasThreshold(blas_threshold);
         for (float radius: {30.0, 40.0, 45.0}) {
-            conf[knowhere::meta::RADIUS] = radius;
+            conf[knowhere::Meta::RADIUS] = radius;
             test_range_search_ip(radius, nullptr);
             test_range_search_ip(radius, *bitset);
         }
@@ -356,8 +356,8 @@ TEST_P(IDMAPTest, idmap_copy) {
     ASSERT_TRUE(!xb.empty());
 
     knowhere::Config conf{
-        {knowhere::meta::DIM, dim},
-        {knowhere::meta::TOPK, k},
+        {knowhere::Meta::DIM, dim},
+        {knowhere::Meta::TOPK, k},
         {knowhere::Metric::TYPE, knowhere::Metric::L2}
     };
 

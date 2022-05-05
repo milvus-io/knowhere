@@ -31,9 +31,9 @@ class HNSWTest : public DataGen, public TestWithParam<std::string> {
         Generate(64, 10000, 10);  // dim = 64, nb = 10000, nq = 10
         index_ = std::make_shared<knowhere::IndexHNSW>();
         conf = knowhere::Config{
-            {knowhere::meta::DIM, 64},        {knowhere::meta::TOPK, 10},
+            {knowhere::Meta::DIM, 64},        {knowhere::Meta::TOPK, 10},
             {knowhere::IndexParams::M, 16},   {knowhere::IndexParams::efConstruction, 200},
-            {knowhere::IndexParams::ef, 200}, {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
+            {knowhere::IndexParams::ef, 200}, {knowhere::Meta::METRIC_TYPE, knowhere::MetricEnum::L2},
         };
     }
 
@@ -67,9 +67,9 @@ TEST_P(HNSWTest, HNSW_basic) {
     // Serialize and Load before Query
     knowhere::BinarySet bs = index_->Serialize(conf);
 
-    int64_t dim = base_dataset->Get<int64_t>(knowhere::meta::DIM);
-    int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
-    auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
+    int64_t dim = base_dataset->Get<int64_t>(knowhere::Meta::DIM);
+    int64_t rows = base_dataset->Get<int64_t>(knowhere::Meta::ROWS);
+    auto raw_data = base_dataset->Get<const void*>(knowhere::Meta::TENSOR);
     knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
     bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
@@ -82,11 +82,11 @@ TEST_P(HNSWTest, HNSW_basic) {
 
     // case: k > nb
     const int64_t new_rows = 6;
-    base_dataset->Set(knowhere::meta::ROWS, new_rows);
+    base_dataset->Set(knowhere::Meta::ROWS, new_rows);
     index_->Train(base_dataset, conf);
     index_->AddWithoutIds(base_dataset, conf);
     auto result2 = index_->Query(query_dataset, conf, nullptr);
-    auto res_ids = result2->Get<int64_t*>(knowhere::meta::IDS);
+    auto res_ids = result2->Get<int64_t*>(knowhere::Meta::IDS);
     for (int64_t i = 0; i < nq; i++) {
         for (int64_t j = new_rows; j < k; j++) {
             ASSERT_EQ(res_ids[i * k + j], -1);
@@ -105,9 +105,9 @@ TEST_P(HNSWTest, HNSW_delete) {
     // Serialize and Load before Query
     knowhere::BinarySet bs = index_->Serialize(conf);
 
-    int64_t dim = base_dataset->Get<int64_t>(knowhere::meta::DIM);
-    int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
-    auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
+    int64_t dim = base_dataset->Get<int64_t>(knowhere::Meta::DIM);
+    int64_t rows = base_dataset->Get<int64_t>(knowhere::Meta::ROWS);
+    auto raw_data = base_dataset->Get<const void*>(knowhere::Meta::TENSOR);
     knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
     bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
@@ -123,8 +123,8 @@ TEST_P(HNSWTest, HNSW_delete) {
 
     /*
      * delete result checked by eyes
-    auto ids1 = result1->Get<int64_t*>(knowhere::meta::IDS);
-    auto ids2 = result2->Get<int64_t*>(knowhere::meta::IDS);
+    auto ids1 = result1->Get<int64_t*>(knowhere::Meta::IDS);
+    auto ids2 = result2->Get<int64_t*>(knowhere::Meta::IDS);
     std::cout << std::endl;
     for (int i = 0; i < nq; ++ i) {
         std::cout << "ids1: ";
@@ -173,7 +173,7 @@ TEST_P(HNSWTest, HNSW_serialize) {
         EXPECT_EQ(index_->Count(), nb);
         EXPECT_EQ(index_->Dim(), dim);
         auto result = index_->Query(query_dataset, conf);
-        AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
+        AssertAnns(result, nq, conf[knowhere::Meta::TOPK]);
     }
 }*/
 
@@ -220,22 +220,22 @@ main() {
     int ef = 200;
     knowhere::IndexHNSW_NM index;
     knowhere::DatasetPtr base_dataset = generate_dataset(nb, d, (const void*)xb, ids);
-//    base_dataset->Set(knowhere::meta::ROWS, nb);
-//    base_dataset->Set(knowhere::meta::DIM, d);
-//    base_dataset->Set(knowhere::meta::TENSOR, (const void*)xb);
-//    base_dataset->Set(knowhere::meta::IDS, (const int64_t*)ids);
+//    base_dataset->Set(knowhere::Meta::ROWS, nb);
+//    base_dataset->Set(knowhere::Meta::DIM, d);
+//    base_dataset->Set(knowhere::Meta::TENSOR, (const void*)xb);
+//    base_dataset->Set(knowhere::Meta::IDS, (const int64_t*)ids);
 
     knowhere::Config base_conf{
-        {knowhere::meta::DIM, d},
-        {knowhere::meta::TOPK, k},
+        {knowhere::Meta::DIM, d},
+        {knowhere::Meta::TOPK, k},
         {knowhere::IndexParams::M, m},
         {knowhere::IndexParams::efConstruction, ef},
         {knowhere::Metric::TYPE, knowhere::Metric::L2},
     };
     knowhere::DatasetPtr query_dataset = generate_query_dataset(nq, d, (const void*)xq);
     knowhere::Config query_conf{
-        {knowhere::meta::DIM, d},
-        {knowhere::meta::TOPK, k},
+        {knowhere::Meta::DIM, d},
+        {knowhere::Meta::TOPK, k},
         {knowhere::IndexParams::M, m},
         {knowhere::IndexParams::ef, ef},
         {knowhere::Metric::TYPE, knowhere::Metric::L2},
@@ -248,8 +248,8 @@ main() {
     {  // sanity check
         auto res = index.Query(query_dataset, query_conf);
 //        printf("Query done!\n");
-        const int64_t* I = res->Get<int64_t*>(knowhere::meta::IDS);
-//        float* D = res->Get<float*>(knowhere::meta::DISTANCE);
+        const int64_t* I = res->Get<int64_t*>(knowhere::Meta::IDS);
+//        float* D = res->Get<float*>(knowhere::Meta::DISTANCE);
 
 //        printf("I=\n");
 //        for (int i = 0; i < 5; i++) {
@@ -267,7 +267,7 @@ main() {
 //    printf("---------------search xq-------------\n");
     {  // search xq
         auto res = index.Query(query_dataset, query_conf);
-        const int64_t* I = res->Get<int64_t*>(knowhere::meta::IDS);
+        const int64_t* I = res->Get<int64_t*>(knowhere::Meta::IDS);
 
         printf("I=\n");
         for (int i = 0; i < nq; i++) {
@@ -279,7 +279,7 @@ main() {
     printf("----------------search xq with delete------------\n");
     {  // search xq with delete
         auto res = index.Query(query_dataset, query_conf, bitset);
-        auto I = res->Get<int64_t*>(knowhere::meta::IDS);
+        auto I = res->Get<int64_t*>(knowhere::Meta::IDS);
 
         printf("I=\n");
         for (int i = 0; i < nq; i++) {

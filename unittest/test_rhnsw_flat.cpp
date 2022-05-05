@@ -30,9 +30,9 @@ class RHNSWFlatTest : public DataGen, public TestWithParam<std::string> {
         Generate(64, 10000, 10);  // dim = 64, nb = 10000, nq = 10
         index_ = std::make_shared<knowhere::IndexRHNSWFlat>();
         conf = knowhere::Config{
-            {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
-            {knowhere::meta::DIM, 64},
-            {knowhere::meta::TOPK, 10},
+            {knowhere::Meta::METRIC_TYPE, knowhere::MetricEnum::L2},
+            {knowhere::Meta::DIM, 64},
+            {knowhere::Meta::TOPK, 10},
             {knowhere::IndexParams::M, 16},
             {knowhere::IndexParams::efConstruction, 200},
             {knowhere::IndexParams::ef, 200},
@@ -62,9 +62,9 @@ TEST_P(RHNSWFlatTest, HNSW_basic) {
     // Serialize and Load before Query
     knowhere::BinarySet bs = index_->Serialize(conf);
 
-    int64_t dim = base_dataset->Get<int64_t>(knowhere::meta::DIM);
-    int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
-    auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
+    int64_t dim = base_dataset->Get<int64_t>(knowhere::Meta::DIM);
+    int64_t rows = base_dataset->Get<int64_t>(knowhere::Meta::ROWS);
+    auto raw_data = base_dataset->Get<const void*>(knowhere::Meta::TENSOR);
     knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
     bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
@@ -93,8 +93,8 @@ TEST_P(RHNSWFlatTest, HNSW_delete) {
 
     /*
      * delete result checked by eyes
-    auto ids1 = result1->Get<int64_t*>(knowhere::meta::IDS);
-    auto ids2 = result2->Get<int64_t*>(knowhere::meta::IDS);
+    auto ids1 = result1->Get<int64_t*>(knowhere::Meta::IDS);
+    auto ids2 = result2->Get<int64_t*>(knowhere::Meta::IDS);
     std::cout << std::endl;
     for (int i = 0; i < nq; ++ i) {
         std::cout << "ids1: ";
@@ -154,9 +154,9 @@ TEST_P(RHNSWFlatTest, HNSW_serialize) {
         binaryset.Append(std::string(new_idx->index_type()) + "_Index", idx, bin_idx->size);
         binaryset.Append("META", met, bin_met->size);
 
-        int64_t dim = base_dataset->Get<int64_t>(knowhere::meta::DIM);
-        int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
-        auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
+        int64_t dim = base_dataset->Get<int64_t>(knowhere::Meta::DIM);
+        int64_t rows = base_dataset->Get<int64_t>(knowhere::Meta::ROWS);
+        auto raw_data = base_dataset->Get<const void*>(knowhere::Meta::TENSOR);
         knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
         bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
         bptr->size = dim * rows * sizeof(float);
@@ -165,7 +165,7 @@ TEST_P(RHNSWFlatTest, HNSW_serialize) {
         EXPECT_EQ(new_idx->Count(), nb);
         EXPECT_EQ(new_idx->Dim(), dim);
         auto result = new_idx->Query(query_dataset, conf, nullptr);
-        // AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
+        // AssertAnns(result, nq, conf[knowhere::Meta::TOPK]);
     }
 }
 
@@ -175,9 +175,9 @@ TEST_P(RHNSWFlatTest, HNSW_slice) {
         index_->AddWithoutIds(base_dataset, conf);
         auto binaryset = index_->Serialize(conf);
         auto new_idx = std::make_shared<knowhere::IndexRHNSWFlat>();
-        int64_t dim = base_dataset->Get<int64_t>(knowhere::meta::DIM);
-        int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
-        auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
+        int64_t dim = base_dataset->Get<int64_t>(knowhere::Meta::DIM);
+        int64_t rows = base_dataset->Get<int64_t>(knowhere::Meta::ROWS);
+        auto raw_data = base_dataset->Get<const void*>(knowhere::Meta::TENSOR);
         knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
         bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
         bptr->size = dim * rows * sizeof(float);
@@ -186,6 +186,6 @@ TEST_P(RHNSWFlatTest, HNSW_slice) {
         EXPECT_EQ(new_idx->Count(), nb);
         EXPECT_EQ(new_idx->Dim(), dim);
         auto result = new_idx->Query(query_dataset, conf, nullptr);
-        // AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
+        // AssertAnns(result, nq, conf[knowhere::Meta::TOPK]);
     }
 }

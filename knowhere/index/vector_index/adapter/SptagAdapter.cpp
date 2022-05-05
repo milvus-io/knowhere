@@ -16,7 +16,7 @@ namespace knowhere {
 
 std::shared_ptr<SPTAG::MetadataSet>
 ConvertToMetadataSet(const DatasetPtr& dataset_ptr) {
-    auto elems = dataset_ptr->Get<int64_t>(meta::ROWS);
+    auto elems = dataset_ptr->Get<int64_t>(Meta::ROWS);
 
     auto p_id = new int64_t[elems];
     for (int64_t i = 0; i < elems; ++i) p_id[i] = i;
@@ -45,7 +45,7 @@ std::vector<SPTAG::QueryResult>
 ConvertToQueryResult(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA_DIM(dataset_ptr);
 
-    int64_t k = config[meta::TOPK].get<int64_t>();
+    int64_t k = config[Meta::TOPK].get<int64_t>();
     std::vector<SPTAG::QueryResult> query_results(rows, SPTAG::QueryResult(nullptr, k, true));
     for (auto i = 0; i < rows; ++i) {
         query_results[i].SetTarget((float*)p_data + i * dim);
@@ -82,8 +82,8 @@ ConvertToDataset(std::vector<SPTAG::QueryResult> query_results, std::shared_ptr<
     }
 
     auto ret_ds = std::make_shared<Dataset>();
-    ret_ds->Set(meta::IDS, p_id);
-    ret_ds->Set(meta::DISTANCE, p_dist);
+    ret_ds->Set(Meta::IDS, p_id);
+    ret_ds->Set(Meta::DISTANCE, p_dist);
     return ret_ds;
 }
 

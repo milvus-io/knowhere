@@ -62,8 +62,8 @@ class IVFNMTest : public DataGen,
         const knowhere::DatasetPtr& result,
         const float radius) {
 
-        auto lims = result->Get<size_t*>(knowhere::meta::LIMS);
-        auto distances = result->Get<float*>(knowhere::meta::DISTANCE);
+        auto lims = result->Get<size_t*>(knowhere::Meta::LIMS);
+        auto distances = result->Get<float*>(knowhere::Meta::DISTANCE);
 
         for (auto i = 0; i < lims[nq]; ++i) {
             ASSERT_TRUE(C::cmp(distances[i], radius));
@@ -151,7 +151,7 @@ TEST_P(IVFNMTest, ivfnm_basic) {
 }
 
 TEST_P(IVFNMTest, ivfnm_range_search_l2) {
-    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::L2;
+    conf_[knowhere::Meta::METRIC_TYPE] = knowhere::MetricEnum::L2;
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
@@ -162,7 +162,7 @@ TEST_P(IVFNMTest, ivfnm_range_search_l2) {
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
     auto test_range_search_l2 = [&](float radius, const faiss::BitsetView bitset) {
-        conf_[knowhere::meta::RADIUS] = radius;
+        conf_[knowhere::Meta::RADIUS] = radius;
         auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMin<float>>(result, radius * radius);
     };
@@ -174,7 +174,7 @@ TEST_P(IVFNMTest, ivfnm_range_search_l2) {
 }
 
 TEST_P(IVFNMTest, ivfnm_range_search_ip) {
-    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::IP;
+    conf_[knowhere::Meta::METRIC_TYPE] = knowhere::MetricEnum::IP;
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
@@ -185,7 +185,7 @@ TEST_P(IVFNMTest, ivfnm_range_search_ip) {
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
     auto test_range_search_ip = [&](float radius, const faiss::BitsetView bitset) {
-        conf_[knowhere::meta::RADIUS] = radius;
+        conf_[knowhere::Meta::RADIUS] = radius;
         auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMax<float>>(result, radius);
     };

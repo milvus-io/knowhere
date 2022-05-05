@@ -78,7 +78,7 @@ NSG_NM::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::
     GET_TENSOR_DATA_DIM(dataset_ptr)
 
     try {
-        auto topK = config[meta::TOPK].get<int64_t>();
+        auto topK = config[Meta::TOPK].get<int64_t>();
         auto elems = rows * topK;
         size_t p_id_size = sizeof(int64_t) * elems;
         size_t p_dist_size = sizeof(float) * elems;
@@ -87,14 +87,14 @@ NSG_NM::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::
 
         impl::SearchParams s_params;
         s_params.search_length = config[IndexParams::search_length];
-        s_params.k = config[meta::TOPK];
+        s_params.k = config[Meta::TOPK];
         index_->Search(reinterpret_cast<const float*>(p_data), reinterpret_cast<float*>(data_.get()), rows, dim, topK,
                        p_dist, p_id, s_params, bitset);
         MapOffsetToUid(p_id, static_cast<size_t>(elems));
 
         auto ret_ds = std::make_shared<Dataset>();
-        ret_ds->Set(meta::IDS, p_id);
-        ret_ds->Set(meta::DISTANCE, p_dist);
+        ret_ds->Set(Meta::IDS, p_id);
+        ret_ds->Set(Meta::DISTANCE, p_dist);
         return ret_ds;
     } catch (std::exception& e) {
         KNOWHERE_THROW_MSG(e.what());
@@ -110,7 +110,7 @@ NSG_NM::BuildAll(const DatasetPtr& dataset_ptr, const Config& config) {
     const float* raw_data = idmap->GetRawVectors();
     auto k = config[IndexParams::knng].get<int64_t>();
 #ifdef KNOWHERE_GPU_VERSION
-    const auto device_id = config[meta::DEVICEID].get<int64_t>();
+    const auto device_id = config[Meta::DEVICEID].get<int64_t>();
     if (device_id == -1) {
         auto preprocess_index = std::make_shared<IVF>();
         preprocess_index->Train(dataset_ptr, config);

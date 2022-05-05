@@ -66,10 +66,10 @@ CheckStrByValues(const Config& cfg, const std::string& key, const std::vector<Me
 
 bool
 ConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    if (!CheckIntByRange(cfg, meta::DIM, DEFAULT_MIN_DIM, DEFAULT_MAX_DIM)) {
+    if (!CheckIntByRange(cfg, Meta::DIM, DEFAULT_MIN_DIM, DEFAULT_MAX_DIM)) {
         return false;
     }
-    if (!CheckStrByValues(cfg, meta::METRIC_TYPE, default_metric_array)) {
+    if (!CheckStrByValues(cfg, Meta::METRIC_TYPE, default_metric_array)) {
         return false;
     }
     return true;
@@ -79,7 +79,7 @@ bool
 ConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
     const int64_t DEFAULT_MIN_K = 1;
     const int64_t DEFAULT_MAX_K = 16384;
-    return CheckIntByRange(cfg, meta::TOPK, DEFAULT_MIN_K - 1, DEFAULT_MAX_K);
+    return CheckIntByRange(cfg, Meta::TOPK, DEFAULT_MIN_K - 1, DEFAULT_MAX_K);
 }
 
 int64_t
@@ -119,7 +119,7 @@ IVFConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     }
 
     // auto tune params
-    auto rows = cfg[meta::ROWS].get<int64_t>();
+    auto rows = cfg[Meta::ROWS].get<int64_t>();
     auto nlist = cfg[IndexParams::nlist].get<int64_t>();
     cfg[IndexParams::nlist] = MatchNlist(rows, nlist);
 
@@ -157,12 +157,12 @@ IVFPQConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
         return false;
     }
 
-    auto rows = cfg[meta::ROWS].get<int64_t>();
+    auto rows = cfg[Meta::ROWS].get<int64_t>();
     auto nbits = cfg.count(IndexParams::nbits) ? cfg[IndexParams::nbits].get<int64_t>() : DEFAULT_NBITS;
     cfg[IndexParams::nbits] = MatchNbits(rows, nbits);
 
     auto m = cfg[IndexParams::m].get<int64_t>();
-    auto dimension = cfg[meta::DIM].get<int64_t>();
+    auto dimension = cfg[Meta::DIM].get<int64_t>();
 
     IndexMode ivfpq_mode = mode;
     return CheckPQParams(dimension, m, nbits, ivfpq_mode);
@@ -224,7 +224,7 @@ IVFHNSWConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     }
 
     // auto tune params
-    auto rows = cfg[meta::ROWS].get<int64_t>();
+    auto rows = cfg[Meta::ROWS].get<int64_t>();
     auto nlist = cfg[IndexParams::nlist].get<int64_t>();
     cfg[IndexParams::nlist] = MatchNlist(rows, nlist);
 
@@ -234,7 +234,7 @@ IVFHNSWConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 bool
 IVFHNSWConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
     // HNSW param check
-    if (!CheckIntByRange(cfg, IndexParams::ef, cfg[meta::TOPK], HNSW_MAX_EF)) {
+    if (!CheckIntByRange(cfg, IndexParams::ef, cfg[Meta::TOPK], HNSW_MAX_EF)) {
         return false;
     }
 
@@ -257,7 +257,7 @@ NSGConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     const int64_t MIN_CANDIDATE_POOL_SIZE = 50;
     const int64_t MAX_CANDIDATE_POOL_SIZE = 1000;
 
-    if (!CheckStrByValues(cfg, meta::METRIC_TYPE, default_metric_array)) {
+    if (!CheckStrByValues(cfg, Meta::METRIC_TYPE, default_metric_array)) {
         return false;
     }
     if (!CheckIntByRange(cfg, IndexParams::knng, MIN_KNNG, MAX_KNNG)) {
@@ -274,7 +274,7 @@ NSGConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     }
 
     // auto tune params
-    cfg[IndexParams::nlist] = MatchNlist(cfg[meta::ROWS].get<int64_t>(), 8192);
+    cfg[IndexParams::nlist] = MatchNlist(cfg[Meta::ROWS].get<int64_t>(), 8192);
 
     int64_t nprobe = int(cfg[IndexParams::nlist].get<int64_t>() * 0.1);
     cfg[IndexParams::nprobe] = nprobe < 1 ? 1 : nprobe;
@@ -306,7 +306,7 @@ HNSWConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 HNSWConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    if (!CheckIntByRange(cfg, IndexParams::ef, cfg[meta::TOPK], HNSW_MAX_EF)) {
+    if (!CheckIntByRange(cfg, IndexParams::ef, cfg[Meta::TOPK], HNSW_MAX_EF)) {
         return false;
     }
     return ConfAdapter::CheckSearch(cfg, type, mode);
@@ -325,7 +325,7 @@ RHNSWFlatConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 RHNSWFlatConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    if (!CheckIntByRange(cfg, IndexParams::ef, cfg[meta::TOPK], HNSW_MAX_EF)) {
+    if (!CheckIntByRange(cfg, IndexParams::ef, cfg[Meta::TOPK], HNSW_MAX_EF)) {
         return false;
     }
     return ConfAdapter::CheckSearch(cfg, type, mode);
@@ -340,7 +340,7 @@ RHNSWPQConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
         return false;
     }
 
-    auto dimension = cfg[meta::DIM].get<int64_t>();
+    auto dimension = cfg[Meta::DIM].get<int64_t>();
     if (!IVFPQConfAdapter::CheckCPUPQParams(dimension, cfg[IndexParams::PQM].get<int64_t>())) {
         return false;
     }
@@ -349,7 +349,7 @@ RHNSWPQConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 RHNSWPQConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    if (!CheckIntByRange(cfg, IndexParams::ef, cfg[meta::TOPK], HNSW_MAX_EF)) {
+    if (!CheckIntByRange(cfg, IndexParams::ef, cfg[Meta::TOPK], HNSW_MAX_EF)) {
         return false;
     }
     return ConfAdapter::CheckSearch(cfg, type, mode);
@@ -368,7 +368,7 @@ RHNSWSQConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 RHNSWSQConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    if (!CheckIntByRange(cfg, IndexParams::ef, cfg[meta::TOPK], HNSW_MAX_EF)) {
+    if (!CheckIntByRange(cfg, IndexParams::ef, cfg[Meta::TOPK], HNSW_MAX_EF)) {
         return false;
     }
     return ConfAdapter::CheckSearch(cfg, type, mode);
@@ -376,10 +376,10 @@ RHNSWSQConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMo
 
 bool
 BinIDMAPConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    if (!CheckIntByRange(cfg, meta::DIM, DEFAULT_MIN_DIM, DEFAULT_MAX_DIM)) {
+    if (!CheckIntByRange(cfg, Meta::DIM, DEFAULT_MIN_DIM, DEFAULT_MAX_DIM)) {
         return false;
     }
-    if (!CheckStrByValues(cfg, meta::METRIC_TYPE, default_binary_metric_array)) {
+    if (!CheckStrByValues(cfg, Meta::METRIC_TYPE, default_binary_metric_array)) {
         return false;
     }
     return true;
@@ -389,18 +389,18 @@ bool
 BinIVFConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     static const std::vector<MetricType> metric_array{MetricEnum::HAMMING, MetricEnum::JACCARD, MetricEnum::TANIMOTO};
 
-    if (!CheckIntByRange(cfg, meta::DIM, DEFAULT_MIN_DIM, DEFAULT_MAX_DIM)) {
+    if (!CheckIntByRange(cfg, Meta::DIM, DEFAULT_MIN_DIM, DEFAULT_MAX_DIM)) {
         return false;
     }
     if (!CheckIntByRange(cfg, IndexParams::nlist, MIN_NLIST, MAX_NLIST)) {
         return false;
     }
-    if (!CheckStrByValues(cfg, meta::METRIC_TYPE, metric_array)) {
+    if (!CheckStrByValues(cfg, Meta::METRIC_TYPE, metric_array)) {
         return false;
     }
 
     // auto tune params
-    auto rows = cfg[meta::ROWS].get<int64_t>();
+    auto rows = cfg[Meta::ROWS].get<int64_t>();
     auto nlist = cfg[IndexParams::nlist].get<int64_t>();
     cfg[IndexParams::nlist] = MatchNlist(rows, nlist);
 

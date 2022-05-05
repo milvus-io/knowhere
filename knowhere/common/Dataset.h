@@ -30,18 +30,18 @@ class Dataset {
     Dataset() = default;
     ~Dataset() {
         for (auto const& d : data_) {
-            if (d.first == meta::IDS) {
-                auto ids = Get<int64_t*>(meta::IDS);
+            if (d.first == Meta::IDS) {
+                auto ids = Get<int64_t*>(Meta::IDS);
                 // the space of ids must be allocated through malloc
                 free(ids);
             }
-            if (d.first == meta::DISTANCE) {
-                auto distances = Get<float*>(meta::DISTANCE);
+            if (d.first == Meta::DISTANCE) {
+                auto distances = Get<float*>(Meta::DISTANCE);
                 // the space of distance must be allocated through malloc
                 free(distances);
             }
-            if (d.first == meta::LIMS) {
-                auto lims = Get<size_t*>(meta::LIMS);
+            if (d.first == Meta::LIMS) {
+                auto lims = Get<size_t*>(Meta::LIMS);
                 // the space of lims must be allocated through malloc
                 free(lims);
             }

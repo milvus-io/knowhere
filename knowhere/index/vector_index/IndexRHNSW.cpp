@@ -103,7 +103,7 @@ IndexRHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fai
         KNOWHERE_THROW_MSG("index not initialize or trained");
     }
     GET_TENSOR_DATA(dataset_ptr)
-    auto k = config[meta::TOPK].get<int64_t>();
+    auto k = config[Meta::TOPK].get<int64_t>();
     auto result_count = rows * k;
 
     auto p_id = static_cast<int64_t*>(malloc(result_count * sizeof(int64_t)));
@@ -140,8 +140,8 @@ IndexRHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fai
     // LOG_KNOWHERE_DEBUG_ << GetStatistics()->ToString();
 
     auto ret_ds = std::make_shared<Dataset>();
-    ret_ds->Set(meta::IDS, p_id);
-    ret_ds->Set(meta::DISTANCE, p_dist);
+    ret_ds->Set(Meta::IDS, p_id);
+    ret_ds->Set(Meta::DISTANCE, p_dist);
     return ret_ds;
 }
 

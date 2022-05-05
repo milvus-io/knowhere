@@ -67,7 +67,7 @@ BinaryIVF::Query(const DatasetPtr& dataset_ptr, const Config& config, const fais
     };
 
     try {
-        auto k = config[meta::TOPK].get<int64_t>();
+        auto k = config[Meta::TOPK].get<int64_t>();
         auto elems = rows * k;
 
         size_t p_id_size = sizeof(int64_t) * elems;
@@ -78,8 +78,8 @@ BinaryIVF::Query(const DatasetPtr& dataset_ptr, const Config& config, const fais
         QueryImpl(rows, reinterpret_cast<const uint8_t*>(p_data), k, p_dist, p_id, config, bitset);
 
         auto ret_ds = std::make_shared<Dataset>();
-        ret_ds->Set(meta::IDS, p_id);
-        ret_ds->Set(meta::DISTANCE, p_dist);
+        ret_ds->Set(Meta::IDS, p_id);
+        ret_ds->Set(Meta::DISTANCE, p_dist);
         return ret_ds;
     } catch (faiss::FaissException& e) {
         release_when_exception();
@@ -99,7 +99,7 @@ BinaryIVF::QueryByRange(const DatasetPtr& dataset,
     }
     GET_TENSOR_DATA(dataset)
 
-    auto radius = config[meta::RADIUS].get<float>();
+    auto radius = config[Meta::RADIUS].get<float>();
 
     int64_t* p_id = nullptr;
     float* p_dist = nullptr;
@@ -121,9 +121,9 @@ BinaryIVF::QueryByRange(const DatasetPtr& dataset,
         QueryByRangeImpl(rows, reinterpret_cast<const uint8_t*>(p_data), radius, p_dist, p_id, p_lims, config, bitset);
 
         auto ret_ds = std::make_shared<Dataset>();
-        ret_ds->Set(meta::IDS, p_id);
-        ret_ds->Set(meta::DISTANCE, p_dist);
-        ret_ds->Set(meta::LIMS, p_lims);
+        ret_ds->Set(Meta::IDS, p_id);
+        ret_ds->Set(Meta::DISTANCE, p_dist);
+        ret_ds->Set(Meta::LIMS, p_lims);
         return ret_ds;
     } catch (faiss::FaissException& e) {
         release_when_exception();

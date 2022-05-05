@@ -110,7 +110,7 @@ IVF::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::Bit
     };
 
     try {
-        auto k = config[meta::TOPK].get<int64_t>();
+        auto k = config[Meta::TOPK].get<int64_t>();
         auto elems = rows * k;
 
         size_t p_id_size = sizeof(int64_t) * elems;
@@ -121,8 +121,8 @@ IVF::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::Bit
         QueryImpl(rows, reinterpret_cast<const float*>(p_data), k, p_dist, p_id, config, bitset);
 
         auto ret_ds = std::make_shared<Dataset>();
-        ret_ds->Set(meta::IDS, p_id);
-        ret_ds->Set(meta::DISTANCE, p_dist);
+        ret_ds->Set(Meta::IDS, p_id);
+        ret_ds->Set(Meta::DISTANCE, p_dist);
         return ret_ds;
     } catch (faiss::FaissException& e) {
         release_when_exception();
@@ -142,7 +142,7 @@ IVF::QueryByRange(const DatasetPtr& dataset,
     }
     GET_TENSOR_DATA(dataset)
 
-    auto radius = config[meta::RADIUS].get<float>();
+    auto radius = config[Meta::RADIUS].get<float>();
 
     int64_t* p_id = nullptr;
     float* p_dist = nullptr;
@@ -164,9 +164,9 @@ IVF::QueryByRange(const DatasetPtr& dataset,
         QueryByRangeImpl(rows, reinterpret_cast<const float*>(p_data), radius, p_dist, p_id, p_lims, config, bitset);
 
         auto ret_ds = std::make_shared<Dataset>();
-        ret_ds->Set(meta::IDS, p_id);
-        ret_ds->Set(meta::DISTANCE, p_dist);
-        ret_ds->Set(meta::LIMS, p_lims);
+        ret_ds->Set(Meta::IDS, p_id);
+        ret_ds->Set(Meta::DISTANCE, p_dist);
+        ret_ds->Set(Meta::LIMS, p_lims);
         return ret_ds;
     } catch (faiss::FaissException& e) {
         release_when_exception();
@@ -238,7 +238,7 @@ IVF::GenGraph(const float* data, const int64_t k, GraphType& graph, const Config
     int64_t K = k + 1;
     auto ntotal = Count();
 
-    size_t dim = config[meta::DIM];
+    size_t dim = config[Meta::DIM];
     auto batch_size = 1000;
     auto tail_batch_size = ntotal % batch_size;
     auto batch_search_count = ntotal / batch_size;

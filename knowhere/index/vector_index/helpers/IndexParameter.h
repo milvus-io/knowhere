@@ -18,7 +18,7 @@
 
 namespace knowhere {
 
-namespace meta {
+namespace Meta {
 constexpr const char* METRIC_TYPE = "metric_type";
 constexpr const char* DIM = "dim";
 constexpr const char* TENSOR = "tensor";
@@ -29,7 +29,7 @@ constexpr const char* TOPK = "k";
 constexpr const char* LIMS = "lims";
 constexpr const char* RADIUS = "radius";
 constexpr const char* DEVICEID = "gpu_id";
-};  // namespace meta
+};  // namespace Meta
 
 namespace IndexParams {
 

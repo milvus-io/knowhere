@@ -31,9 +31,9 @@ class AnnoyTest : public DataGen, public TestWithParam<std::string> {
         Generate(128, 10000, 10);
         index_ = std::make_shared<knowhere::IndexAnnoy>();
         conf = knowhere::Config{
-            {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
-            {knowhere::meta::DIM, dim},
-            {knowhere::meta::TOPK, 10},
+            {knowhere::Meta::METRIC_TYPE, knowhere::MetricEnum::L2},
+            {knowhere::Meta::DIM, dim},
+            {knowhere::Meta::TOPK, 10},
             {knowhere::IndexParams::n_trees, 4},
             {knowhere::IndexParams::search_k, 100},
             {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
@@ -71,8 +71,8 @@ TEST_P(AnnoyTest, annoy_basic) {
     /*
      * output result to check by eyes
     {
-        auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
-        auto dist = result->Get<float*>(knowhere::meta::DISTANCE);
+        auto ids = result->Get<int64_t*>(knowhere::Meta::IDS);
+        auto dist = result->Get<float*>(knowhere::Meta::DISTANCE);
 
         std::stringstream ss_id;
         std::stringstream ss_dist;
@@ -107,8 +107,8 @@ TEST_P(AnnoyTest, annoy_delete) {
 
     /*
      * delete result checked by eyes
-    auto ids1 = result1->Get<int64_t*>(knowhere::meta::IDS);
-    auto ids2 = result2->Get<int64_t*>(knowhere::meta::IDS);
+    auto ids1 = result1->Get<int64_t*>(knowhere::Meta::IDS);
+    auto ids2 = result2->Get<int64_t*>(knowhere::Meta::IDS);
     std::cout << std::endl;
     for (int i = 0; i < nq; ++ i) {
         std::cout << "ids1: ";
@@ -128,8 +128,8 @@ TEST_P(AnnoyTest, annoy_delete) {
     /*
      * output result to check by eyes
     {
-        auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
-        auto dist = result->Get<float*>(knowhere::meta::DISTANCE);
+        auto ids = result->Get<int64_t*>(knowhere::Meta::IDS);
+        auto dist = result->Get<float*>(knowhere::Meta::DISTANCE);
 
         std::stringstream ss_id;
         std::stringstream ss_dist;
@@ -195,7 +195,7 @@ TEST_P(AnnoyTest, annoy_serialize) {
         ASSERT_EQ(index_->Count(), nb);
         ASSERT_EQ(index_->Dim(), dim);
         auto result = index_->Query(query_dataset, conf, nullptr);
-        AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
+        AssertAnns(result, nq, conf[knowhere::Meta::TOPK]);
     }
 }
 
@@ -208,7 +208,7 @@ TEST_P(AnnoyTest, annoy_slice) {
         ASSERT_EQ(index_->Count(), nb);
         ASSERT_EQ(index_->Dim(), dim);
         auto result = index_->Query(query_dataset, conf, nullptr);
-        AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
+        AssertAnns(result, nq, conf[knowhere::Meta::TOPK]);
     }
 }
 
@@ -254,15 +254,15 @@ main() {
     knowhere::DatasetPtr base_dataset = generate_dataset(nb, d, (const void*)xb, ids);
 
     knowhere::Config base_conf{
-        {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
-        {knowhere::meta::DIM, d},
-        {knowhere::meta::TOPK, k},
+        {knowhere::Meta::METRIC_TYPE, knowhere::MetricEnum::L2},
+        {knowhere::Meta::DIM, d},
+        {knowhere::Meta::TOPK, k},
         {knowhere::IndexParams::n_trees, n_trees},
     };
     knowhere::DatasetPtr query_dataset = generate_query_dataset(nq, d, (const void*)xq);
     knowhere::Config query_conf{
-        {knowhere::meta::DIM, d},
-        {knowhere::meta::TOPK, k},
+        {knowhere::Meta::DIM, d},
+        {knowhere::Meta::TOPK, k},
         {knowhere::IndexParams::search_k, search_k},
     };
 
@@ -272,8 +272,8 @@ main() {
     {  // sanity check
         auto res = index.Query(query_dataset, query_conf);
         printf("Query done!\n");
-        const int64_t* I = res->Get<int64_t*>(knowhere::meta::IDS);
-        float* D = res->Get<float*>(knowhere::meta::DISTANCE);
+        const int64_t* I = res->Get<int64_t*>(knowhere::Meta::IDS);
+        float* D = res->Get<float*>(knowhere::Meta::DISTANCE);
 
         printf("I=\n");
         for (int i = 0; i < 5; i++) {
@@ -291,7 +291,7 @@ main() {
     printf("---------------search xq-------------\n");
     {  // search xq
         auto res = index.Query(query_dataset, query_conf);
-        const int64_t* I = res->Get<int64_t*>(knowhere::meta::IDS);
+        const int64_t* I = res->Get<int64_t*>(knowhere::Meta::IDS);
 
         printf("I=\n");
         for (int i = 0; i < nq; i++) {
@@ -303,7 +303,7 @@ main() {
     printf("----------------search xq with delete------------\n");
     {  // search xq with delete
         auto res = index.Query(query_dataset, query_conf, bitset);
-        auto I = res->Get<int64_t*>(knowhere::meta::IDS);
+        auto I = res->Get<int64_t*>(knowhere::Meta::IDS);
 
         printf("I=\n");
         for (int i = 0; i < nq; i++) {

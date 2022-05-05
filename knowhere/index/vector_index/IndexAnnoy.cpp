@@ -89,7 +89,7 @@ IndexAnnoy::BuildAll(const DatasetPtr& dataset_ptr, const Config& config) {
 
     GET_TENSOR_DATA_DIM(dataset_ptr)
 
-    metric_type_ = config[meta::METRIC_TYPE];
+    metric_type_ = config[Meta::METRIC_TYPE];
     if (metric_type_ == MetricEnum::L2) {
         index_ = std::make_shared<AnnoyIndex<int64_t, float, ::Euclidean, ::Kiss64Random, ThreadedBuildPolicy>>(dim);
     } else if (metric_type_ == MetricEnum::IP) {
@@ -112,7 +112,7 @@ IndexAnnoy::Query(const DatasetPtr& dataset_ptr, const Config& config, const fai
     }
 
     GET_TENSOR_DATA_DIM(dataset_ptr)
-    auto k = config[meta::TOPK].get<int64_t>();
+    auto k = config[Meta::TOPK].get<int64_t>();
     auto search_k = config[IndexParams::search_k].get<int64_t>();
     auto all_num = rows * k;
     auto p_id = static_cast<int64_t*>(malloc(all_num * sizeof(int64_t)));
@@ -140,8 +140,8 @@ IndexAnnoy::Query(const DatasetPtr& dataset_ptr, const Config& config, const fai
     }
 
     auto ret_ds = std::make_shared<Dataset>();
-    ret_ds->Set(meta::IDS, p_id);
-    ret_ds->Set(meta::DISTANCE, p_dist);
+    ret_ds->Set(Meta::IDS, p_id);
+    ret_ds->Set(Meta::DISTANCE, p_dist);
     return ret_ds;
 }
 

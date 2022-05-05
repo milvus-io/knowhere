@@ -50,20 +50,20 @@ class ParamGenerator {
     Gen(const knowhere::IndexType& type) {
         if (type == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
             return knowhere::Config{
-                {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
-                {knowhere::meta::DIM, DIM},
-                {knowhere::meta::TOPK, K},
-                {knowhere::meta::DEVICEID, DEVICEID},
+                {knowhere::Meta::METRIC_TYPE, knowhere::MetricEnum::L2},
+                {knowhere::Meta::DIM, DIM},
+                {knowhere::Meta::TOPK, K},
+                {knowhere::Meta::DEVICEID, DEVICEID},
                 {knowhere::IndexParams::nlist, 100},
                 {knowhere::IndexParams::nprobe, 4},
                 {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
             };
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFPQ) {
             return knowhere::Config{
-                {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
-                {knowhere::meta::DIM, DIM},
-                {knowhere::meta::TOPK, K},
-                {knowhere::meta::DEVICEID, DEVICEID},
+                {knowhere::Meta::METRIC_TYPE, knowhere::MetricEnum::L2},
+                {knowhere::Meta::DIM, DIM},
+                {knowhere::Meta::TOPK, K},
+                {knowhere::Meta::DEVICEID, DEVICEID},
                 {knowhere::IndexParams::nlist, 100},
                 {knowhere::IndexParams::nprobe, 4},
                 {knowhere::IndexParams::m, 4},
@@ -73,10 +73,10 @@ class ParamGenerator {
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8 ||
                    type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
             return knowhere::Config{
-                {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
-                {knowhere::meta::DIM, DIM},
-                {knowhere::meta::TOPK, K},
-                {knowhere::meta::DEVICEID, DEVICEID},
+                {knowhere::Meta::METRIC_TYPE, knowhere::MetricEnum::L2},
+                {knowhere::Meta::DIM, DIM},
+                {knowhere::Meta::TOPK, K},
+                {knowhere::Meta::DEVICEID, DEVICEID},
                 {knowhere::IndexParams::nlist, 100},
                 {knowhere::IndexParams::nprobe, 4},
                 {knowhere::IndexParams::nbits, 8},
@@ -84,10 +84,10 @@ class ParamGenerator {
             };
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFHNSW) {
             return knowhere::Config{
-                {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
-                {knowhere::meta::DIM, DIM},
-                {knowhere::meta::TOPK, K},
-                {knowhere::meta::DEVICEID, DEVICEID},
+                {knowhere::Meta::METRIC_TYPE, knowhere::MetricEnum::L2},
+                {knowhere::Meta::DIM, DIM},
+                {knowhere::Meta::TOPK, K},
+                {knowhere::Meta::DEVICEID, DEVICEID},
                 {knowhere::IndexParams::nlist, 100},
                 {knowhere::IndexParams::nprobe, 4},
                 {knowhere::IndexParams::M, 16},
