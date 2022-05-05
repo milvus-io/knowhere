@@ -30,7 +30,7 @@ class IndexRHNSWSQ : public IndexRHNSW {
         index_type_ = IndexEnum::INDEX_RHNSWSQ;
     }
 
-    IndexRHNSWSQ(int d, faiss::QuantizerType qtype, int M, MetricType metric = Metric::L2);
+    IndexRHNSWSQ(int d, faiss::QuantizerType qtype, int M, MetricType metric = MetricEnum::L2);
 
     BinarySet
     Serialize(const Config& config) override;

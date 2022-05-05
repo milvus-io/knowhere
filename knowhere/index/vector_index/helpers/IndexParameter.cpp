@@ -15,30 +15,25 @@
 namespace knowhere {
 
 faiss::MetricType
-GetMetricType(const std::string& type) {
-    if (type == Metric::L2) {
+GetMetricType(const Config& cfg) {
+    MetricType type = cfg[meta::METRIC_TYPE].get<MetricType>();
+    if (type == MetricEnum::L2) {
         return faiss::METRIC_L2;
-    }
-    if (type == Metric::IP) {
+    } else if (type == MetricEnum::IP) {
         return faiss::METRIC_INNER_PRODUCT;
-    }
-    if (type == Metric::JACCARD) {
+    } else if (type == MetricEnum::JACCARD) {
         return faiss::METRIC_Jaccard;
-    }
-    if (type == Metric::TANIMOTO) {
+    } else if (type == MetricEnum::TANIMOTO) {
         return faiss::METRIC_Tanimoto;
-    }
-    if (type == Metric::HAMMING) {
+    } else if (type == MetricEnum::HAMMING) {
         return faiss::METRIC_Hamming;
-    }
-    if (type == Metric::SUBSTRUCTURE) {
+    } else if (type == MetricEnum::SUBSTRUCTURE) {
         return faiss::METRIC_Substructure;
-    }
-    if (type == Metric::SUPERSTRUCTURE) {
+    } else if (type == MetricEnum::SUPERSTRUCTURE) {
         return faiss::METRIC_Superstructure;
+    } else {
+        KNOWHERE_THROW_MSG("Metric type invalid");
     }
-
-    KNOWHERE_THROW_MSG("Metric type is invalid");
 }
 
 }  // namespace knowhere

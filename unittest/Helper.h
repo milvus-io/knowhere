@@ -50,50 +50,50 @@ class ParamGenerator {
     Gen(const knowhere::IndexType& type) {
         if (type == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
             return knowhere::Config{
+                {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
+                {knowhere::meta::DEVICEID, DEVICEID},
                 {knowhere::IndexParams::nlist, 100},
                 {knowhere::IndexParams::nprobe, 4},
-                {knowhere::Metric::TYPE, knowhere::Metric::L2},
                 {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
-                {knowhere::meta::DEVICEID, DEVICEID},
             };
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFPQ) {
             return knowhere::Config{
+                {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
+                {knowhere::meta::DEVICEID, DEVICEID},
                 {knowhere::IndexParams::nlist, 100},
                 {knowhere::IndexParams::nprobe, 4},
                 {knowhere::IndexParams::m, 4},
                 {knowhere::IndexParams::nbits, 8},
-                {knowhere::Metric::TYPE, knowhere::Metric::L2},
                 {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
-                {knowhere::meta::DEVICEID, DEVICEID},
             };
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8 ||
                    type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
             return knowhere::Config{
+                {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
+                {knowhere::meta::DEVICEID, DEVICEID},
                 {knowhere::IndexParams::nlist, 100},
                 {knowhere::IndexParams::nprobe, 4},
                 {knowhere::IndexParams::nbits, 8},
-                {knowhere::Metric::TYPE, knowhere::Metric::L2},
                 {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
-                {knowhere::meta::DEVICEID, DEVICEID},
             };
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFHNSW) {
             return knowhere::Config{
+                {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
+                {knowhere::meta::DEVICEID, DEVICEID},
                 {knowhere::IndexParams::nlist, 100},
                 {knowhere::IndexParams::nprobe, 4},
                 {knowhere::IndexParams::M, 16},
                 {knowhere::IndexParams::efConstruction, 200},
                 {knowhere::IndexParams::ef, 200},
-                {knowhere::Metric::TYPE, knowhere::Metric::L2},
                 {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
-                {knowhere::meta::DEVICEID, DEVICEID},
             };
         } else {
             std::cout << "Invalid index type " << type << std::endl;

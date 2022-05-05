@@ -151,7 +151,7 @@ TEST_P(IVFNMTest, ivfnm_basic) {
 }
 
 TEST_P(IVFNMTest, ivfnm_range_search_l2) {
-    conf_[knowhere::Metric::TYPE] = knowhere::Metric::L2;
+    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::L2;
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
@@ -174,7 +174,7 @@ TEST_P(IVFNMTest, ivfnm_range_search_l2) {
 }
 
 TEST_P(IVFNMTest, ivfnm_range_search_ip) {
-    conf_[knowhere::Metric::TYPE] = knowhere::Metric::IP;
+    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::IP;
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());

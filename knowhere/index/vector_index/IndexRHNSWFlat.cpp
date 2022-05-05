@@ -26,7 +26,7 @@ namespace knowhere {
 
 IndexRHNSWFlat::IndexRHNSWFlat(int d, int M, MetricType metric) {
     faiss::MetricType mt =
-        metric == Metric::L2 ? faiss::MetricType::METRIC_L2 : faiss::MetricType::METRIC_INNER_PRODUCT;
+        metric == MetricEnum::L2 ? faiss::MetricType::METRIC_L2 : faiss::MetricType::METRIC_INNER_PRODUCT;
     index_ = std::shared_ptr<faiss::Index>(new faiss::IndexRHNSWFlat(d, M, mt));
 }
 
@@ -81,7 +81,7 @@ void
 IndexRHNSWFlat::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     try {
         GET_TENSOR_DATA_DIM(dataset_ptr)
-        faiss::MetricType metric_type = GetMetricType(config[Metric::TYPE].get<std::string>());
+        faiss::MetricType metric_type = GetMetricType(config);
         int32_t efConstruction = config[IndexParams::efConstruction];
 
         auto idx = new faiss::IndexRHNSWFlat(int(dim), config[IndexParams::M], metric_type);

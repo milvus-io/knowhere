@@ -33,7 +33,7 @@ class HNSWTest : public DataGen, public TestWithParam<std::string> {
         conf = knowhere::Config{
             {knowhere::meta::DIM, 64},        {knowhere::meta::TOPK, 10},
             {knowhere::IndexParams::M, 16},   {knowhere::IndexParams::efConstruction, 200},
-            {knowhere::IndexParams::ef, 200}, {knowhere::Metric::TYPE, knowhere::Metric::L2},
+            {knowhere::IndexParams::ef, 200}, {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
         };
     }
 

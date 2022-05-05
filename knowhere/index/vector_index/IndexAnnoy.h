@@ -12,6 +12,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include "annoy/src/annoylib.h"
 #include "annoy/src/kissrandom.h"
@@ -61,7 +62,7 @@ class IndexAnnoy : public VecIndex {
     UpdateIndexSize() override;
 
  private:
-    MetricType metric_type_;
+    std::string metric_type_;
     std::shared_ptr<AnnoyIndexInterface<int64_t, float>> index_ = nullptr;
 };
 

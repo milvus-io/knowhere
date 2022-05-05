@@ -12,11 +12,14 @@
 #pragma once
 
 #include <string>
+
+#include "knowhere/common/Config.h"
 #include "knowhere/common/MetricType.h"
 
 namespace knowhere {
 
 namespace meta {
+constexpr const char* METRIC_TYPE = "metric_type";
 constexpr const char* DIM = "dim";
 constexpr const char* TENSOR = "tensor";
 constexpr const char* ROWS = "rows";
@@ -67,18 +70,19 @@ constexpr const char* outgoing_edge_size = "outgoing_edge_size";
 constexpr const char* incoming_edge_size = "incoming_edge_size";
 }  // namespace IndexParams
 
-namespace Metric {
-constexpr const char* TYPE = "metric_type";
-constexpr const char* IP = "IP";
-constexpr const char* L2 = "L2";
-constexpr const char* HAMMING = "HAMMING";
-constexpr const char* JACCARD = "JACCARD";
-constexpr const char* TANIMOTO = "TANIMOTO";
-constexpr const char* SUBSTRUCTURE = "SUBSTRUCTURE";
-constexpr const char* SUPERSTRUCTURE = "SUPERSTRUCTURE";
-}  // namespace Metric
+using MetricType = std::string_view;
+
+namespace MetricEnum {
+constexpr MetricType IP = "IP";
+constexpr MetricType L2 = "L2";
+constexpr MetricType HAMMING = "HAMMING";
+constexpr MetricType JACCARD = "JACCARD";
+constexpr MetricType TANIMOTO = "TANIMOTO";
+constexpr MetricType SUBSTRUCTURE = "SUBSTRUCTURE";
+constexpr MetricType SUPERSTRUCTURE = "SUPERSTRUCTURE";
+}  // namespace MetricEnum
 
 extern faiss::MetricType
-GetMetricType(const std::string& type);
+GetMetricType(const Config& cfg);
 
 }  // namespace knowhere

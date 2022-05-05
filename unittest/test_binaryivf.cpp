@@ -32,12 +32,12 @@ class BinaryIVFTest : public DataGen,
         Init_with_default(true);
 
         conf_ = knowhere::Config{
+            {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::HAMMING},
             {knowhere::meta::DIM, dim},
             {knowhere::meta::TOPK, k},
+            {knowhere::meta::RADIUS, radius},
             {knowhere::IndexParams::nlist, 16},
             {knowhere::IndexParams::nprobe, 8},
-            {knowhere::meta::RADIUS, radius},
-            {knowhere::Metric::TYPE, knowhere::Metric::HAMMING},
         };
 
         index_mode_ = GetParam();
@@ -176,8 +176,8 @@ TEST_P(BinaryIVFTest, binaryivf_slice) {
 
 TEST_P(BinaryIVFTest, binaryivf_range_search_hamming) {
     int hamming_radius = 50;
+    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::HAMMING;
     conf_[knowhere::meta::RADIUS] = hamming_radius;
-    conf_[knowhere::Metric::TYPE] = knowhere::Metric::HAMMING;
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
@@ -197,8 +197,8 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_hamming) {
 
 TEST_P(BinaryIVFTest, binaryivf_range_search_jaccard) {
     float jaccard_radius = 0.5;
+    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::JACCARD;
     conf_[knowhere::meta::RADIUS] = jaccard_radius;
-    conf_[knowhere::Metric::TYPE] = knowhere::Metric::JACCARD;
 
     // serialize index
     index_->Train(base_dataset, conf_);
@@ -219,8 +219,8 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_jaccard) {
 
 TEST_P(BinaryIVFTest, binaryivf_range_search_tanimoto) {
     float tanimoto_radius = 1.0;
+    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::TANIMOTO;
     conf_[knowhere::meta::RADIUS] = tanimoto_radius;
-    conf_[knowhere::Metric::TYPE] = knowhere::Metric::TANIMOTO;
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
@@ -239,11 +239,11 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_tanimoto) {
 }
 
 TEST_P(BinaryIVFTest, binaryivf_range_search_superstructure) {
-    conf_[knowhere::Metric::TYPE] = knowhere::Metric::SUPERSTRUCTURE;
+    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::SUPERSTRUCTURE;
     ASSERT_ANY_THROW(index_->Train(base_dataset, conf_));
 }
 
 TEST_P(BinaryIVFTest, binaryivf_range_search_substructure) {
-    conf_[knowhere::Metric::TYPE] = knowhere::Metric::SUBSTRUCTURE;
+    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::SUBSTRUCTURE;
     ASSERT_ANY_THROW(index_->Train(base_dataset, conf_));
 }

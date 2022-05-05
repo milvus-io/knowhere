@@ -80,7 +80,7 @@ void
 IVFHNSW::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA_DIM(dataset_ptr)
 
-    faiss::MetricType metric_type = GetMetricType(config[Metric::TYPE].get<std::string>());
+    faiss::MetricType metric_type = GetMetricType(config);
     auto coarse_quantizer = new faiss::IndexRHNSWFlat(dim, config[IndexParams::M], metric_type);
     coarse_quantizer->hnsw.efConstruction = config[IndexParams::efConstruction];
     auto index = std::make_shared<faiss::IndexIVFFlat>(coarse_quantizer, dim, config[IndexParams::nlist].get<int64_t>(),
