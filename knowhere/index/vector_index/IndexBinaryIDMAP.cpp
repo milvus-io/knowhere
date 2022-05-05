@@ -152,7 +152,7 @@ void
 BinaryIDMAP::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA_DIM(dataset_ptr)
 
-    faiss::MetricType metric_type = GetMetricType(config[Metric::TYPE].get<std::string>());
+    faiss::MetricType metric_type = GetMetricType(config);
     auto index = std::make_shared<faiss::IndexBinaryFlat>(dim, metric_type);
     index_ = index;
 }

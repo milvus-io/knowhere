@@ -42,9 +42,10 @@ static const int64_t HNSW_MIN_M = 4;
 static const int64_t HNSW_MAX_M = 64;
 static const int64_t HNSW_MAX_EF = 32768;
 
-static const std::vector<std::string> default_metrics_array{Metric::L2, Metric::IP};
-static const std::vector<std::string> default_binary_metrics_array{Metric::HAMMING, Metric::JACCARD, Metric::TANIMOTO,
-                                                                   Metric::SUBSTRUCTURE, Metric::SUPERSTRUCTURE};
+static const std::vector<MetricType> default_metric_array{MetricEnum::L2, MetricEnum::IP};
+static const std::vector<MetricType> default_binary_metric_array{MetricEnum::HAMMING, MetricEnum::JACCARD,
+                                                                 MetricEnum::TANIMOTO, MetricEnum::SUBSTRUCTURE,
+                                                                 MetricEnum::SUPERSTRUCTURE};
 inline bool
 CheckIntByRange(const Config& cfg, const std::string& key, int64_t min, int64_t max) {
     return (cfg.contains(key) && cfg[key].is_number_integer() && cfg[key].get<int64_t>() >= min &&
@@ -58,9 +59,9 @@ CheckFloatByRange(const Config& cfg, const std::string& key, int64_t min, int64_
 }
 
 inline bool
-CheckStrByValues(const Config& cfg, const std::string& key, const std::vector<std::string>& container) {
+CheckStrByValues(const Config& cfg, const std::string& key, const std::vector<MetricType>& metric_types) {
     return (cfg.contains(key) && cfg[key].is_string() &&
-            std::find(container.begin(), container.end(), cfg[key].get<std::string>()) != container.end());
+            std::find(metric_types.begin(), metric_types.end(), cfg[key].get<std::string>()) != metric_types.end());
 }
 
 bool
@@ -68,7 +69,7 @@ ConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     if (!CheckIntByRange(cfg, meta::DIM, DEFAULT_MIN_DIM, DEFAULT_MAX_DIM)) {
         return false;
     }
-    if (!CheckStrByValues(cfg, Metric::TYPE, default_metrics_array)) {
+    if (!CheckStrByValues(cfg, meta::METRIC_TYPE, default_metric_array)) {
         return false;
     }
     return true;
@@ -256,7 +257,7 @@ NSGConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     const int64_t MIN_CANDIDATE_POOL_SIZE = 50;
     const int64_t MAX_CANDIDATE_POOL_SIZE = 1000;
 
-    if (!CheckStrByValues(cfg, Metric::TYPE, default_metrics_array)) {
+    if (!CheckStrByValues(cfg, meta::METRIC_TYPE, default_metric_array)) {
         return false;
     }
     if (!CheckIntByRange(cfg, IndexParams::knng, MIN_KNNG, MAX_KNNG)) {
@@ -378,7 +379,7 @@ BinIDMAPConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     if (!CheckIntByRange(cfg, meta::DIM, DEFAULT_MIN_DIM, DEFAULT_MAX_DIM)) {
         return false;
     }
-    if (!CheckStrByValues(cfg, Metric::TYPE, default_binary_metrics_array)) {
+    if (!CheckStrByValues(cfg, meta::METRIC_TYPE, default_binary_metric_array)) {
         return false;
     }
     return true;
@@ -386,7 +387,7 @@ BinIDMAPConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 BinIVFConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    static const std::vector<std::string> metrics_array{Metric::HAMMING, Metric::JACCARD, Metric::TANIMOTO};
+    static const std::vector<MetricType> metric_array{MetricEnum::HAMMING, MetricEnum::JACCARD, MetricEnum::TANIMOTO};
 
     if (!CheckIntByRange(cfg, meta::DIM, DEFAULT_MIN_DIM, DEFAULT_MAX_DIM)) {
         return false;
@@ -394,7 +395,7 @@ BinIVFConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     if (!CheckIntByRange(cfg, IndexParams::nlist, MIN_NLIST, MAX_NLIST)) {
         return false;
     }
-    if (!CheckStrByValues(cfg, Metric::TYPE, metrics_array)) {
+    if (!CheckStrByValues(cfg, meta::METRIC_TYPE, metric_array)) {
         return false;
     }
 

@@ -196,9 +196,9 @@ class Benchmark_knowhere : public ::testing::Test {
         dim_ = std::stoi(ann_test_name_.substr(pos1 + 1, pos2 - pos1 - 1));
         std::string metric_str = ann_test_name_.substr(pos2 + 1);
         if (metric_str == "angular") {
-            metric_type_ = knowhere::Metric::IP;
+            metric_type_ = knowhere::MetricEnum::IP;
         } else if (metric_str == "euclidean") {
-            metric_type_ = knowhere::Metric::L2;
+            metric_type_ = knowhere::MetricEnum::L2;
         } else {
             return false;
         }
@@ -229,7 +229,7 @@ class Benchmark_knowhere : public ::testing::Test {
         xb_ = (float*)hdf5_read(ann_file_name, HDF5_DATASET_TRAIN, H5T_FLOAT, dim, nb_);
         assert(dim == dim_ || !"dataset does not have correct dimension");
 
-        if (metric_type_ == knowhere::Metric::IP) {
+        if (metric_type_ == knowhere::MetricEnum::IP) {
             printf("[%.3f s] Normalizing base data set \n", get_time_diff());
             normalize(xb_, nb_, dim_);
         }
@@ -242,7 +242,7 @@ class Benchmark_knowhere : public ::testing::Test {
         xq_ = (float*)hdf5_read(ann_file_name, HDF5_DATASET_TEST, H5T_FLOAT, dim, nq_);
         assert(dim == dim_ || !"query does not have same dimension as train set");
 
-        if (metric_type_ == knowhere::Metric::IP) {
+        if (metric_type_ == knowhere::MetricEnum::IP) {
             printf("[%.3f s] Normalizing query data \n", get_time_diff());
             normalize(xq_, nq_, dim_);
         }
@@ -335,14 +335,14 @@ class Benchmark_knowhere : public ::testing::Test {
         for (size_t i = 0; i < params.size(); i++) {
             params_str += "_" + std::to_string(params[i]);
         }
-        return ann_test_name_ + "_" + index_type_ + params_str + ".index";
+        return ann_test_name_ + "_" + std::string(index_type_) + params_str + ".index";
     }
 
     void create_cpu_index(
         const std::string& index_file_name,
         const knowhere::Config& conf) {
 
-        printf("[%.3f s] Creating CPU index \"%s\"\n", get_time_diff(), index_type_.c_str());
+        printf("[%.3f s] Creating CPU index \"%s\"\n", get_time_diff(), std::string(index_type_).c_str());
         auto& factory = knowhere::VecIndexFactory::GetInstance();
         index_ = factory.CreateVecIndex(index_type_);
 
@@ -363,7 +363,7 @@ class Benchmark_knowhere : public ::testing::Test {
         auto conf = cfg;
 
         printf("\n[%0.3f s] %s | %s \n",
-               get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+               get_time_diff(), ann_test_name_.c_str(), std::string(index_type_).c_str());
         printf("================================================================================\n");
         for (auto nq : NQs_) {
             knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
@@ -381,7 +381,8 @@ class Benchmark_knowhere : public ::testing::Test {
             }
         }
         printf("================================================================================\n");
-        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(),
+               std::string(index_type_).c_str());
     }
 
     void test_ivf(
@@ -392,7 +393,7 @@ class Benchmark_knowhere : public ::testing::Test {
         auto nlist = conf[knowhere::IndexParams::nlist].get<int64_t>();
 
         printf("\n[%0.3f s] %s | %s | nlist=%ld\n",
-               get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(), nlist);
+               get_time_diff(), ann_test_name_.c_str(), std::string(index_type_).c_str(), nlist);
         printf("================================================================================\n");
         for (auto nprobe : nprobes) {
             conf[knowhere::IndexParams::nprobe] = nprobe;
@@ -413,7 +414,8 @@ class Benchmark_knowhere : public ::testing::Test {
             }
         }
         printf("================================================================================\n");
-        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(),
+               std::string(index_type_).c_str());
     }
 
     void test_hnsw(
@@ -425,7 +427,7 @@ class Benchmark_knowhere : public ::testing::Test {
         auto efConstruction = conf[knowhere::IndexParams::efConstruction].get<int64_t>();
 
         printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld\n",
-               get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(), M, efConstruction);
+               get_time_diff(), ann_test_name_.c_str(), std::string(index_type_).c_str(), M, efConstruction);
         printf("================================================================================\n");
         for (auto ef: efs) {
             conf[knowhere::IndexParams::ef] = ef;
@@ -446,7 +448,8 @@ class Benchmark_knowhere : public ::testing::Test {
             }
         }
         printf("================================================================================\n");
-        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(),
+               std::string(index_type_).c_str());
     }
 
     void test_annoy(
@@ -457,7 +460,7 @@ class Benchmark_knowhere : public ::testing::Test {
         auto n_trees = conf[knowhere::IndexParams::n_trees].get<int64_t>();
 
         printf("\n[%0.3f s] %s | %s | n_trees=%ld \n",
-               get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(), n_trees);
+               get_time_diff(), ann_test_name_.c_str(), std::string(index_type_).c_str(), n_trees);
         printf("================================================================================\n");
         for (auto sk: search_ks) {
             conf[knowhere::IndexParams::search_k] = sk;
@@ -478,7 +481,8 @@ class Benchmark_knowhere : public ::testing::Test {
             }
         }
         printf("================================================================================\n");
-        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(),
+               std::string(index_type_).c_str());
     }
 
  protected:
@@ -498,7 +502,7 @@ class Benchmark_knowhere : public ::testing::Test {
         printf("[%.3f s] Loading ground truth\n", get_time_diff());
         load_ground_truth();
 
-        cfg_[knowhere::Metric::TYPE] = metric_type_;
+        cfg_[knowhere::meta::METRIC_TYPE] = metric_type_;
         cfg_[knowhere::meta::DIM] = dim_;
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AUTO);
     }

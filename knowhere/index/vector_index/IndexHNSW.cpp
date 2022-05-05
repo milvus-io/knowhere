@@ -91,10 +91,10 @@ IndexHNSW::Train(const DatasetPtr& dataset_ptr, const Config& config) {
         auto rows = dataset_ptr->Get<int64_t>(meta::ROWS);
 
         hnswlib::SpaceInterface<float>* space;
-        std::string metric_type = config[Metric::TYPE];
-        if (metric_type == Metric::L2) {
+        std::string metric_type = config[meta::METRIC_TYPE];
+        if (metric_type == MetricEnum::L2) {
             space = new hnswlib::L2Space(dim);
-        } else if (metric_type == Metric::IP) {
+        } else if (metric_type == MetricEnum::IP) {
             space = new hnswlib::InnerProductSpace(dim);
         } else {
             KNOWHERE_THROW_MSG("Metric type not supported: " + metric_type);

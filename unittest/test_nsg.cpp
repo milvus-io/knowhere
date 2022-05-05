@@ -45,6 +45,7 @@ class NSGInterfaceTest : public DataGen, public ::testing::Test {
         index_ = std::make_shared<knowhere::NSG_NM>();
 
         train_conf = knowhere::Config{
+            {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
             {knowhere::meta::DIM, 256},
             {knowhere::IndexParams::nlist, 163},
             {knowhere::IndexParams::nprobe, 8},
@@ -52,7 +53,7 @@ class NSGInterfaceTest : public DataGen, public ::testing::Test {
             {knowhere::IndexParams::search_length, 40},
             {knowhere::IndexParams::out_degree, 30},
             {knowhere::IndexParams::candidate, 100},
-            {knowhere::Metric::TYPE, knowhere::Metric::L2}};
+        };
 
         search_conf = knowhere::Config{
             {knowhere::meta::TOPK, k},

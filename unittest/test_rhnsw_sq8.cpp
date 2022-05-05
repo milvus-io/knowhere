@@ -31,12 +31,12 @@ class RHNSWSQ8Test : public DataGen, public TestWithParam<std::string> {
                                   //        Generate(2, 10, 2);  // dim = 64, nb = 10000, nq = 10
         index_ = std::make_shared<knowhere::IndexRHNSWSQ>();
         conf = knowhere::Config{
+            {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
             {knowhere::meta::DIM, 64},
             {knowhere::meta::TOPK, 10},
             {knowhere::IndexParams::M, 16},
             {knowhere::IndexParams::efConstruction, 200},
             {knowhere::IndexParams::ef, 200},
-            {knowhere::Metric::TYPE, knowhere::Metric::L2},
             {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
         };
     }
@@ -142,7 +142,7 @@ TEST_P(RHNSWSQ8Test, HNSW_serialize) {
         EXPECT_EQ(new_idx->Count(), nb);
         EXPECT_EQ(new_idx->Dim(), dim);
         auto result = new_idx->Query(query_dataset, conf, nullptr);
-        //        AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
+        // AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
     }
 }
 
@@ -156,6 +156,6 @@ TEST_P(RHNSWSQ8Test, HNSW_slice) {
         EXPECT_EQ(new_idx->Count(), nb);
         EXPECT_EQ(new_idx->Dim(), dim);
         auto result = new_idx->Query(query_dataset, conf, nullptr);
-        //        AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
+        // AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
     }
 }

@@ -115,7 +115,7 @@ IVF_NM::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA_DIM(dataset_ptr)
 
     int64_t nlist = config[IndexParams::nlist].get<int64_t>();
-    faiss::MetricType metric_type = GetMetricType(config[Metric::TYPE].get<std::string>());
+    faiss::MetricType metric_type = GetMetricType(config);
     auto coarse_quantizer = new faiss::IndexFlat(dim, metric_type);
     auto index = std::make_shared<faiss::IndexIVFFlat>(coarse_quantizer, dim, nlist, metric_type);
     index->own_fields = true;
