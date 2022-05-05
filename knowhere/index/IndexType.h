@@ -11,43 +11,46 @@
 
 #pragma once
 
-#include <string>
+#include <string_view>
 
 namespace knowhere {
 
-using IndexType = std::string;
+using IndexType = std::string_view;
 
 namespace IndexEnum {
 
-extern const char* INVALID;
+constexpr IndexType INVALID = "";
 
-extern const char* INDEX_FAISS_BIN_IDMAP;
-extern const char* INDEX_FAISS_BIN_IVFFLAT;
+constexpr IndexType INDEX_FAISS_BIN_IDMAP = "BIN_FLAT";
+constexpr IndexType INDEX_FAISS_BIN_IVFFLAT = "BIN_IVF_FLAT";
 
-extern const char* INDEX_FAISS_IDMAP;
-extern const char* INDEX_FAISS_IVFFLAT;
-extern const char* INDEX_FAISS_IVFPQ;
-extern const char* INDEX_FAISS_IVFSQ8;
-extern const char* INDEX_FAISS_IVFSQ8H;
-extern const char* INDEX_FAISS_IVFHNSW;
+constexpr IndexType INDEX_FAISS_IDMAP = "FLAT";
+constexpr IndexType INDEX_FAISS_IVFFLAT = "IVF_FLAT";
+constexpr IndexType INDEX_FAISS_IVFPQ = "IVF_PQ";
+constexpr IndexType INDEX_FAISS_IVFSQ8 = "IVF_SQ8";
+constexpr IndexType INDEX_FAISS_IVFSQ8H = "IVF_SQ8_HYBRID";
+constexpr IndexType INDEX_FAISS_IVFHNSW = "IVF_HNSW";
 
-extern const char* INDEX_ANNOY;
-extern const char* INDEX_HNSW;
-extern const char* INDEX_RHNSWFlat;
-extern const char* INDEX_RHNSWPQ;
-extern const char* INDEX_RHNSWSQ;
+constexpr IndexType INDEX_ANNOY = "ANNOY";
+constexpr IndexType INDEX_HNSW = "HNSW";
+constexpr IndexType INDEX_RHNSWFlat = "RHNSW_FLAT";
+constexpr IndexType INDEX_RHNSWPQ = "RHNSW_PQ";
+constexpr IndexType INDEX_RHNSWSQ = "RHNSW_SQ";
 
 #ifdef KNOWHERE_SUPPORT_NGT
-extern const char* INDEX_NGTPANNG;
-extern const char* INDEX_NGTONNG;
+constexpr IndexType INDEX_NGTPANNG = "NGT_PANNG";
+constexpr IndexType INDEX_NGTONNG = "NGT_ONNG";
 #endif
+
 #ifdef KNOWHERE_SUPPORT_NSG
-extern const char* INDEX_NSG;
+constexpr IndexType INDEX_NSG = "NSG";
 #endif
+
 #ifdef KNOWHERE_SUPPORT_SPTAG
-extern const char* INDEX_SPTAG_KDT_RNT;
-extern const char* INDEX_SPTAG_BKT_RNT;
+constexpr IndexType INDEX_SPTAG_KDT_RNT = "SPTAG_KDT_RNT";
+constexpr IndexType INDEX_SPTAG_BKT_RNT = "SPTAG_BKT_RNT";
 #endif
+
 }  // namespace IndexEnum
 
 enum class IndexMode { MODE_CPU = 0, MODE_GPU = 1 };

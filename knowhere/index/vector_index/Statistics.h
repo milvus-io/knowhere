@@ -53,7 +53,7 @@ class Statistics {
     static const size_t NQ_Histogram_Slices = 13;
     static const size_t Filter_Histogram_Slices = 21;
 
-    explicit Statistics(std::string& idx_t)
+    explicit Statistics(IndexType& idx_t)
         : index_type(idx_t),
           nq_cnt(0),
           batch_cnt(0),
@@ -67,10 +67,10 @@ class Statistics {
      * Get index type
      * @retval: index type in string
      */
-    const std::string&
-    IndexType() {
-        return index_type;
-    }
+//    const std::string_view&
+//    IndexType() {
+//        return index_type;
+//    }
 
     /*
      * To string (may be for log output)
@@ -161,7 +161,7 @@ class Statistics {
     }
 
  public:
-    std::string& index_type;
+    IndexType& index_type;
     size_t batch_cnt;                 // updated in query
     size_t nq_cnt;                    // updated in query
     double total_query_time;          // updated in query (unit: ms)
@@ -176,7 +176,7 @@ using StatisticsPtr = std::shared_ptr<Statistics>;
  */
 class HNSWStatistics : public Statistics {
  public:
-    explicit HNSWStatistics(std::string& idx_t)
+    explicit HNSWStatistics(IndexType& idx_t)
         : Statistics(idx_t), distribution(), target_level(1), access_total(0), ef_sum(0) {
     }
 
@@ -267,7 +267,7 @@ class HNSWStatistics : public Statistics {
  */
 class LibHNSWStatistics : public HNSWStatistics {
  public:
-    explicit LibHNSWStatistics(std::string& idx_t) : HNSWStatistics(idx_t), access_cnt_map() {
+    explicit LibHNSWStatistics(IndexType& idx_t) : HNSWStatistics(idx_t), access_cnt_map() {
     }
 
     ~LibHNSWStatistics() override = default;
@@ -292,7 +292,7 @@ class LibHNSWStatistics : public HNSWStatistics {
  */
 class RHNSWStatistics : public HNSWStatistics {
  public:
-    explicit RHNSWStatistics(std::string& idx_t) : HNSWStatistics(idx_t), access_cnt() {
+    explicit RHNSWStatistics(IndexType& idx_t) : HNSWStatistics(idx_t), access_cnt() {
     }
 
     ~RHNSWStatistics() override = default;
@@ -310,7 +310,7 @@ class RHNSWStatistics : public HNSWStatistics {
  */
 class IVFStatistics : public Statistics {
  public:
-    explicit IVFStatistics(std::string& idx_t) : Statistics(idx_t), nprobe_count(), access_cnt(), nlist(0) {
+    explicit IVFStatistics(IndexType& idx_t) : Statistics(idx_t), nprobe_count(), access_cnt(), nlist(0) {
     }
 
     ~IVFStatistics() override = default;

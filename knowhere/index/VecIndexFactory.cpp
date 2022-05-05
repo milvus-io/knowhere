@@ -9,6 +9,8 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License
 
+#include <string>
+
 #include "common/Exception.h"
 #include "common/Log.h"
 #include "index/VecIndexFactory.h"
@@ -17,7 +19,6 @@
 #include "index/vector_index/IndexBinaryIVF.h"
 #include "index/vector_index/IndexHNSW.h"
 #include "index/vector_index/IndexIDMAP.h"
-#include "index/vector_index/IndexIVF.h"
 #include "index/vector_index/IndexIVFPQ.h"
 #include "index/vector_index/IndexIVFSQ.h"
 #include "index/vector_index/IndexRHNSWFlat.h"
@@ -94,7 +95,7 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
                 return std::make_shared<knowhere::CPUSPTAGRNG>("BKT");
 #endif
             } else {
-                KNOWHERE_THROW_FORMAT("Invalid index type %s", type.c_str());
+                KNOWHERE_THROW_FORMAT("Invalid index type %s", std::string(type).c_str());
             }
         }
 #ifdef KNOWHERE_GPU_VERSION
