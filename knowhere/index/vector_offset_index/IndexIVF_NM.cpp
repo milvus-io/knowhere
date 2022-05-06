@@ -217,68 +217,6 @@ IVF_NM::QueryByRange(const DatasetPtr& dataset_ptr, const Config& config, const 
     }
 }
 
-#if 0
-DatasetPtr
-IVF_NM::QueryById(const DatasetPtr& dataset_ptr, const Config& config) {
-    if (!index_ || !index_->is_trained) {
-        KNOWHERE_THROW_MSG("index not initialize or trained");
-    }
-
-    auto rows = dataset_ptr->Get<int64_t>(meta::ROWS);
-    auto p_data = dataset_ptr->Get<const int64_t*>(meta::IDS);
-
-    try {
-        int64_t k = config[meta::TOPK].get<int64_t>();
-        auto elems = rows * k;
-
-        size_t p_id_size = sizeof(int64_t) * elems;
-        size_t p_dist_size = sizeof(float) * elems;
-        auto p_id = (int64_t*)malloc(p_id_size);
-        auto p_dist = (float*)malloc(p_dist_size);
-
-        // todo: enable search by id (zhiru)
-        //        auto blacklist = dataset_ptr->Get<faiss::ConcurrentBitsetPtr>("bitset");
-        auto index_ivf = std::static_pointer_cast<faiss::IndexIVF>(index_);
-        index_ivf->search_by_id(rows, p_data, k, p_dist, p_id, bitset_);
-
-        auto ret_ds = std::make_shared<Dataset>();
-        ret_ds->Set(meta::IDS, p_id);
-        ret_ds->Set(meta::DISTANCE, p_dist);
-        return ret_ds;
-    } catch (faiss::FaissException& e) {
-        KNOWHERE_THROW_MSG(e.what());
-    } catch (std::exception& e) {
-        KNOWHERE_THROW_MSG(e.what());
-    }
-}
-
-DatasetPtr
-IVF_NM::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
-    if (!index_ || !index_->is_trained) {
-        KNOWHERE_THROW_MSG("index not initialize or trained");
-    }
-
-    auto p_data = dataset_ptr->Get<const int64_t*>(meta::IDS);
-    auto elems = dataset_ptr->Get<int64_t>(meta::DIM);
-
-    try {
-        size_t p_x_size = sizeof(float) * elems;
-        auto p_x = (float*)malloc(p_x_size);
-
-        auto index_ivf = std::static_pointer_cast<faiss::IndexIVF>(index_);
-        index_ivf->get_vector_by_id(1, p_data, p_x, bitset_);
-
-        auto ret_ds = std::make_shared<Dataset>();
-        ret_ds->Set(meta::TENSOR, p_x);
-        return ret_ds;
-    } catch (faiss::FaissException& e) {
-        KNOWHERE_THROW_MSG(e.what());
-    } catch (std::exception& e) {
-        KNOWHERE_THROW_MSG(e.what());
-    }
-}
-#endif
-
 void
 IVF_NM::Seal() {
     if (!index_ || !index_->is_trained) {

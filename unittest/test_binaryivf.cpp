@@ -92,14 +92,6 @@ TEST_P(BinaryIVFTest, binaryivf_basic) {
 
     auto result2 = index_->Query(query_dataset, conf_, *bitset);
     AssertAnns(result2, nq, k, CheckMode::CHECK_NOT_EQUAL);
-
-#if 0
-    auto result3 = index_->QueryById(id_dataset, conf_, nullptr);
-    AssertAnns(result3, nq, k, CheckMode::CHECK_NOT_EQUAL);
-
-    auto result4 = index_->GetVectorById(xid_dataset, conf_);
-    AssertBinVeceq(result4, base_dataset, xid_dataset, nq, dim/8);
-#endif
 }
 
 TEST_P(BinaryIVFTest, binaryivf_serialize) {

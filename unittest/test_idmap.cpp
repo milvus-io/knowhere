@@ -194,25 +194,9 @@ TEST_P(IDMAPTest, idmap_basic) {
     AssertAnns(result2, nq, k);
     // PrintResult(re_result, nq, k);
 
-#if 0
-    auto result3 = new_index->QueryById(id_dataset, conf);
-    AssertAnns(result3, nq, k);
-
-    auto result4 = new_index->GetVectorById(xid_dataset, conf);
-    AssertVec(result4, base_dataset, xid_dataset, 1, dim);
-#endif
-
     // query with bitset
     auto result_bs_1 = index_->Query(query_dataset, conf, *bitset);
     AssertAnns(result_bs_1, nq, k, CheckMode::CHECK_NOT_EQUAL);
-
-#if 0
-    auto result_bs_2 = index_->QueryById(id_dataset, conf);
-    AssertAnns(result_bs_2, nq, k, CheckMode::CHECK_NOT_EQUAL);
-
-    auto result_bs_3 = index_->GetVectorById(xid_dataset, conf);
-    AssertVec(result_bs_3, base_dataset, xid_dataset, 1, dim, CheckMode::CHECK_NOT_EQUAL);
-#endif
 }
 
 TEST_P(IDMAPTest, idmap_serialize) {
