@@ -53,11 +53,6 @@ class IVF : public VecIndex, public FaissBaseIndex {
     DatasetPtr
     QueryByRange(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
 
-#if 0
-    DatasetPtr
-    QueryById(const DatasetPtr& dataset, const Config& config) override;
-#endif
-
     int64_t
     Count() override;
 
@@ -73,11 +68,6 @@ class IVF : public VecIndex, public FaissBaseIndex {
 
     void
     ClearStatistics() override;
-#endif
-
-#if 0
-    DatasetPtr
-    GetVectorById(const DatasetPtr& dataset, const Config& config) override;
 #endif
 
     virtual void
