@@ -195,7 +195,7 @@ TEST_P(AnnoyTest, annoy_serialize) {
         ASSERT_EQ(index_->Count(), nb);
         ASSERT_EQ(index_->Dim(), dim);
         auto result = index_->Query(query_dataset, conf, nullptr);
-        AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
+        AssertAnns(result, nq, knowhere::GetMetaTopk(conf));
     }
 }
 
@@ -208,7 +208,7 @@ TEST_P(AnnoyTest, annoy_slice) {
         ASSERT_EQ(index_->Count(), nb);
         ASSERT_EQ(index_->Dim(), dim);
         auto result = index_->Query(query_dataset, conf, nullptr);
-        AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
+        AssertAnns(result, nq, knowhere::GetMetaTopk(conf));
     }
 }
 

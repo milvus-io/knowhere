@@ -103,7 +103,7 @@ IndexRHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fai
         KNOWHERE_THROW_MSG("index not initialize or trained");
     }
     GET_TENSOR_DATA(dataset_ptr)
-    auto k = config[meta::TOPK].get<int64_t>();
+    auto k = GetMetaTopk(config);
     auto result_count = rows * k;
 
     auto p_id = static_cast<int64_t*>(malloc(result_count * sizeof(int64_t)));

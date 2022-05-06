@@ -151,7 +151,7 @@ TEST_P(IVFNMTest, ivfnm_basic) {
 }
 
 TEST_P(IVFNMTest, ivfnm_range_search_l2) {
-    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::L2;
+    knowhere::SetMetaMetricType(conf_, knowhere::MetricEnum::L2);
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
@@ -162,7 +162,7 @@ TEST_P(IVFNMTest, ivfnm_range_search_l2) {
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
     auto test_range_search_l2 = [&](float radius, const faiss::BitsetView bitset) {
-        conf_[knowhere::meta::RADIUS] = radius;
+        knowhere::SetMetaRadius(conf_, radius);
         auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMin<float>>(result, radius * radius);
     };
@@ -174,7 +174,7 @@ TEST_P(IVFNMTest, ivfnm_range_search_l2) {
 }
 
 TEST_P(IVFNMTest, ivfnm_range_search_ip) {
-    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::IP;
+    knowhere::SetMetaMetricType(conf_, knowhere::MetricEnum::IP);
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
@@ -185,7 +185,7 @@ TEST_P(IVFNMTest, ivfnm_range_search_ip) {
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
     auto test_range_search_ip = [&](float radius, const faiss::BitsetView bitset) {
-        conf_[knowhere::meta::RADIUS] = radius;
+        knowhere::SetMetaRadius(conf_, radius);
         auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMax<float>>(result, radius);
     };

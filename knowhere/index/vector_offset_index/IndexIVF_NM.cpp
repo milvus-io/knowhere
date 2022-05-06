@@ -153,7 +153,7 @@ IVF_NM::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::
     };
 
     try {
-        auto k = config[meta::TOPK].get<int64_t>();
+        auto k = GetMetaTopk(config);
         auto elems = rows * k;
 
         size_t p_id_size = sizeof(int64_t) * elems;
@@ -183,7 +183,7 @@ IVF_NM::QueryByRange(const DatasetPtr& dataset_ptr, const Config& config, const 
     }
     GET_TENSOR_DATA(dataset_ptr)
 
-    auto radius = config[meta::RADIUS].get<float>();
+    auto radius = GetMetaRadius(config);
 
     int64_t* p_id = nullptr;
     float* p_dist = nullptr;
@@ -250,7 +250,7 @@ IVF_NM::GenGraph(const float* data, const int64_t k, GraphType& graph, const Con
     int64_t K = k + 1;
     auto ntotal = Count();
 
-    size_t dim = config[meta::DIM];
+    auto dim = GetMetaDim(config);
     auto batch_size = 1000;
     auto tail_batch_size = ntotal % batch_size;
     auto batch_search_count = ntotal / batch_size;

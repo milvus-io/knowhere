@@ -144,7 +144,7 @@ TEST_P(IVFTest, ivf_serialize) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
     auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
+    AssertAnns(result, nq, knowhere::GetMetaTopk(conf_));
 }
 
 TEST_P(IVFTest, ivf_slice) {
@@ -157,11 +157,11 @@ TEST_P(IVFTest, ivf_slice) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
     auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
+    AssertAnns(result, nq, knowhere::GetMetaTopk(conf_));
 }
 
 TEST_P(IVFTest, ivf_range_search_l2) {
-    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::L2;
+    knowhere::SetMetaMetricType(conf_, knowhere::MetricEnum::L2);
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
@@ -169,7 +169,7 @@ TEST_P(IVFTest, ivf_range_search_l2) {
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
     auto test_range_search_l2 = [&](float radius, const faiss::BitsetView bitset) {
-        conf_[knowhere::meta::RADIUS] = radius;
+        knowhere::SetMetaRadius(conf_, radius);
         auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMin<float>>(result, radius * radius);
     };
@@ -181,7 +181,7 @@ TEST_P(IVFTest, ivf_range_search_l2) {
 }
 
 TEST_P(IVFTest, ivf_range_search_ip) {
-    conf_[knowhere::meta::METRIC_TYPE] = knowhere::MetricEnum::IP;
+    knowhere::SetMetaMetricType(conf_, knowhere::MetricEnum::IP);
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
@@ -189,7 +189,7 @@ TEST_P(IVFTest, ivf_range_search_ip) {
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
     auto test_range_search_ip = [&](float radius, const faiss::BitsetView bitset) {
-        conf_[knowhere::meta::RADIUS] = radius;
+        knowhere::SetMetaRadius(conf_, radius);
         auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMax<float>>(result, radius);
     };
@@ -307,7 +307,7 @@ TEST_P(IVFTest, invalid_gpu_source) {
     }
 
     auto invalid_conf = ParamGenerator::GetInstance().Gen(index_type_);
-    invalid_conf[knowhere::meta::DEVICEID] = -1;
+    SetMetaDeviceID(invalid_conf, -1);
 
     // if (index_type_ == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
     //     null faiss index

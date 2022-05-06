@@ -368,7 +368,7 @@ class Benchmark_knowhere : public ::testing::Test {
         for (auto nq : NQs_) {
             knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
             for (auto k : TOPKs_) {
-                conf[knowhere::meta::TOPK] = k;
+                knowhere::SetMetaTopk(conf, k);
 
                 double t_start = elapsed(), t_end;
                 auto result = index_->Query(ds_ptr, conf, nullptr);
@@ -400,7 +400,7 @@ class Benchmark_knowhere : public ::testing::Test {
             for (auto nq : NQs_) {
                 knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
                 for (auto k : TOPKs_) {
-                    conf[knowhere::meta::TOPK] = k;
+                    knowhere::SetMetaTopk(conf, k);
 
                     double t_start = elapsed(), t_end;
                     auto result = index_->Query(ds_ptr, conf, nullptr);
@@ -434,7 +434,7 @@ class Benchmark_knowhere : public ::testing::Test {
             for (auto nq : NQs_) {
                 knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
                 for (auto k : TOPKs_) {
-                    conf[knowhere::meta::TOPK] = k;
+                    knowhere::SetMetaTopk(conf, k);
 
                     double t_start = elapsed(), t_end;
                     auto result = index_->Query(ds_ptr, conf, nullptr);
@@ -467,7 +467,7 @@ class Benchmark_knowhere : public ::testing::Test {
             for (auto nq : NQs_) {
                 knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
                 for (auto k : TOPKs_) {
-                    conf[knowhere::meta::TOPK] = k;
+                    knowhere::SetMetaTopk(conf, k);
 
                     double t_start = elapsed(), t_end;
                     auto result = index_->Query(ds_ptr, conf, nullptr);
@@ -502,8 +502,7 @@ class Benchmark_knowhere : public ::testing::Test {
         printf("[%.3f s] Loading ground truth\n", get_time_diff());
         load_ground_truth();
 
-        cfg_[knowhere::meta::METRIC_TYPE] = metric_type_;
-        cfg_[knowhere::meta::DIM] = dim_;
+        knowhere::SetMetaMetricType(cfg_, metric_type_);
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AUTO);
     }
 

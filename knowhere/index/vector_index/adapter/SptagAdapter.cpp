@@ -45,7 +45,7 @@ std::vector<SPTAG::QueryResult>
 ConvertToQueryResult(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA_DIM(dataset_ptr);
 
-    int64_t k = config[meta::TOPK].get<int64_t>();
+    auto k = GetMetaTopk(config);
     std::vector<SPTAG::QueryResult> query_results(rows, SPTAG::QueryResult(nullptr, k, true));
     for (auto i = 0; i < rows; ++i) {
         query_results[i].SetTarget((float*)p_data + i * dim);

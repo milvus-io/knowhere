@@ -55,7 +55,7 @@ BinaryIDMAP::Query(const DatasetPtr& dataset_ptr, const Config& config, const fa
     };
 
     try {
-        auto k = config[meta::TOPK].get<int64_t>();
+        auto k = GetMetaTopk(config);
         auto elems = rows * k;
         size_t p_id_size = sizeof(int64_t) * elems;
         size_t p_dist_size = sizeof(float) * elems;
@@ -86,7 +86,7 @@ BinaryIDMAP::QueryByRange(const DatasetPtr& dataset,
     }
     GET_TENSOR_DATA(dataset)
 
-    auto radius = config[meta::RADIUS].get<float>();
+    auto radius = GetMetaRadius(config);
 
     int64_t* p_id = nullptr;
     float* p_dist = nullptr;
