@@ -91,9 +91,9 @@ IndexHNSW::Train(const DatasetPtr& dataset_ptr, const Config& config) {
 
         hnswlib::SpaceInterface<float>* space;
         std::string metric_type = GetMetaMetricType(config);
-        if (metric_type == MetricEnum::L2) {
+        if (metric_type == metric::L2) {
             space = new hnswlib::L2Space(dim);
-        } else if (metric_type == MetricEnum::IP) {
+        } else if (metric_type == metric::IP) {
             space = new hnswlib::InnerProductSpace(dim);
         } else {
             KNOWHERE_THROW_MSG("Metric type not supported: " + metric_type);

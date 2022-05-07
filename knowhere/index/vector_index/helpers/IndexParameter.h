@@ -35,44 +35,44 @@ constexpr MetaType DEVICE_ID = "gpu_id";
 
 using IndexParamType = std::string_view;
 
-namespace IndexParams {
+namespace indexparam {
 // IVF Params
-constexpr IndexParamType nprobe = "nprobe";
-constexpr IndexParamType nlist = "nlist";
+constexpr IndexParamType NPROBE = "nprobe";
+constexpr IndexParamType NLIST = "nlist";
 constexpr IndexParamType PQM = "pqm";      // PQ
-constexpr IndexParamType nbits = "nbits";  // PQ/SQ
+constexpr IndexParamType NBITS = "nbits";  // PQ/SQ
 // HNSW Params
-constexpr IndexParamType efConstruction = "efConstruction";
+constexpr IndexParamType EFCONSTRUCTION = "efConstruction";
 constexpr IndexParamType M = "M";
-constexpr IndexParamType ef = "ef";
+constexpr IndexParamType EF = "ef";
 // Annoy Params
-constexpr IndexParamType n_trees = "n_trees";
-constexpr IndexParamType search_k = "search_k";
+constexpr IndexParamType N_TREES = "n_trees";
+constexpr IndexParamType SEARCH_K = "search_k";
 #ifdef KNOWHERE_SUPPORT_NGT
 // NGT Params
-constexpr IndexParamType edge_size = "edge_size";
+constexpr IndexParamType EDGE_SIZE = "edge_size";
 // NGT Search Params
-constexpr IndexParamType epsilon = "epsilon";
-constexpr IndexParamType max_search_edges = "max_search_edges";
+constexpr IndexParamType EPSILON = "epsilon";
+constexpr IndexParamType MAX_SEARCH_EDGES = "max_search_edges";
 // NGT_PANNG Params
-constexpr IndexParamType forcedly_pruned_edge_size = "forcedly_pruned_edge_size";
-constexpr IndexParamType selectively_pruned_edge_size = "selectively_pruned_edge_size";
+constexpr IndexParamType FORCEDLY_PRUNED_EDGE_SIZE = "forcedly_pruned_edge_size";
+constexpr IndexParamType SELECTIVELY_PRUNED_EDGE_SIZE = "selectively_pruned_edge_size";
 // NGT_ONNG Params
-constexpr IndexParamType outgoing_edge_size = "outgoing_edge_size";
-constexpr IndexParamType incoming_edge_size = "incoming_edge_size";
+constexpr IndexParamType OUTGOING_EDGE_SIZE = "outgoing_edge_size";
+constexpr IndexParamType INCOMING_EDGE_SIZE = "incoming_edge_size";
 #endif
 #ifdef KNOWHERE_SUPPORT_NSG
 // NSG Params
-constexpr IndexParamType knng = "knng";
-constexpr IndexParamType search_length = "search_length";
-constexpr IndexParamType out_degree = "out_degree";
-constexpr IndexParamType candidate = "candidate_pool_size";
+constexpr IndexParamType KNNG = "knng";
+constexpr IndexParamType SEARCH_LENGTH = "search_length";
+constexpr IndexParamType OUT_DEGREE = "out_degree";
+constexpr IndexParamType CANDIDATE = "candidate_pool_size";
 #endif
-}  // namespace IndexParams
+}  // namespace indexparam
 
 using MetricType = std::string_view;
 
-namespace MetricEnum {
+namespace metric {
 constexpr MetricType IP = "IP";
 constexpr MetricType L2 = "L2";
 constexpr MetricType HAMMING = "HAMMING";
@@ -80,7 +80,7 @@ constexpr MetricType JACCARD = "JACCARD";
 constexpr MetricType TANIMOTO = "TANIMOTO";
 constexpr MetricType SUBSTRUCTURE = "SUBSTRUCTURE";
 constexpr MetricType SUPERSTRUCTURE = "SUPERSTRUCTURE";
-}  // namespace MetricEnum
+}  // namespace metric
 
 ///////////////////////////////////////////////////////////////////////////////
 template<typename T>
@@ -129,35 +129,35 @@ DEFINE_GETTER(GetMetaDeviceID, meta::DEVICE_ID, int64_t)
 DEFINE_SETTER(SetMetaDeviceID, meta::DEVICE_ID, int64_t , int64_t)
 
 ///////////////////////////////////////////////////////////////////////////////
-// APIs to access IndexParams
+// APIs to access indexparam
 
-DEFINE_GETTER(GetIndexParamNprobe, IndexParams::nprobe, int64_t)
-DEFINE_SETTER(SetIndexParamNprobe, IndexParams::nprobe, int64_t, int64_t)
+DEFINE_GETTER(GetIndexParamNprobe, indexparam::NPROBE, int64_t)
+DEFINE_SETTER(SetIndexParamNprobe, indexparam::NPROBE, int64_t, int64_t)
 
-DEFINE_GETTER(GetIndexParamNlist, IndexParams::nlist, int64_t)
-DEFINE_SETTER(SetIndexParamNlist, IndexParams::nlist, int64_t, int64_t)
+DEFINE_GETTER(GetIndexParamNlist, indexparam::NLIST, int64_t)
+DEFINE_SETTER(SetIndexParamNlist, indexparam::NLIST, int64_t, int64_t)
 
-DEFINE_GETTER(GetIndexParamPQM, IndexParams::PQM, int64_t)
-DEFINE_SETTER(SetIndexParamPQM, IndexParams::PQM, int64_t, int64_t)
+DEFINE_GETTER(GetIndexParamPQM, indexparam::PQM, int64_t)
+DEFINE_SETTER(SetIndexParamPQM, indexparam::PQM, int64_t, int64_t)
 
-DEFINE_GETTER(GetIndexParamNbits, IndexParams::nbits, int64_t)
-DEFINE_SETTER(SetIndexParamNbits, IndexParams::nbits, int64_t, int64_t)
+DEFINE_GETTER(GetIndexParamNbits, indexparam::NBITS, int64_t)
+DEFINE_SETTER(SetIndexParamNbits, indexparam::NBITS, int64_t, int64_t)
 
 // HNSW Params
-DEFINE_GETTER(GetIndexParamEfConstruction, IndexParams::efConstruction, int64_t)
-DEFINE_SETTER(SetIndexParamEfConstruction, IndexParams::efConstruction, int64_t, int64_t)
+DEFINE_GETTER(GetIndexParamEfConstruction, indexparam::EFCONSTRUCTION, int64_t)
+DEFINE_SETTER(SetIndexParamEfConstruction, indexparam::EFCONSTRUCTION, int64_t, int64_t)
 
-DEFINE_GETTER(GetIndexParamM, IndexParams::M, int64_t)
-DEFINE_SETTER(SetIndexParamM, IndexParams::M, int64_t, int64_t)
+DEFINE_GETTER(GetIndexParamM, indexparam::M, int64_t)
+DEFINE_SETTER(SetIndexParamM, indexparam::M, int64_t, int64_t)
 
-DEFINE_GETTER(GetIndexParamEf, IndexParams::ef, int64_t)
-DEFINE_SETTER(SetIndexParamEf, IndexParams::ef, int64_t, int64_t)
+DEFINE_GETTER(GetIndexParamEf, indexparam::EF, int64_t)
+DEFINE_SETTER(SetIndexParamEf, indexparam::EF, int64_t, int64_t)
 
 // Annoy Params
-DEFINE_GETTER(GetIndexParamNtrees, IndexParams::n_trees, int64_t)
-DEFINE_SETTER(SetIndexParamNtrees, IndexParams::n_trees, int64_t, int64_t)
+DEFINE_GETTER(GetIndexParamNtrees, indexparam::N_TREES, int64_t)
+DEFINE_SETTER(SetIndexParamNtrees, indexparam::N_TREES, int64_t, int64_t)
 
-DEFINE_GETTER(GetIndexParamSearchK, IndexParams::search_k, int64_t)
-DEFINE_SETTER(SetIndexParamSearchK, IndexParams::search_k, int64_t, int64_t)
+DEFINE_GETTER(GetIndexParamSearchK, indexparam::SEARCH_K, int64_t)
+DEFINE_SETTER(SetIndexParamSearchK, indexparam::SEARCH_K, int64_t, int64_t)
 
 }  // namespace knowhere

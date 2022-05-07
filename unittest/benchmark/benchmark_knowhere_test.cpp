@@ -196,9 +196,9 @@ class Benchmark_knowhere : public ::testing::Test {
         dim_ = std::stoi(ann_test_name_.substr(pos1 + 1, pos2 - pos1 - 1));
         std::string metric_str = ann_test_name_.substr(pos2 + 1);
         if (metric_str == "angular") {
-            metric_type_ = knowhere::MetricEnum::IP;
+            metric_type_ = knowhere::metric::IP;
         } else if (metric_str == "euclidean") {
-            metric_type_ = knowhere::MetricEnum::L2;
+            metric_type_ = knowhere::metric::L2;
         } else {
             return false;
         }
@@ -229,7 +229,7 @@ class Benchmark_knowhere : public ::testing::Test {
         xb_ = (float*)hdf5_read(ann_file_name, HDF5_DATASET_TRAIN, H5T_FLOAT, dim, nb_);
         assert(dim == dim_ || !"dataset does not have correct dimension");
 
-        if (metric_type_ == knowhere::MetricEnum::IP) {
+        if (metric_type_ == knowhere::metric::IP) {
             printf("[%.3f s] Normalizing base data set \n", get_time_diff());
             normalize(xb_, nb_, dim_);
         }
@@ -242,7 +242,7 @@ class Benchmark_knowhere : public ::testing::Test {
         xq_ = (float*)hdf5_read(ann_file_name, HDF5_DATASET_TEST, H5T_FLOAT, dim, nq_);
         assert(dim == dim_ || !"query does not have same dimension as train set");
 
-        if (metric_type_ == knowhere::MetricEnum::IP) {
+        if (metric_type_ == knowhere::metric::IP) {
             printf("[%.3f s] Normalizing query data \n", get_time_diff());
             normalize(xq_, nq_, dim_);
         }

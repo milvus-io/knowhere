@@ -42,10 +42,10 @@ static const int64_t HNSW_MIN_M = 4;
 static const int64_t HNSW_MAX_M = 64;
 static const int64_t HNSW_MAX_EF = 32768;
 
-static const std::vector<MetricType> default_metric_array{MetricEnum::L2, MetricEnum::IP};
-static const std::vector<MetricType> default_binary_metric_array{MetricEnum::HAMMING, MetricEnum::JACCARD,
-                                                                 MetricEnum::TANIMOTO, MetricEnum::SUBSTRUCTURE,
-                                                                 MetricEnum::SUPERSTRUCTURE};
+static const std::vector<MetricType> default_metric_array{metric::L2, metric::IP};
+static const std::vector<MetricType> default_binary_metric_array{metric::HAMMING, metric::JACCARD,
+                                                                 metric::TANIMOTO, metric::SUBSTRUCTURE,
+                                                                 metric::SUPERSTRUCTURE};
 
 template<typename T>
 inline bool
@@ -110,7 +110,7 @@ MatchNbits(int64_t size, int64_t nbits) {
 
 bool
 IVFConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::nlist, MIN_NLIST, MAX_NLIST)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::NLIST, MIN_NLIST, MAX_NLIST)) {
         return false;
     }
 
@@ -130,7 +130,7 @@ IVFConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode m
         max_nprobe = faiss::gpu::getMaxKSelection();
     }
 #endif
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::nprobe, MIN_NPROBE, max_nprobe)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::NPROBE, MIN_NPROBE, max_nprobe)) {
         return false;
     }
 
@@ -148,12 +148,12 @@ IVFPQConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     if (!IVFConfAdapter::CheckTrain(cfg, mode)) {
         return false;
     }
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::nbits, MIN_NBITS, MAX_NBITS)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::NBITS, MIN_NBITS, MAX_NBITS)) {
         return false;
     }
 
     auto rows = GetMetaRows(cfg);
-    auto nbits = cfg.count(IndexParams::nbits) ? GetIndexParamNbits(cfg) : DEFAULT_NBITS;
+    auto nbits = cfg.count(indexparam::NBITS) ? GetIndexParamNbits(cfg) : DEFAULT_NBITS;
     SetIndexParamNbits(cfg, MatchNbits(rows, nbits));
 
     auto m = GetIndexParamPQM(cfg);
@@ -206,16 +206,16 @@ IVFPQConfAdapter::CheckCPUPQParams(int64_t dimension, int64_t m) {
 bool
 IVFHNSWConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     // HNSW param check
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::efConstruction, HNSW_MIN_EFCONSTRUCTION,
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::EFCONSTRUCTION, HNSW_MIN_EFCONSTRUCTION,
                                     HNSW_MAX_EFCONSTRUCTION)) {
         return false;
     }
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::M, HNSW_MIN_M, HNSW_MAX_M)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::M, HNSW_MIN_M, HNSW_MAX_M)) {
         return false;
     }
 
     // IVF param check
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::nlist, MIN_NLIST, MAX_NLIST)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::NLIST, MIN_NLIST, MAX_NLIST)) {
         return false;
     }
 
@@ -230,75 +230,25 @@ IVFHNSWConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 bool
 IVFHNSWConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
     // HNSW param check
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::ef, GetMetaTopk(cfg), HNSW_MAX_EF)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::EF, GetMetaTopk(cfg), HNSW_MAX_EF)) {
         return false;
     }
 
     // IVF param check
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::nprobe, MIN_NPROBE, MAX_NPROBE)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::NPROBE, MIN_NPROBE, MAX_NPROBE)) {
         return false;
     }
 
     return ConfAdapter::CheckSearch(cfg, type, mode);
 }
-
-#ifdef KNOWHERE_SUPPORT_NSG
-bool
-NSGConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    const int64_t MIN_KNNG = 5;
-    const int64_t MAX_KNNG = 300;
-    const int64_t MIN_SEARCH_LENGTH = 10;
-    const int64_t MAX_SEARCH_LENGTH = 300;
-    const int64_t MIN_OUT_DEGREE = 5;
-    const int64_t MAX_OUT_DEGREE = 300;
-    const int64_t MIN_CANDIDATE_POOL_SIZE = 50;
-    const int64_t MAX_CANDIDATE_POOL_SIZE = 1000;
-
-    if (!CheckMetricType(cfg, default_metric_array)) {
-        return false;
-    }
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::knng, MIN_KNNG, MAX_KNNG)) {
-        return false;
-    }
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::search_length, MIN_SEARCH_LENGTH, MAX_SEARCH_LENGTH)) {
-        return false;
-    }
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::out_degree, MIN_OUT_DEGREE, MAX_OUT_DEGREE)) {
-        return false;
-    }
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::candidate, MIN_CANDIDATE_POOL_SIZE,
-                                    MAX_CANDIDATE_POOL_SIZE)) {
-        return false;
-    }
-
-    // auto tune params
-    auto rows = GetMetaRows(cfg);
-    SetIndexParamNlist(cfg, MatchNlist(rows, 8192));
-
-    int64_t nprobe = GetIndexParamNlist(cfg) * 0.1;
-    SetIndexParamNprobe(cfg, (nprobe < 1) ? 1 : nprobe);
-    return true;
-}
-
-bool
-NSGConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    static int64_t MIN_SEARCH_LENGTH = 1;
-    static int64_t MAX_SEARCH_LENGTH = 300;
-
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::search_length, MIN_SEARCH_LENGTH, MAX_SEARCH_LENGTH)) {
-        return false;
-    }
-    return ConfAdapter::CheckSearch(cfg, type, mode);
-}
-#endif
 
 bool
 HNSWConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::efConstruction, HNSW_MIN_EFCONSTRUCTION,
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::EFCONSTRUCTION, HNSW_MIN_EFCONSTRUCTION,
                                     HNSW_MAX_EFCONSTRUCTION)) {
         return false;
     }
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::M, HNSW_MIN_M, HNSW_MAX_M)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::M, HNSW_MIN_M, HNSW_MAX_M)) {
         return false;
     }
     return ConfAdapter::CheckTrain(cfg, mode);
@@ -306,7 +256,7 @@ HNSWConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 HNSWConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::ef, GetMetaTopk(cfg), HNSW_MAX_EF)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::EF, GetMetaTopk(cfg), HNSW_MAX_EF)) {
         return false;
     }
     return ConfAdapter::CheckSearch(cfg, type, mode);
@@ -314,11 +264,11 @@ HNSWConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode 
 
 bool
 RHNSWFlatConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::efConstruction, HNSW_MIN_EFCONSTRUCTION,
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::EFCONSTRUCTION, HNSW_MIN_EFCONSTRUCTION,
                                     HNSW_MAX_EFCONSTRUCTION)) {
         return false;
     }
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::M, HNSW_MIN_M, HNSW_MAX_M)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::M, HNSW_MIN_M, HNSW_MAX_M)) {
         return false;
     }
     return ConfAdapter::CheckTrain(cfg, mode);
@@ -326,7 +276,7 @@ RHNSWFlatConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 RHNSWFlatConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::ef, GetMetaTopk(cfg), HNSW_MAX_EF)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::EF, GetMetaTopk(cfg), HNSW_MAX_EF)) {
         return false;
     }
     return ConfAdapter::CheckSearch(cfg, type, mode);
@@ -334,11 +284,11 @@ RHNSWFlatConfAdapter::CheckSearch(Config& cfg, const IndexType type, const Index
 
 bool
 RHNSWPQConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::efConstruction, HNSW_MIN_EFCONSTRUCTION,
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::EFCONSTRUCTION, HNSW_MIN_EFCONSTRUCTION,
                                     HNSW_MAX_EFCONSTRUCTION)) {
         return false;
     }
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::M, HNSW_MIN_M, HNSW_MAX_M)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::M, HNSW_MIN_M, HNSW_MAX_M)) {
         return false;
     }
 
@@ -351,7 +301,7 @@ RHNSWPQConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 RHNSWPQConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::ef, GetMetaTopk(cfg), HNSW_MAX_EF)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::EF, GetMetaTopk(cfg), HNSW_MAX_EF)) {
         return false;
     }
     return ConfAdapter::CheckSearch(cfg, type, mode);
@@ -359,11 +309,11 @@ RHNSWPQConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMo
 
 bool
 RHNSWSQConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::efConstruction, HNSW_MIN_EFCONSTRUCTION,
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::EFCONSTRUCTION, HNSW_MIN_EFCONSTRUCTION,
                                     HNSW_MAX_EFCONSTRUCTION)) {
         return false;
     }
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::M, HNSW_MIN_M, HNSW_MAX_M)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::M, HNSW_MIN_M, HNSW_MAX_M)) {
         return false;
     }
     return ConfAdapter::CheckTrain(cfg, mode);
@@ -371,7 +321,7 @@ RHNSWSQConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 RHNSWSQConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::ef, GetMetaTopk(cfg), HNSW_MAX_EF)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::EF, GetMetaTopk(cfg), HNSW_MAX_EF)) {
         return false;
     }
     return ConfAdapter::CheckSearch(cfg, type, mode);
@@ -390,7 +340,7 @@ BinIDMAPConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 BinIVFConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    static const std::vector<MetricType> metric_array{MetricEnum::HAMMING, MetricEnum::JACCARD, MetricEnum::TANIMOTO};
+    static const std::vector<MetricType> metric_array{metric::HAMMING, metric::JACCARD, metric::TANIMOTO};
 
     if (!CheckMetricType(cfg, default_metric_array)) {
         return false;
@@ -398,7 +348,7 @@ BinIVFConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     if (!CheckValueInRange<int64_t>(cfg, meta::DIM, DEFAULT_MIN_DIM, DEFAULT_MAX_DIM)) {
         return false;
     }
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::nlist, MIN_NLIST, MAX_NLIST)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::NLIST, MIN_NLIST, MAX_NLIST)) {
         return false;
     }
 
@@ -412,11 +362,11 @@ BinIVFConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 ANNOYConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    static int64_t MIN_NTREES = 1;
+    static int64_t MIN_N_TREES = 1;
     // too large of n_trees takes much time, if there is real requirement, change this threshold.
-    static int64_t MAX_NTREES = 1024;
+    static int64_t MAX_N_TREES = 1024;
 
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::n_trees, MIN_NTREES, MAX_NTREES)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::N_TREES, MIN_N_TREES, MAX_N_TREES)) {
         return false;
     }
     return ConfAdapter::CheckTrain(cfg, mode);
@@ -424,30 +374,25 @@ ANNOYConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 ANNOYConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    static int64_t MIN_SEARCH_K = std::numeric_limits<int64_t>::min();
-    static int64_t MAX_SEARCH_K = std::numeric_limits<int64_t>::max();
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::search_k, MIN_SEARCH_K, MAX_SEARCH_K)) {
-        return false;
-    }
     return ConfAdapter::CheckSearch(cfg, type, mode);
 }
 
 #ifdef KNOWHERE_SUPPORT_NGT
 bool
 NGTPANNGConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::edge_size, NGT_MIN_EDGE_SIZE, NGT_MAX_EDGE_SIZE)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::EDGE_SIZE, NGT_MIN_EDGE_SIZE, NGT_MAX_EDGE_SIZE)) {
         return false;
     }
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::forcedly_pruned_edge_size, NGT_MIN_EDGE_SIZE,
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::FORCEDLY_PRUNED_EDGE_SIZE, NGT_MIN_EDGE_SIZE,
                                     NGT_MAX_EDGE_SIZE)) {
         return false;
     }
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::selectively_pruned_edge_size, NGT_MIN_EDGE_SIZE,
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::SELECTIVELY_PRUNED_EDGE_SIZE, NGT_MIN_EDGE_SIZE,
                                     NGT_MAX_EDGE_SIZE)) {
         return false;
     }
-    if (cfg[IndexParams::selectively_pruned_edge_size].get<int64_t>() >=
-        cfg[IndexParams::forcedly_pruned_edge_size].get<int64_t>()) {
+    if (cfg[indexparam::SELECTIVELY_PRUNED_EDGE_SIZE].get<int64_t>() >=
+        cfg[indexparam::FORCEDLY_PRUNED_EDGE_SIZE].get<int64_t>()) {
         return false;
     }
     return ConfAdapter::CheckTrain(cfg, mode);
@@ -455,10 +400,10 @@ NGTPANNGConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 NGTPANNGConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::max_search_edges, -1, NGT_MAX_EDGE_SIZE)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::MAX_SEARCH_EDGES, -1, NGT_MAX_EDGE_SIZE)) {
         return false;
     }
-    if (!CheckValueInRange<float>(cfg, IndexParams::epsilon, -1.0, 1.0)) {
+    if (!CheckValueInRange<float>(cfg, indexparam::EPSILON, -1.0, 1.0)) {
         return false;
     }
     return ConfAdapter::CheckSearch(cfg, type, mode);
@@ -466,13 +411,13 @@ NGTPANNGConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexM
 
 bool
 NGTONNGConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::edge_size, NGT_MIN_EDGE_SIZE, NGT_MAX_EDGE_SIZE)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::EDGE_SIZE, NGT_MIN_EDGE_SIZE, NGT_MAX_EDGE_SIZE)) {
         return false;
     }
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::outgoing_edge_size, NGT_MIN_EDGE_SIZE, NGT_MAX_EDGE_SIZE)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::OUTGOING_EDGE_SIZE, NGT_MIN_EDGE_SIZE, NGT_MAX_EDGE_SIZE)) {
         return false;
     }
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::incoming_edge_size, NGT_MIN_EDGE_SIZE, NGT_MAX_EDGE_SIZE)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::INCOMING_EDGE_SIZE, NGT_MIN_EDGE_SIZE, NGT_MAX_EDGE_SIZE)) {
         return false;
     }
     return ConfAdapter::CheckTrain(cfg, mode);
@@ -480,10 +425,59 @@ NGTONNGConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 NGTONNGConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    if (!CheckValueInRange<int64_t>(cfg, IndexParams::max_search_edges, -1, NGT_MAX_EDGE_SIZE)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::MAX_SEARCH_EDGES, -1, NGT_MAX_EDGE_SIZE)) {
         return false;
     }
-    if (!CheckValueInRange<float>(cfg, IndexParams::epsilon, -1.0, 1.0)) {
+    if (!CheckValueInRange<float>(cfg, indexparam::EPSILON, -1.0, 1.0)) {
+        return false;
+    }
+    return ConfAdapter::CheckSearch(cfg, type, mode);
+}
+#endif
+
+#ifdef KNOWHERE_SUPPORT_NSG
+bool
+NSGConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
+    const int64_t MIN_KNNG = 5;
+    const int64_t MAX_KNNG = 300;
+    const int64_t MIN_SEARCH_LENGTH = 10;
+    const int64_t MAX_SEARCH_LENGTH = 300;
+    const int64_t MIN_OUT_DEGREE = 5;
+    const int64_t MAX_OUT_DEGREE = 300;
+    const int64_t MIN_CANDIDATE_POOL_SIZE = 50;
+    const int64_t MAX_CANDIDATE_POOL_SIZE = 1000;
+
+    if (!CheckMetricType(cfg, default_metric_array)) {
+        return false;
+    }
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::KNNG, MIN_KNNG, MAX_KNNG)) {
+        return false;
+    }
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::SEARCH_LENGTH, MIN_SEARCH_LENGTH, MAX_SEARCH_LENGTH)) {
+        return false;
+    }
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::OUT_DEGREE, MIN_OUT_DEGREE, MAX_OUT_DEGREE)) {
+        return false;
+    }
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::CANDIDATE, MIN_CANDIDATE_POOL_SIZE, MAX_CANDIDATE_POOL_SIZE)) {
+        return false;
+    }
+
+    // auto tune params
+    auto rows = GetMetaRows(cfg);
+    SetIndexParamNlist(cfg, MatchNlist(rows, 8192));
+
+    int64_t nprobe = GetIndexParamNlist(cfg) * 0.1;
+    SetIndexParamNprobe(cfg, (nprobe < 1) ? 1 : nprobe);
+    return true;
+}
+
+bool
+NSGConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
+    static int64_t MIN_SEARCH_LENGTH = 1;
+    static int64_t MAX_SEARCH_LENGTH = 300;
+
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::SEARCH_LENGTH, MIN_SEARCH_LENGTH, MAX_SEARCH_LENGTH)) {
         return false;
     }
     return ConfAdapter::CheckSearch(cfg, type, mode);

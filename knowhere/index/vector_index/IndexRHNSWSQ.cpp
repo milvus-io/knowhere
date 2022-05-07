@@ -26,7 +26,7 @@ namespace knowhere {
 
 IndexRHNSWSQ::IndexRHNSWSQ(int d, faiss::QuantizerType qtype, int M, MetricType metric) {
     faiss::MetricType mt =
-        metric == MetricEnum::L2 ? faiss::MetricType::METRIC_L2 : faiss::MetricType::METRIC_INNER_PRODUCT;
+        metric == metric::L2 ? faiss::MetricType::METRIC_L2 : faiss::MetricType::METRIC_INNER_PRODUCT;
     index_ = std::shared_ptr<faiss::Index>(new faiss::IndexRHNSWSQ(d, qtype, M, mt));
 }
 
