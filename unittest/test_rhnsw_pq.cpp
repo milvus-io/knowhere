@@ -30,13 +30,13 @@ class RHNSWPQTest : public DataGen, public TestWithParam<std::string> {
         Generate(64, 10000, 10);  // dim = 64, nb = 10000, nq = 10
         index_ = std::make_shared<knowhere::IndexRHNSWPQ>();
         conf = knowhere::Config{
-            {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
+            {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
             {knowhere::meta::DIM, 64},
             {knowhere::meta::TOPK, 10},
-            {knowhere::IndexParams::M, 16},
-            {knowhere::IndexParams::efConstruction, 200},
-            {knowhere::IndexParams::ef, 200},
-            {knowhere::IndexParams::PQM, 8},
+            {knowhere::indexparam::M, 16},
+            {knowhere::indexparam::EFCONSTRUCTION, 200},
+            {knowhere::indexparam::EF, 200},
+            {knowhere::indexparam::PQM, 8},
             {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
         };
     }

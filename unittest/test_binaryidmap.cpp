@@ -31,7 +31,7 @@ class BinaryIDMAPTest : public DataGen,
         Init_with_default(true);
 
         conf_ = knowhere::Config{
-            {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::HAMMING},
+            {knowhere::meta::METRIC_TYPE, knowhere::metric::HAMMING},
             {knowhere::meta::DIM, dim},
             {knowhere::meta::TOPK, k},
             {knowhere::meta::RADIUS, radius},
@@ -202,7 +202,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_slice) {
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_hamming) {
     int hamming_radius = 50;
-    knowhere::SetMetaMetricType(conf_, knowhere::MetricEnum::HAMMING);
+    knowhere::SetMetaMetricType(conf_, knowhere::metric::HAMMING);
     knowhere::SetMetaRadius(conf_, hamming_radius);
 
     // hamming
@@ -233,7 +233,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_hamming) {
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_jaccard) {
     float jaccard_radius = 0.5;
-    knowhere::SetMetaMetricType(conf_, knowhere::MetricEnum::JACCARD);
+    knowhere::SetMetaMetricType(conf_, knowhere::metric::JACCARD);
     knowhere::SetMetaRadius(conf_, jaccard_radius);
 
     auto jaccard_dis = [](const uint8_t* pa, const uint8_t* pb, const size_t code_size) -> float {
@@ -266,7 +266,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_jaccard) {
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_tanimoto) {
     float tanimoto_radius = 1.0;
-    knowhere::SetMetaMetricType(conf_, knowhere::MetricEnum::TANIMOTO);
+    knowhere::SetMetaMetricType(conf_, knowhere::metric::TANIMOTO);
     knowhere::SetMetaRadius(conf_, tanimoto_radius);
 
     auto tanimoto_dis = [](const uint8_t* pa, const uint8_t* pb, const size_t code_size) -> float {
@@ -298,7 +298,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_tanimoto) {
 }
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_superstructure) {
-    knowhere::SetMetaMetricType(conf_, knowhere::MetricEnum::SUPERSTRUCTURE);
+    knowhere::SetMetaMetricType(conf_, knowhere::metric::SUPERSTRUCTURE);
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
@@ -310,7 +310,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_superstructure) {
 }
 
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_substructure) {
-    knowhere::SetMetaMetricType(conf_, knowhere::MetricEnum::SUBSTRUCTURE);
+    knowhere::SetMetaMetricType(conf_, knowhere::metric::SUBSTRUCTURE);
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());

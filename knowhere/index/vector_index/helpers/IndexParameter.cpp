@@ -17,19 +17,19 @@ namespace knowhere {
 faiss::MetricType
 GetMetricType(const Config& cfg) {
     auto type = GetMetaMetricType(cfg);
-    if (type == MetricEnum::L2) {
+    if (type == metric::L2) {
         return faiss::METRIC_L2;
-    } else if (type == MetricEnum::IP) {
+    } else if (type == metric::IP) {
         return faiss::METRIC_INNER_PRODUCT;
-    } else if (type == MetricEnum::JACCARD) {
+    } else if (type == metric::JACCARD) {
         return faiss::METRIC_Jaccard;
-    } else if (type == MetricEnum::TANIMOTO) {
+    } else if (type == metric::TANIMOTO) {
         return faiss::METRIC_Tanimoto;
-    } else if (type == MetricEnum::HAMMING) {
+    } else if (type == metric::HAMMING) {
         return faiss::METRIC_Hamming;
-    } else if (type == MetricEnum::SUBSTRUCTURE) {
+    } else if (type == metric::SUBSTRUCTURE) {
         return faiss::METRIC_Substructure;
-    } else if (type == MetricEnum::SUPERSTRUCTURE) {
+    } else if (type == metric::SUPERSTRUCTURE) {
         return faiss::METRIC_Superstructure;
     } else {
         KNOWHERE_THROW_MSG("Metric type invalid");

@@ -31,9 +31,9 @@ class HNSWTest : public DataGen, public TestWithParam<std::string> {
         Generate(64, 10000, 10);  // dim = 64, nb = 10000, nq = 10
         index_ = std::make_shared<knowhere::IndexHNSW>();
         conf = knowhere::Config{
-            {knowhere::meta::DIM, 64},        {knowhere::meta::TOPK, 10},
-            {knowhere::IndexParams::M, 16},   {knowhere::IndexParams::efConstruction, 200},
-            {knowhere::IndexParams::ef, 200}, {knowhere::meta::METRIC_TYPE, knowhere::MetricEnum::L2},
+            {knowhere::meta::DIM, 64},       {knowhere::meta::TOPK, 10},
+            {knowhere::indexparam::M, 16},   {knowhere::indexparam::EFCONSTRUCTION, 200},
+            {knowhere::indexparam::EF, 200}, {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
         };
     }
 
@@ -228,16 +228,16 @@ main() {
     knowhere::Config base_conf{
         {knowhere::meta::DIM, d},
         {knowhere::meta::TOPK, k},
-        {knowhere::IndexParams::M, m},
-        {knowhere::IndexParams::efConstruction, ef},
+        {knowhere::indexparam::M, m},
+        {knowhere::indexparam::EFCONSTRUCTION, ef},
         {knowhere::Metric::TYPE, knowhere::Metric::L2},
     };
     knowhere::DatasetPtr query_dataset = generate_query_dataset(nq, d, (const void*)xq);
     knowhere::Config query_conf{
         {knowhere::meta::DIM, d},
         {knowhere::meta::TOPK, k},
-        {knowhere::IndexParams::M, m},
-        {knowhere::IndexParams::ef, ef},
+        {knowhere::indexparam::M, m},
+        {knowhere::indexparam::EF, ef},
         {knowhere::Metric::TYPE, knowhere::Metric::L2},
     };
 
