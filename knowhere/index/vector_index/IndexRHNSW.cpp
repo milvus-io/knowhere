@@ -115,7 +115,7 @@ IndexRHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fai
 
     auto real_index = dynamic_cast<faiss::IndexRHNSW*>(index_.get());
 
-    real_index->hnsw.efSearch = (config[IndexParams::ef].get<int64_t>());
+    real_index->hnsw.efSearch = GetIndexParamEf(config);
 
     std::chrono::high_resolution_clock::time_point query_start, query_end;
     query_start = std::chrono::high_resolution_clock::now();

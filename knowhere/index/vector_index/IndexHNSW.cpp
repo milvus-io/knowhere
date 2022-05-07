@@ -98,8 +98,8 @@ IndexHNSW::Train(const DatasetPtr& dataset_ptr, const Config& config) {
         } else {
             KNOWHERE_THROW_MSG("Metric type not supported: " + metric_type);
         }
-        index_ = std::make_shared<hnswlib::HierarchicalNSW<float>>(space, rows, config[IndexParams::M].get<int64_t>(),
-                                                                   config[IndexParams::efConstruction].get<int64_t>());
+        index_ = std::make_shared<hnswlib::HierarchicalNSW<float>>(space, rows, GetIndexParamM(config),
+                                                                   GetIndexParamEfConstruction(config));
         index_->stats_enable = (STATISTICS_LEVEL >= 3);
     } catch (std::exception& e) {
         KNOWHERE_THROW_MSG(e.what());
@@ -151,7 +151,7 @@ IndexHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fais
         }
     }
 
-    index_->setEf(config[IndexParams::ef].get<int64_t>());
+    index_->setEf(GetIndexParamEf(config));
     bool transform = (index_->metric_type_ == 1);  // InnerProduct: 1
 
     std::chrono::high_resolution_clock::time_point query_start, query_end;

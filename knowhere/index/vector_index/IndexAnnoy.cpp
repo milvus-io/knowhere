@@ -102,7 +102,7 @@ IndexAnnoy::BuildAll(const DatasetPtr& dataset_ptr, const Config& config) {
         index_->add_item(i, static_cast<const float*>(p_data) + dim * i);
     }
 
-    index_->build(config[IndexParams::n_trees].get<int64_t>());
+    index_->build(GetIndexParamNtrees(config));
 }
 
 DatasetPtr
@@ -113,7 +113,7 @@ IndexAnnoy::Query(const DatasetPtr& dataset_ptr, const Config& config, const fai
 
     GET_TENSOR_DATA_DIM(dataset_ptr)
     auto k = GetMetaTopk(config);
-    auto search_k = config[IndexParams::search_k].get<int64_t>();
+    auto search_k = GetIndexParamSearchK(config);
     auto all_num = rows * k;
     auto p_id = static_cast<int64_t*>(malloc(all_num * sizeof(int64_t)));
     auto p_dist = static_cast<float*>(malloc(all_num * sizeof(float)));

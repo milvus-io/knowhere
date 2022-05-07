@@ -37,9 +37,8 @@ IVFPQ::Train(const DatasetPtr& dataset_ptr, const Config& config) {
 
     faiss::MetricType metric_type = GetMetricType(config);
     faiss::Index* coarse_quantizer = new faiss::IndexFlat(dim, metric_type);
-    auto index = std::make_shared<faiss::IndexIVFPQ>(coarse_quantizer, dim, config[IndexParams::nlist].get<int64_t>(),
-                                                     config[IndexParams::m].get<int64_t>(),
-                                                     config[IndexParams::nbits].get<int64_t>(), metric_type);
+    auto index = std::make_shared<faiss::IndexIVFPQ>(coarse_quantizer, dim, GetIndexParamNlist(config),
+                                                     GetIndexParamPQM(config), GetIndexParamNbits(config), metric_type);
     index->own_fields = true;
     index->train(rows, reinterpret_cast<const float*>(p_data));
     index_ = index;
@@ -73,7 +72,7 @@ IVFPQ::CopyCpuToGpu(const int64_t device_id, const Config& config) {
 std::shared_ptr<faiss::IVFSearchParameters>
 IVFPQ::GenParams(const Config& config) {
     auto params = std::make_shared<faiss::IVFPQSearchParameters>();
-    params->nprobe = config[IndexParams::nprobe];
+    params->nprobe = GetIndexParamNprobe(config);
     // params->scan_table_threshold = config["scan_table_threhold"]
     // params->polysemous_ht = config["polysemous_ht"]
     // params->max_codes = config["max_codes"]

@@ -116,8 +116,8 @@ IVFConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
     // auto tune params
     auto rows = GetMetaRows(cfg);
-    auto nlist = cfg[IndexParams::nlist].get<int64_t>();
-    cfg[IndexParams::nlist] = MatchNlist(rows, nlist);
+    auto nlist = GetIndexParamNlist(cfg);
+    SetIndexParamNlist(cfg, MatchNlist(rows, nlist));
 
     return ConfAdapter::CheckTrain(cfg, mode);
 }
@@ -139,7 +139,7 @@ IVFConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode m
 
 bool
 IVFSQConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    cfg[IndexParams::nbits] = DEFAULT_NBITS;
+    SetIndexParamNbits(cfg, DEFAULT_NBITS);
     return IVFConfAdapter::CheckTrain(cfg, mode);
 }
 
@@ -148,16 +148,15 @@ IVFPQConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     if (!IVFConfAdapter::CheckTrain(cfg, mode)) {
         return false;
     }
-
     if (!CheckValueInRange<int64_t>(cfg, IndexParams::nbits, MIN_NBITS, MAX_NBITS)) {
         return false;
     }
 
     auto rows = GetMetaRows(cfg);
-    auto nbits = cfg.count(IndexParams::nbits) ? cfg[IndexParams::nbits].get<int64_t>() : DEFAULT_NBITS;
-    cfg[IndexParams::nbits] = MatchNbits(rows, nbits);
+    auto nbits = cfg.count(IndexParams::nbits) ? GetIndexParamNbits(cfg) : DEFAULT_NBITS;
+    SetIndexParamNbits(cfg, MatchNbits(rows, nbits));
 
-    auto m = cfg[IndexParams::m].get<int64_t>();
+    auto m = GetIndexParamPQM(cfg);
     auto dimension = GetMetaDim(cfg);
 
     IndexMode ivfpq_mode = mode;
@@ -222,8 +221,8 @@ IVFHNSWConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
     // auto tune params
     auto rows = GetMetaRows(cfg);
-    auto nlist = cfg[IndexParams::nlist].get<int64_t>();
-    cfg[IndexParams::nlist] = MatchNlist(rows, nlist);
+    auto nlist = GetIndexParamNlist(cfg);
+    SetIndexParamNlist(cfg, MatchNlist(rows, nlist));
 
     return ConfAdapter::CheckTrain(cfg, mode);
 }
@@ -243,6 +242,7 @@ IVFHNSWConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMo
     return ConfAdapter::CheckSearch(cfg, type, mode);
 }
 
+#ifdef KNOWHERE_SUPPORT_NSG
 bool
 NSGConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     const int64_t MIN_KNNG = 5;
@@ -273,11 +273,10 @@ NSGConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
     // auto tune params
     auto rows = GetMetaRows(cfg);
-    cfg[IndexParams::nlist] = MatchNlist(rows, 8192);
+    SetIndexParamNlist(cfg, MatchNlist(rows, 8192));
 
-    int64_t nprobe = int(cfg[IndexParams::nlist].get<int64_t>() * 0.1);
-    cfg[IndexParams::nprobe] = nprobe < 1 ? 1 : nprobe;
-
+    int64_t nprobe = GetIndexParamNlist(cfg) * 0.1;
+    SetIndexParamNprobe(cfg, (nprobe < 1) ? 1 : nprobe);
     return true;
 }
 
@@ -291,6 +290,7 @@ NSGConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode m
     }
     return ConfAdapter::CheckSearch(cfg, type, mode);
 }
+#endif
 
 bool
 HNSWConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
@@ -343,7 +343,7 @@ RHNSWPQConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     }
 
     auto dimension = GetMetaDim(cfg);
-    if (!IVFPQConfAdapter::CheckCPUPQParams(dimension, cfg[IndexParams::PQM].get<int64_t>())) {
+    if (!IVFPQConfAdapter::CheckCPUPQParams(dimension, GetIndexParamPQM(cfg))) {
         return false;
     }
     return ConfAdapter::CheckTrain(cfg, mode);
@@ -404,8 +404,8 @@ BinIVFConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
     // auto tune params
     auto rows = GetMetaRows(cfg);
-    auto nlist = cfg[IndexParams::nlist].get<int64_t>();
-    cfg[IndexParams::nlist] = MatchNlist(rows, nlist);
+    auto nlist = GetIndexParamNlist(cfg);
+    SetIndexParamNlist(cfg, MatchNlist(rows, nlist));
 
     return true;
 }
@@ -432,6 +432,7 @@ ANNOYConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode
     return ConfAdapter::CheckSearch(cfg, type, mode);
 }
 
+#ifdef KNOWHERE_SUPPORT_NGT
 bool
 NGTPANNGConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     if (!CheckValueInRange<int64_t>(cfg, IndexParams::edge_size, NGT_MIN_EDGE_SIZE, NGT_MAX_EDGE_SIZE)) {
@@ -487,5 +488,6 @@ NGTONNGConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMo
     }
     return ConfAdapter::CheckSearch(cfg, type, mode);
 }
+#endif
 
 }  // namespace knowhere

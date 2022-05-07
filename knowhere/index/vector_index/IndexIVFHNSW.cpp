@@ -81,10 +81,9 @@ IVFHNSW::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA_DIM(dataset_ptr)
 
     faiss::MetricType metric_type = GetMetricType(config);
-    auto coarse_quantizer = new faiss::IndexRHNSWFlat(dim, config[IndexParams::M], metric_type);
-    coarse_quantizer->hnsw.efConstruction = config[IndexParams::efConstruction];
-    auto index = std::make_shared<faiss::IndexIVFFlat>(coarse_quantizer, dim, config[IndexParams::nlist].get<int64_t>(),
-                                                       metric_type);
+    auto coarse_quantizer = new faiss::IndexRHNSWFlat(dim, GetIndexParamM(config), metric_type);
+    coarse_quantizer->hnsw.efConstruction = GetIndexParamEfConstruction(config);
+    auto index = std::make_shared<faiss::IndexIVFFlat>(coarse_quantizer, dim, GetIndexParamNlist(config), metric_type);
     index->own_fields = true;
     index->train(rows, reinterpret_cast<const float*>(p_data));
     index_ = index;
@@ -126,7 +125,7 @@ IVFHNSW::QueryImpl(int64_t n,
     }
     // Update HNSW quantizer search param
     auto hnsw_quantizer = dynamic_cast<faiss::IndexRHNSWFlat*>(ivf_index->quantizer);
-    hnsw_quantizer->hnsw.efSearch = config[IndexParams::ef].get<int64_t>();
+    hnsw_quantizer->hnsw.efSearch = GetIndexParamEf(config);
     ivf_index->search(n, data, k, distances, labels, bitset);
 }
 

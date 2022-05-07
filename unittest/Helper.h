@@ -66,7 +66,7 @@ class ParamGenerator {
                 {knowhere::meta::DEVICE_ID, DEVICE_ID},
                 {knowhere::IndexParams::nlist, 100},
                 {knowhere::IndexParams::nprobe, 4},
-                {knowhere::IndexParams::m, 4},
+                {knowhere::IndexParams::PQM, 4},
                 {knowhere::IndexParams::nbits, 8},
                 {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
             };
