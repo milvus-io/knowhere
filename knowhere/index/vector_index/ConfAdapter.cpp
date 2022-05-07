@@ -329,7 +329,7 @@ RHNSWSQConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMo
 
 bool
 BinIDMAPConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    if (!CheckMetricType(cfg, default_metric_array)) {
+    if (!CheckMetricType(cfg, default_binary_metric_array)) {
         return false;
     }
     if (!CheckValueInRange<int64_t>(cfg, meta::DIM, DEFAULT_MIN_DIM, DEFAULT_MAX_DIM)) {
@@ -342,7 +342,7 @@ bool
 BinIVFConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     static const std::vector<MetricType> metric_array{metric::HAMMING, metric::JACCARD, metric::TANIMOTO};
 
-    if (!CheckMetricType(cfg, default_metric_array)) {
+    if (!CheckMetricType(cfg, metric_array)) {
         return false;
     }
     if (!CheckValueInRange<int64_t>(cfg, meta::DIM, DEFAULT_MIN_DIM, DEFAULT_MAX_DIM)) {
