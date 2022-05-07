@@ -15,8 +15,7 @@
 namespace knowhere {
 
 faiss::MetricType
-GetMetricType(const Config& cfg) {
-    auto type = GetMetaMetricType(cfg);
+GetMetricType(const std::string& type) {
     if (type == metric::L2) {
         return faiss::METRIC_L2;
     } else if (type == metric::IP) {

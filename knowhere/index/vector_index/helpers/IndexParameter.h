@@ -108,8 +108,6 @@ inline void func_name(Config& cfg, T1 value) {              \
 ///////////////////////////////////////////////////////////////////////////////
 // APIs to access meta
 
-faiss::MetricType GetMetricType(const Config& cfg);
-
 DEFINE_GETTER(GetMetaMetricType, meta::METRIC_TYPE, std::string)
 DEFINE_SETTER(SetMetaMetricType, meta::METRIC_TYPE, MetricType , std::string)
 
@@ -159,5 +157,14 @@ DEFINE_SETTER(SetIndexParamNtrees, indexparam::N_TREES, int64_t, int64_t)
 
 DEFINE_GETTER(GetIndexParamSearchK, indexparam::SEARCH_K, int64_t)
 DEFINE_SETTER(SetIndexParamSearchK, indexparam::SEARCH_K, int64_t, int64_t)
+
+///////////////////////////////////////////////////////////////////////////////
+// other
+faiss::MetricType GetMetricType(const std::string& type);
+
+inline faiss::MetricType
+GetMetricType(const Config& cfg) {
+    return GetMetricType(GetMetaMetricType(cfg));
+}
 
 }  // namespace knowhere
