@@ -114,7 +114,7 @@ void
 IVF_NM::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA_DIM(dataset_ptr)
 
-    int64_t nlist = config[IndexParams::nlist].get<int64_t>();
+    int64_t nlist = GetIndexParamNlist(config);
     faiss::MetricType metric_type = GetMetricType(config);
     auto coarse_quantizer = new faiss::IndexFlat(dim, metric_type);
     auto index = std::make_shared<faiss::IndexIVFFlat>(coarse_quantizer, dim, nlist, metric_type);
@@ -282,7 +282,7 @@ IVF_NM::GenGraph(const float* data, const int64_t k, GraphType& graph, const Con
 std::shared_ptr<faiss::IVFSearchParameters>
 IVF_NM::GenParams(const Config& config) {
     auto params = std::make_shared<faiss::IVFSearchParameters>();
-    params->nprobe = config[IndexParams::nprobe];
+    params->nprobe = GetIndexParamNprobe(config);
     // params->max_codes = config["max_codes"];
     return params;
 }

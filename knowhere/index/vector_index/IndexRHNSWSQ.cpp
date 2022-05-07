@@ -83,10 +83,10 @@ IndexRHNSWSQ::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     try {
         GET_TENSOR_DATA_DIM(dataset_ptr)
         faiss::MetricType metric_type = GetMetricType(config);
-        int32_t efConstruction = config[IndexParams::efConstruction];
+        int32_t efConstruction = GetIndexParamEfConstruction(config);
 
         auto idx =
-            new faiss::IndexRHNSWSQ(int(dim), faiss::QuantizerType::QT_8bit, config[IndexParams::M], metric_type);
+            new faiss::IndexRHNSWSQ(int(dim), faiss::QuantizerType::QT_8bit, GetIndexParamM(config), metric_type);
         idx->hnsw.efConstruction = efConstruction;
         index_ = std::shared_ptr<faiss::Index>(idx);
         index_->train(rows, static_cast<const float*>(p_data));

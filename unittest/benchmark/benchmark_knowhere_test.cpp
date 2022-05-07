@@ -390,13 +390,13 @@ class Benchmark_knowhere : public ::testing::Test {
         const std::vector<int32_t>& nprobes) {
 
         auto conf = cfg;
-        auto nlist = conf[knowhere::IndexParams::nlist].get<int64_t>();
+        auto nlist = knowhere::GetIndexParamNlist(conf);
 
         printf("\n[%0.3f s] %s | %s | nlist=%ld\n",
                get_time_diff(), ann_test_name_.c_str(), std::string(index_type_).c_str(), nlist);
         printf("================================================================================\n");
         for (auto nprobe : nprobes) {
-            conf[knowhere::IndexParams::nprobe] = nprobe;
+            knowhere::SetIndexParamNprobe(conf, nprobe);
             for (auto nq : NQs_) {
                 knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
                 for (auto k : TOPKs_) {
@@ -423,14 +423,14 @@ class Benchmark_knowhere : public ::testing::Test {
         const std::vector<int32_t>& efs) {
 
         auto conf = cfg;
-        auto M = conf[knowhere::IndexParams::M].get<int64_t>();
-        auto efConstruction = conf[knowhere::IndexParams::efConstruction].get<int64_t>();
+        auto M = knowhere::GetIndexParamM(conf);
+        auto efConstruction = knowhere::GetIndexParamEfConstruction(conf);
 
         printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld\n",
                get_time_diff(), ann_test_name_.c_str(), std::string(index_type_).c_str(), M, efConstruction);
         printf("================================================================================\n");
         for (auto ef: efs) {
-            conf[knowhere::IndexParams::ef] = ef;
+            knowhere::SetIndexParamEf(conf, ef);
             for (auto nq : NQs_) {
                 knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
                 for (auto k : TOPKs_) {
@@ -457,13 +457,13 @@ class Benchmark_knowhere : public ::testing::Test {
         const std::vector<int32_t>& search_ks) {
 
         auto conf = cfg;
-        auto n_trees = conf[knowhere::IndexParams::n_trees].get<int64_t>();
+        auto n_trees = knowhere::GetIndexParamNtrees(conf);
 
         printf("\n[%0.3f s] %s | %s | n_trees=%ld \n",
                get_time_diff(), ann_test_name_.c_str(), std::string(index_type_).c_str(), n_trees);
         printf("================================================================================\n");
         for (auto sk: search_ks) {
-            conf[knowhere::IndexParams::search_k] = sk;
+            knowhere::SetIndexParamSearchK(conf, sk);
             for (auto nq : NQs_) {
                 knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
                 for (auto k : TOPKs_) {
@@ -561,7 +561,7 @@ TEST_F(Benchmark_knowhere, TEST_IVFFLAT_NM) {
     knowhere::Config conf = cfg_;
     for (auto nlist : NLISTs_) {
         std::string index_file_name = get_index_name({nlist});
-        conf[knowhere::IndexParams::nlist] = nlist;
+        knowhere::SetIndexParamNlist(conf, nlist);
         create_cpu_index(index_file_name, conf);
 
         // IVFFLAT_NM should load raw data
@@ -583,7 +583,7 @@ TEST_F(Benchmark_knowhere, TEST_IVFSQ8) {
     knowhere::Config conf = cfg_;
     for (auto nlist : NLISTs_) {
         std::string index_file_name = get_index_name({nlist});
-        conf[knowhere::IndexParams::nlist] = nlist;
+        knowhere::SetIndexParamNlist(conf, nlist);
         create_cpu_index(index_file_name, conf);
         index_->Load(binary_set_);
         test_ivf(conf, nprobes);
@@ -597,10 +597,10 @@ TEST_F(Benchmark_knowhere, TEST_HNSW) {
 
     knowhere::Config conf = cfg_;
     for (auto M : Ms_) {
-        conf[knowhere::IndexParams::M] = M;
+        knowhere::SetIndexParamM(conf, M);
         for (auto efc : EFCONs_) {
             std::string index_file_name = get_index_name({M, efc});
-            conf[knowhere::IndexParams::efConstruction] = efc;
+            knowhere::SetIndexParamEfConstruction(conf, efc);
             create_cpu_index(index_file_name, conf);
             index_->Load(binary_set_);
             test_hnsw(conf, efs);
@@ -615,7 +615,7 @@ TEST_F(Benchmark_knowhere, TEST_ANNOY) {
 
     knowhere::Config conf = cfg_;
     for (auto n : N_TREEs_) {
-        conf[knowhere::IndexParams::n_trees] = n;
+        knowhere::SetIndexParamNtrees(conf, n);
         std::string index_file_name = get_index_name({n});
         create_cpu_index(index_file_name, conf);
         index_->Load(binary_set_);

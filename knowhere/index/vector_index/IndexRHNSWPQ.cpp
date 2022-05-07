@@ -79,9 +79,9 @@ void
 IndexRHNSWPQ::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     try {
         GET_TENSOR_DATA_DIM(dataset_ptr)
-        int32_t efConstruction = config[IndexParams::efConstruction];
+        int32_t efConstruction = GetIndexParamEfConstruction(config);
 
-        auto idx = new faiss::IndexRHNSWPQ(int(dim), config[IndexParams::PQM], config[IndexParams::M]);
+        auto idx = new faiss::IndexRHNSWPQ(int(dim), GetIndexParamPQM(config), GetIndexParamM(config));
         idx->hnsw.efConstruction = efConstruction;
         index_ = std::shared_ptr<faiss::Index>(idx);
         index_->train(rows, reinterpret_cast<const float*>(p_data));

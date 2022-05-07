@@ -195,7 +195,7 @@ void
 BinaryIVF::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA_DIM(dataset_ptr)
 
-    int64_t nlist = config[IndexParams::nlist];
+    int64_t nlist = GetIndexParamNlist(config);
     faiss::MetricType metric_type = GetMetricType(config);
     faiss::IndexBinary* coarse_quantizer = new faiss::IndexBinaryFlat(dim, metric_type);
     auto index = std::make_shared<faiss::IndexBinaryIVF>(coarse_quantizer, dim, nlist, metric_type);
@@ -217,7 +217,7 @@ BinaryIVF::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) {
 std::shared_ptr<faiss::IVFSearchParameters>
 BinaryIVF::GenParams(const Config& config) {
     auto params = std::make_shared<faiss::IVFSearchParameters>();
-    params->nprobe = config[IndexParams::nprobe];
+    params->nprobe = GetIndexParamNprobe(config);
     // params->max_codes = config["max_code"];
     return params;
 }
