@@ -31,9 +31,9 @@ class HNSWTest : public DataGen, public TestWithParam<std::string> {
         Generate(64, 10000, 10);  // dim = 64, nb = 10000, nq = 10
         index_ = std::make_shared<knowhere::IndexHNSW>();
         conf = knowhere::Config{
-            {knowhere::meta::DIM, 64},       {knowhere::meta::TOPK, 10},
-            {knowhere::indexparam::M, 16},   {knowhere::indexparam::EFCONSTRUCTION, 200},
-            {knowhere::indexparam::EF, 200}, {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
+            {knowhere::meta::DIM, 64},          {knowhere::meta::TOPK, 10},
+            {knowhere::indexparam::HNSW_M, 16}, {knowhere::indexparam::EFCONSTRUCTION, 200},
+            {knowhere::indexparam::EF, 200},    {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
         };
     }
 

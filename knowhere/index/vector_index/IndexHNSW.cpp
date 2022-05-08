@@ -98,7 +98,7 @@ IndexHNSW::Train(const DatasetPtr& dataset_ptr, const Config& config) {
         } else {
             KNOWHERE_THROW_MSG("Metric type not supported: " + metric_type);
         }
-        index_ = std::make_shared<hnswlib::HierarchicalNSW<float>>(space, rows, GetIndexParamM(config),
+        index_ = std::make_shared<hnswlib::HierarchicalNSW<float>>(space, rows, GetIndexParamHNSWM(config),
                                                                    GetIndexParamEfConstruction(config));
         index_->stats_enable = (STATISTICS_LEVEL >= 3);
     } catch (std::exception& e) {
