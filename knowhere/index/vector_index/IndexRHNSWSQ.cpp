@@ -86,7 +86,7 @@ IndexRHNSWSQ::Train(const DatasetPtr& dataset_ptr, const Config& config) {
         int32_t efConstruction = GetIndexParamEfConstruction(config);
 
         auto idx =
-            new faiss::IndexRHNSWSQ(int(dim), faiss::QuantizerType::QT_8bit, GetIndexParamM(config), metric_type);
+            new faiss::IndexRHNSWSQ(int(dim), faiss::QuantizerType::QT_8bit, GetIndexParamHNSWM(config), metric_type);
         idx->hnsw.efConstruction = efConstruction;
         index_ = std::shared_ptr<faiss::Index>(idx);
         index_->train(rows, static_cast<const float*>(p_data));

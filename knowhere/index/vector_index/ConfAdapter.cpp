@@ -156,7 +156,7 @@ IVFPQConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     auto nbits = cfg.count(indexparam::NBITS) ? GetIndexParamNbits(cfg) : DEFAULT_NBITS;
     SetIndexParamNbits(cfg, MatchNbits(rows, nbits));
 
-    auto m = GetIndexParamPQM(cfg);
+    auto m = GetIndexParamM(cfg);
     auto dimension = GetMetaDim(cfg);
 
     IndexMode ivfpq_mode = mode;
@@ -210,7 +210,7 @@ IVFHNSWConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
                                     HNSW_MAX_EFCONSTRUCTION)) {
         return false;
     }
-    if (!CheckValueInRange<int64_t>(cfg, indexparam::M, HNSW_MIN_M, HNSW_MAX_M)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::HNSW_M, HNSW_MIN_M, HNSW_MAX_M)) {
         return false;
     }
 
@@ -248,7 +248,7 @@ HNSWConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
                                     HNSW_MAX_EFCONSTRUCTION)) {
         return false;
     }
-    if (!CheckValueInRange<int64_t>(cfg, indexparam::M, HNSW_MIN_M, HNSW_MAX_M)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::HNSW_M, HNSW_MIN_M, HNSW_MAX_M)) {
         return false;
     }
     return ConfAdapter::CheckTrain(cfg, mode);
@@ -268,7 +268,7 @@ RHNSWFlatConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
                                     HNSW_MAX_EFCONSTRUCTION)) {
         return false;
     }
-    if (!CheckValueInRange<int64_t>(cfg, indexparam::M, HNSW_MIN_M, HNSW_MAX_M)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::HNSW_M, HNSW_MIN_M, HNSW_MAX_M)) {
         return false;
     }
     return ConfAdapter::CheckTrain(cfg, mode);
@@ -288,7 +288,7 @@ RHNSWPQConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
                                     HNSW_MAX_EFCONSTRUCTION)) {
         return false;
     }
-    if (!CheckValueInRange<int64_t>(cfg, indexparam::M, HNSW_MIN_M, HNSW_MAX_M)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::HNSW_M, HNSW_MIN_M, HNSW_MAX_M)) {
         return false;
     }
 
@@ -313,7 +313,7 @@ RHNSWSQConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
                                     HNSW_MAX_EFCONSTRUCTION)) {
         return false;
     }
-    if (!CheckValueInRange<int64_t>(cfg, indexparam::M, HNSW_MIN_M, HNSW_MAX_M)) {
+    if (!CheckValueInRange<int64_t>(cfg, indexparam::HNSW_M, HNSW_MIN_M, HNSW_MAX_M)) {
         return false;
     }
     return ConfAdapter::CheckTrain(cfg, mode);

@@ -66,7 +66,7 @@ class ParamGenerator {
                 {knowhere::meta::DEVICE_ID, DEVICE_ID},
                 {knowhere::indexparam::NLIST, 100},
                 {knowhere::indexparam::NPROBE, 4},
-                {knowhere::indexparam::PQM, 4},
+                {knowhere::indexparam::M, 4},
                 {knowhere::indexparam::NBITS, 8},
                 {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
             };
@@ -90,7 +90,7 @@ class ParamGenerator {
                 {knowhere::meta::DEVICE_ID, DEVICE_ID},
                 {knowhere::indexparam::NLIST, 100},
                 {knowhere::indexparam::NPROBE, 4},
-                {knowhere::indexparam::M, 16},
+                {knowhere::indexparam::HNSW_M, 16},
                 {knowhere::indexparam::EFCONSTRUCTION, 200},
                 {knowhere::indexparam::EF, 200},
                 {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},

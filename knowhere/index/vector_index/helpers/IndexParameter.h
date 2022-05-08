@@ -39,11 +39,12 @@ namespace indexparam {
 // IVF Params
 constexpr IndexParamType NPROBE = "nprobe";
 constexpr IndexParamType NLIST = "nlist";
-constexpr IndexParamType PQM = "pqm";      // PQ
-constexpr IndexParamType NBITS = "nbits";  // PQ/SQ
+constexpr IndexParamType NBITS = "nbits";   // PQ/SQ
+constexpr IndexParamType M = "m";           // PQ param for IVFPQ
+constexpr IndexParamType PQ_M = "PQM";      // PQ param for RHNSWPQ
 // HNSW Params
 constexpr IndexParamType EFCONSTRUCTION = "efConstruction";
-constexpr IndexParamType M = "M";
+constexpr IndexParamType HNSW_M = "M";
 constexpr IndexParamType EF = "ef";
 // Annoy Params
 constexpr IndexParamType N_TREES = "n_trees";
@@ -135,18 +136,23 @@ DEFINE_SETTER(SetIndexParamNprobe, indexparam::NPROBE, int64_t, int64_t)
 DEFINE_GETTER(GetIndexParamNlist, indexparam::NLIST, int64_t)
 DEFINE_SETTER(SetIndexParamNlist, indexparam::NLIST, int64_t, int64_t)
 
-DEFINE_GETTER(GetIndexParamPQM, indexparam::PQM, int64_t)
-DEFINE_SETTER(SetIndexParamPQM, indexparam::PQM, int64_t, int64_t)
-
 DEFINE_GETTER(GetIndexParamNbits, indexparam::NBITS, int64_t)
 DEFINE_SETTER(SetIndexParamNbits, indexparam::NBITS, int64_t, int64_t)
+
+// PQ param for IVFPQ
+DEFINE_GETTER(GetIndexParamM, indexparam::M, int64_t)
+DEFINE_SETTER(SetIndexParamM, indexparam::M, int64_t, int64_t)
+
+// PQ param for RHNSWPQ
+DEFINE_GETTER(GetIndexParamPQM, indexparam::PQ_M, int64_t)
+DEFINE_SETTER(SetIndexParamPQM, indexparam::PQ_M, int64_t, int64_t)
 
 // HNSW Params
 DEFINE_GETTER(GetIndexParamEfConstruction, indexparam::EFCONSTRUCTION, int64_t)
 DEFINE_SETTER(SetIndexParamEfConstruction, indexparam::EFCONSTRUCTION, int64_t, int64_t)
 
-DEFINE_GETTER(GetIndexParamM, indexparam::M, int64_t)
-DEFINE_SETTER(SetIndexParamM, indexparam::M, int64_t, int64_t)
+DEFINE_GETTER(GetIndexParamHNSWM, indexparam::HNSW_M, int64_t)
+DEFINE_SETTER(SetIndexParamHNSWM, indexparam::HNSW_M, int64_t, int64_t)
 
 DEFINE_GETTER(GetIndexParamEf, indexparam::EF, int64_t)
 DEFINE_SETTER(SetIndexParamEf, indexparam::EF, int64_t, int64_t)
