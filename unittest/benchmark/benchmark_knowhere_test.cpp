@@ -374,7 +374,7 @@ class Benchmark_knowhere : public ::testing::Test {
                 auto result = index_->Query(ds_ptr, conf, nullptr);
                 t_end = elapsed();
 
-                auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
+                auto ids = knowhere::GetDatasetIDs(result);
                 int32_t hit = CalcRecall(ids, nq, k);
                 printf("  nq = %4d, k = %4d, elapse = %.4fs, R@ = %.4f\n",
                        nq, k, (t_end - t_start), (hit / float(nq * std::min(gt_k_, k))));
@@ -406,7 +406,7 @@ class Benchmark_knowhere : public ::testing::Test {
                     auto result = index_->Query(ds_ptr, conf, nullptr);
                     t_end = elapsed();
 
-                    auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
+                    auto ids = knowhere::GetDatasetIDs(result);
                     int32_t hit = CalcRecall(ids, nq, k);
                     printf("  nprobe = %4d, nq = %4d, k = %4d, elapse = %.4fs, R@ = %.4f\n",
                            nprobe, nq, k, (t_end - t_start), (hit / float(nq * std::min(gt_k_, k))));
@@ -440,7 +440,7 @@ class Benchmark_knowhere : public ::testing::Test {
                     auto result = index_->Query(ds_ptr, conf, nullptr);
                     t_end = elapsed();
 
-                    auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
+                    auto ids = knowhere::GetDatasetIDs(result);
                     int32_t hit = CalcRecall(ids, nq, k);
                     printf("  ef = %4d, nq = %4d, k = %4d, elapse = %.4fs, R@ = %.4f\n",
                            ef, nq, k, (t_end - t_start), (hit / float(nq * std::min(gt_k_, k))));
@@ -473,7 +473,7 @@ class Benchmark_knowhere : public ::testing::Test {
                     auto result = index_->Query(ds_ptr, conf, nullptr);
                     t_end = elapsed();
 
-                    auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
+                    auto ids = knowhere::GetDatasetIDs(result);
                     int32_t hit = CalcRecall(ids, nq, k);
                     printf("  search_k = %4d, nq = %4d, k = %4d, elapse = %.4fs, R@ = %.4f\n",
                            sk, nq, k, (t_end - t_start), (hit / float(nq * std::min(gt_k_, k))));

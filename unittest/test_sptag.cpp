@@ -71,8 +71,8 @@ TEST_P(SPTAGTest, sptag_basic) {
     AssertAnns(result, nq, k);
 
     {
-        auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
-        auto dist = result->Get<float*>(knowhere::meta::DISTANCE);
+        auto ids = knowhere::GetDatasetIDs(result);
+        auto dist = knowhere::GetDatasetDistance(result);
 
         std::stringstream ss_id;
         std::stringstream ss_dist;

@@ -18,15 +18,53 @@
 
 namespace knowhere {
 
-#define GET_TENSOR_DATA(dataset_ptr)                      \
-    int64_t rows = dataset_ptr->Get<int64_t>(meta::ROWS); \
-    const void* p_data = dataset_ptr->Get<const void*>(meta::TENSOR);
+#define DEFINE_DATASET_GETTER(func_name, key, T)    \
+inline T func_name(const DatasetPtr& ds_ptr) {      \
+    return ds_ptr->Get<T>(key);                     \
+}
 
-#define GET_TENSOR_DATA_DIM(dataset_ptr) \
-    GET_TENSOR_DATA(dataset_ptr)         \
-    int64_t dim = dataset_ptr->Get<int64_t>(meta::DIM);
+#define DEFINE_DATASET_SETTER(func_name, key, T)        \
+inline void func_name(DatasetPtr& ds_ptr, T value) {    \
+    ds_ptr->Set(key, value);                            \
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+DEFINE_DATASET_GETTER(GetDatasetDim, meta::DIM, int64_t);
+DEFINE_DATASET_SETTER(SetDatasetDim, meta::DIM, int64_t);
+
+DEFINE_DATASET_GETTER(GetDatasetTensor, meta::TENSOR, const void*);
+DEFINE_DATASET_SETTER(SetDatasetTensor, meta::TENSOR, const void*);
+
+DEFINE_DATASET_GETTER(GetDatasetRows, meta::ROWS, int64_t);
+DEFINE_DATASET_SETTER(SetDatasetRows, meta::ROWS, int64_t);
+
+DEFINE_DATASET_GETTER(GetDatasetIDs, meta::IDS, const int64_t*);
+DEFINE_DATASET_SETTER(SetDatasetIDs, meta::IDS, const int64_t*);
+
+DEFINE_DATASET_GETTER(GetDatasetDistance, meta::DISTANCE, const float*);
+DEFINE_DATASET_SETTER(SetDatasetDistance, meta::DISTANCE, const float*);
+
+DEFINE_DATASET_GETTER(GetDatasetLims, meta::LIMS, const size_t*);
+DEFINE_DATASET_SETTER(SetDatasetLims, meta::LIMS, const size_t*);
+
+///////////////////////////////////////////////////////////////////////////////
+
+#define GET_TENSOR_DATA(ds_ptr)             \
+    auto rows = GetDatasetRows(ds_ptr);     \
+    auto p_data = GetDatasetTensor(ds_ptr);
+
+#define GET_TENSOR_DATA_DIM(ds_ptr)     \
+    GET_TENSOR_DATA(ds_ptr)             \
+    auto dim = GetDatasetDim(ds_ptr);
 
 extern DatasetPtr
 GenDataset(const int64_t nb, const int64_t dim, const void* xb);
+
+extern DatasetPtr
+GenResultDataset(const int64_t* ids, const float* distance);
+
+extern DatasetPtr
+GenResultDataset(const int64_t* ids, const float* distance, const size_t* lims);
 
 }  // namespace knowhere

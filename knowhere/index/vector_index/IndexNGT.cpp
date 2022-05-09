@@ -186,10 +186,7 @@ IndexNGT::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss
         index_->deleteObject(object);
     }
 
-    auto res_ds = std::make_shared<Dataset>();
-    res_ds->Set(meta::IDS, p_id);
-    res_ds->Set(meta::DISTANCE, p_dist);
-    return res_ds;
+    return GenResultDataset(p_id, p_dist);
 }
 
 int64_t

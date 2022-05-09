@@ -20,9 +20,26 @@ namespace knowhere {
 DatasetPtr
 GenDataset(const int64_t nb, const int64_t dim, const void* xb) {
     auto ret_ds = std::make_shared<Dataset>();
-    ret_ds->Set(meta::ROWS, nb);
-    ret_ds->Set(meta::DIM, dim);
-    ret_ds->Set(meta::TENSOR, xb);
+    SetDatasetRows(ret_ds, nb);
+    SetDatasetDim(ret_ds, dim);
+    SetDatasetTensor(ret_ds, xb);
+    return ret_ds;
+}
+
+DatasetPtr
+GenResultDataset(const int64_t* ids, const float* distance) {
+    auto ret_ds = std::make_shared<Dataset>();
+    SetDatasetIDs(ret_ds, ids);
+    SetDatasetDistance(ret_ds, distance);
+    return ret_ds;
+}
+
+DatasetPtr
+GenResultDataset(const int64_t* ids, const float* distance, const size_t* lims) {
+    auto ret_ds = std::make_shared<Dataset>();
+    SetDatasetIDs(ret_ds, ids);
+    SetDatasetDistance(ret_ds, distance);
+    SetDatasetLims(ret_ds, lims);
     return ret_ds;
 }
 

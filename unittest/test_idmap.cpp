@@ -117,9 +117,9 @@ class IDMAPTest : public DataGen, public TestWithParam<knowhere::IndexMode> {
         const std::vector<float>& golden_distances,
         const std::vector<size_t>& golden_lims) {
 
-        auto lims = result->Get<size_t*>(knowhere::meta::LIMS);
-        auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
-        auto distances = result->Get<float*>(knowhere::meta::DISTANCE);
+        auto lims = knowhere::GetDatasetLims(result);
+        auto ids = knowhere::GetDatasetIDs(result);
+        auto distances = knowhere::GetDatasetDistance(result);
 
         for (int64_t i = 0; i < nq; i++) {
             if (golden_lims[i+1] != lims[i+1]) {

@@ -120,10 +120,7 @@ IVF::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::Bit
 
         QueryImpl(rows, reinterpret_cast<const float*>(p_data), k, p_dist, p_id, config, bitset);
 
-        auto ret_ds = std::make_shared<Dataset>();
-        ret_ds->Set(meta::IDS, p_id);
-        ret_ds->Set(meta::DISTANCE, p_dist);
-        return ret_ds;
+        return GenResultDataset(p_id, p_dist);
     } catch (faiss::FaissException& e) {
         release_when_exception();
         KNOWHERE_THROW_MSG(e.what());
@@ -162,12 +159,7 @@ IVF::QueryByRange(const DatasetPtr& dataset,
 
     try {
         QueryByRangeImpl(rows, reinterpret_cast<const float*>(p_data), radius, p_dist, p_id, p_lims, config, bitset);
-
-        auto ret_ds = std::make_shared<Dataset>();
-        ret_ds->Set(meta::IDS, p_id);
-        ret_ds->Set(meta::DISTANCE, p_dist);
-        ret_ds->Set(meta::LIMS, p_lims);
-        return ret_ds;
+        return GenResultDataset(p_id, p_dist, p_lims);
     } catch (faiss::FaissException& e) {
         release_when_exception();
         KNOWHERE_THROW_MSG(e.what());

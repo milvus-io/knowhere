@@ -62,8 +62,8 @@ class IVFNMTest : public DataGen,
         const knowhere::DatasetPtr& result,
         const float radius) {
 
-        auto lims = result->Get<size_t*>(knowhere::meta::LIMS);
-        auto distances = result->Get<float*>(knowhere::meta::DISTANCE);
+        auto lims = knowhere::GetDatasetLims(result);
+        auto distances = knowhere::GetDatasetDistance(result);
 
         for (auto i = 0; i < lims[nq]; ++i) {
             ASSERT_TRUE(C::cmp(distances[i], radius));

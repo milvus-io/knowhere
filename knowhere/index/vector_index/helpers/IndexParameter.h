@@ -84,85 +84,85 @@ constexpr MetricType SUPERSTRUCTURE = "SUPERSTRUCTURE";
 }  // namespace metric
 
 ///////////////////////////////////////////////////////////////////////////////
-template<typename T>
+template <typename T>
 T
-GetValueFromConfig(const Config& cfg, const std::string& key) {
-    return cfg.at(key).get<T>();
+GetValueFromConfig(const Config& cfg, const std::string_view& key) {
+    return cfg.at(std::string(key)).get<T>();
 }
 
-template<typename T>
+template <typename T>
 void
-SetValueToConfig(Config& cfg, const std::string& key, const T value) {
-    cfg[key] = value;
+SetValueToConfig(Config& cfg, const std::string_view& key, const T value) {
+    cfg[std::string(key)] = value;
 }
 
-#define DEFINE_GETTER(func_name, key, T)                    \
-inline T func_name(const Config& cfg) {                     \
-    return GetValueFromConfig<T>(cfg, std::string(key));    \
+#define DEFINE_CONFIG_GETTER(func_name, key, T) \
+inline T func_name(const Config& cfg) {         \
+    return GetValueFromConfig<T>(cfg, key);     \
 }
 
-#define DEFINE_SETTER(func_name, key, T1, T2)               \
-inline void func_name(Config& cfg, T1 value) {              \
-    SetValueToConfig<T2>(cfg, std::string(key), T2(value)); \
+#define DEFINE_CONFIG_SETTER(func_name, key, T1, T2)    \
+inline void func_name(Config& cfg, T1 value) {          \
+    SetValueToConfig<T2>(cfg, key, (T2)(value));        \
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // APIs to access meta
 
-DEFINE_GETTER(GetMetaMetricType, meta::METRIC_TYPE, std::string)
-DEFINE_SETTER(SetMetaMetricType, meta::METRIC_TYPE, MetricType , std::string)
+DEFINE_CONFIG_GETTER(GetMetaMetricType, meta::METRIC_TYPE, std::string)
+DEFINE_CONFIG_SETTER(SetMetaMetricType, meta::METRIC_TYPE, MetricType, std::string)
 
-DEFINE_GETTER(GetMetaRows, meta::ROWS, int64_t)
-DEFINE_SETTER(SetMetaRows, meta::ROWS, int64_t, int64_t)
+DEFINE_CONFIG_GETTER(GetMetaRows, meta::ROWS, int64_t)
+DEFINE_CONFIG_SETTER(SetMetaRows, meta::ROWS, int64_t, int64_t)
 
-DEFINE_GETTER(GetMetaDim, meta::DIM, int64_t)
-DEFINE_SETTER(SetMetaDim, meta::DIM, int64_t, int64_t)
+DEFINE_CONFIG_GETTER(GetMetaDim, meta::DIM, int64_t)
+DEFINE_CONFIG_SETTER(SetMetaDim, meta::DIM, int64_t, int64_t)
 
-DEFINE_GETTER(GetMetaTopk, meta::TOPK, int64_t)
-DEFINE_SETTER(SetMetaTopk, meta::TOPK, int64_t, int64_t)
+DEFINE_CONFIG_GETTER(GetMetaTopk, meta::TOPK, int64_t)
+DEFINE_CONFIG_SETTER(SetMetaTopk, meta::TOPK, int64_t, int64_t)
 
-DEFINE_GETTER(GetMetaRadius, meta::RADIUS, float)
-DEFINE_SETTER(SetMetaRadius, meta::RADIUS, float, float)
+DEFINE_CONFIG_GETTER(GetMetaRadius, meta::RADIUS, float)
+DEFINE_CONFIG_SETTER(SetMetaRadius, meta::RADIUS, float, float)
 
-DEFINE_GETTER(GetMetaDeviceID, meta::DEVICE_ID, int64_t)
-DEFINE_SETTER(SetMetaDeviceID, meta::DEVICE_ID, int64_t , int64_t)
+DEFINE_CONFIG_GETTER(GetMetaDeviceID, meta::DEVICE_ID, int64_t)
+DEFINE_CONFIG_SETTER(SetMetaDeviceID, meta::DEVICE_ID, int64_t , int64_t)
 
 ///////////////////////////////////////////////////////////////////////////////
 // APIs to access indexparam
 
-DEFINE_GETTER(GetIndexParamNprobe, indexparam::NPROBE, int64_t)
-DEFINE_SETTER(SetIndexParamNprobe, indexparam::NPROBE, int64_t, int64_t)
+DEFINE_CONFIG_GETTER(GetIndexParamNprobe, indexparam::NPROBE, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamNprobe, indexparam::NPROBE, int64_t, int64_t)
 
-DEFINE_GETTER(GetIndexParamNlist, indexparam::NLIST, int64_t)
-DEFINE_SETTER(SetIndexParamNlist, indexparam::NLIST, int64_t, int64_t)
+DEFINE_CONFIG_GETTER(GetIndexParamNlist, indexparam::NLIST, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamNlist, indexparam::NLIST, int64_t, int64_t)
 
-DEFINE_GETTER(GetIndexParamNbits, indexparam::NBITS, int64_t)
-DEFINE_SETTER(SetIndexParamNbits, indexparam::NBITS, int64_t, int64_t)
+DEFINE_CONFIG_GETTER(GetIndexParamNbits, indexparam::NBITS, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamNbits, indexparam::NBITS, int64_t, int64_t)
 
 // PQ param for IVFPQ
-DEFINE_GETTER(GetIndexParamM, indexparam::M, int64_t)
-DEFINE_SETTER(SetIndexParamM, indexparam::M, int64_t, int64_t)
+DEFINE_CONFIG_GETTER(GetIndexParamM, indexparam::M, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamM, indexparam::M, int64_t, int64_t)
 
 // PQ param for RHNSWPQ
-DEFINE_GETTER(GetIndexParamPQM, indexparam::PQ_M, int64_t)
-DEFINE_SETTER(SetIndexParamPQM, indexparam::PQ_M, int64_t, int64_t)
+DEFINE_CONFIG_GETTER(GetIndexParamPQM, indexparam::PQ_M, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamPQM, indexparam::PQ_M, int64_t, int64_t)
 
 // HNSW Params
-DEFINE_GETTER(GetIndexParamEfConstruction, indexparam::EFCONSTRUCTION, int64_t)
-DEFINE_SETTER(SetIndexParamEfConstruction, indexparam::EFCONSTRUCTION, int64_t, int64_t)
+DEFINE_CONFIG_GETTER(GetIndexParamEfConstruction, indexparam::EFCONSTRUCTION, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamEfConstruction, indexparam::EFCONSTRUCTION, int64_t, int64_t)
 
-DEFINE_GETTER(GetIndexParamHNSWM, indexparam::HNSW_M, int64_t)
-DEFINE_SETTER(SetIndexParamHNSWM, indexparam::HNSW_M, int64_t, int64_t)
+DEFINE_CONFIG_GETTER(GetIndexParamHNSWM, indexparam::HNSW_M, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamHNSWM, indexparam::HNSW_M, int64_t, int64_t)
 
-DEFINE_GETTER(GetIndexParamEf, indexparam::EF, int64_t)
-DEFINE_SETTER(SetIndexParamEf, indexparam::EF, int64_t, int64_t)
+DEFINE_CONFIG_GETTER(GetIndexParamEf, indexparam::EF, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamEf, indexparam::EF, int64_t, int64_t)
 
 // Annoy Params
-DEFINE_GETTER(GetIndexParamNtrees, indexparam::N_TREES, int64_t)
-DEFINE_SETTER(SetIndexParamNtrees, indexparam::N_TREES, int64_t, int64_t)
+DEFINE_CONFIG_GETTER(GetIndexParamNtrees, indexparam::N_TREES, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamNtrees, indexparam::N_TREES, int64_t, int64_t)
 
-DEFINE_GETTER(GetIndexParamSearchK, indexparam::SEARCH_K, int64_t)
-DEFINE_SETTER(SetIndexParamSearchK, indexparam::SEARCH_K, int64_t, int64_t)
+DEFINE_CONFIG_GETTER(GetIndexParamSearchK, indexparam::SEARCH_K, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamSearchK, indexparam::SEARCH_K, int64_t, int64_t)
 
 ///////////////////////////////////////////////////////////////////////////////
 // other

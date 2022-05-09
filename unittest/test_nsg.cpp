@@ -90,9 +90,9 @@ TEST_F(NSGInterfaceTest, basic_test) {
     // Serialize and Load before Query
     knowhere::BinarySet bs = index_->Serialize(search_conf);
 
-    int64_t dim = base_dataset->Get<int64_t>(knowhere::meta::DIM);
-    int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
-    auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
+    int64_t dim = knowhere::GetDatasetDim(base_dataset);
+    int64_t rows = knowhere::GetDatasetRows(base_dataset);
+    auto raw_data = knowhere::GetDatasetTensor(base_dataset);
     knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
     bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
@@ -111,9 +111,9 @@ TEST_F(NSGInterfaceTest, basic_test) {
     // Serialize and Load before Query
     bs = new_index->Serialize(search_conf);
 
-    dim = base_dataset->Get<int64_t>(knowhere::meta::DIM);
-    rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
-    raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
+    dim = knowhere::GetDatasetDim(base_dataset);
+    rows = knowhere::GetDatasetRows(base_dataset);
+    raw_data = knowhere::GetDatasetTensor(base_dataset);
     bptr = std::make_shared<knowhere::Binary>();
     bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
@@ -152,9 +152,9 @@ TEST_F(NSGInterfaceTest, delete_test) {
     // Serialize and Load before Query
     knowhere::BinarySet bs = index_->Serialize(search_conf);
 
-    int64_t dim = base_dataset->Get<int64_t>(knowhere::meta::DIM);
-    int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
-    auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
+    int64_t dim = knowhere::GetDatasetDim(base_dataset);
+    int64_t rows = knowhere::GetDatasetRows(base_dataset);
+    auto raw_data = knowhere::GetDatasetTensor(base_dataset);
     knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
     bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
@@ -164,7 +164,7 @@ TEST_F(NSGInterfaceTest, delete_test) {
 
     auto result = index_->Query(query_dataset, search_conf, nullptr);
     AssertAnns(result, nq, k);
-    auto I_before = result->Get<int64_t*>(knowhere::meta::IDS);
+    auto I_before = GetDatasetIDs(result);
 
     ASSERT_EQ(index_->Count(), nb);
     ASSERT_EQ(index_->Dim(), dim);
@@ -172,9 +172,9 @@ TEST_F(NSGInterfaceTest, delete_test) {
     // Serialize and Load before Query
     bs = index_->Serialize(search_conf);
 
-    dim = base_dataset->Get<int64_t>(knowhere::meta::DIM);
-    rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
-    raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
+    dim = knowhere::GetDatasetDim(base_dataset);
+    rows = knowhere::GetDatasetRows(base_dataset);
+    raw_data = knowhere::GetDatasetTensor(base_dataset);
     bptr = std::make_shared<knowhere::Binary>();
     bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
@@ -186,7 +186,7 @@ TEST_F(NSGInterfaceTest, delete_test) {
     auto result_after = index_->Query(query_dataset, search_conf, *bitset);
 
     AssertAnns(result_after, nq, k, CheckMode::CHECK_NOT_EQUAL);
-    auto I_after = result_after->Get<int64_t*>(knowhere::meta::IDS);
+    auto I_after = GetDatasetIDs(result_after);
 
     // First vector deleted
     for (int i = 0; i < nq; i++) {
@@ -209,9 +209,9 @@ TEST_F(NSGInterfaceTest, slice_test) {
     // Serialize and Load before Query
     knowhere::BinarySet bs = index_->Serialize(search_conf);
 
-    int64_t dim = base_dataset->Get<int64_t>(knowhere::meta::DIM);
-    int64_t rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
-    auto raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
+    int64_t dim = knowhere::GetDatasetDim(base_dataset);
+    int64_t rows = knowhere::GetDatasetRows(base_dataset);
+    auto raw_data = knowhere::GetDatasetTensor(base_dataset);
     knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
     bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
@@ -230,9 +230,9 @@ TEST_F(NSGInterfaceTest, slice_test) {
     // Serialize and Load before Query
     bs = new_index_1->Serialize(search_conf);
 
-    dim = base_dataset->Get<int64_t>(knowhere::meta::DIM);
-    rows = base_dataset->Get<int64_t>(knowhere::meta::ROWS);
-    raw_data = base_dataset->Get<const void*>(knowhere::meta::TENSOR);
+    dim = knowhere::GetDatasetDim(base_dataset);
+    rows = knowhere::GetDatasetRows(base_dataset);
+    raw_data = knowhere::GetDatasetTensor(base_dataset);
     bptr = std::make_shared<knowhere::Binary>();
     bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);

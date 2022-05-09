@@ -67,29 +67,6 @@ TEST_P(AnnoyTest, annoy_basic) {
 
     auto result = index_->Query(query_dataset, conf, nullptr);
     AssertAnns(result, nq, k);
-
-    /*
-     * output result to check by eyes
-    {
-        auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
-        auto dist = result->Get<float*>(knowhere::meta::DISTANCE);
-
-        std::stringstream ss_id;
-        std::stringstream ss_dist;
-        for (auto i = 0; i < nq; i++) {
-            for (auto j = 0; j < k; ++j) {
-                // ss_id << *ids->data()->GetValues<int64_t>(1, i * k + j) << " ";
-                // ss_dist << *dists->data()->GetValues<float>(1, i * k + j) << " ";
-                ss_id << *((int64_t*)(ids) + i * k + j) << " ";
-                ss_dist << *((float*)(dist) + i * k + j) << " ";
-            }
-            ss_id << std::endl;
-            ss_dist << std::endl;
-        }
-        std::cout << "id\n" << ss_id.str() << std::endl;
-        std::cout << "dist\n" << ss_dist.str() << std::endl;
-    }
-    */
 }
 
 TEST_P(AnnoyTest, annoy_delete) {
@@ -104,49 +81,6 @@ TEST_P(AnnoyTest, annoy_delete) {
 
     auto result2 = index_->Query(query_dataset, conf, *bitset);
     AssertAnns(result2, nq, k, CheckMode::CHECK_NOT_EQUAL);
-
-    /*
-     * delete result checked by eyes
-    auto ids1 = result1->Get<int64_t*>(knowhere::meta::IDS);
-    auto ids2 = result2->Get<int64_t*>(knowhere::meta::IDS);
-    std::cout << std::endl;
-    for (int i = 0; i < nq; ++ i) {
-        std::cout << "ids1: ";
-        for (int j = 0; j < k; ++ j) {
-            std::cout << *(ids1 + i * k + j) << " ";
-        }
-        std::cout << " ids2: ";
-        for (int j = 0; j < k; ++ j) {
-            std::cout << *(ids2 + i * k + j) << " ";
-        }
-        std::cout << std::endl;
-        for (int j = 0; j < std::min(5, k>>1); ++ j) {
-            ASSERT_EQ(*(ids1 + i * k + j + 1), *(ids2 + i * k + j));
-        }
-    }
-    */
-    /*
-     * output result to check by eyes
-    {
-        auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
-        auto dist = result->Get<float*>(knowhere::meta::DISTANCE);
-
-        std::stringstream ss_id;
-        std::stringstream ss_dist;
-        for (auto i = 0; i < nq; i++) {
-            for (auto j = 0; j < k; ++j) {
-                // ss_id << *ids->data()->GetValues<int64_t>(1, i * k + j) << " ";
-                // ss_dist << *dists->data()->GetValues<float>(1, i * k + j) << " ";
-                ss_id << *((int64_t*)(ids) + i * k + j) << " ";
-                ss_dist << *((float*)(dist) + i * k + j) << " ";
-            }
-            ss_id << std::endl;
-            ss_dist << std::endl;
-        }
-        std::cout << "id\n" << ss_id.str() << std::endl;
-        std::cout << "dist\n" << ss_dist.str() << std::endl;
-    }
-    */
 }
 
 TEST_P(AnnoyTest, annoy_serialize) {
@@ -161,161 +95,49 @@ TEST_P(AnnoyTest, annoy_serialize) {
         reader(ret, bin->size);
     };
 
-    {
-        // serialize index
-        index_->BuildAll(base_dataset, conf);
-        auto binaryset = index_->Serialize(knowhere::Config());
+    // serialize index
+    index_->BuildAll(base_dataset, conf);
+    auto binaryset = index_->Serialize(knowhere::Config());
 
-        auto bin_data = binaryset.GetByName("annoy_index_data");
-        std::string filename1 = temp_path("/tmp/annoy_test_data_serialize.bin");
-        auto load_data1 = new uint8_t[bin_data->size];
-        serialize(filename1, bin_data, load_data1);
+    auto bin_data = binaryset.GetByName("annoy_index_data");
+    std::string filename1 = temp_path("/tmp/annoy_test_data_serialize.bin");
+    auto load_data1 = new uint8_t[bin_data->size];
+    serialize(filename1, bin_data, load_data1);
 
-        auto bin_metric_type = binaryset.GetByName("annoy_metric_type");
-        std::string filename2 = temp_path("/tmp/annoy_test_metric_type_serialize.bin");
-        auto load_data2 = new uint8_t[bin_metric_type->size];
-        serialize(filename2, bin_metric_type, load_data2);
+    auto bin_metric_type = binaryset.GetByName("annoy_metric_type");
+    std::string filename2 = temp_path("/tmp/annoy_test_metric_type_serialize.bin");
+    auto load_data2 = new uint8_t[bin_metric_type->size];
+    serialize(filename2, bin_metric_type, load_data2);
 
-        auto bin_dim = binaryset.GetByName("annoy_dim");
-        std::string filename3 = temp_path("/tmp/annoy_test_dim_serialize.bin");
-        auto load_data3 = new uint8_t[bin_dim->size];
-        serialize(filename3, bin_dim, load_data3);
+    auto bin_dim = binaryset.GetByName("annoy_dim");
+    std::string filename3 = temp_path("/tmp/annoy_test_dim_serialize.bin");
+    auto load_data3 = new uint8_t[bin_dim->size];
+    serialize(filename3, bin_dim, load_data3);
 
-        binaryset.clear();
-        std::shared_ptr<uint8_t[]> index_data(load_data1);
-        binaryset.Append("annoy_index_data", index_data, bin_data->size);
+    binaryset.clear();
+    std::shared_ptr<uint8_t[]> index_data(load_data1);
+    binaryset.Append("annoy_index_data", index_data, bin_data->size);
 
-        std::shared_ptr<uint8_t[]> metric_data(load_data2);
-        binaryset.Append("annoy_metric_type", metric_data, bin_metric_type->size);
+    std::shared_ptr<uint8_t[]> metric_data(load_data2);
+    binaryset.Append("annoy_metric_type", metric_data, bin_metric_type->size);
 
-        std::shared_ptr<uint8_t[]> dim_data(load_data3);
-        binaryset.Append("annoy_dim", dim_data, bin_dim->size);
+    std::shared_ptr<uint8_t[]> dim_data(load_data3);
+    binaryset.Append("annoy_dim", dim_data, bin_dim->size);
 
-        index_->Load(binaryset);
-        ASSERT_EQ(index_->Count(), nb);
-        ASSERT_EQ(index_->Dim(), dim);
-        auto result = index_->Query(query_dataset, conf, nullptr);
-        AssertAnns(result, nq, knowhere::GetMetaTopk(conf));
-    }
+    index_->Load(binaryset);
+    ASSERT_EQ(index_->Count(), nb);
+    ASSERT_EQ(index_->Dim(), dim);
+    auto result = index_->Query(query_dataset, conf, nullptr);
+    AssertAnns(result, nq, knowhere::GetMetaTopk(conf));
 }
 
 TEST_P(AnnoyTest, annoy_slice) {
-    {
-        // serialize index
-        index_->BuildAll(base_dataset, conf);
-        auto binaryset = index_->Serialize(knowhere::Config());
-        index_->Load(binaryset);
-        ASSERT_EQ(index_->Count(), nb);
-        ASSERT_EQ(index_->Dim(), dim);
-        auto result = index_->Query(query_dataset, conf, nullptr);
-        AssertAnns(result, nq, knowhere::GetMetaTopk(conf));
-    }
+    // serialize index
+    index_->BuildAll(base_dataset, conf);
+    auto binaryset = index_->Serialize(knowhere::Config());
+    index_->Load(binaryset);
+    ASSERT_EQ(index_->Count(), nb);
+    ASSERT_EQ(index_->Dim(), dim);
+    auto result = index_->Query(query_dataset, conf, nullptr);
+    AssertAnns(result, nq, knowhere::GetMetaTopk(conf));
 }
-
-/*
- * faiss style test
- * keep it
-int
-main() {
-    int64_t d = 64;      // dimension
-    int64_t nb = 10000;  // database size
-    int64_t nq = 10;     // 10000;                        // nb of queries
-    faiss::ConcurrentBitsetPtr bitset = std::make_shared<faiss::ConcurrentBitset>(nb);
-
-    int64_t* ids = new int64_t[nb];
-    float* xb = new float[d * nb];
-    float* xq = new float[d * nq];
-
-    for (int i = 0; i < nb; i++) {
-        for (int j = 0; j < d; j++) xb[d * i + j] = (float)drand48();
-        xb[d * i] += i / 1000.;
-        ids[i] = i;
-    }
-    printf("gen xb and ids done! \n");
-
-    //    srand((unsigned)time(nullptr));
-    auto random_seed = (unsigned)time(nullptr);
-    printf("delete ids: \n");
-    for (int i = 0; i < nq; i++) {
-        auto tmp = rand_r(&random_seed) % nb;
-        printf("%d\n", tmp);
-        //        std::cout << "before delete, test result: " << bitset->test(tmp) << std::endl;
-        bitset->set(tmp);
-        //        std::cout << "after delete, test result: " << bitset->test(tmp) << std::endl;
-        for (int j = 0; j < d; j++) xq[d * i + j] = xb[d * tmp + j];
-        //        xq[d * i] += i / 1000.;
-    }
-    printf("\n");
-
-    int k = 4;
-    int n_trees = 5;
-    int search_k = 100;
-    knowhere::IndexAnnoy index;
-    knowhere::DatasetPtr base_dataset = generate_dataset(nb, d, (const void*)xb, ids);
-
-    knowhere::Config base_conf{
-        {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
-        {knowhere::meta::DIM, d},
-        {knowhere::meta::TOPK, k},
-        {knowhere::indexparam::N_TREES, n_trees},
-    };
-    knowhere::DatasetPtr query_dataset = generate_query_dataset(nq, d, (const void*)xq);
-    knowhere::Config query_conf{
-        {knowhere::meta::DIM, d},
-        {knowhere::meta::TOPK, k},
-        {knowhere::indexparam::SEARCH_K, search_k},
-    };
-
-    index.BuildAll(base_dataset, base_conf);
-
-    printf("------------sanity check----------------\n");
-    {  // sanity check
-        auto res = index.Query(query_dataset, query_conf);
-        printf("Query done!\n");
-        const int64_t* I = res->Get<int64_t*>(knowhere::meta::IDS);
-        float* D = res->Get<float*>(knowhere::meta::DISTANCE);
-
-        printf("I=\n");
-        for (int i = 0; i < 5; i++) {
-            for (int j = 0; j < k; j++) printf("%5ld ", I[i * k + j]);
-            printf("\n");
-        }
-
-        printf("D=\n");
-        for (int i = 0; i < 5; i++) {
-            for (int j = 0; j < k; j++) printf("%7g ", D[i * k + j]);
-            printf("\n");
-        }
-    }
-
-    printf("---------------search xq-------------\n");
-    {  // search xq
-        auto res = index.Query(query_dataset, query_conf);
-        const int64_t* I = res->Get<int64_t*>(knowhere::meta::IDS);
-
-        printf("I=\n");
-        for (int i = 0; i < nq; i++) {
-            for (int j = 0; j < k; j++) printf("%5ld ", I[i * k + j]);
-            printf("\n");
-        }
-    }
-
-    printf("----------------search xq with delete------------\n");
-    {  // search xq with delete
-        auto res = index.Query(query_dataset, query_conf, bitset);
-        auto I = res->Get<int64_t*>(knowhere::meta::IDS);
-
-        printf("I=\n");
-        for (int i = 0; i < nq; i++) {
-            for (int j = 0; j < k; j++) printf("%5ld ", I[i * k + j]);
-            printf("\n");
-        }
-    }
-
-    delete[] xb;
-    delete[] xq;
-    delete[] ids;
-
-    return 0;
-}
-*/
