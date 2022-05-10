@@ -13,6 +13,7 @@
 
 #include <faiss/utils/BinaryDistance.h>
 #include "knowhere/common/Exception.h"
+#include "knowhere/index/vector_index/ConfAdapterMgr.h"
 #include "knowhere/index/vector_index/IndexBinaryIDMAP.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #include "unittest/utils.h"
@@ -38,6 +39,7 @@ class BinaryIDMAPTest : public DataGen,
             {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
         };
         index_mode_ = GetParam();
+        index_type_ = knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP;
         index_ = std::make_shared<knowhere::BinaryIDMAP>();
     }
 
@@ -95,6 +97,7 @@ class BinaryIDMAPTest : public DataGen,
     knowhere::Config conf_;
     knowhere::BinaryIDMAPPtr index_ = nullptr;
     knowhere::IndexMode index_mode_;
+    knowhere::IndexType index_type_;
 };
 
 INSTANTIATE_TEST_CASE_P(
@@ -121,6 +124,10 @@ TEST_P(BinaryIDMAPTest, binaryidmap_basic) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
     ASSERT_TRUE(index_->GetRawVectors() != nullptr);
+
+    auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
+    ASSERT_TRUE(adapter->CheckSearch(conf_, index_type_, index_mode_));
+
     auto result = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result, nq, k);
     // PrintResult(result, nq, k);

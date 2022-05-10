@@ -15,6 +15,7 @@
 
 #include "knowhere/common/Config.h"
 #include "knowhere/common/Exception.h"
+#include "knowhere/index/vector_index/ConfAdapterMgr.h"
 #include "knowhere/index/vector_index/IndexHNSW.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
@@ -28,8 +29,6 @@ class HNSWTest : public DataGen, public TestWithParam<std::string> {
  protected:
     void
     SetUp() override {
-        IndexType = GetParam();
-        std::cout << "IndexType from GetParam() is: " << IndexType << std::endl;
         Generate(64, 10000, 10);  // dim = 64, nb = 10000, nq = 10
         index_ = std::make_shared<knowhere::IndexHNSW>();
         conf = knowhere::Config{
@@ -41,8 +40,9 @@ class HNSWTest : public DataGen, public TestWithParam<std::string> {
 
  protected:
     knowhere::Config conf;
+    knowhere::IndexMode index_mode_ = knowhere::IndexMode::MODE_CPU;
+    knowhere::IndexType index_type_ = knowhere::IndexEnum::INDEX_HNSW;
     std::shared_ptr<knowhere::IndexHNSW> index_ = nullptr;
-    std::string IndexType;
 };
 
 INSTANTIATE_TEST_CASE_P(HNSWParameters, HNSWTest, Values("HNSW"));
@@ -78,6 +78,9 @@ TEST_P(HNSWTest, HNSW_basic) {
     bs.Append(RAW_DATA, bptr);
 
     index_->Load(bs);
+
+    auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
+    ASSERT_TRUE(adapter->CheckSearch(conf, index_type_, index_mode_));
 
     auto result = index_->Query(query_dataset, conf, nullptr);
     AssertAnns(result, nq, k);
