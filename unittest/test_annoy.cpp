@@ -10,13 +10,11 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <gtest/gtest.h>
-#include "knowhere/index/vector_index/helpers/IndexParameter.h"
-#include <iostream>
-#include <sstream>
 
 #include "knowhere/common/Exception.h"
+#include "knowhere/index/vector_index/ConfAdapterMgr.h"
 #include "knowhere/index/vector_index/IndexAnnoy.h"
-
+#include "knowhere/index/vector_index/helpers/IndexParameter.h"
 #include "unittest/utils.h"
 
 using ::testing::Combine;
@@ -27,7 +25,6 @@ class AnnoyTest : public DataGen, public TestWithParam<std::string> {
  protected:
     void
     SetUp() override {
-        IndexType = GetParam();
         Generate(128, 10000, 10);
         index_ = std::make_shared<knowhere::IndexAnnoy>();
         conf = knowhere::Config{
@@ -42,8 +39,9 @@ class AnnoyTest : public DataGen, public TestWithParam<std::string> {
 
  protected:
     knowhere::Config conf;
+    knowhere::IndexMode index_mode_ = knowhere::IndexMode::MODE_CPU;
+    knowhere::IndexType index_type_ = knowhere::IndexEnum::INDEX_ANNOY;
     std::shared_ptr<knowhere::IndexAnnoy> index_ = nullptr;
-    std::string IndexType;
 };
 
 INSTANTIATE_TEST_CASE_P(AnnoyParameters, AnnoyTest, Values("Annoy"));
@@ -64,6 +62,9 @@ TEST_P(AnnoyTest, annoy_basic) {
     index_->BuildAll(base_dataset, conf);  // Train + AddWithoutIds
     ASSERT_EQ(index_->Count(), nb);
     ASSERT_EQ(index_->Dim(), dim);
+
+    auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
+    ASSERT_TRUE(adapter->CheckSearch(conf, index_type_, index_mode_));
 
     auto result = index_->Query(query_dataset, conf, nullptr);
     AssertAnns(result, nq, k);

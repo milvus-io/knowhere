@@ -20,6 +20,7 @@
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/IndexType.h"
 #include "knowhere/index/VecIndexFactory.h"
+#include "knowhere/index/vector_index/ConfAdapterMgr.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 
 #ifdef KNOWHERE_GPU_VERSION
@@ -101,6 +102,9 @@ TEST_P(IVFTest, ivf_basic) {
     index_->BuildAll(base_dataset, conf_);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
+
+    auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
+    ASSERT_TRUE(adapter->CheckSearch(conf_, index_type_, index_mode_));
 
     auto result = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result, nq, k);

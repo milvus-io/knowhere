@@ -16,6 +16,7 @@
 
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/IndexType.h"
+#include "knowhere/index/vector_index/ConfAdapterMgr.h"
 #include "knowhere/index/vector_index/IndexIDMAP.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #ifdef KNOWHERE_GPU_VERSION
@@ -42,6 +43,7 @@ class IDMAPTest : public DataGen, public TestWithParam<knowhere::IndexMode> {
         knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
 #endif
         index_mode_ = GetParam();
+        index_type_ = knowhere::IndexEnum::INDEX_FAISS_IDMAP;
         index_ = std::make_shared<knowhere::IDMAP>();
     }
 
@@ -143,6 +145,7 @@ class IDMAPTest : public DataGen, public TestWithParam<knowhere::IndexMode> {
  protected:
     knowhere::IDMAPPtr index_ = nullptr;
     knowhere::IndexMode index_mode_;
+    knowhere::IndexType index_type_;
 };
 
 INSTANTIATE_TEST_CASE_P(
@@ -176,6 +179,10 @@ TEST_P(IDMAPTest, idmap_basic) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
     ASSERT_TRUE(index_->GetRawVectors() != nullptr);
+
+    auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
+    ASSERT_TRUE(adapter->CheckSearch(conf, index_type_, index_mode_));
+
     auto result = index_->Query(query_dataset, conf, nullptr);
     AssertAnns(result, nq, k);
     // PrintResult(result, nq, k);
