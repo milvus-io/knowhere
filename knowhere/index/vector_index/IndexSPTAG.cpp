@@ -180,7 +180,7 @@ DatasetPtr
 CPUSPTAGRNG::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::BitsetView bitset) {
     SetParameters(config);
 
-    float* p_data = (float*)dataset_ptr->Get<const void*>(meta::TENSOR);
+    float* p_data = (float*)GetDatasetTensor(dataset_ptr);
     for (auto i = 0; i < 10; ++i) {
         for (auto j = 0; j < 10; ++j) {
             std::cout << p_data[i * 10 + j] << " ";

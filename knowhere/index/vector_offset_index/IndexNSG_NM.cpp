@@ -90,12 +90,7 @@ NSG_NM::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::
         s_params.k = GetMetaTopk(config);
         index_->Search(reinterpret_cast<const float*>(p_data), reinterpret_cast<float*>(data_.get()), rows, dim, topK,
                        p_dist, p_id, s_params, bitset);
-        MapOffsetToUid(p_id, static_cast<size_t>(elems));
-
-        auto ret_ds = std::make_shared<Dataset>();
-        ret_ds->Set(meta::IDS, p_id);
-        ret_ds->Set(meta::DISTANCE, p_dist);
-        return ret_ds;
+        return GenResultDataset(p_id, p_dist);
     } catch (std::exception& e) {
         KNOWHERE_THROW_MSG(e.what());
     }

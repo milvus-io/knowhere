@@ -16,7 +16,7 @@ namespace knowhere {
 
 std::shared_ptr<SPTAG::MetadataSet>
 ConvertToMetadataSet(const DatasetPtr& dataset_ptr) {
-    auto elems = dataset_ptr->Get<int64_t>(meta::ROWS);
+    auto elems = GetDatasetRows(dataset_ptr);
 
     auto p_id = new int64_t[elems];
     for (int64_t i = 0; i < elems; ++i) p_id[i] = i;
@@ -81,10 +81,7 @@ ConvertToDataset(std::vector<SPTAG::QueryResult> query_results, std::shared_ptr<
         }
     }
 
-    auto ret_ds = std::make_shared<Dataset>();
-    ret_ds->Set(meta::IDS, p_id);
-    ret_ds->Set(meta::DISTANCE, p_dist);
-    return ret_ds;
+    return GenResultDataset(p_id, p_dist);
 }
 
 }  // namespace knowhere

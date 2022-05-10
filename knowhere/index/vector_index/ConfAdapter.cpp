@@ -50,8 +50,11 @@ static const std::vector<MetricType> default_binary_metric_array{metric::HAMMING
 template<typename T>
 inline bool
 CheckValueInRange(const Config& cfg, const std::string_view& key, T min, T max) {
-    T value = GetValueFromConfig<T>(cfg, std::string(key));
-    return (value >= min && value <= max);
+    if (cfg.contains(std::string(key))) {
+        T value = GetValueFromConfig<T>(cfg, key);
+        return (value >= min && value <= max);
+    }
+    return false;
 }
 
 inline bool

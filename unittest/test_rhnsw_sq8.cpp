@@ -83,27 +83,6 @@ TEST_P(RHNSWSQ8Test, HNSW_delete) {
 
     auto result2 = index_->Query(query_dataset, conf, *bitset);
     //    AssertAnns(result2, nq, k, CheckMode::CHECK_NOT_EQUAL);
-
-    /*
-     * delete result checked by eyes
-    auto ids1 = result1->Get<int64_t*>(knowhere::meta::IDS);
-    auto ids2 = result2->Get<int64_t*>(knowhere::meta::IDS);
-    std::cout << std::endl;
-    for (int i = 0; i < nq; ++ i) {
-        std::cout << "ids1: ";
-        for (int j = 0; j < k; ++ j) {
-            std::cout << *(ids1 + i * k + j) << " ";
-        }
-        std::cout << "ids2: ";
-        for (int j = 0; j < k; ++ j) {
-            std::cout << *(ids2 + i * k + j) << " ";
-        }
-        std::cout << std::endl;
-        for (int j = 0; j < std::min(5, k>>1); ++ j) {
-            ASSERT_EQ(*(ids1 + i * k + j + 1), *(ids2 + i * k + j));
-        }
-    }
-    */
 }
 
 TEST_P(RHNSWSQ8Test, HNSW_serialize) {

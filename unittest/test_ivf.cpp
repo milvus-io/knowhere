@@ -65,8 +65,8 @@ class IVFTest : public DataGen,
         const knowhere::DatasetPtr& result,
         const float radius) {
 
-        auto lims = result->Get<size_t*>(knowhere::meta::LIMS);
-        auto distances = result->Get<float*>(knowhere::meta::DISTANCE);
+        auto lims = knowhere::GetDatasetLims(result);
+        auto distances = knowhere::GetDatasetDistance(result);
 
         for (auto i = 0; i < lims[nq]; ++i) {
             ASSERT_TRUE(C::cmp(distances[i], radius));
@@ -218,8 +218,8 @@ TEST_P(IVFTest, clone_test) {
     // PrintResult(result, nq, k);
 
     auto AssertEqual = [&](knowhere::DatasetPtr p1, knowhere::DatasetPtr p2) {
-        auto ids_p1 = p1->Get<int64_t*>(knowhere::meta::IDS);
-        auto ids_p2 = p2->Get<int64_t*>(knowhere::meta::IDS);
+        auto ids_p1 = knowhere::GetDatasetIDs(p1);
+        auto ids_p2 = knowhere::GetDatasetIDs(p2);
 
         for (int i = 0; i < nq * k; ++i) {
             EXPECT_EQ(*((int64_t*)(ids_p2) + i), *((int64_t*)(ids_p1) + i));

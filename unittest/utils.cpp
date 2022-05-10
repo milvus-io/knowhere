@@ -129,7 +129,7 @@ GenBase(const int64_t dim,
 
 void
 AssertAnns(const knowhere::DatasetPtr& result, const int nq, const int k, const CheckMode check_mode) {
-    auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
+    auto ids = knowhere::GetDatasetIDs(result);
     for (auto i = 0; i < nq; i++) {
         switch (check_mode) {
             case CheckMode::CHECK_EQUAL:
@@ -149,9 +149,9 @@ AssertAnns(const knowhere::DatasetPtr& result, const int nq, const int k, const 
 void
 AssertVec(const knowhere::DatasetPtr& result, const knowhere::DatasetPtr& base_dataset,
           const knowhere::DatasetPtr& id_dataset, const int n, const int dim, const CheckMode check_mode) {
-    float* base = (float*)base_dataset->Get<const void*>(knowhere::meta::TENSOR);
-    auto ids = id_dataset->Get<const int64_t*>(knowhere::meta::IDS);
-    auto x = result->Get<float*>(knowhere::meta::TENSOR);
+    float* base = (float*)knowhere::GetDatasetTensor(base_dataset);
+    auto ids = knowhere::GetDatasetIDs(id_dataset);
+    auto x = (float*)knowhere::GetDatasetTensor(result);
     for (auto i = 0; i < n; i++) {
         auto id = ids[i];
         for (auto j = 0; j < dim; j++) {
@@ -181,9 +181,9 @@ AssertVec(const knowhere::DatasetPtr& result, const knowhere::DatasetPtr& base_d
 void
 AssertBinVec(const knowhere::DatasetPtr& result, const knowhere::DatasetPtr& base_dataset,
              const knowhere::DatasetPtr& id_dataset, const int n, const int dim, const CheckMode check_mode) {
-    auto base = (uint8_t*)base_dataset->Get<const void*>(knowhere::meta::TENSOR);
-    auto ids = id_dataset->Get<const int64_t*>(knowhere::meta::IDS);
-    auto x = result->Get<float*>(knowhere::meta::TENSOR);
+    auto base = (uint8_t*)knowhere::GetDatasetTensor(base_dataset);
+    auto ids = knowhere::GetDatasetIDs(id_dataset;
+    auto x = (float*)knowhere::GetDatasetTensor(result);
     for (auto i = 0; i < 1; i++) {
         auto id = ids[i];
         for (auto j = 0; j < dim; j++) {
@@ -195,8 +195,8 @@ AssertBinVec(const knowhere::DatasetPtr& result, const knowhere::DatasetPtr& bas
 
 void
 PrintResult(const knowhere::DatasetPtr& result, const int& nq, const int& k) {
-    auto ids = result->Get<int64_t*>(knowhere::meta::IDS);
-    auto dist = result->Get<float*>(knowhere::meta::DISTANCE);
+    auto ids = knowhere::GetDatasetIDs(result);
+    auto dist = knowhere::GetDatasetDistance(result);
 
     std::stringstream ss_id;
     std::stringstream ss_dist;
@@ -212,15 +212,6 @@ PrintResult(const knowhere::DatasetPtr& result, const int& nq, const int& k) {
     }
     std::cout << "id\n" << ss_id.str() << std::endl;
     std::cout << "dist\n" << ss_dist.str() << std::endl;
-}
-
-void
-ReleaseQueryResult(const knowhere::DatasetPtr& result) {
-    float* res_dist = result->Get<float*>(knowhere::meta::DISTANCE);
-    free(res_dist);
-
-    int64_t* res_ids = result->Get<int64_t*>(knowhere::meta::IDS);
-    free(res_ids);
 }
 
 // not used

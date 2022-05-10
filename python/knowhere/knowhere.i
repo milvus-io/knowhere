@@ -82,19 +82,19 @@ DOWNCAST ( IndexAnnoy )
 
 
 knowhere::DatasetPtr ArrayToDataSet( float* xb,int nb, int dim){
- return knowhere::GenDataset(nb, dim, xb);
+    return knowhere::GenDataset(nb, dim, xb);
 };
 
 void DumpResultDataSet(knowhere::DatasetPtr result, float *dis, int nq_1, int k_1, 
-                    int *ids,int nq_2, int k_2){
- auto ids_ = result->Get<int64_t*>(knowhere::meta::IDS);
- auto dist_ = result->Get<float*>(knowhere::meta::DISTANCE);
- assert(nq_1==nq_2);
- assert(k_1==k_2);
- for (int i = 0; i < nq_1; i++) {
-    for (int j = 0; j < k_1; ++j) {
-    *(ids+i*k_1+j) = *((int64_t*)(ids_) + i * k_1 + j);
-    *(dis+i*k_1+j) = *((float*)(dist_) + i * k_1 + j);
+                       int *ids,int nq_2, int k_2){
+    auto ids_ = knowhere::GetDatasetIDs(result);
+    auto dist_ = knowhere::GetDatasetDistance(result);
+    assert(nq_1==nq_2);
+    assert(k_1==k_2);
+    for (int i = 0; i < nq_1; i++) {
+        for (int j = 0; j < k_1; ++j) {
+            *(ids+i*k_1+j) = *((int64_t*)(ids_) + i * k_1 + j);
+            *(dis+i*k_1+j) = *((float*)(dist_) + i * k_1 + j);
         }
     }
 }
@@ -104,11 +104,11 @@ knowhere::Config CreateConfig(std::string str){
 }
 
 faiss::BitsetView EmptyBitSetView(){
-return faiss::BitsetView(nullptr);
+    return faiss::BitsetView(nullptr);
 };
 
 faiss::BitsetView ArrayToBitsetView(uint8_t *block, int size){
-return faiss::BitsetView(block, size);
+    return faiss::BitsetView(block, size);
 }
 %}
 
