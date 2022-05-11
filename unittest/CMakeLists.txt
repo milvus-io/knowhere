@@ -58,9 +58,7 @@ set(ALL_INDEXING_SRCS
         test_ivf.cpp
         test_ivf_nm.cpp
         test_ivf_hnsw.cpp
-        test_rhnsw_flat.cpp
-        test_rhnsw_pq.cpp
-        test_rhnsw_sq8.cpp
+        test_rhnsw.cpp
         )
 
 if ( LINUX OR MSYS )
