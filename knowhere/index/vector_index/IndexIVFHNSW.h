@@ -40,8 +40,8 @@ class IVFHNSW : public IVF {
     VecIndexPtr
     CopyCpuToGpu(const int64_t, const Config&) override;
 
-    void
-    UpdateIndexSize() override;
+    int64_t
+    Size() override;
 
  protected:
     void

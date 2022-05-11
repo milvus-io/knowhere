@@ -67,6 +67,7 @@ TEST_P(NGTONNGTest, ngtonng_basic) {
     index_->BuildAll(base_dataset, conf);  // Train + Add
     ASSERT_EQ(index_->Count(), nb);
     ASSERT_EQ(index_->Dim(), dim);
+    ASSERT_GT(index_->Size(), 0);
 
     auto result = index_->Query(query_dataset, conf, nullptr);
     AssertAnns(result, nq, k);

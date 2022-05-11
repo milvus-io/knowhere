@@ -25,7 +25,6 @@ namespace knowhere::cloner {
 
 void
 CopyIndexData(const VecIndexPtr& dst_index, const VecIndexPtr& src_index) {
-    dst_index->SetIndexSize(src_index->IndexSize());
 }
 
 VecIndexPtr

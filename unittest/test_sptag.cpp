@@ -66,6 +66,7 @@ TEST_P(SPTAGTest, sptag_basic) {
     ASSERT_ANY_THROW(index_->AddWithoutIds(nullptr, conf));
 
     index_->BuildAll(base_dataset, conf);
+    ASSERT_GT(index_->Size(), 0);
     // index_->Add(base_dataset, conf);
     auto result = index_->Query(query_dataset, conf, nullptr);
     AssertAnns(result, nq, k);

@@ -193,8 +193,8 @@ IVF::Seal() {
     SealImpl();
 }
 
-void
-IVF::UpdateIndexSize() {
+int64_t
+IVF::Size() {
     if (!index_) {
         KNOWHERE_THROW_MSG("index not initialize");
     }
@@ -203,7 +203,7 @@ IVF::UpdateIndexSize() {
     auto nlist = ivf_index->nlist;
     auto code_size = ivf_index->code_size;
     // ivf codes, ivf ids and quantizer
-    index_size_ = nb * code_size + nb * sizeof(int64_t) + nlist * code_size;
+    return (nb * code_size + nb * sizeof(int64_t) + nlist * code_size);
 }
 
 VecIndexPtr

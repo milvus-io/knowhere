@@ -102,6 +102,7 @@ TEST_P(IVFTest, ivf_basic) {
     index_->BuildAll(base_dataset, conf_);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
+    ASSERT_GT(index_->Size(), 0);
 
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
     ASSERT_TRUE(adapter->CheckSearch(conf_, index_type_, index_mode_));
@@ -214,9 +215,6 @@ TEST_P(IVFTest, clone_test) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
-    /* set peseodo index size, avoid throw exception */
-    index_->SetIndexSize(nq * dim * sizeof(float));
-
     auto result = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
     // PrintResult(result, nq, k);
@@ -281,9 +279,6 @@ TEST_P(IVFTest, gpu_seal_test) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
-    /* set peseodo index size, avoid throw exception */
-    index_->SetIndexSize(nq * dim * sizeof(float));
-
     auto result = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
     ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
@@ -315,7 +310,6 @@ TEST_P(IVFTest, invalid_gpu_source) {
 
     // if (index_type_ == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
     //     null faiss index
-    //     index_->SetIndexSize(0);
     //     knowhere::cloner::CopyGpuToCpu(index_, knowhere::Config());
     // }
 
@@ -339,7 +333,6 @@ TEST_P(IVFTest, IVFSQHybrid_test) {
         return;
     }
 
-    index_->SetIndexSize(0);
     knowhere::cloner::CopyGpuToCpu(index_, conf_);
     ASSERT_ANY_THROW(knowhere::cloner::CopyCpuToGpu(index_, -1, conf_));
     ASSERT_ANY_THROW(index_->Train(base_dataset, conf_));

@@ -78,8 +78,8 @@ class IVFSQHybrid : public GPUIVFSQ {
     void
     UnsetQuantizer();
 
-    void
-    UpdateIndexSize() override;
+    int64_t
+    Size() override;
 
  protected:
     BinarySet

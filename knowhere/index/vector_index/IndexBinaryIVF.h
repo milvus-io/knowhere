@@ -59,8 +59,8 @@ class BinaryIVF : public VecIndex, public FaissBaseBinaryIndex {
     int64_t
     Dim() override;
 
-    void
-    UpdateIndexSize() override;
+    int64_t
+    Size() override;
 
 #if 0
     StatisticsPtr

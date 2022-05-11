@@ -62,6 +62,7 @@ TEST_P(AnnoyTest, annoy_basic) {
     index_->BuildAll(base_dataset, conf);  // Train + AddWithoutIds
     ASSERT_EQ(index_->Count(), nb);
     ASSERT_EQ(index_->Dim(), dim);
+    ASSERT_GT(index_->Size(), 0);
 
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
     ASSERT_TRUE(adapter->CheckSearch(conf, index_type_, index_mode_));

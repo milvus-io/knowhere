@@ -61,8 +61,8 @@ class NSG_NM : public VecIndex {
     int64_t
     Dim() override;
 
-    void
-    UpdateIndexSize() override;
+    int64_t
+    Size() override;
 
  private:
     int64_t gpu_;

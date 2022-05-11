@@ -80,8 +80,8 @@ IVFPQ::GenParams(const Config& config) {
     return params;
 }
 
-void
-IVFPQ::UpdateIndexSize() {
+int64_t
+IVFPQ::Size() {
     if (!index_) {
         KNOWHERE_THROW_MSG("index not initialize");
     }
@@ -102,7 +102,7 @@ IVFPQ::UpdateIndexSize() {
         precomputed_table = 0;
     }
 #endif
-    index_size_ = capacity + centroid_table + precomputed_table;
+    return (capacity + centroid_table + precomputed_table);
 }
 
 }  // namespace knowhere

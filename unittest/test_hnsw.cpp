@@ -65,6 +65,7 @@ TEST_P(HNSWTest, HNSW_basic) {
     index_->AddWithoutIds(base_dataset, conf);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
+    ASSERT_GT(index_->Size(), 0);
 
     // Serialize and Load before Query
     knowhere::BinarySet bs = index_->Serialize(conf);

@@ -164,12 +164,12 @@ NSG_NM::Dim() {
     return index_->dimension;
 }
 
-void
-NSG_NM::UpdateIndexSize() {
+int64_t
+NSG_NM::Size() {
     if (!index_) {
         KNOWHERE_THROW_MSG("index not initialize");
     }
-    index_size_ = index_->GetSize() + Dim() * Count() * sizeof(float);
+    return (index_->GetSize() + Dim() * Count() * sizeof(float));
 }
 
 }  // namespace knowhere

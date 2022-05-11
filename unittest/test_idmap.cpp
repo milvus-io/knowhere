@@ -179,6 +179,7 @@ TEST_P(IDMAPTest, idmap_basic) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
     ASSERT_TRUE(index_->GetRawVectors() != nullptr);
+    ASSERT_GT(index_->Size(), 0);
 
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
     ASSERT_TRUE(adapter->CheckSearch(conf, index_type_, index_mode_));

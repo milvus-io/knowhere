@@ -111,8 +111,7 @@ TEST_P(IVFNMTest, ivfnm_basic) {
     index_->AddWithoutIds(base_dataset, conf_);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
-
-    index_->SetIndexSize(nq * dim * sizeof(float));
+    ASSERT_GT(index_->Size(), 0);
 
     LoadRawData(index_, base_dataset, conf_);
 
@@ -159,7 +158,6 @@ TEST_P(IVFNMTest, ivfnm_range_search_l2) {
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
-    index_->SetIndexSize(nq * dim * sizeof(float));
 
     LoadRawData(index_, base_dataset, conf_);
 
@@ -182,7 +180,6 @@ TEST_P(IVFNMTest, ivfnm_range_search_ip) {
 
     index_->Train(base_dataset, conf_);
     index_->AddWithoutIds(base_dataset, knowhere::Config());
-    index_->SetIndexSize(nq * dim * sizeof(float));
 
     LoadRawData(index_, base_dataset, conf_);
 

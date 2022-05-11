@@ -36,8 +36,8 @@ class IVFPQ : public IVF {
     VecIndexPtr
     CopyCpuToGpu(const int64_t, const Config&) override;
 
-    void
-    UpdateIndexSize() override;
+    int64_t
+    Size() override;
 
  protected:
     std::shared_ptr<faiss::IVFSearchParameters>

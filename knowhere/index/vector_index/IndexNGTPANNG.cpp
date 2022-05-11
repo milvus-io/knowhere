@@ -125,12 +125,12 @@ IndexNGTPANNG::BuildAll(const DatasetPtr& dataset_ptr, const Config& config) {
     */
 }
 
-void
-IndexNGTPANNG::UpdateIndexSize() {
+int64_t
+IndexNGTPANNG::Size() {
     if (!index_) {
         KNOWHERE_THROW_MSG("index not initialize");
     }
-    index_size_ = index_->memSize();
+    return index_->memSize();
 }
 
 }  // namespace knowhere

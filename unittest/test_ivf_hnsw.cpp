@@ -71,6 +71,7 @@ TEST_P(IVFHNSWTest, ivfhnsw_basic_cpu) {
     index_->AddWithoutIds(base_dataset, conf_);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
+    ASSERT_GT(index_->Size(), 0);
 
     auto result = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result, nq, k);

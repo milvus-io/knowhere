@@ -88,6 +88,7 @@ TEST_P(BinaryIVFTest, binaryivf_basic) {
     index_->BuildAll(base_dataset, conf_);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
+    ASSERT_GT(index_->Size(), 0);
 
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
     ASSERT_TRUE(adapter->CheckSearch(conf_, index_type_, index_mode_));
