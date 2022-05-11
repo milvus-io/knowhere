@@ -76,32 +76,9 @@ class VecIndex : public Index {
         return index_mode_;
     }
 
-    virtual int64_t
-    IndexSize() {
-        if (index_size_ == -1) {
-            KNOWHERE_THROW_MSG("Index size not set");
-        }
-        return index_size_;
-    }
-
-    void
-    SetIndexSize(int64_t size) {
-        index_size_ = size;
-    }
-
-    virtual void
-    UpdateIndexSize() {
-    }
-
-    int64_t
-    Size() override {
-        return IndexSize();
-    }
-
  protected:
     IndexType index_type_ = "";
     IndexMode index_mode_ = IndexMode::MODE_CPU;
-    int64_t index_size_ = -1;
     StatisticsPtr stats = nullptr;
 };
 

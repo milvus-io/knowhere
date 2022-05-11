@@ -56,8 +56,8 @@ class IndexNGT : public VecIndex {
     int64_t
     Dim() override;
 
-    void
-    UpdateIndexSize() override;
+    int64_t
+    Size() override;
 
  protected:
     std::shared_ptr<NGT::Index> index_ = nullptr;

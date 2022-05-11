@@ -94,8 +94,8 @@ IVFHNSW::CopyCpuToGpu(const int64_t device_id, const Config& config) {
     KNOWHERE_THROW_MSG("IVFHNSW::CopyCpuToGpu not supported.");
 }
 
-void
-IVFHNSW::UpdateIndexSize() {
+int64_t
+IVFHNSW::Size() {
     if (!index_) {
         KNOWHERE_THROW_MSG("index not initialize");
     }
@@ -104,7 +104,7 @@ IVFHNSW::UpdateIndexSize() {
     auto code_size = ivf_index->code_size;
     auto hnsw_quantizer = dynamic_cast<faiss::IndexRHNSWFlat*>(ivf_index->quantizer);
     // ivf codes, ivf ids and hnsw_flat quantizer
-    index_size_ = nb * code_size + nb * sizeof(int64_t) + hnsw_quantizer->cal_size();
+    return (nb * code_size + nb * sizeof(int64_t) + hnsw_quantizer->cal_size());
 }
 
 void

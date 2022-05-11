@@ -205,9 +205,9 @@ IndexNGT::Dim() {
     return index_->getDimension();
 }
 
-void
-IndexNGT::UpdateIndexSize() {
-    KNOWHERE_THROW_MSG("IndexNGT has no implementation of UpdateIndexSize, please use IndexNGT(PANNG/ONNG) instead!");
+int64_t
+IndexNGT::Size() {
+    KNOWHERE_THROW_MSG("IndexNGT has no implementation of Size, please use IndexNGT(PANNG/ONNG) instead!");
 }
 
 }  // namespace knowhere

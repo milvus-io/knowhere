@@ -95,12 +95,12 @@ IndexRHNSWSQ::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     }
 }
 
-void
-IndexRHNSWSQ::UpdateIndexSize() {
+int64_t
+IndexRHNSWSQ::Size() {
     if (!index_) {
         KNOWHERE_THROW_MSG("index not initialize");
     }
-    index_size_ = dynamic_cast<faiss::IndexRHNSWSQ*>(index_.get())->cal_size();
+    return dynamic_cast<faiss::IndexRHNSWSQ*>(index_.get())->cal_size();
 }
 
 }  // namespace knowhere

@@ -142,8 +142,8 @@ BinaryIVF::Dim() {
     return index_->d;
 }
 
-void
-BinaryIVF::UpdateIndexSize() {
+int64_t
+BinaryIVF::Size() {
     if (!index_) {
         KNOWHERE_THROW_MSG("index not initialize");
     }
@@ -153,7 +153,7 @@ BinaryIVF::UpdateIndexSize() {
     auto code_size = bin_ivf_index->code_size;
 
     // binary ivf codes, ids and quantizer
-    index_size_ = nb * code_size + nb * sizeof(int64_t) + nlist * code_size;
+    return (nb * code_size + nb * sizeof(int64_t) + nlist * code_size);
 }
 
 #if 0

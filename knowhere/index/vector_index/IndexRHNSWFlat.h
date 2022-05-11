@@ -42,8 +42,8 @@ class IndexRHNSWFlat : public IndexRHNSW {
     void
     Train(const DatasetPtr& dataset_ptr, const Config& config) override;
 
-    void
-    UpdateIndexSize() override;
+    int64_t
+    Size() override;
 };
 
 }  // namespace knowhere

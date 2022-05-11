@@ -58,8 +58,8 @@ class IndexRHNSW : public VecIndex, public FaissBaseIndex {
     int64_t
     Dim() override;
 
-    void
-    UpdateIndexSize() override;
+    int64_t
+    Size() override;
 
 #if 0
     StatisticsPtr

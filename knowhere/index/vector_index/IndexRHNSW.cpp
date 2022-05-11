@@ -184,10 +184,9 @@ IndexRHNSW::ClearStatistics() {
 }
 #endif
 
-void
-IndexRHNSW::UpdateIndexSize() {
-    KNOWHERE_THROW_MSG(
-        "IndexRHNSW has no implementation of UpdateIndexSize, please use IndexRHNSW(Flat/SQ/PQ) instead!");
+int64_t
+IndexRHNSW::Size() {
+    KNOWHERE_THROW_MSG("IndexRHNSW has no implementation of Size, please use IndexRHNSW(Flat/SQ/PQ) instead!");
 }
 
 /*

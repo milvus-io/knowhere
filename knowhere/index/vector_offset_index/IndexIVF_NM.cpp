@@ -396,8 +396,8 @@ IVF_NM::Dim() {
     return index_->d;
 }
 
-void
-IVF_NM::UpdateIndexSize() {
+int64_t
+IVF_NM::Size() {
     if (!index_) {
         KNOWHERE_THROW_MSG("index not initialize");
     }
@@ -405,8 +405,8 @@ IVF_NM::UpdateIndexSize() {
     auto nb = ivf_index->invlists->compute_ntotal();
     auto nlist = ivf_index->nlist;
     auto code_size = ivf_index->code_size;
-    // ivf codes, ivf ids and quantizer
-    index_size_ = nb * code_size + nb * sizeof(int64_t) + nlist * code_size;
+    // ivf ids and quantizer
+    return (nb * sizeof(int64_t) + nlist * code_size);
 }
 
 #if 0

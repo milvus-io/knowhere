@@ -63,8 +63,8 @@ IVFSQ::CopyCpuToGpu(const int64_t device_id, const Config& config) {
 #endif
 }
 
-void
-IVFSQ::UpdateIndexSize() {
+int64_t
+IVFSQ::Size() {
     if (!index_) {
         KNOWHERE_THROW_MSG("index not initialize");
     }
@@ -74,7 +74,7 @@ IVFSQ::UpdateIndexSize() {
     auto nlist = ivfsq_index->nlist;
     auto d = ivfsq_index->d;
     // ivf codes, ivf ids, sq trained vectors and quantizer
-    index_size_ = nb * code_size + nb * sizeof(int64_t) + 2 * d * sizeof(float) + nlist * d * sizeof(float);
+    return (nb * code_size + nb * sizeof(int64_t) + 2 * d * sizeof(float) + nlist * d * sizeof(float));
 }
 
 }  // namespace knowhere

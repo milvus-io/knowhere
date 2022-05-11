@@ -58,8 +58,8 @@ class IndexAnnoy : public VecIndex {
     int64_t
     Dim() override;
 
-    void
-    UpdateIndexSize() override;
+    int64_t
+    Size() override;
 
  private:
     std::string metric_type_;

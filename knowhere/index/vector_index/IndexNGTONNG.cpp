@@ -64,12 +64,12 @@ IndexNGTONNG::BuildAll(const DatasetPtr& dataset_ptr, const Config& config) {
     graphOptimizer.execute(*index_);
 }
 
-void
-IndexNGTONNG::UpdateIndexSize() {
+int64_t
+IndexNGTONNG::Size() {
     if (!index_) {
         KNOWHERE_THROW_MSG("index not initialize");
     }
-    index_size_ = index_->memSize();
+    return index_->memSize();
 }
 
 }  // namespace knowhere

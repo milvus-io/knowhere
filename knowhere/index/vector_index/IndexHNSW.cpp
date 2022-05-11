@@ -234,12 +234,12 @@ IndexHNSW::Dim() {
     return (*static_cast<size_t*>(index_->dist_func_param_));
 }
 
-void
-IndexHNSW::UpdateIndexSize() {
+int64_t
+IndexHNSW::Size() {
     if (!index_) {
         KNOWHERE_THROW_MSG("index not initialize");
     }
-    index_size_ = index_->cal_size();
+    return index_->cal_size();
 }
 
 #if 0
