@@ -52,3 +52,13 @@ set( BENCHMARK_KNOWHERE_SRCS
 add_executable(benchmark_knowhere ${BENCHMARK_KNOWHERE_SRCS})
 target_link_libraries(benchmark_knowhere ${depend_libs} ${unittest_libs} ${basic_libs})
 install(TARGETS benchmark_knowhere DESTINATION unittest)
+
+#==============================================================================
+set( BENCHMARK_KNOWHERE_PERF_SRCS
+        ${UTIL_SRCS}
+        benchmark_knowhere_perf.cpp
+        )
+
+add_executable(benchmark_knowhere_perf ${BENCHMARK_KNOWHERE_PERF_SRCS})
+target_link_libraries(benchmark_knowhere_perf ${depend_libs} ${unittest_libs} ${basic_libs})
+install(TARGETS benchmark_knowhere_perf DESTINATION unittest)
