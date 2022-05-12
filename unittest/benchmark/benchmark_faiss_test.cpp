@@ -330,17 +330,14 @@ class Benchmark_faiss : public ::testing::Test {
         delete[] D;
     }
 
-    void test_ivf(
-        const int32_t nlist,
-        const std::vector<int32_t>& nprobes) {
-
+    void test_ivf(const int32_t nlist) {
         idx_t* I = new idx_t[NQs_.back() * TOPKs_.back()];
         distance_t* D = new distance_t[NQs_.back() * TOPKs_.back()];
 
         printf("\n[%0.3f s] %s | %s | nlist=%d\n",
                get_time_diff(), ann_test_name_.c_str(), index_key_.c_str(), nlist);
         printf("================================================================================\n");
-        for (auto nprobe : nprobes) {
+        for (auto nprobe : NPROBEs_) {
             faiss::ParameterSpace params;
             std::string nprobe_str = "nprobe=" + std::to_string(nprobe);
             params.set_index_parameters(index_, nprobe_str.c_str());
@@ -363,18 +360,14 @@ class Benchmark_faiss : public ::testing::Test {
         delete[] D;
     }
 
-    void test_hnsw(
-        const int64_t M,
-        const int64_t efConstruction,
-        const std::vector<int32_t>& efs) {
-
+    void test_hnsw(const int64_t M, const int64_t efConstruction) {
         idx_t* I = new idx_t[NQs_.back() * TOPKs_.back()];
         distance_t* D = new distance_t[NQs_.back() * TOPKs_.back()];
 
         printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld\n",
                get_time_diff(), ann_test_name_.c_str(), index_key_.c_str(), M, efConstruction);
         printf("================================================================================\n");
-        for (auto ef: efs) {
+        for (auto ef: EFs_) {
             for (auto nq : NQs_) {
                 for (auto k : TOPKs_) {
                     double t_start = elapsed(), t_end;
@@ -440,10 +433,12 @@ class Benchmark_faiss : public ::testing::Test {
 
     // IVF index params
     const std::vector<int32_t> NLISTs_ = {1024};
+    const std::vector<int32_t> NPROBEs_ = {1, 2, 4, 8, 16, 32, 64, 128, 256};
 
     // HNSW index params
     const std::vector<int32_t> Ms_ = {16};
     const std::vector<int32_t> EFCONs_ = {100};
+    const std::vector<int32_t> EFs_ = {16, 32, 64, 128, 256};
 };
 
 TEST_F(Benchmark_faiss, TEST_IDMAP) {
@@ -456,43 +451,34 @@ TEST_F(Benchmark_faiss, TEST_IDMAP) {
 }
 
 TEST_F(Benchmark_faiss, TEST_IVFFLAT) {
-    const std::vector<int32_t> nprobes = {1, 2, 4, 8, 16, 32, 64, 128, 256};
-
     std::string index_type = "Flat";
-
     for (auto nlist : NLISTs_) {
         index_key_ = "IVF" + std::to_string(nlist) + "," + index_type;
         std::string index_file_name = ann_test_name_ + "_IVF" + std::to_string(nlist) + "_" + index_type + ".index";
         create_cpu_index(index_file_name);
-        test_ivf(nlist, nprobes);
+        test_ivf(nlist);
     }
 }
 
 TEST_F(Benchmark_faiss, TEST_IVFSQ8) {
-    const std::vector<int32_t> nprobes = {1, 2, 4, 8, 16, 32, 64, 128, 256};
-
     std::string index_type = "SQ8";
-
     for (auto nlist : NLISTs_) {
         index_key_ = "IVF" + std::to_string(nlist) + "," + index_type;
         std::string index_file_name = ann_test_name_ + "_IVF" + std::to_string(nlist) + "_" + index_type + ".index";
         create_cpu_index(index_file_name);
-        test_ivf(nlist, nprobes);
+        test_ivf(nlist);
     }
 }
 
 TEST_F(Benchmark_faiss, TEST_HNSW) {
-    const std::vector<int32_t> efs = {16, 32, 64, 128, 256};
-
     std::string index_type = "Flat";
-
     for (auto M : Ms_) {
         index_key_ = "HNSW" + std::to_string(M) + "," + index_type;
         for (auto efc : EFCONs_) {
             std::string index_file_name =
                 ann_test_name_ + "_HNSW" + std::to_string(M) + "_" + std::to_string(efc) + "_" + index_type + ".index";
             create_cpu_index(index_file_name);
-            test_hnsw(M, efc, efs);
+            test_hnsw(M, efc);
         }
     }
 }
