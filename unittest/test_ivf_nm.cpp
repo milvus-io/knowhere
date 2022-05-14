@@ -43,7 +43,7 @@ class IVFNMTest : public DataGen,
     void
     SetUp() override {
 #ifdef KNOWHERE_GPU_VERSION
-        knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
+        knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICE_ID, PINMEM, TEMPMEM, RESNUM);
 #endif
         std::tie(index_type_, index_mode_) = GetParam();
         Generate(DIM, NB, NQ);
@@ -126,7 +126,7 @@ TEST_P(IVFNMTest, ivfnm_basic) {
     if (index_mode_ == knowhere::IndexMode::MODE_CPU) {
         EXPECT_ANY_THROW(knowhere::cloner::CopyCpuToGpu(index_, -1, knowhere::Config()));
         EXPECT_NO_THROW({
-            auto clone_index = knowhere::cloner::CopyCpuToGpu(index_, DEVICEID, conf_);
+            auto clone_index = knowhere::cloner::CopyCpuToGpu(index_, DEVICE_ID, conf_);
             auto clone_result = clone_index->Query(query_dataset, conf_, nullptr);
             AssertAnns(clone_result, nq, k);
             std::cout << "clone C <=> G [" << index_type_ << "] success" << std::endl;
@@ -139,7 +139,7 @@ TEST_P(IVFNMTest, ivfnm_basic) {
             auto clone_index = knowhere::cloner::CopyGpuToCpu(index_, conf_);
             LoadRawData(clone_index, base_dataset, conf_);
             auto clone_result = clone_index->Query(query_dataset, conf_, nullptr);
-            AssertEqual(result, clone_result);
+            AssertAnns(clone_result, nq, k);
             std::cout << "clone G <=> C [" << index_type_ << "] success" << std::endl;
         });
     }

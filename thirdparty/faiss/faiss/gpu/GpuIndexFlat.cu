@@ -239,7 +239,7 @@ void GpuIndexFlat::searchImpl_(
             resources_.get(), makeTempAlloc(AllocType::Other, stream), {n, k});
 
     // Copy bitset to GPU
-    if (!bitset) {
+    if (bitset.empty()) {
         auto bitsetDevice = toDeviceTemporary<uint8_t, 1>(
                 resources_.get(),
                 config_.device,

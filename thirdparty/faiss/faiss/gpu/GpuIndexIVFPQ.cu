@@ -367,7 +367,7 @@ void GpuIndexIVFPQ::searchImpl_(
     Tensor<Index::idx_t, 2, true> outLabels(
             const_cast<Index::idx_t*>(labels), {n, k});
 
-    if (!bitset) {
+    if (bitset.empty()) {
         auto bitsetDevice = toDeviceTemporary<uint8_t, 1>(
                 resources_.get(),
                 config_.device,

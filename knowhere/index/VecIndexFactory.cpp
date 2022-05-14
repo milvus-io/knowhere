@@ -106,7 +106,7 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
             } else if (type == IndexEnum::INDEX_FAISS_BIN_IVFFLAT) {
                 return std::make_shared<knowhere::BinaryIVF>();
             } else if (type == IndexEnum::INDEX_FAISS_IDMAP) {
-                return std::make_shared<knowhere::GPUIDMAP>(gpu_device);
+                return std::make_shared<knowhere::IDMAP>();
             } else if (type == IndexEnum::INDEX_FAISS_IVFFLAT) {
                 return std::make_shared<knowhere::GPUIVF_NM>(gpu_device);
             } else if (type == IndexEnum::INDEX_FAISS_IVFPQ) {
@@ -116,7 +116,7 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
             } else if (type == IndexEnum::INDEX_FAISS_IVFSQ8H) {
                 return std::make_shared<knowhere::IVFSQHybrid>(gpu_device);
             } else {
-                KNOWHERE_THROW_FORMAT("Invalid index type %s", type.c_str());
+                KNOWHERE_THROW_FORMAT("Invalid index type %s", std::string(type).c_str());
             }
         }
 #endif

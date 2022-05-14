@@ -9,12 +9,12 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License
 
-#include <faiss/IndexSQHybrid.h>
-#include <faiss/gpu/GpuCloner.h>
-#include <faiss/gpu/GpuIndexIVF.h>
-#include <faiss/index_factory.h>
 #include <string>
 #include <utility>
+
+#include <faiss/IndexSQHybrid.h>
+#include <faiss/gpu/GpuCloner.h>
+#include <faiss/gpu/GpuIndexIVFSQHybrid.h>
 
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
@@ -36,7 +36,7 @@ IVFSQHybrid::Train(const DatasetPtr& dataset_ptr, const Config& config) {
         ResScope rs(gpu_res, gpu_id_, true);
         faiss::gpu::GpuIndexIVFSQHybridConfig idx_config;
         idx_config.device = static_cast<int32_t>(gpu_id_);
-        int32_t nlist = config[IndexParams::nlist];
+        int32_t nlist = GetIndexParamNlist(config);
         faiss::MetricType metric_type = GetMetricType(config);
         index_ = std::make_shared<faiss::gpu::GpuIndexIVFSQHybrid>(
             gpu_res->faiss_res.get(), dim, nlist, faiss::QuantizerType::QT_8bit, metric_type, true, idx_config);

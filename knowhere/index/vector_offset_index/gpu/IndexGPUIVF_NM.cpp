@@ -37,7 +37,7 @@ GPUIVF_NM::Train(const DatasetPtr& dataset_ptr, const Config& config) {
         ResScope rs(gpu_res, gpu_id_, true);
         faiss::gpu::GpuIndexIVFFlatConfig idx_config;
         idx_config.device = gpu_id_;
-        int32_t nlist = config[IndexParams::nlist];
+        int32_t nlist = GetIndexParamNlist(config);
         faiss::MetricType metric_type = GetMetricType(config);
         auto device_index =
             new faiss::gpu::GpuIndexIVFFlat(gpu_res->faiss_res.get(), dim, nlist, metric_type, idx_config);
@@ -122,7 +122,7 @@ GPUIVF_NM::QueryImpl(int64_t n,
                      const faiss::BitsetView bitset) {
     auto device_index = std::dynamic_pointer_cast<faiss::gpu::GpuIndexIVF>(index_);
     if (device_index) {
-        device_index->nprobe = config[IndexParams::nprobe];
+        device_index->nprobe = GetIndexParamNprobe(config);
         ResScope rs(res_, gpu_id_);
 
         // if query size > 2048 we search by blocks to avoid malloc issue

@@ -71,7 +71,7 @@ macro(build_faiss)
 
     # header only mman-win32 for MSYS
     if (MSYS)
-	set(MMAN_INCLUDE_FLAGS "-I ${KNOWHERE_THIRDPARTY_SRC}/mman-win32")
+        set(MMAN_INCLUDE_FLAGS "-I ${KNOWHERE_THIRDPARTY_SRC}/mman-win32")
     endif ()
 
 
