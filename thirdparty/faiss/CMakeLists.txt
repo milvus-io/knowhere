@@ -22,6 +22,19 @@ option(FAISS_OPT_LEVEL "" "generic")
 option(FAISS_ENABLE_GPU "Enable support for GPU indexes." ON)
 option(FAISS_ENABLE_PYTHON "Build Python extension." ON)
 option(FAISS_ENABLE_C_API "Build C API." OFF)
+option(FAISS_ENABLE_CCACHE "Build with ccache." ON)
+
+if (FAISS_ENABLE_CCACHE)
+    find_program(CCACHE_FOUND ccache)
+    if (CCACHE_FOUND)
+        message(STATUS "Using ccache: ${CCACHE_FOUND}")
+        set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${CCACHE_FOUND})
+        set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ${CCACHE_FOUND})
+        # let ccache preserve C++ comments, because some of them may be
+        # meaningful to the compiler
+        set(ENV{CCACHE_COMMENTS} "1")
+    endif (CCACHE_FOUND)
+endif()
 
 if(FAISS_ENABLE_GPU)
   # externalproject_add use semicolon to separate commands, revert to desired format
