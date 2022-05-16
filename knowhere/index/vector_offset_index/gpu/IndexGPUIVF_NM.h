@@ -45,6 +45,12 @@ class GPUIVF_NM : public IVF, public GPUIndex {
     VecIndexPtr
     CopyGpuToGpu(const int64_t, const Config&) override;
 
+    int64_t
+    Size() override;
+
+    DatasetPtr
+    QueryByRange(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
+
  protected:
     BinarySet
     SerializeImpl(const IndexType&) override;

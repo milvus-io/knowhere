@@ -87,6 +87,19 @@ GPUIVF_NM::CopyGpuToGpu(const int64_t device_id, const Config& config) {
     return std::static_pointer_cast<IVF>(host_index)->CopyCpuToGpu(device_id, config);
 }
 
+int64_t
+GPUIVF_NM::Size() {
+    auto host_index = CopyGpuToCpu(Config());
+    return host_index->Size();
+}
+
+DatasetPtr
+GPUIVF_NM::QueryByRange(const DatasetPtr& dataset,
+                        const Config& config,
+                        const faiss::BitsetView bitset) {
+    KNOWHERE_THROW_MSG("gpu range search not implemented");
+}
+
 BinarySet
 GPUIVF_NM::SerializeImpl(const IndexType& type) {
     if (!index_ || !index_->is_trained) {

@@ -154,6 +154,9 @@ TEST_P(IVFNMTest, ivfnm_basic) {
 }
 
 TEST_P(IVFNMTest, ivfnm_range_search_l2) {
+    if (index_mode_ != knowhere::IndexMode::MODE_CPU) {
+        return;
+    }
     knowhere::SetMetaMetricType(conf_, knowhere::metric::L2);
 
     index_->Train(base_dataset, conf_);
@@ -176,6 +179,9 @@ TEST_P(IVFNMTest, ivfnm_range_search_l2) {
 }
 
 TEST_P(IVFNMTest, ivfnm_range_search_ip) {
+    if (index_mode_ != knowhere::IndexMode::MODE_CPU) {
+        return;
+    }
     knowhere::SetMetaMetricType(conf_, knowhere::metric::IP);
 
     index_->Train(base_dataset, conf_);
