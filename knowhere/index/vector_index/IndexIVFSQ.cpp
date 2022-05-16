@@ -74,7 +74,7 @@ IVFSQ::Size() {
     auto nlist = ivfsq_index->nlist;
     auto d = ivfsq_index->d;
     // ivf codes, ivf ids, sq trained vectors and quantizer
-    return (nb * code_size + nb * sizeof(int64_t) + 2 * d * sizeof(float) + nlist * d * sizeof(float));
+    return (nb * code_size + nb * sizeof(int64_t) + 2 * code_size + nlist * code_size);
 }
 
 }  // namespace knowhere
