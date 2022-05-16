@@ -81,11 +81,15 @@ GPUIVF::CopyGpuToGpu(const int64_t device_id, const Config& config) {
 
 int64_t
 GPUIVF::Size() {
-    if (!index_) {
-        KNOWHERE_THROW_MSG("index not initialize");
-    }
-    auto ivf_index = CopyGpuToCpu(Config());
-    return ivf_index->Size();
+    auto host_index = CopyGpuToCpu(Config());
+    return host_index->Size();
+}
+
+DatasetPtr
+GPUIVF::QueryByRange(const DatasetPtr& dataset,
+                     const Config& config,
+                     const faiss::BitsetView bitset) {
+    KNOWHERE_THROW_MSG("gpu range search not implemented");
 }
 
 BinarySet

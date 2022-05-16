@@ -45,6 +45,9 @@ class GPUIVF : public IVF, public GPUIndex {
     int64_t
     Size() override;
 
+    DatasetPtr
+    QueryByRange(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
+
  protected:
     BinarySet
     SerializeImpl(const IndexType&) override;
