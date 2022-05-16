@@ -79,6 +79,15 @@ GPUIVF::CopyGpuToGpu(const int64_t device_id, const Config& config) {
     return std::static_pointer_cast<IVF>(host_index)->CopyCpuToGpu(device_id, config);
 }
 
+int64_t
+GPUIVF::Size() {
+    if (!index_) {
+        KNOWHERE_THROW_MSG("index not initialize");
+    }
+    auto ivf_index = CopyGpuToCpu(Config());
+    return ivf_index->Size();
+}
+
 BinarySet
 GPUIVF::SerializeImpl(const IndexType& type) {
     if (!index_ || !index_->is_trained) {

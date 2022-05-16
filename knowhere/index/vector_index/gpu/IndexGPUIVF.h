@@ -42,6 +42,9 @@ class GPUIVF : public IVF, public GPUIndex {
     VecIndexPtr
     CopyGpuToGpu(const int64_t, const Config&) override;
 
+    int64_t
+    Size() override;
+
  protected:
     BinarySet
     SerializeImpl(const IndexType&) override;
