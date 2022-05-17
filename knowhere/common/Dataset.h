@@ -12,16 +12,18 @@
 #pragma once
 
 #include <any>
-#include <map>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
+#include <unordered_map>
 #include <utility>
 
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
 
 namespace knowhere {
 
+using Key = std::string_view;
 using Value = std::any;
 using ValuePtr = std::shared_ptr<Value>;
 
@@ -47,28 +49,24 @@ class Dataset {
             }
         }
     }
+
     template <typename T>
     void
-    Set(const std::string_view& k, T&& v) {
+    Set(const Key& k, T&& v) {
         std::lock_guard<std::mutex> lk(mutex_);
-        data_[std::string(k)] = std::make_shared<Value>(std::forward<T>(v));
+        data_[k] = std::make_shared<Value>(std::forward<T>(v));
     }
 
     template <typename T>
     T
-    Get(const std::string_view& k) {
+    Get(const Key& k) {
         std::lock_guard<std::mutex> lk(mutex_);
-        return std::any_cast<T>(*(data_.at(std::string(k))));
-    }
-
-    const std::map<std::string, ValuePtr>&
-    data() const {
-        return data_;
+        return std::any_cast<T>(*(data_.at(k)));
     }
 
  private:
     std::mutex mutex_;
-    std::map<std::string, ValuePtr> data_;
+    std::unordered_map<Key, ValuePtr, std::hash<Key>, std::equal_to<>> data_;
 };
 using DatasetPtr = std::shared_ptr<Dataset>;
 
