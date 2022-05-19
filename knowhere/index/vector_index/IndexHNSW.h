@@ -13,7 +13,7 @@
 
 #include <memory>
 
-#include "hnswlib/hnswlib.h"
+#include "hnswlib/hnswlib/hnswlib.h"
 
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/VecIndex.h"

@@ -18,10 +18,7 @@
 
 #include "common/Exception.h"
 #include "common/Log.h"
-#include "hnswlib/hnswalg.h"
-#include "hnswlib/hnswlib.h"
-#include "hnswlib/space_ip.h"
-#include "hnswlib/space_l2.h"
+#include "hnswlib/hnswlib/hnswalg.h"
 #include "index/vector_index/IndexHNSW.h"
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/FaissIO.h"
@@ -68,7 +65,7 @@ IndexHNSW::Load(const BinarySet& index_binary) {
 
         hnswlib::SpaceInterface<float>* space = nullptr;
         index_ = std::make_shared<hnswlib::HierarchicalNSW<float>>(space);
-        index_->stats_enable = (STATISTICS_LEVEL >= 3);
+        index_->stats_enable_ = (STATISTICS_LEVEL >= 3);
         index_->loadIndex(reader);
 #if 0
         auto hnsw_stats = std::static_pointer_cast<LibHNSWStatistics>(stats);
@@ -100,7 +97,7 @@ IndexHNSW::Train(const DatasetPtr& dataset_ptr, const Config& config) {
         }
         index_ = std::make_shared<hnswlib::HierarchicalNSW<float>>(space, rows, GetIndexParamHNSWM(config),
                                                                    GetIndexParamEfConstruction(config));
-        index_->stats_enable = (STATISTICS_LEVEL >= 3);
+        index_->stats_enable_ = (STATISTICS_LEVEL >= 3);
     } catch (std::exception& e) {
         KNOWHERE_THROW_MSG(e.what());
     }
@@ -147,7 +144,7 @@ IndexHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fais
     if (STATISTICS_LEVEL >= 3) {
         query_stats.resize(rows);
         for (auto i = 0; i < rows; ++i) {
-            query_stats[i].target_level = hnsw_stats->target_level;
+            query_stats[i].target_level_ = hnsw_stats->target_level;
         }
     }
 
