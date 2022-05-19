@@ -10,7 +10,6 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <gtest/gtest.h>
-
 #include <thread>
 #include <unordered_set>
 
@@ -26,13 +25,12 @@
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
 #endif
 #include "knowhere/utils/distances_simd.h"
+#include "unittest/range_utils.h"
 #include "unittest/utils.h"
 
 using ::testing::Combine;
 using ::testing::TestWithParam;
 using ::testing::Values;
-
-typedef float (*fvec_func_ptr)(const float*, const float*, size_t);
 
 class IDMAPTest : public DataGen, public TestWithParam<knowhere::IndexMode> {
  protected:
@@ -52,94 +50,6 @@ class IDMAPTest : public DataGen, public TestWithParam<knowhere::IndexMode> {
 #ifdef KNOWHERE_GPU_VERSION
         knowhere::FaissGpuResourceMgr::GetInstance().Free();
 #endif
-    }
-
-    template <class C>
-    void RunRangeSearchBF(
-        std::vector<int64_t>& golden_labels,
-        std::vector<float>& golden_distances,
-        std::vector<size_t>& golden_lims,
-        float radius,
-        fvec_func_ptr func,
-        const faiss::BitsetView bitset) {
-
-        golden_lims.push_back(0);
-        for (auto i = 0; i < nq; ++i) {
-            const float* pq = xq.data() + i * dim;
-            for (auto j = 0; j < nb; ++j) {
-                if (bitset.empty() || !bitset.test(j)) {
-                    const float* pb = xb.data() + j * dim;
-                    auto dis = func(pq, pb, dim);
-                    if (C::cmp(dis, radius)) {
-                        golden_labels.push_back(j);
-                        golden_distances.push_back(dis);
-                    }
-                }
-            }
-            golden_lims.push_back(golden_labels.size());
-        }
-    }
-
-    void CompareRangeSearchResult(
-        const int64_t* golden_labels,
-        const float* golden_distances,
-        const size_t golden_size,
-        const int64_t* labels,
-        const float* distances,
-        const size_t size) {
-
-        if (size == golden_size) {
-            return;
-        } else if (size > golden_size) {
-            std::unordered_set<int64_t> golden_set(golden_labels, golden_labels + golden_size);
-            size_t cnt = 0;
-            for (auto i = 0; i < size; i++) {
-                if (golden_set.find(labels[i]) == golden_set.end()) {
-                    std::cout << "No." << cnt++ << " [" << labels[i] << ", " << distances[i] << "] "
-                              << "not in GOLDEN result" << std::endl;
-                }
-            }
-        } else {
-            std::unordered_set<int64_t> test_set(labels, labels + size);
-            size_t cnt = 0;
-            for (auto i = 0; i < golden_size; i++) {
-                if (test_set.find(golden_labels[i]) == test_set.end()) {
-                    std::cout << "No." << cnt++ << " [" << golden_labels[i] << ", " << golden_distances[i] << "] "
-                              << "not in TEST result" << std::endl;
-                }
-            }
-        }
-    }
-
-    template <class C>
-    void CheckRangeSearchResult(
-        const knowhere::DatasetPtr& result,
-        const float radius,
-        const std::vector<int64_t>& golden_labels,
-        const std::vector<float>& golden_distances,
-        const std::vector<size_t>& golden_lims) {
-
-        auto lims = knowhere::GetDatasetLims(result);
-        auto ids = knowhere::GetDatasetIDs(result);
-        auto distances = knowhere::GetDatasetDistance(result);
-
-        for (int64_t i = 0; i < nq; i++) {
-            if (golden_lims[i+1] != lims[i+1]) {
-                std::cout << "No." << i << " range search fail" << std::endl;
-                CompareRangeSearchResult(
-                    golden_labels.data() + golden_lims[i],
-                    golden_distances.data() + golden_lims[i],
-                    golden_lims[i+1] - golden_lims[i],
-                    ids + lims[i],
-                    distances + lims[i],
-                    lims[i+1] - lims[i]);
-            }
-            ASSERT_EQ(golden_lims[i+1], lims[i+1]);
-            for (size_t j = lims[i]; j < lims[i+1]; j++) {
-                ASSERT_EQ(golden_labels[j], ids[j]);
-                ASSERT_TRUE(C::cmp(distances[j], radius));
-            }
-        }
     }
 
  protected:
@@ -174,8 +84,7 @@ TEST_P(IDMAPTest, idmap_basic) {
         ASSERT_ANY_THROW(index_->AddWithoutIds(nullptr, conf));
     }
 
-    index_->Train(base_dataset, conf);
-    index_->AddWithoutIds(base_dataset, conf);
+    index_->BuildAll(base_dataset, conf);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
     ASSERT_TRUE(index_->GetRawVectors() != nullptr);
@@ -213,7 +122,6 @@ TEST_P(IDMAPTest, idmap_serialize) {
             FileIOWriter writer(filename);
             writer(static_cast<void*>(bin->data.get()), bin->size);
         }
-
         FileIOReader reader(filename);
         reader(ret, bin->size);
     };
@@ -224,8 +132,7 @@ TEST_P(IDMAPTest, idmap_serialize) {
         {knowhere::meta::TOPK, k},
     };
 
-    index_->Train(base_dataset, conf);
-    index_->AddWithoutIds(base_dataset, knowhere::Config());
+    index_->BuildAll(base_dataset, conf);
 
 #ifdef KNOWHERE_GPU_VERSION
     if (index_mode_ == knowhere::IndexMode::MODE_GPU) {
@@ -266,8 +173,7 @@ TEST_P(IDMAPTest, idmap_slice) {
         {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
     };
 
-    index_->Train(base_dataset, conf);
-    index_->AddWithoutIds(base_dataset, knowhere::Config());
+    index_->BuildAll(base_dataset, conf);
 
 #ifdef KNOWHERE_GPU_VERSION
     if (index_mode_ == knowhere::IndexMode::MODE_GPU) {
@@ -297,26 +203,24 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
         {knowhere::meta::DIM, dim},
     };
 
-    index_->Train(base_dataset, conf);
-    index_->AddWithoutIds(base_dataset, knowhere::Config());
+    index_->BuildAll(base_dataset, conf);
 
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
     auto test_range_search_l2 = [&](float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
-        std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, radius * radius,
-                                      faiss::fvec_L2sqr_ref, bitset);
+        RunRangeSearchBF<CMin<float>>(golden_labels, golden_lims, xb, nb, xq, nq, dim,
+                                      radius * radius, faiss::fvec_L2sqr_ref, bitset);
 
         auto result = index_->QueryByRange(qd, conf, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, radius * radius, golden_labels, golden_distances, golden_lims);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius * radius, golden_labels, golden_lims, true);
     };
 
     auto old_blas_threshold = knowhere::KnowhereConfig::GetBlasThreshold();
     for (int64_t blas_threshold : {0, 20}) {
         knowhere::KnowhereConfig::SetBlasThreshold(blas_threshold);
-        for (float radius: {4.0, 4.5, 5.0}) {
+        for (float radius: {4.1f, 4.2f, 4.3f}) {
             knowhere::SetMetaRadius(conf, radius);
             test_range_search_l2(radius, nullptr);
             test_range_search_l2(radius, *bitset);
@@ -331,26 +235,24 @@ TEST_P(IDMAPTest, idmap_range_search_ip) {
         {knowhere::meta::DIM, dim},
     };
 
-    index_->Train(base_dataset, conf);
-    index_->AddWithoutIds(base_dataset, knowhere::Config());
+    index_->BuildAll(base_dataset, conf);
 
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
     auto test_range_search_ip = [&](float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
-        std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        RunRangeSearchBF<CMax<float>>(golden_labels, golden_distances, golden_lims, radius,
-                                      faiss::fvec_inner_product_ref, bitset);
+        RunRangeSearchBF<CMax<float>>(golden_labels, golden_lims, xb, nb, xq, nq, dim,
+                                      radius, faiss::fvec_inner_product_ref, bitset);
 
         auto result = index_->QueryByRange(qd, conf, bitset);
-        CheckRangeSearchResult<CMax<float>>(result, radius, golden_labels, golden_distances, golden_lims);
+        CheckRangeSearchResult<CMax<float>>(result, nq, radius, golden_labels, golden_lims, true);
     };
 
     auto old_blas_threshold = knowhere::KnowhereConfig::GetBlasThreshold();
     for (int64_t blas_threshold : {0, 20}) {
         knowhere::KnowhereConfig::SetBlasThreshold(blas_threshold);
-        for (float radius: {30.0, 40.0, 45.0}) {
+        for (float radius: {42.0f, 43.0f, 44.0f}) {
             knowhere::SetMetaRadius(conf, radius);
             test_range_search_ip(radius, nullptr);
             test_range_search_ip(radius, *bitset);
@@ -369,8 +271,7 @@ TEST_P(IDMAPTest, idmap_copy) {
         {knowhere::Metric::TYPE, knowhere::Metric::L2}
     };
 
-    index_->Train(base_dataset, conf);
-    index_->AddWithoutIds(base_dataset, conf);
+    index_->BuildAll(base_dataset, conf);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
     ASSERT_TRUE(index_->GetRawVectors() != nullptr);

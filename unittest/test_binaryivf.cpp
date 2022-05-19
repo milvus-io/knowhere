@@ -10,15 +10,13 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <gtest/gtest.h>
-#include <iostream>
 #include <thread>
 
 #include "knowhere/common/Exception.h"
-#include "knowhere/common/Timer.h"
 #include "knowhere/index/vector_index/ConfAdapterMgr.h"
 #include "knowhere/index/vector_index/IndexBinaryIVF.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
-#include "unittest/Helper.h"
+#include "unittest/range_utils.h"
 #include "unittest/utils.h"
 
 using ::testing::Combine;
@@ -48,19 +46,6 @@ class BinaryIVFTest : public DataGen,
 
     void
     TearDown() override {
-    }
-
-    template <class C>
-    void CheckRangeSearchResult(
-        const knowhere::DatasetPtr& result,
-        const float radius) {
-
-        auto lims = knowhere::GetDatasetLims(result);
-        auto distances = knowhere::GetDatasetDistance(result);
-
-        for (int64_t i = 0; i < lims[nq]; i++) {
-            ASSERT_TRUE(C::cmp(distances[i], radius));
-        }
     }
 
  protected:
@@ -107,57 +92,29 @@ TEST_P(BinaryIVFTest, binaryivf_serialize) {
             FileIOWriter writer(filename);
             writer(static_cast<void*>(bin->data.get()), bin->size);
         }
-
         FileIOReader reader(filename);
         reader(ret, bin->size);
     };
 
-    // {
-    //     // serialize index-model
-    //     auto model = index_->Train(base_dataset, conf_);
-    //     auto binaryset = model->Serialize();
-    //     auto bin = binaryset.GetByName("BinaryIVF");
-    //
-    //     std::string filename = temp_path("/tmp/binaryivf_test_model_serialize.bin");
-    //     auto load_data = new uint8_t[bin->size];
-    //     serialize(filename, bin, load_data);
-    //
-    //     binaryset.clear();
-    //     auto data = std::make_shared<uint8_t>();
-    //     data.reset(load_data);
-    //     binaryset.Append("BinaryIVF", data, bin->size);
-    //
-    //     model->Load(binaryset);
-    //
-    //     index_->set_index_model(model);
-    //     index_->Add(base_dataset, conf_);
-    //     auto result = index_->Query(query_dataset, conf_);
-    //     AssertAnns(result, nq, conf_[knowhere::meta::TOPK]);
-    // }
+    // serialize index
+    index_->BuildAll(base_dataset, conf_);
+    auto binaryset = index_->Serialize(conf_);
+    auto bin = binaryset.GetByName("BinaryIVF");
 
-    {
-        // serialize index
-        index_->BuildAll(base_dataset, conf_);
-        //        index_->set_index_model(model);
-        //        index_->Add(base_dataset, conf_);
-        auto binaryset = index_->Serialize(conf_);
-        auto bin = binaryset.GetByName("BinaryIVF");
+    std::string filename = temp_path("/tmp/binaryivf_test_serialize.bin");
+    auto load_data = new uint8_t[bin->size];
+    serialize(filename, bin, load_data);
 
-        std::string filename = temp_path("/tmp/binaryivf_test_serialize.bin");
-        auto load_data = new uint8_t[bin->size];
-        serialize(filename, bin, load_data);
+    binaryset.clear();
+    std::shared_ptr<uint8_t[]> data(load_data);
+    binaryset.Append("BinaryIVF", data, bin->size);
 
-        binaryset.clear();
-        std::shared_ptr<uint8_t[]> data(load_data);
-        binaryset.Append("BinaryIVF", data, bin->size);
-
-        index_->Load(binaryset);
-        EXPECT_EQ(index_->Count(), nb);
-        EXPECT_EQ(index_->Dim(), dim);
-        auto result = index_->Query(query_dataset, conf_, nullptr);
-        AssertAnns(result, nq, knowhere::GetMetaTopk(conf_));
-        // PrintResult(result, nq, k);
-    }
+    index_->Load(binaryset);
+    EXPECT_EQ(index_->Count(), nb);
+    EXPECT_EQ(index_->Dim(), dim);
+    auto result = index_->Query(query_dataset, conf_, nullptr);
+    AssertAnns(result, nq, knowhere::GetMetaTopk(conf_));
+    // PrintResult(result, nq, k);
 }
 
 TEST_P(BinaryIVFTest, binaryivf_slice) {
@@ -178,16 +135,19 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_hamming) {
     knowhere::SetMetaMetricType(conf_, knowhere::metric::HAMMING);
     knowhere::SetMetaRadius(conf_, hamming_radius);
 
-    index_->Train(base_dataset, conf_);
-    index_->AddWithoutIds(base_dataset, knowhere::Config());
+    index_->BuildAll(base_dataset, conf_);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
     auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
 
     auto test_range_search_hamming = [&](float radius, const faiss::BitsetView bitset) {
+        std::vector<int64_t> golden_labels;
+        std::vector<size_t> golden_lims;
+        RunRangeSearchBF<CMin<float>>(golden_labels, golden_lims, xb_bin, nb, xq_bin, nq, dim, radius, hamming_dis, bitset);
+
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, radius);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels, golden_lims, false);
     };
 
     test_range_search_hamming(hamming_radius, nullptr);
@@ -200,16 +160,19 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_jaccard) {
     knowhere::SetMetaRadius(conf_, jaccard_radius);
 
     // serialize index
-    index_->Train(base_dataset, conf_);
-    index_->AddWithoutIds(base_dataset, knowhere::Config());
+    index_->BuildAll(base_dataset, conf_);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
     auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
 
     auto test_range_search_jaccard = [&](float radius, const faiss::BitsetView bitset) {
+        std::vector<int64_t> golden_labels;
+        std::vector<size_t> golden_lims;
+        RunRangeSearchBF<CMin<float>>(golden_labels, golden_lims, xb_bin, nb, xq_bin, nq, dim, radius, jaccard_dis, bitset);
+
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, radius);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels, golden_lims, false);
     };
 
     test_range_search_jaccard(jaccard_radius, nullptr);
@@ -221,16 +184,19 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_tanimoto) {
     knowhere::SetMetaMetricType(conf_, knowhere::metric::TANIMOTO);
     knowhere::SetMetaRadius(conf_, tanimoto_radius);
 
-    index_->Train(base_dataset, conf_);
-    index_->AddWithoutIds(base_dataset, knowhere::Config());
+    index_->BuildAll(base_dataset, conf_);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
     auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
 
     auto test_range_search_tanimoto = [&](float radius, const faiss::BitsetView bitset) {
+        std::vector<int64_t> golden_labels;
+        std::vector<size_t> golden_lims;
+        RunRangeSearchBF<CMin<float>>(golden_labels, golden_lims, xb_bin, nb, xq_bin, nq, dim, radius, tanimoto_dis, bitset);
+
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, radius);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels, golden_lims, false);
     };
 
     test_range_search_tanimoto(tanimoto_radius, nullptr);
