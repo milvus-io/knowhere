@@ -10,15 +10,16 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <gtest/gtest.h>
-#include <iostream>
 #include <random>
 
 #include "knowhere/common/Config.h"
-#include "knowhere/common/Exception.h"
 #include "knowhere/index/vector_index/ConfAdapterMgr.h"
 #include "knowhere/index/vector_index/IndexHNSW.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
+#include "knowhere/utils/distances_simd.h"
+#include "unittest/Helper.h"
+#include "unittest/range_utils.h"
 #include "unittest/utils.h"
 
 using ::testing::Combine;
@@ -29,17 +30,13 @@ class HNSWTest : public DataGen, public TestWithParam<std::string> {
  protected:
     void
     SetUp() override {
-        Generate(64, 10000, 10);  // dim = 64, nb = 10000, nq = 10
+        Init_with_default();
+        conf_ = ParamGenerator::GetInstance().Gen(index_type_);
         index_ = std::make_shared<knowhere::IndexHNSW>();
-        conf = knowhere::Config{
-            {knowhere::meta::DIM, 64},          {knowhere::meta::TOPK, 10},
-            {knowhere::indexparam::HNSW_M, 16}, {knowhere::indexparam::EFCONSTRUCTION, 200},
-            {knowhere::indexparam::EF, 200},    {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
-        };
     }
 
  protected:
-    knowhere::Config conf;
+    knowhere::Config conf_;
     knowhere::IndexMode index_mode_ = knowhere::IndexMode::MODE_CPU;
     knowhere::IndexType index_type_ = knowhere::IndexEnum::INDEX_HNSW;
     std::shared_ptr<knowhere::IndexHNSW> index_ = nullptr;
@@ -54,45 +51,44 @@ TEST_P(HNSWTest, HNSW_basic) {
     /*
     {
         ASSERT_ANY_THROW(index_->Serialize());
-        ASSERT_ANY_THROW(index_->Query(query_dataset, conf));
-        ASSERT_ANY_THROW(index_->AddWithoutIds(nullptr, conf));
+        ASSERT_ANY_THROW(index_->Query(query_dataset, conf_));
+        ASSERT_ANY_THROW(index_->AddWithoutIds(nullptr, conf_));
         ASSERT_ANY_THROW(index_->Count());
         ASSERT_ANY_THROW(index_->Dim());
     }
     */
 
-    index_->Train(base_dataset, conf);
-    index_->AddWithoutIds(base_dataset, conf);
+    index_->BuildAll(base_dataset, conf_);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
     ASSERT_GT(index_->Size(), 0);
 
-    // Serialize and Load before Query
-    knowhere::BinarySet bs = index_->Serialize(conf);
+    GET_TENSOR_DATA(base_dataset)
 
-    int64_t dim = knowhere::GetDatasetDim(base_dataset);
-    int64_t rows = knowhere::GetDatasetRows(base_dataset);
-    auto raw_data = knowhere::GetDatasetTensor(base_dataset);
+    // Serialize and Load before Query
+    knowhere::BinarySet bs = index_->Serialize(conf_);
     knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
-    bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
+    bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)p_data, [&](uint8_t*) {});
     bptr->size = dim * rows * sizeof(float);
     bs.Append(RAW_DATA, bptr);
 
     index_->Load(bs);
 
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
-    ASSERT_TRUE(adapter->CheckSearch(conf, index_type_, index_mode_));
+    ASSERT_TRUE(adapter->CheckSearch(conf_, index_type_, index_mode_));
 
-    auto result = index_->Query(query_dataset, conf, nullptr);
+    auto result = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result, nq, k);
+
+    auto result2 = index_->Query(query_dataset, conf_, *bitset);
+    AssertAnns(result2, nq, k, CheckMode::CHECK_NOT_EQUAL);
 
     // case: k > nb
     const int64_t new_rows = 6;
     knowhere::SetDatasetRows(base_dataset, new_rows);
-    index_->Train(base_dataset, conf);
-    index_->AddWithoutIds(base_dataset, conf);
-    auto result2 = index_->Query(query_dataset, conf, nullptr);
-    auto res_ids = knowhere::GetDatasetIDs(result2);
+    index_->BuildAll(base_dataset, conf_);
+    auto result3 = index_->Query(query_dataset, conf_, nullptr);
+    auto res_ids = knowhere::GetDatasetIDs(result3);
     for (int64_t i = 0; i < nq; i++) {
         for (int64_t j = new_rows; j < k; j++) {
             ASSERT_EQ(res_ids[i * k + j], -1);
@@ -100,64 +96,81 @@ TEST_P(HNSWTest, HNSW_basic) {
     }
 }
 
-TEST_P(HNSWTest, HNSW_delete) {
-    assert(!xb.empty());
-
-    index_->Train(base_dataset, conf);
-    index_->AddWithoutIds(base_dataset, conf);
-    EXPECT_EQ(index_->Count(), nb);
-    EXPECT_EQ(index_->Dim(), dim);
-
-    // Serialize and Load before Query
-    knowhere::BinarySet bs = index_->Serialize(conf);
-
-    int64_t dim = knowhere::GetDatasetDim(base_dataset);
-    int64_t rows = knowhere::GetDatasetRows(base_dataset);
-    auto raw_data = knowhere::GetDatasetTensor(base_dataset);
-    knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
-    bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
-    bptr->size = dim * rows * sizeof(float);
-    bs.Append(RAW_DATA, bptr);
-
-    index_->Load(bs);
-
-    auto result1 = index_->Query(query_dataset, conf, nullptr);
-    AssertAnns(result1, nq, k);
-
-    auto result2 = index_->Query(query_dataset, conf, *bitset);
-    AssertAnns(result2, nq, k, CheckMode::CHECK_NOT_EQUAL);
-}
-
-/*
 TEST_P(HNSWTest, HNSW_serialize) {
     auto serialize = [](const std::string& filename, knowhere::BinaryPtr& bin, uint8_t* ret) {
         {
             FileIOWriter writer(filename);
             writer(static_cast<void*>(bin->data.get()), bin->size);
         }
-
         FileIOReader reader(filename);
         reader(ret, bin->size);
     };
 
-    {
-        index_->Train(base_dataset, conf);
-        index_->AddWithoutIds(base_dataset, conf);
-        auto binaryset = index_->Serialize();
-        auto bin = binaryset.GetByName("HNSW");
+    index_->BuildAll(base_dataset, conf_);
+    auto binaryset = index_->Serialize(conf_);
+    auto bin = binaryset.GetByName("HNSW");
 
-        std::string filename = temp_path("/tmp/HNSW_test_serialize.bin");
-        auto load_data = new uint8_t[bin->size];
-        serialize(filename, bin, load_data);
+    std::string filename = temp_path("/tmp/HNSW_test_serialize.bin");
+    auto load_data = new uint8_t[bin->size];
+    serialize(filename, bin, load_data);
 
-        binaryset.clear();
-        std::shared_ptr<uint8_t[]> data(load_data);
-        binaryset.Append("HNSW", data, bin->size);
+    binaryset.clear();
+    std::shared_ptr<uint8_t[]> data(load_data);
+    binaryset.Append("HNSW", data, bin->size);
 
-        index_->Load(binaryset);
-        EXPECT_EQ(index_->Count(), nb);
-        EXPECT_EQ(index_->Dim(), dim);
-        auto result = index_->Query(query_dataset, conf);
-        AssertAnns(result, nq, conf[knowhere::meta::TOPK]);
+    index_->Load(binaryset);
+    EXPECT_EQ(index_->Count(), nb);
+    EXPECT_EQ(index_->Dim(), dim);
+    auto result = index_->Query(query_dataset, conf_, nullptr);
+    AssertAnns(result, nq, k);
+}
+
+TEST_P(HNSWTest, hnsw_range_search_l2) {
+    knowhere::SetMetaMetricType(conf_, knowhere::metric::L2);
+    knowhere::SetIndexParamHNSWK(conf_, 20);
+
+    index_->BuildAll(base_dataset, conf_);
+
+    auto qd = knowhere::GenDataset(nq, dim, xq.data());
+
+    auto test_range_search_l2 = [&](float radius, const faiss::BitsetView bitset) {
+        std::vector<int64_t> golden_labels;
+        std::vector<size_t> golden_lims;
+        RunRangeSearchBF<CMin<float>>(golden_labels, golden_lims, xb, nb, xq, nq, dim,
+                                      radius * radius, faiss::fvec_L2sqr_ref, bitset);
+
+        auto result = index_->QueryByRange(qd, conf_, bitset);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius * radius, golden_labels, golden_lims, false);
+    };
+
+    for (float radius: {4.1f, 4.2f, 4.3f}) {
+        knowhere::SetMetaRadius(conf_, radius);
+        test_range_search_l2(radius, nullptr);
+        test_range_search_l2(radius, *bitset);
     }
-}*/
+}
+
+TEST_P(HNSWTest, hnsw_range_search_ip) {
+    knowhere::SetMetaMetricType(conf_, knowhere::metric::IP);
+    knowhere::SetIndexParamHNSWK(conf_, 20);
+
+    index_->BuildAll(base_dataset, conf_);
+
+    auto qd = knowhere::GenDataset(nq, dim, xq.data());
+
+    auto test_range_search_ip = [&](float radius, const faiss::BitsetView bitset) {
+        std::vector<int64_t> golden_labels;
+        std::vector<size_t> golden_lims;
+        RunRangeSearchBF<CMax<float>>(golden_labels, golden_lims, xb, nb, xq, nq, dim,
+                                      radius, faiss::fvec_inner_product_ref, bitset);
+
+        auto result = index_->QueryByRange(qd, conf_, bitset);
+        CheckRangeSearchResult<CMax<float>>(result, nq, radius, golden_labels, golden_lims, false);
+    };
+
+    for (float radius: {42.0f, 43.0f, 44.0f}) {
+        knowhere::SetMetaRadius(conf_, radius);
+        test_range_search_ip(radius, nullptr);
+        test_range_search_ip(radius, *bitset);
+    }
+}

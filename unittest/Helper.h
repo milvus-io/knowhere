@@ -95,11 +95,20 @@ class ParamGenerator {
                 {knowhere::indexparam::EF, 200},
                 {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
             };
+        } else if (type == knowhere::IndexEnum::INDEX_HNSW) {
+            return knowhere::Config {
+                {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
+                {knowhere::meta::DIM, DIM},
+                {knowhere::meta::TOPK, K},
+                {knowhere::indexparam::HNSW_M, 16},
+                {knowhere::indexparam::EFCONSTRUCTION, 200},
+                {knowhere::indexparam::EF, 200},
+            };
         } else if (type == knowhere::IndexEnum::INDEX_RHNSWFlat) {
             return knowhere::Config{
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
-                {knowhere::meta::DIM, 64},
-                {knowhere::meta::TOPK, 10},
+                {knowhere::meta::DIM, DIM},
+                {knowhere::meta::TOPK, K},
                 {knowhere::indexparam::HNSW_M, 16},
                 {knowhere::indexparam::EFCONSTRUCTION, 200},
                 {knowhere::indexparam::EF, 200},
@@ -108,8 +117,8 @@ class ParamGenerator {
         } else if (type == knowhere::IndexEnum::INDEX_RHNSWPQ) {
             return knowhere::Config{
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
-                {knowhere::meta::DIM, 64},
-                {knowhere::meta::TOPK, 10},
+                {knowhere::meta::DIM, DIM},
+                {knowhere::meta::TOPK, K},
                 {knowhere::indexparam::HNSW_M, 16},
                 {knowhere::indexparam::EFCONSTRUCTION, 200},
                 {knowhere::indexparam::EF, 200},
@@ -119,8 +128,8 @@ class ParamGenerator {
         } else if (type == knowhere::IndexEnum::INDEX_RHNSWSQ) {
             return knowhere::Config{
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
-                {knowhere::meta::DIM, 64},
-                {knowhere::meta::TOPK, 10},
+                {knowhere::meta::DIM, DIM},
+                {knowhere::meta::TOPK, K},
                 {knowhere::indexparam::HNSW_M, 16},
                 {knowhere::indexparam::EFCONSTRUCTION, 200},
                 {knowhere::indexparam::EF, 200},

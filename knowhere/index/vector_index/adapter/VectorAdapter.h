@@ -50,13 +50,13 @@ DEFINE_DATASET_SETTER(SetDatasetLims, meta::LIMS, const size_t*);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define GET_TENSOR_DATA(ds_ptr)             \
-    auto rows = GetDatasetRows(ds_ptr);     \
-    auto p_data = GetDatasetTensor(ds_ptr);
+#define GET_TENSOR_DATA(ds_ptr)                       \
+    auto rows = knowhere::GetDatasetRows(ds_ptr);     \
+    auto p_data = knowhere::GetDatasetTensor(ds_ptr);
 
-#define GET_TENSOR_DATA_DIM(ds_ptr)     \
-    GET_TENSOR_DATA(ds_ptr)             \
-    auto dim = GetDatasetDim(ds_ptr);
+#define GET_TENSOR_DATA_DIM(ds_ptr)             \
+    GET_TENSOR_DATA(ds_ptr)                     \
+    auto dim = knowhere::GetDatasetDim(ds_ptr);
 
 extern DatasetPtr
 GenDataset(const int64_t nb, const int64_t dim, const void* xb);
