@@ -379,6 +379,68 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         return return_list;
     }
 
+    std::vector<std::pair<dist_t, labeltype>>
+    getNeighboursWithinRadius(std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>,
+                                                  CompareByFirst>& top_candidates,
+                              const void* data_point, float radius, const faiss::BitsetView bitset) const {
+        std::vector<std::pair<dist_t, labeltype>> result;
+        VisitedList* vl = visited_list_pool_->getFreeVisitedList();
+        vl_type* visited_array = vl->mass;
+        vl_type visited_array_tag = vl->curV;
+
+        std::queue<std::pair<dist_t, tableint>> radius_queue;
+        while (!top_candidates.empty()) {
+            auto cand = top_candidates.top();
+            top_candidates.pop();
+            if (cand.first < radius) {
+                radius_queue.push(cand);
+                result.emplace_back(cand.first, cand.second);
+            }
+            visited_array[cand.second] = visited_array_tag;
+        }
+
+        while (!radius_queue.empty()) {
+            auto cur = radius_queue.front();
+            radius_queue.pop();
+
+            tableint current_id = cur.second;
+            int* data = (int*)get_linklist0(current_id);
+            size_t size = getListCount((linklistsizeint*)data);
+
+#ifdef USE_SSE
+            _mm_prefetch((char*)(visited_array + *(data + 1)), _MM_HINT_T0);
+            _mm_prefetch((char*)(visited_array + *(data + 1) + 64), _MM_HINT_T0);
+            _mm_prefetch(data_level0_memory_ + (*(data + 1)) * size_data_per_element_ + offsetData_, _MM_HINT_T0);
+            _mm_prefetch((char*)(data + 2), _MM_HINT_T0);
+#endif
+            for (size_t j = 1; j <= size; j++) {
+                int candidate_id = *(data + j);
+
+#ifdef USE_SSE
+                _mm_prefetch((char*)(visited_array + *(data + j + 1)), _MM_HINT_T0);
+                _mm_prefetch(data_level0_memory_ + (*(data + j + 1)) * size_data_per_element_ + offsetData_,
+                             _MM_HINT_T0);  ////////////
+#endif
+                if (!(visited_array[candidate_id] == visited_array_tag)) {
+                    visited_array[candidate_id] = visited_array_tag;
+
+                    if (bitset.empty() || !bitset.test((int64_t)candidate_id)) {
+                        char* cand_obj = (getDataByInternalId(candidate_id));
+                        dist_t dist = fstdistfunc_(data_point, cand_obj, dist_func_param_);
+
+                        if (dist < radius) {
+                            radius_queue.push({dist, candidate_id});
+                            result.emplace_back(dist, candidate_id);
+                        }
+                    }
+                }
+            }
+        }
+
+        visited_list_pool_->releaseVisitedList(vl);
+        return result;
+    }
+
     linklistsizeint*
     get_linklist0(tableint internal_id) const {
         return (linklistsizeint*)(data_level0_memory_ + internal_id * size_data_per_element_ + offsetLevel0_);
@@ -1105,6 +1167,62 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         }
         return result;
     };
+
+    std::vector<std::pair<dist_t, labeltype>>
+    searchRange(const void* query_data, size_t range_k, float radius, const faiss::BitsetView bitset,
+                StatisticsInfo& stats) const {
+        if (cur_element_count == 0) {
+            return {};
+        }
+
+        tableint currObj = enterpoint_node_;
+        dist_t curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+
+        for (int level = maxlevel_; level > 0; level--) {
+            bool changed = true;
+            while (changed) {
+                changed = false;
+                unsigned int* data;
+
+                data = (unsigned int*)get_linklist(currObj, level);
+                int size = getListCount(data);
+                metric_hops++;
+                metric_distance_computations += size;
+
+                tableint* datal = (tableint*)(data + 1);
+                for (int i = 0; i < size; i++) {
+                    tableint cand = datal[i];
+                    if (cand < 0 || cand > max_elements_)
+                        throw std::runtime_error("cand error");
+                    dist_t d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+
+                    if (d < curdist) {
+                        curdist = d;
+                        currObj = cand;
+                        changed = true;
+                    }
+                }
+            }
+        }
+
+        std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
+            top_candidates;
+        if (!bitset.empty()) {
+            top_candidates = searchBaseLayerST<true, true>(currObj, query_data, std::max(ef_, range_k), bitset, stats);
+        } else {
+            top_candidates = searchBaseLayerST<false, true>(currObj, query_data, std::max(ef_, range_k), bitset, stats);
+        }
+
+        while (top_candidates.size() > range_k) {
+            top_candidates.pop();
+        }
+
+        if (top_candidates.size() == 0) {
+            return {};
+        }
+
+        return getNeighboursWithinRadius(top_candidates, query_data, radius, bitset);
+    }
 
     void
     checkIntegrity() {

@@ -183,6 +183,9 @@ class AlgorithmInterface {
     virtual std::priority_queue<std::pair<dist_t, labeltype >>
         searchKnn(const void *, size_t, const faiss::BitsetView, hnswlib::StatisticsInfo&) const = 0;
 
+    virtual std::vector<std::pair<dist_t, labeltype>>
+        searchRange(const void*, size_t, float, const faiss::BitsetView, hnswlib::StatisticsInfo&) const = 0;
+
     // Return k nearest neighbor in the order of closer fist
     virtual std::vector<std::pair<dist_t, labeltype>>
         searchKnnCloserFirst(const void* query_data, size_t k, const faiss::BitsetView, hnswlib::StatisticsInfo&) const;

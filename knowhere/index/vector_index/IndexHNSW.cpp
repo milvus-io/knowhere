@@ -74,8 +74,8 @@ IndexHNSW::Load(const BinarySet& index_binary) {
             hnsw_stats->update_level_distribution(index_->maxlevel_, index_->level_stats_);
         }
 #endif
-        //         LOG_KNOWHERE_DEBUG_ << "IndexHNSW::Load finished, show statistics:";
-        //         LOG_KNOWHERE_DEBUG_ << hnsw_stats->ToString();
+        // LOG_KNOWHERE_DEBUG_ << "IndexHNSW::Load finished, show statistics:";
+        // LOG_KNOWHERE_DEBUG_ << hnsw_stats->ToString();
     } catch (std::exception& e) {
         KNOWHERE_THROW_MSG(e.what());
     }
@@ -123,8 +123,8 @@ IndexHNSW::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) {
         hnsw_stats->update_level_distribution(index_->maxlevel_, index_->level_stats_);
     }
 #endif
-    //     LOG_KNOWHERE_DEBUG_ << "IndexHNSW::Train finished, show statistics:";
-    //     LOG_KNOWHERE_DEBUG_ << GetStatistics()->ToString();
+    // LOG_KNOWHERE_DEBUG_ << "IndexHNSW::Train finished, show statistics:";
+    // LOG_KNOWHERE_DEBUG_ << GetStatistics()->ToString();
 }
 
 DatasetPtr
@@ -209,10 +209,59 @@ IndexHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fais
         }
     }
 #endif
-    //     LOG_KNOWHERE_DEBUG_ << "IndexHNSW::Query finished, show statistics:";
-    //     LOG_KNOWHERE_DEBUG_ << GetStatistics()->ToString();
+    // LOG_KNOWHERE_DEBUG_ << "IndexHNSW::Query finished, show statistics:";
+    // LOG_KNOWHERE_DEBUG_ << GetStatistics()->ToString();
 
     return GenResultDataset(p_id, p_dist);
+}
+
+DatasetPtr
+IndexHNSW::QueryByRange(const DatasetPtr& dataset,
+                        const Config& config,
+                        const faiss::BitsetView bitset) {
+    if (!index_) {
+        KNOWHERE_THROW_MSG("index not initialize or trained");
+    }
+    GET_TENSOR_DATA_DIM(dataset)
+
+    auto range_k = GetIndexParamHNSWK(config);
+    auto radius = GetMetaRadius(config);
+    index_->setEf(GetIndexParamEf(config));
+    bool is_IP = (index_->metric_type_ == 1);  // InnerProduct: 1
+
+    std::vector<std::vector<int64_t>> result_id_array(rows);
+    std::vector<std::vector<float>> result_dist_array(rows);
+    std::vector<size_t> result_lims(rows + 1, 0);
+
+//#pragma omp parallel for
+    for (unsigned int i = 0; i < rows; ++i) {
+        auto single_query = (float*)p_data + i * dim;
+
+        auto dummy_stat = hnswlib::StatisticsInfo();
+        auto rst = index_->searchRange(single_query, range_k, (is_IP ? 1.0f - radius : radius), bitset, dummy_stat);
+
+        for (auto& p : rst) {
+            result_dist_array[i].push_back(is_IP ? (1 - p.first) : p.first);
+            result_id_array[i].push_back(p.second);
+        }
+        result_lims[i+1] = result_lims[i] + rst.size();
+    }
+
+    LOG_KNOWHERE_DEBUG_ << "Range search result num: " << result_lims.back();
+
+    auto p_id = static_cast<int64_t*>(malloc(result_lims.back() * sizeof(int64_t)));
+    auto p_dist = static_cast<float*>(malloc(result_lims.back() * sizeof(float)));
+    auto p_lims = static_cast<size_t*>(malloc((rows + 1) * sizeof(size_t)));
+
+    for (int64_t i = 0; i < rows; i++) {
+        size_t start = result_lims[i];
+        size_t size = result_lims[i+1] - result_lims[i];
+        memcpy(p_id + start, result_id_array[i].data(), size * sizeof(int64_t));
+        memcpy(p_dist + start, result_dist_array[i].data(), size * sizeof(float));
+    }
+    memcpy(p_lims, result_lims.data(), (rows + 1) * sizeof(size_t));
+
+    return GenResultDataset(p_id, p_dist, p_lims);
 }
 
 int64_t

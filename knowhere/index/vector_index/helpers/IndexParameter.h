@@ -46,6 +46,7 @@ constexpr IndexParamType PQ_M = "PQM";      // PQ param for RHNSWPQ
 constexpr IndexParamType EFCONSTRUCTION = "efConstruction";
 constexpr IndexParamType HNSW_M = "M";
 constexpr IndexParamType EF = "ef";
+constexpr IndexParamType HNSW_K = "range_k";
 // Annoy Params
 constexpr IndexParamType N_TREES = "n_trees";
 constexpr IndexParamType SEARCH_K = "search_k";
@@ -156,6 +157,9 @@ DEFINE_CONFIG_SETTER(SetIndexParamHNSWM, indexparam::HNSW_M, int64_t, int64_t)
 
 DEFINE_CONFIG_GETTER(GetIndexParamEf, indexparam::EF, int64_t)
 DEFINE_CONFIG_SETTER(SetIndexParamEf, indexparam::EF, int64_t, int64_t)
+
+DEFINE_CONFIG_GETTER(GetIndexParamHNSWK, indexparam::HNSW_K, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamHNSWK, indexparam::HNSW_K, int64_t, int64_t)
 
 // Annoy Params
 DEFINE_CONFIG_GETTER(GetIndexParamNtrees, indexparam::N_TREES, int64_t)
