@@ -1,0 +1,152 @@
+// Copyright (C) 2019-2020 Zilliz. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance
+// with the License. You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the License
+// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+// or implied. See the License for the specific language governing permissions and limitations under the License.
+
+#pragma once
+
+#include <gtest/gtest.h>
+#include <unordered_set>
+#include <vector>
+
+#include <faiss/utils/BinaryDistance.h>
+#include "knowhere/index/vector_index/adapter/VectorAdapter.h"
+#include "knowhere/utils/BitsetView.h"
+
+typedef float (*fvec_func_ptr)(const float*, const float*, size_t);
+typedef float (*binary_float_func_ptr)(const uint8_t*, const uint8_t*, const size_t);
+
+inline float hamming_dis(const uint8_t* pa, const uint8_t* pb, const size_t code_size) {
+    return faiss::xor_popcnt(pa, pb, code_size);
+}
+
+inline float jaccard_dis(const uint8_t* pa, const uint8_t* pb, const size_t code_size) {
+    auto and_value = faiss::and_popcnt(pa, pb, code_size);
+    auto or_value = faiss::or_popcnt(pa, pb, code_size);
+    return 1.0 - (float)and_value / or_value;
+}
+
+inline float tanimoto_dis(const uint8_t* pa, const uint8_t* pb, const size_t code_size) {
+    auto and_value = faiss::and_popcnt(pa, pb, code_size);
+    auto or_value = faiss::or_popcnt(pa, pb, code_size);
+    auto v = 1.0 - (float)and_value / or_value;
+    return (-log2(1 - v));
+}
+
+template <class C>
+void RunRangeSearchBF(
+    std::vector<int64_t>& golden_ids,
+    std::vector<size_t>& golden_lims,
+    const std::vector<float>& xb,
+    const int64_t nb,
+    const std::vector<float>& xq,
+    const int64_t nq,
+    const int64_t dim,
+    const float radius,
+    const fvec_func_ptr func,
+    const faiss::BitsetView bitset) {
+
+    golden_lims.push_back(0);
+    for (auto i = 0; i < nq; ++i) {
+        const float* pq = xq.data() + i * dim;
+        for (auto j = 0; j < nb; ++j) {
+            if (bitset.empty() || !bitset.test(j)) {
+                const float* pb = xb.data() + j * dim;
+                auto dis = func(pq, pb, dim);
+                if (C::cmp(dis, radius)) {
+                    golden_ids.push_back(j);
+                }
+            }
+        }
+        golden_lims.push_back(golden_ids.size());
+    }
+}
+
+template <class C>
+void RunRangeSearchBF(
+    std::vector<int64_t>& golden_ids,
+    std::vector<size_t>& golden_lims,
+    const std::vector<uint8_t>& xb,
+    const int64_t nb,
+    const std::vector<uint8_t>& xq,
+    const int64_t nq,
+    const int64_t dim,
+    const float radius,
+    const binary_float_func_ptr func,
+    const faiss::BitsetView bitset) {
+
+    golden_lims.push_back(0);
+    for (auto i = 0; i < nq; ++i) {
+        const uint8_t* pq = xq.data() + i * dim / 8;
+        for (auto j = 0; j < nb; ++j) {
+            if (bitset.empty() || !bitset.test(j)) {
+                const uint8_t* pb = xb.data() + j * dim / 8;
+                auto dist = func(pq, pb, dim/8);
+                if (C::cmp(dist, radius)) {
+                    golden_ids.push_back(j);
+                }
+            }
+        }
+        golden_lims.push_back(golden_ids.size());
+    }
+}
+
+template <class C>
+void CheckRangeSearchResult(
+    const knowhere::DatasetPtr& result,
+    const int64_t nq,
+    const float radius,
+    const std::vector<int64_t>& golden_ids,
+    const std::vector<size_t>& golden_lims,
+    const bool is_idmap) {
+
+    auto lims = knowhere::GetDatasetLims(result);
+    auto ids = knowhere::GetDatasetIDs(result);
+    auto distances = knowhere::GetDatasetDistance(result);
+
+    printf("Range search num (%4ld / %4ld)\n", lims[nq], golden_lims[nq]);
+    for (int i = 0; i < nq; i++) {
+        size_t golden_size = golden_lims[i+1] - golden_lims[i];
+        size_t size = lims[i+1] - lims[i];
+        if (is_idmap) {
+            ASSERT_EQ(size, golden_size);
+        }
+
+        int64_t recall_cnt = 0;
+        std::unordered_set<int64_t> golden_ids_set(golden_ids.begin() + golden_lims[i],
+                                                  golden_ids.begin() + golden_lims[i+1]);
+        for (int j = lims[i]; j < lims[i+1]; j++) {
+            bool hit = (golden_ids_set.count(ids[j]) == 1);
+            if (hit) {
+                recall_cnt++;
+            } else if (is_idmap) {
+                // only IDMAP always hit
+                ASSERT_TRUE(hit);
+            }
+            ASSERT_TRUE(C::cmp(distances[j], radius));
+        }
+
+        int64_t accuracy_cnt = 0;
+        std::vector<int64_t> ids_array(ids + lims[i], ids + lims[i+1]);
+        std::unordered_set<int64_t> ids_set(ids_array.begin(), ids_array.end());
+        for (size_t j = golden_lims[i]; j < golden_lims[i+1]; j++) {
+            bool hit = (ids_set.count(golden_ids[j]) == 1);
+            if (hit) {
+                accuracy_cnt++;
+            } else if (is_idmap) {
+                // only IDMAP always hit
+                ASSERT_TRUE(hit);
+            }
+        }
+
+        printf("\tNo.%2d: recall = %.2f (%4ld / %4ld),  accuracy = %.2f (%4ld / %4ld)\n", i,
+               (recall_cnt * 1.0f / golden_size), recall_cnt, golden_size,
+               (accuracy_cnt * 1.0f / size), accuracy_cnt, size);
+    }
+}

@@ -32,7 +32,9 @@
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
 #endif
 
+#include "knowhere/utils/distances_simd.h"
 #include "unittest/Helper.h"
+#include "unittest/range_utils.h"
 #include "unittest/utils.h"
 
 using ::testing::Combine;
@@ -59,19 +61,6 @@ class IVFTest : public DataGen,
 #ifdef KNOWHERE_GPU_VERSION
         knowhere::FaissGpuResourceMgr::GetInstance().Free();
 #endif
-    }
-
-    template <class C>
-    void CheckRangeSearchResult(
-        const knowhere::DatasetPtr& result,
-        const float radius) {
-
-        auto lims = knowhere::GetDatasetLims(result);
-        auto distances = knowhere::GetDatasetDistance(result);
-
-        for (auto i = 0; i < lims[nq]; ++i) {
-            ASSERT_TRUE(C::cmp(distances[i], radius));
-        }
     }
 
  protected:
@@ -132,8 +121,7 @@ TEST_P(IVFTest, ivf_serialize) {
     };
 
     // serialize index
-    index_->Train(base_dataset, conf_);
-    index_->AddWithoutIds(base_dataset, conf_);
+    index_->BuildAll(base_dataset, conf_);
     auto binaryset = index_->Serialize(conf_);
     auto bin = binaryset.GetByName("IVF");
 
@@ -154,8 +142,7 @@ TEST_P(IVFTest, ivf_serialize) {
 
 TEST_P(IVFTest, ivf_slice) {
     // serialize index
-    index_->Train(base_dataset, conf_);
-    index_->AddWithoutIds(base_dataset, conf_);
+    index_->BuildAll(base_dataset, conf_);
     auto binaryset = index_->Serialize(conf_);
 
     index_->Load(binaryset);
@@ -171,18 +158,22 @@ TEST_P(IVFTest, ivf_range_search_l2) {
     }
     knowhere::SetMetaMetricType(conf_, knowhere::metric::L2);
 
-    index_->Train(base_dataset, conf_);
-    index_->AddWithoutIds(base_dataset, knowhere::Config());
+    index_->BuildAll(base_dataset, conf_);
 
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
     auto test_range_search_l2 = [&](float radius, const faiss::BitsetView bitset) {
-        knowhere::SetMetaRadius(conf_, radius);
+        std::vector<int64_t> golden_labels;
+        std::vector<size_t> golden_lims;
+        RunRangeSearchBF<CMin<float>>(golden_labels, golden_lims, xb, nb, xq, nq, dim,
+                                      radius * radius, faiss::fvec_L2sqr_ref, bitset);
+
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, radius * radius);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius * radius, golden_labels, golden_lims, false);
     };
 
-    for (float radius: {4.0, 5.0, 6.0}) {
+    for (float radius: {4.1f, 4.2f, 4.3f}) {
+        knowhere::SetMetaRadius(conf_, radius);
         test_range_search_l2(radius, nullptr);
         test_range_search_l2(radius, *bitset);
     }
@@ -194,18 +185,22 @@ TEST_P(IVFTest, ivf_range_search_ip) {
     }
     knowhere::SetMetaMetricType(conf_, knowhere::metric::IP);
 
-    index_->Train(base_dataset, conf_);
-    index_->AddWithoutIds(base_dataset, knowhere::Config());
+    index_->BuildAll(base_dataset, conf_);
 
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
     auto test_range_search_ip = [&](float radius, const faiss::BitsetView bitset) {
-        knowhere::SetMetaRadius(conf_, radius);
+        std::vector<int64_t> golden_labels;
+        std::vector<size_t> golden_lims;
+        RunRangeSearchBF<CMax<float>>(golden_labels, golden_lims, xb, nb, xq, nq, dim,
+                                      radius, faiss::fvec_inner_product_ref, bitset);
+
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMax<float>>(result, radius);
+        CheckRangeSearchResult<CMax<float>>(result, nq, radius, golden_labels, golden_lims, false);
     };
 
-    for (float radius: {30.0, 35.0, 40.0}) {
+    for (float radius: {42.0f, 43.0f, 44.0f}) {
+        knowhere::SetMetaRadius(conf_, radius);
         test_range_search_ip(radius, nullptr);
         test_range_search_ip(radius, *bitset);
     }
@@ -216,8 +211,7 @@ TEST_P(IVFTest, ivf_range_search_ip) {
 TEST_P(IVFTest, clone_test) {
     assert(!xb.empty());
 
-    index_->Train(base_dataset, conf_);
-    index_->AddWithoutIds(base_dataset, conf_);
+    index_->BuildAll(base_dataset, conf_);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
@@ -280,8 +274,7 @@ TEST_P(IVFTest, gpu_seal_test) {
     ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
     ASSERT_ANY_THROW(index_->Seal());
 
-    index_->Train(base_dataset, conf_);
-    index_->AddWithoutIds(base_dataset, conf_);
+    index_->BuildAll(base_dataset, conf_);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
