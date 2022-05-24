@@ -24,6 +24,9 @@
     X;                          \
     double t_diff = elapsed() - t_start;
 
+using idx_t = int64_t;
+using distance_t = float;
+
 class Benchmark_faiss : public Benchmark_sift {
  public:
     void
@@ -46,10 +49,10 @@ class Benchmark_faiss : public Benchmark_sift {
             index_ = faiss::index_factory(dim_, index_key_.c_str(), metric_type_);
 
             printf("[%.3f s] Training on %d vectors\n", get_time_diff(), nb_);
-            index_->train(nb_, xb_);
+            index_->train(nb_, (const float*)xb_);
 
             printf("[%.3f s] Indexing on %d vectors\n", get_time_diff(), nb_);
-            index_->add(nb_, xb_);
+            index_->add(nb_, (const float*)xb_);
 
             printf("[%.3f s] Writing index file: %s\n", get_time_diff(), index_file_name.c_str());
             write_index(index_file_name);
@@ -65,7 +68,7 @@ class Benchmark_faiss : public Benchmark_sift {
         printf("================================================================================\n");
         for (auto nq : NQs_) {
             for (auto k : TOPKs_) {
-                CALC_TIME_SPAN(index_->search(nq, xq_, k, D, I));
+                CALC_TIME_SPAN(index_->search(nq, (const float*)xq_, k, D, I));
                 float recall = CalcRecall(I, nq, k);
                 printf("  nq = %4d, k = %4d, elapse = %.4fs, R@ = %.4f\n", nq, k, t_diff, recall);
             }
@@ -90,7 +93,7 @@ class Benchmark_faiss : public Benchmark_sift {
             params.set_index_parameters(index_, nprobe_str.c_str());
             for (auto nq : NQs_) {
                 for (auto k : TOPKs_) {
-                    CALC_TIME_SPAN(index_->search(nq, xq_, k, D, I));
+                    CALC_TIME_SPAN(index_->search(nq, (const float*)xq_, k, D, I));
                     float recall = CalcRecall(I, nq, k);
                     printf("  nprobe = %4d, nq = %4d, k = %4d, elapse = %.4fs, R@ = %.4f\n", nprobe, nq, k, t_diff,
                            recall);
@@ -115,7 +118,7 @@ class Benchmark_faiss : public Benchmark_sift {
         for (auto ef : EFs_) {
             for (auto nq : NQs_) {
                 for (auto k : TOPKs_) {
-                    CALC_TIME_SPAN(index_->search(nq_, xq_, k, D, I));
+                    CALC_TIME_SPAN(index_->search(nq_, (const float*)xq_, k, D, I));
                     float recall = CalcRecall(I, nq, k);
                     printf("  ef = %4d, nq = %4d, k = %4d, elapse = %.4fs, R@ = %.4f\n", ef, nq, k, t_diff, recall);
                 }
@@ -131,8 +134,12 @@ class Benchmark_faiss : public Benchmark_sift {
  protected:
     void
     SetUp() override {
+        T0_ = elapsed();
         set_ann_test_name("sift-128-euclidean");
-        Benchmark_sift::SetUp();
+        parse_ann_test_name();
+        load_hdf5_data<false>();
+
+        assert(metric_str_ == METRIC_IP_STR || metric_str_ == METRIC_L2_STR);
         metric_type_ = (metric_str_ == METRIC_IP_STR) ? faiss::METRIC_INNER_PRODUCT : faiss::METRIC_L2;
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AUTO);
     }
