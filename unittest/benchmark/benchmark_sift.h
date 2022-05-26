@@ -35,6 +35,9 @@ static const char* HDF5_DATASET_DISTANCES = "distances";
 
 static const char* METRIC_IP_STR = "angular";
 static const char* METRIC_L2_STR = "euclidean";
+static const char* METRIC_HAM_STR = "hamming";
+static const char* METRIC_JAC_STR = "jaccard";
+static const char* METRIC_TAN_STR = "tanimoto";
 
 /************************************************************************************
  * https://github.com/erikbern/ann-benchmarks
@@ -49,8 +52,6 @@ static const char* METRIC_L2_STR = "euclidean";
  * NYTimes  256         290,000     10,000      100         Angular     HDF5 (301MB)
  * SIFT     128         1,000,000   10,000      100         Euclidean   HDF5 (501MB)
  *************************************************************************************/
-using idx_t = int64_t;
-using distance_t = float;
 
 class Benchmark_sift : public ::testing::Test {
  public:
@@ -87,13 +88,13 @@ class Benchmark_sift : public ::testing::Test {
     }
 
     float
-    CalcRecall(const idx_t* ids, int32_t nq, int32_t k) {
+    CalcRecall(const int64_t* ids, int32_t nq, int32_t k) {
         int32_t min_k = std::min(gt_k_, k);
         int32_t hit = 0;
         for (int32_t i = 0; i < nq; i++) {
-            std::unordered_set<idx_t> ground(gt_ids_ + i * gt_k_, gt_ids_ + i * gt_k_ + min_k);
+            std::unordered_set<int32_t> ground(gt_ids_ + i * gt_k_, gt_ids_ + i * gt_k_ + min_k);
             for (int32_t j = 0; j < min_k; j++) {
-                idx_t id = ids[i * k + j];
+                auto id = ids[i * k + j];
                 if (ground.count(id) > 0) {
                     hit++;
                 }
@@ -103,15 +104,15 @@ class Benchmark_sift : public ::testing::Test {
     }
 
     float
-    CalcRecall(const idx_t* ids, int32_t nq_start, int32_t step, int32_t k) {
+    CalcRecall(const int64_t* ids, int32_t nq_start, int32_t step, int32_t k) {
         assert(nq_start + step <= 10000);
         int32_t min_k = std::min(gt_k_, k);
         int32_t hit = 0;
         for (int32_t i = 0; i < step; i++) {
-            std::unordered_set<idx_t> ground(gt_ids_ + (i + nq_start) * gt_k_,
-                                             gt_ids_ + (i + nq_start) * gt_k_ + min_k);
+            std::unordered_set<int32_t> ground(gt_ids_ + (i + nq_start) * gt_k_,
+                                               gt_ids_ + (i + nq_start) * gt_k_ + min_k);
             for (int32_t j = 0; j < min_k; j++) {
-                idx_t id = ids[i * k + j];
+                auto id = ids[i * k + j];
                 if (ground.count(id) > 0) {
                     hit++;
                 }
@@ -133,60 +134,80 @@ class Benchmark_sift : public ::testing::Test {
 
         dim_ = std::stoi(ann_test_name_.substr(pos1 + 1, pos2 - pos1 - 1));
         metric_str_ = ann_test_name_.substr(pos2 + 1);
-        assert(metric_str_ == METRIC_IP_STR || metric_str_ == METRIC_L2_STR);
     }
 
+    template <bool is_binary>
     void
-    load_base_data() {
+    load_hdf5_data() {
         const std::string ann_file_name = ann_test_name_ + HDF5_POSTFIX;
-
         int32_t dim;
+
         printf("[%.3f s] Loading HDF5 file: %s\n", get_time_diff(), ann_file_name.c_str());
-        xb_ = (float*)hdf5_read(ann_file_name, HDF5_DATASET_TRAIN, H5T_FLOAT, dim, nb_);
-        assert(dim == dim_ || !"dataset does not have correct dimension");
+
+        /* load train data */
+        printf("[%.3f s] Loading train data\n", get_time_diff());
+        if (!is_binary) {
+            xb_ = hdf5_read(ann_file_name, HDF5_DATASET_TRAIN, H5T_FLOAT, dim, nb_);
+            assert(dim == dim_ || !"train dataset has incorrect dimension");
+        } else {
+            xb_ = hdf5_read(ann_file_name, HDF5_DATASET_TRAIN, H5T_INTEGER, dim, nb_);
+            assert(dim * 32 == dim_ || !"train dataset has incorrect dimension");
+        }
 
         if (metric_str_ == METRIC_IP_STR) {
-            printf("[%.3f s] Normalizing base data set \n", get_time_diff());
-            normalize(xb_, nb_, dim_);
+            printf("[%.3f s] Normalizing train dataset \n", get_time_diff());
+            normalize((float*)xb_, nb_, dim_);
         }
-    }
 
-    void
-    load_query_data() {
-        const std::string ann_file_name = ann_test_name_ + HDF5_POSTFIX;
-
-        int32_t dim;
-        xq_ = (float*)hdf5_read(ann_file_name, HDF5_DATASET_TEST, H5T_FLOAT, dim, nq_);
-        assert(dim == dim_ || !"query does not have same dimension as train set");
+        /* load test data */
+        printf("[%.3f s] Loading test data\n", get_time_diff());
+        if (!is_binary) {
+            xq_ = hdf5_read(ann_file_name, HDF5_DATASET_TEST, H5T_FLOAT, dim, nq_);
+            assert(dim == dim_ || !"test dataset has incorrect dimension");
+        } else {
+            xq_ = hdf5_read(ann_file_name, HDF5_DATASET_TEST, H5T_INTEGER, dim, nq_);
+            assert(dim * 32 == dim_ || !"test dataset has incorrect dimension");
+        }
 
         if (metric_str_ == METRIC_IP_STR) {
-            printf("[%.3f s] Normalizing query data \n", get_time_diff());
-            normalize(xq_, nq_, dim_);
+            printf("[%.3f s] Normalizing test dataset \n", get_time_diff());
+            normalize((float*)xq_, nq_, dim_);
         }
-    }
 
-    void
-    load_ground_truth() {
-        const std::string ann_file_name = ann_test_name_ + HDF5_POSTFIX;
-
-        // load ground-truth and convert int to long
+        /* load ground-truth data */
         int32_t gt_nq;
-        int* gt_int = (int*)hdf5_read(ann_file_name, HDF5_DATASET_NEIGHBORS, H5T_INTEGER, gt_k_, gt_nq);
-        assert(gt_nq == nq_ || !"incorrect nb of ground truth index");
+        printf("[%.3f s] Loading ground truth data\n", get_time_diff());
+        gt_ids_ = (int32_t*)hdf5_read(ann_file_name, HDF5_DATASET_NEIGHBORS, H5T_INTEGER, gt_k_, gt_nq);
+        assert(gt_nq == nq_ || !"incorrect nq of ground truth labels");
 
-        gt_ids_ = new idx_t[gt_k_ * nq_];
-        for (int32_t i = 0; i < gt_k_ * nq_; i++) {
-            gt_ids_[i] = gt_int[i];
+#if 0
+        if (!is_binary) {
+            gt_dist_ = hdf5_read(ann_file_name, HDF5_DATASET_DISTANCES, H5T_FLOAT, gt_k_, gt_nq);
+            assert(gt_nq == nq_ || !"incorrect nq of ground truth distance");
+        } else {
+            gt_dist_ = hdf5_read(ann_file_name, HDF5_DATASET_DISTANCES, H5T_INTEGER, gt_k_, gt_nq);
+            assert(gt_nq == nq_ || !"incorrect nq of ground truth distance");
         }
-        delete[] gt_int;
-
-#if DEBUG_VERBOSE
-        distance_t* gt_dist = (float*)hdf5_read(ann_file_name, HDF5_DATASET_DISTANCES, H5T_FLOAT, k, nq2);
-        assert(nq2 == nq || !"incorrect nb of ground truth distance");
 #endif
     }
 
- private:
+    void
+    free_all() {
+        if (xb_ != nullptr) {
+            delete[](float*) xb_;
+        }
+        if (xq_ != nullptr) {
+            delete[](float*) xq_;
+        }
+        if (gt_ids_ != nullptr) {
+            delete[] gt_ids_;
+        }
+        if (gt_dist_ != nullptr) {
+            delete[](float*) gt_dist_;
+        }
+    }
+
+ protected:
     void*
     hdf5_read(const std::string& file_name, const std::string& dataset_name, H5T_class_t dataset_class, int32_t& d_out,
               int32_t& n_out) {
@@ -237,8 +258,8 @@ class Benchmark_sift : public ::testing::Test {
         /* Read data from hyperslab in the file into the hyperslab in memory and display. */
         switch (t_class) {
             case H5T_INTEGER:
-                data_out = new int[dims_out[0] * dims_out[1]];
-                H5Dread(dataset, H5T_NATIVE_INT, memspace, dataspace, H5P_DEFAULT, data_out);
+                data_out = new int32_t[dims_out[0] * dims_out[1]];
+                H5Dread(dataset, H5T_NATIVE_INT32, memspace, dataspace, H5P_DEFAULT, data_out);
                 break;
             case H5T_FLOAT:
                 data_out = new float[dims_out[0] * dims_out[1]];
@@ -259,28 +280,49 @@ class Benchmark_sift : public ::testing::Test {
         return data_out;
     }
 
- protected:
+    // For binary vector, dim should be divided by 32, since we use int32 to store binary vector data */
+    template <bool is_binary>
     void
-    SetUp() override {
-        T0_ = elapsed();
+    hdf5_write(const char* file_name, const int32_t dim, const int32_t k, const void* xb, const int32_t nb,
+               const void* xq, const int32_t nq, const void* g_ids, const void* g_dist) {
+        /* Open the file and the dataset. */
+        hid_t file = H5Fcreate(file_name, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-        parse_ann_test_name();
+        auto write_hdf5_dataset = [](hid_t file, const char* dataset_name, hid_t type_id, int32_t rows, int32_t cols,
+                                     const void* data) {
+            hsize_t dims[2];
+            dims[0] = rows;
+            dims[1] = cols;
+            auto dataspace = H5Screate_simple(2, dims, NULL);
+            auto dataset = H5Dcreate2(file, dataset_name, type_id, dataspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+            auto err = H5Dwrite(dataset, H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+            assert(err == 0);
+            H5Dclose(dataset);
+            H5Sclose(dataspace);
+        };
 
-        printf("[%.3f s] Loading base data\n", get_time_diff());
-        load_base_data();
+        /* write train dataset */
+        if (!is_binary) {
+            write_hdf5_dataset(file, HDF5_DATASET_TRAIN, H5T_NATIVE_FLOAT, nb, dim, xb);
+        } else {
+            write_hdf5_dataset(file, HDF5_DATASET_TRAIN, H5T_NATIVE_INT32, nb, dim, xb);
+        }
 
-        printf("[%.3f s] Loading queries\n", get_time_diff());
-        load_query_data();
+        /* write test dataset */
+        if (!is_binary) {
+            write_hdf5_dataset(file, HDF5_DATASET_TEST, H5T_NATIVE_FLOAT, nq, dim, xq);
+        } else {
+            write_hdf5_dataset(file, HDF5_DATASET_TEST, H5T_NATIVE_INT32, nq, dim, xq);
+        }
 
-        printf("[%.3f s] Loading ground truth\n", get_time_diff());
-        load_ground_truth();
-    }
+        /* write ground-truth labels dataset */
+        write_hdf5_dataset(file, HDF5_DATASET_NEIGHBORS, H5T_NATIVE_INT32, nq, k, g_ids);
 
-    void
-    TearDown() override {
-        delete[] xb_;
-        delete[] xq_;
-        delete[] gt_ids_;
+        /* write ground-truth distance dataset */
+        write_hdf5_dataset(file, HDF5_DATASET_DISTANCES, H5T_NATIVE_FLOAT, nq, k, g_dist);
+
+        /* Close/release resources. */
+        H5Fclose(file);
     }
 
  protected:
@@ -288,10 +330,11 @@ class Benchmark_sift : public ::testing::Test {
     std::string ann_test_name_ = "";
     std::string metric_str_;
     int32_t dim_;
-    distance_t* xb_;
-    distance_t* xq_;
+    void* xb_ = nullptr;
+    void* xq_ = nullptr;
     int32_t nb_;
     int32_t nq_;
+    int32_t* gt_ids_ = nullptr;  // ground-truth labels
+    void* gt_dist_ = nullptr;    // ground-truth distances
     int32_t gt_k_;
-    idx_t* gt_ids_;  // ground-truth index
 };

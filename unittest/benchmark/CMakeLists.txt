@@ -34,31 +34,14 @@ set( UTIL_SRCS
         )
 
 #==============================================================================
-set( BENCHMARK_FAISS_SRCS
-        ${UTIL_SRCS}
-        benchmark_faiss_test.cpp
-        )
+macro(benchmark_test target file)
+    set(FILE_SRCS ${UTIL_SRCS} ${file})
+    add_executable(${target} ${FILE_SRCS})
+    target_link_libraries(${target} ${depend_libs} ${unittest_libs} ${basic_libs})
+    install(TARGETS ${target} DESTINATION unittest)
+endmacro()
 
-add_executable(benchmark_faiss ${BENCHMARK_FAISS_SRCS})
-target_link_libraries(benchmark_faiss ${depend_libs} ${unittest_libs} ${basic_libs})
-install(TARGETS benchmark_faiss DESTINATION unittest)
-
-#==============================================================================
-set( BENCHMARK_KNOWHERE_SRCS
-        ${UTIL_SRCS}
-        benchmark_knowhere_test.cpp
-        )
-
-add_executable(benchmark_knowhere ${BENCHMARK_KNOWHERE_SRCS})
-target_link_libraries(benchmark_knowhere ${depend_libs} ${unittest_libs} ${basic_libs})
-install(TARGETS benchmark_knowhere DESTINATION unittest)
-
-#==============================================================================
-set( BENCHMARK_KNOWHERE_PERF_SRCS
-        ${UTIL_SRCS}
-        benchmark_knowhere_perf.cpp
-        )
-
-add_executable(benchmark_knowhere_perf ${BENCHMARK_KNOWHERE_PERF_SRCS})
-target_link_libraries(benchmark_knowhere_perf ${depend_libs} ${unittest_libs} ${basic_libs})
-install(TARGETS benchmark_knowhere_perf DESTINATION unittest)
+benchmark_test(benchmark_faiss              benchmark_faiss.cpp)
+benchmark_test(benchmark_knowhere_binary    benchmark_knowhere_binary.cpp)
+benchmark_test(benchmark_knowhere_float     benchmark_knowhere_float.cpp)
+benchmark_test(benchmark_knowhere_perf      benchmark_knowhere_perf.cpp)

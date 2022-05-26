@@ -24,7 +24,7 @@
     X;                          \
     double t_diff = elapsed() - t_start;
 
-class Benchmark_knowhere : public Benchmark_sift {
+class Benchmark_knowhere_binary : public Benchmark_sift {
  public:
     void
     write_index(const std::string& filename, const knowhere::Config& conf) {
@@ -107,7 +107,7 @@ class Benchmark_knowhere : public Benchmark_sift {
     }
 
     void
-    test_idmap(const knowhere::Config& cfg) {
+    test_binary_idmap(const knowhere::Config& cfg) {
         auto conf = cfg;
 
         printf("\n[%0.3f s] %s | %s \n", get_time_diff(), ann_test_name_.c_str(), std::string(index_type_).c_str());
@@ -128,7 +128,7 @@ class Benchmark_knowhere : public Benchmark_sift {
     }
 
     void
-    test_ivf(const knowhere::Config& cfg) {
+    test_binary_ivf(const knowhere::Config& cfg) {
         auto conf = cfg;
         auto nlist = knowhere::GetIndexParamNlist(conf);
 
@@ -154,68 +154,26 @@ class Benchmark_knowhere : public Benchmark_sift {
                std::string(index_type_).c_str());
     }
 
-    void
-    test_hnsw(const knowhere::Config& cfg) {
-        auto conf = cfg;
-        auto M = knowhere::GetIndexParamHNSWM(conf);
-        auto efConstruction = knowhere::GetIndexParamEfConstruction(conf);
-
-        printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld\n", get_time_diff(), ann_test_name_.c_str(),
-               std::string(index_type_).c_str(), M, efConstruction);
-        printf("================================================================================\n");
-        for (auto ef : EFs_) {
-            knowhere::SetIndexParamEf(conf, ef);
-            for (auto nq : NQs_) {
-                knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
-                for (auto k : TOPKs_) {
-                    knowhere::SetMetaTopk(conf, k);
-                    CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf, nullptr));
-                    auto ids = knowhere::GetDatasetIDs(result);
-                    float recall = CalcRecall(ids, nq, k);
-                    printf("  ef = %4d, nq = %4d, k = %4d, elapse = %.4fs, R@ = %.4f\n", ef, nq, k, t_diff, recall);
-                }
-            }
-        }
-        printf("================================================================================\n");
-        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(),
-               std::string(index_type_).c_str());
-    }
-
-    void
-    test_annoy(const knowhere::Config& cfg) {
-        auto conf = cfg;
-        auto n_trees = knowhere::GetIndexParamNtrees(conf);
-
-        printf("\n[%0.3f s] %s | %s | n_trees=%ld \n", get_time_diff(), ann_test_name_.c_str(),
-               std::string(index_type_).c_str(), n_trees);
-        printf("================================================================================\n");
-        for (auto sk : SEARCH_Ks_) {
-            knowhere::SetIndexParamSearchK(conf, sk);
-            for (auto nq : NQs_) {
-                knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
-                for (auto k : TOPKs_) {
-                    knowhere::SetMetaTopk(conf, k);
-                    CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf, nullptr));
-                    auto ids = knowhere::GetDatasetIDs(result);
-                    float recall = CalcRecall(ids, nq, k);
-                    printf("  search_k = %4d, nq = %4d, k = %4d, elapse = %.4fs, R@ = %.4f\n", sk, nq, k, t_diff,
-                           recall);
-                }
-            }
-        }
-        printf("================================================================================\n");
-        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(),
-               std::string(index_type_).c_str());
-    }
-
  protected:
     void
     SetUp() override {
-        set_ann_test_name("sift-128-euclidean");
-        Benchmark_sift::SetUp();
-        metric_type_ = (metric_str_ == METRIC_IP_STR) ? knowhere::metric::IP : knowhere::metric::L2;
+        T0_ = elapsed();
+        // set_ann_test_name("sift-128-euclidean");
+        set_ann_test_name("sift-4096-hamming");
+        parse_ann_test_name();
+        load_hdf5_data<true>();
+
+        assert(metric_str_ == METRIC_HAM_STR || metric_str_ == METRIC_JAC_STR || metric_str_ == METRIC_TAN_STR);
+        metric_type_ = (metric_str_ == METRIC_HAM_STR)   ? knowhere::metric::HAMMING
+                       : (metric_str_ == METRIC_JAC_STR) ? knowhere::metric::JACCARD
+                                                         : knowhere::metric::TANIMOTO;
         knowhere::SetMetaMetricType(cfg_, metric_type_);
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AUTO);
+    }
+
+    void
+    TearDown() override {
+        free_all();
     }
 
  protected:
@@ -231,49 +189,63 @@ class Benchmark_knowhere : public Benchmark_sift {
     // IVF index params
     const std::vector<int32_t> NLISTs_ = {1024};
     const std::vector<int32_t> NPROBEs_ = {1, 2, 4, 8, 16, 32, 64, 128, 256};
-
-    // HNSW index params
-    const std::vector<int32_t> Ms_ = {16};
-    const std::vector<int32_t> EFCONs_ = {100};
-    const std::vector<int32_t> EFs_ = {16, 32, 64, 128, 256};
-
-    // ANNOY index params
-    const std::vector<int32_t> N_TREEs_ = {32};
-    const std::vector<int32_t> SEARCH_Ks_ = {16, 32, 64, 128, 256};
 };
 
-TEST_F(Benchmark_knowhere, TEST_IDMAP) {
-    index_type_ = knowhere::IndexEnum::INDEX_FAISS_IDMAP;
+// This testcase can be used to generate binary sift1m HDF5 file
+// Following these steps:
+//   1. set_ann_test_name("sift-128-euclidean")
+//   2. use load_hdf5_data<false>();
+//   3. change metric type to expected value (hamming/jaccard/tanimoto) manually
+//   4. specify the hdf5 file name to generate
+//   5. run this testcase
+#if 0
+TEST_F(Benchmark_knowhere_binary, TEST_CREATE_BINARY_HDF5) {
+    index_type_ = knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP;
+
+    knowhere::Config conf = cfg_;
+    std::string index_file_name = get_index_name({});
+
+    // use sift1m data as binary data
+    dim_ *= 32;
+    metric_type_ = knowhere::metric::HAMMING;
+    knowhere::SetMetaMetricType(conf, metric_type_);
+
+    create_cpu_index(index_file_name, conf);
+    index_->Load(binary_set_);
+
+    knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq_, dim_, xq_);
+    knowhere::SetMetaTopk(conf, gt_k_);
+    auto result = index_->Query(ds_ptr, conf, nullptr);
+
+    auto gt_ids = knowhere::GetDatasetIDs(result);
+    auto gt_dist = knowhere::GetDatasetDistance(result);
+
+    auto gt_ids_int = new int32_t[gt_k_ * nq_];
+    for (int32_t i = 0; i < gt_k_ * nq_; i++) {
+        gt_ids_int[i] = gt_ids[i];
+    }
+
+    assert(dim_ == 4096);
+    assert(nq_ == 10000);
+    assert(gt_k_ == 100);
+    hdf5_write<true>("sift-4096-hamming.hdf5", dim_/32, gt_k_, xb_, nb_, xq_, nq_, gt_ids_int, gt_dist);
+
+    delete[] gt_ids_int;
+}
+#endif
+
+TEST_F(Benchmark_knowhere_binary, TEST_BINARY_IDMAP) {
+    index_type_ = knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP;
 
     knowhere::Config conf = cfg_;
     std::string index_file_name = get_index_name({});
     create_cpu_index(index_file_name, conf);
     index_->Load(binary_set_);
-    test_idmap(conf);
+    test_binary_idmap(conf);
 }
 
-TEST_F(Benchmark_knowhere, TEST_IVFFLAT_NM) {
-    index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
-
-    knowhere::Config conf = cfg_;
-    for (auto nlist : NLISTs_) {
-        std::string index_file_name = get_index_name({nlist});
-        knowhere::SetIndexParamNlist(conf, nlist);
-        create_cpu_index(index_file_name, conf);
-
-        // IVFFLAT_NM should load raw data
-        knowhere::BinaryPtr bin = std::make_shared<knowhere::Binary>();
-        bin->data = std::shared_ptr<uint8_t[]>((uint8_t*)xb_, [&](uint8_t*) {});
-        bin->size = dim_ * nb_ * sizeof(float);
-        binary_set_.Append(RAW_DATA, bin);
-
-        index_->Load(binary_set_);
-        test_ivf(conf);
-    }
-}
-
-TEST_F(Benchmark_knowhere, TEST_IVFSQ8) {
-    index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFSQ8;
+TEST_F(Benchmark_knowhere_binary, TEST_BINARY_IVFFLAT) {
+    index_type_ = knowhere::IndexEnum::INDEX_FAISS_BIN_IVFFLAT;
 
     knowhere::Config conf = cfg_;
     for (auto nlist : NLISTs_) {
@@ -281,35 +253,6 @@ TEST_F(Benchmark_knowhere, TEST_IVFSQ8) {
         knowhere::SetIndexParamNlist(conf, nlist);
         create_cpu_index(index_file_name, conf);
         index_->Load(binary_set_);
-        test_ivf(conf);
-    }
-}
-
-TEST_F(Benchmark_knowhere, TEST_HNSW) {
-    index_type_ = knowhere::IndexEnum::INDEX_HNSW;
-
-    knowhere::Config conf = cfg_;
-    for (auto M : Ms_) {
-        knowhere::SetIndexParamHNSWM(conf, M);
-        for (auto efc : EFCONs_) {
-            std::string index_file_name = get_index_name({M, efc});
-            knowhere::SetIndexParamEfConstruction(conf, efc);
-            create_cpu_index(index_file_name, conf);
-            index_->Load(binary_set_);
-            test_hnsw(conf);
-        }
-    }
-}
-
-TEST_F(Benchmark_knowhere, TEST_ANNOY) {
-    index_type_ = knowhere::IndexEnum::INDEX_ANNOY;
-
-    knowhere::Config conf = cfg_;
-    for (auto n : N_TREEs_) {
-        knowhere::SetIndexParamNtrees(conf, n);
-        std::string index_file_name = get_index_name({n});
-        create_cpu_index(index_file_name, conf);
-        index_->Load(binary_set_);
-        test_annoy(conf);
+        test_binary_ivf(conf);
     }
 }
