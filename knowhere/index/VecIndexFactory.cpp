@@ -100,7 +100,7 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
         }
 #ifdef KNOWHERE_GPU_VERSION
         case IndexMode::MODE_GPU: {
-            auto gpu_device = -1;  // TODO: remove hardcode here, get from invoker
+            auto gpu_device = 0;  // TODO: remove hardcode here, get from invoker
             if (type == IndexEnum::INDEX_FAISS_BIN_IDMAP) {
                 return std::make_shared<knowhere::BinaryIDMAP>();
             } else if (type == IndexEnum::INDEX_FAISS_BIN_IVFFLAT) {
@@ -116,7 +116,7 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
             } else if (type == IndexEnum::INDEX_FAISS_IVFSQ8H) {
                 return std::make_shared<knowhere::IVFSQHybrid>(gpu_device);
             } else {
-                KNOWHERE_THROW_FORMAT("Invalid index type %s", type.c_str());
+                KNOWHERE_THROW_FORMAT("Invalid index type %s", std::string(type).c_str());
             }
         }
 #endif

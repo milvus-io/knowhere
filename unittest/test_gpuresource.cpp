@@ -21,6 +21,7 @@
 #include "knowhere/common/Exception.h"
 #include "knowhere/common/Timer.h"
 #include "knowhere/index/IndexType.h"
+#include "knowhere/index/VecIndexFactory.h"
 #include "knowhere/index/vector_index/IndexIVF.h"
 #include "knowhere/index/vector_index/IndexIVFPQ.h"
 #include "knowhere/index/vector_index/IndexIVFSQ.h"
@@ -54,9 +55,9 @@ class GPURESTEST : public DataGen, public TestGpuIndexBase {
     }
 
  protected:
-    milvus::knowhere::IndexType index_type_;
-    milvus::knowhere::IndexMode index_mode_;
-    milvus::knowhere::IVFPtr index_ = nullptr;
+    knowhere::IndexType index_type_;
+    knowhere::IndexMode index_mode_;
+    knowhere::VecIndexPtr index_ = nullptr;
 
     int64_t* ids = nullptr;
     float* dis = nullptr;
@@ -67,9 +68,9 @@ TEST_F(GPURESTEST, copyandsearch) {
     // search and copy at the same time
     printf("==================\n");
 
-    index_type_ = milvus::knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
-    index_mode_ = milvus::knowhere::IndexMode::MODE_GPU;
-    index_ = IndexFactory(index_type_, index_mode_);
+    index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFSQ8;
+    index_mode_ = knowhere::IndexMode::MODE_GPU;
+    index_ = knowhere::VecIndexFactory::GetInstance().CreateVecIndex(index_type_, index_mode_);
 
     auto conf = ParamGenerator::GetInstance().Gen(index_type_);
     index_->Train(base_dataset, conf);
@@ -77,10 +78,10 @@ TEST_F(GPURESTEST, copyandsearch) {
     auto result = index_->Query(query_dataset, conf, nullptr);
     AssertAnns(result, nq, k);
 
-    auto cpu_idx = milvus::knowhere::cloner::CopyGpuToCpu(index_, milvus::knowhere::Config());
-    milvus::knowhere::IVFPtr ivf_idx = std::dynamic_pointer_cast<milvus::knowhere::IVF>(cpu_idx);
+    auto cpu_idx = knowhere::cloner::CopyGpuToCpu(index_, knowhere::Config());
+    knowhere::IVFPtr ivf_idx = std::dynamic_pointer_cast<knowhere::IVF>(cpu_idx);
     ivf_idx->Seal();
-    auto search_idx = milvus::knowhere::cloner::CopyCpuToGpu(cpu_idx, DEVICEID, milvus::knowhere::Config());
+    auto search_idx = knowhere::cloner::CopyCpuToGpu(cpu_idx, DEVICE_ID, knowhere::Config());
 
     constexpr int64_t search_count = 50;
     constexpr int64_t load_count = 15;
@@ -96,15 +97,15 @@ TEST_F(GPURESTEST, copyandsearch) {
     auto load_func = [&] {
         // TimeRecorder tc("search&load");
         for (int i = 0; i < load_count; ++i) {
-            milvus::knowhere::cloner::CopyCpuToGpu(cpu_idx, DEVICEID, milvus::knowhere::Config());
+            knowhere::cloner::CopyCpuToGpu(cpu_idx, DEVICE_ID, knowhere::Config());
             // if (i > load_count -5 || i < 5)
             // tc.RecordSection("Copy to gpu");
         }
         // tc.ElapseFromBegin("load finish");
     };
 
-    milvus::knowhere::TimeRecorder tc("Basic");
-    milvus::knowhere::cloner::CopyCpuToGpu(cpu_idx, DEVICEID, milvus::knowhere::Config());
+    knowhere::TimeRecorder tc("Basic");
+    knowhere::cloner::CopyCpuToGpu(cpu_idx, DEVICE_ID, knowhere::Config());
     tc.RecordSection("Copy to gpu once");
     auto result2 = search_idx->Query(query_dataset, conf, nullptr);
     tc.RecordSection("Search once");
@@ -114,24 +115,24 @@ TEST_F(GPURESTEST, copyandsearch) {
     tc.RecordSection("Copy total cost");
 
     std::thread search_thread(search_func);
-    std::thread load_thread(load_func);
     search_thread.join();
+    std::thread load_thread(load_func);
     load_thread.join();
     tc.RecordSection("Copy&Search total");
 }
 
 TEST_F(GPURESTEST, trainandsearch) {
-    index_type_ = milvus::knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
-    index_mode_ = milvus::knowhere::IndexMode::MODE_GPU;
-    index_ = IndexFactory(index_type_, index_mode_);
+    index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFSQ8;
+    index_mode_ = knowhere::IndexMode::MODE_GPU;
+    index_ = knowhere::VecIndexFactory::GetInstance().CreateVecIndex(index_type_, index_mode_);
 
     auto conf = ParamGenerator::GetInstance().Gen(index_type_);
     index_->Train(base_dataset, conf);
     index_->AddWithoutIds(base_dataset, conf);
-    auto cpu_idx = milvus::knowhere::cloner::CopyGpuToCpu(index_, milvus::knowhere::Config());
-    milvus::knowhere::IVFPtr ivf_idx = std::dynamic_pointer_cast<milvus::knowhere::IVF>(cpu_idx);
+    auto cpu_idx = knowhere::cloner::CopyGpuToCpu(index_, knowhere::Config());
+    knowhere::IVFPtr ivf_idx = std::dynamic_pointer_cast<knowhere::IVF>(cpu_idx);
     ivf_idx->Seal();
-    auto search_idx = milvus::knowhere::cloner::CopyCpuToGpu(cpu_idx, DEVICEID, milvus::knowhere::Config());
+    auto search_idx = knowhere::cloner::CopyCpuToGpu(cpu_idx, DEVICE_ID, knowhere::Config());
 
     constexpr int train_count = 5;
     constexpr int search_count = 200;
@@ -141,7 +142,7 @@ TEST_F(GPURESTEST, trainandsearch) {
             index_->AddWithoutIds(base_dataset, conf);
         }
     };
-    auto search_stage = [&](milvus::knowhere::VecIndexPtr& search_idx) {
+    auto search_stage = [&](knowhere::VecIndexPtr& search_idx) {
         for (int i = 0; i < search_count; ++i) {
             auto result = search_idx->Query(query_dataset, conf, nullptr);
             AssertAnns(result, nq, k);
@@ -156,9 +157,9 @@ TEST_F(GPURESTEST, trainandsearch) {
 
     {
         // search and build parallel
-        std::thread search_thread(search_stage, std::ref(search_idx));
         std::thread train_thread(train_stage);
         train_thread.join();
+        std::thread search_thread(search_stage, std::ref(search_idx));
         search_thread.join();
     }
     {
@@ -170,7 +171,7 @@ TEST_F(GPURESTEST, trainandsearch) {
     }
     {
         // search parallel
-        auto search_idx_2 = milvus::knowhere::cloner::CopyCpuToGpu(cpu_idx, DEVICEID, milvus::knowhere::Config());
+        auto search_idx_2 = knowhere::cloner::CopyCpuToGpu(cpu_idx, DEVICE_ID, knowhere::Config());
         std::thread search_1(search_stage, std::ref(search_idx));
         std::thread search_2(search_stage, std::ref(search_idx_2));
         search_1.join();
@@ -183,10 +184,10 @@ TEST_F(GPURESTEST, gpu_ivf_resource_test) {
     assert(!xb.empty());
 
     {
-        index_ = std::make_shared<milvus::knowhere::GPUIVF>(-1);
-        ASSERT_EQ(std::dynamic_pointer_cast<milvus::knowhere::GPUIVF>(index_)->GetGpuDevice(), -1);
-        std::dynamic_pointer_cast<milvus::knowhere::GPUIVF>(index_)->SetGpuDevice(DEVICEID);
-        ASSERT_EQ(std::dynamic_pointer_cast<milvus::knowhere::GPUIVF>(index_)->GetGpuDevice(), DEVICEID);
+        index_ = std::make_shared<knowhere::GPUIVF>(-1);
+        ASSERT_EQ(std::dynamic_pointer_cast<knowhere::GPUIVF>(index_)->GetGpuDevice(), -1);
+        std::dynamic_pointer_cast<knowhere::GPUIVF>(index_)->SetGpuDevice(DEVICE_ID);
+        ASSERT_EQ(std::dynamic_pointer_cast<knowhere::GPUIVF>(index_)->GetGpuDevice(), DEVICE_ID);
 
         auto conf = ParamGenerator::GetInstance().Gen(ParameterType::ivfsq);
         auto preprocessor = index_->BuildPreprocessor(base_dataset, conf);
@@ -197,7 +198,7 @@ TEST_F(GPURESTEST, gpu_ivf_resource_test) {
         EXPECT_EQ(index_->Count(), nb);
         EXPECT_EQ(index_->Dimension(), dim);
 
-        //        milvus::knowhere::TimeRecorder tc("knowere GPUIVF");
+        //        knowhere::TimeRecorder tc("knowere GPUIVF");
         for (int i = 0; i < search_count; ++i) {
             index_->Search(query_dataset, conf);
             if (i > search_count - 6 || i < 5)
@@ -205,18 +206,18 @@ TEST_F(GPURESTEST, gpu_ivf_resource_test) {
         }
         //        tc.ElapseFromBegin("search all");
     }
-    milvus::knowhere::FaissGpuResourceMgr::GetInstance().Dump();
+    knowhere::FaissGpuResourceMgr::GetInstance().Dump();
 
     //    {
     //        // ori faiss IVF-Search
     //        faiss::gpu::StandardGpuResources res;
     //        faiss::gpu::GpuIndexIVFFlatConfig idx_config;
-    //        idx_config.device = DEVICEID;
+    //        idx_config.device = DEVICE_ID;
     //        faiss::gpu::GpuIndexIVFFlat device_index(&res, dim, 1638, faiss::METRIC_L2, idx_config);
     //        device_index.train(nb, xb.data());
     //        device_index.add(nb, xb.data());
     //
-    //        milvus::knowhere::TimeRecorder tc("ori IVF");
+    //        knowhere::TimeRecorder tc("ori IVF");
     //        for (int i = 0; i < search_count; ++i) {
     //            device_index.search(nq, xq.data(), k, dis, ids);
     //            if (i > search_count - 6 || i < 5)
@@ -232,11 +233,11 @@ TEST_F(GPURESTEST, gpuivfsq) {
         index_type = "GPUIVFSQ";
         index_ = IndexFactory(index_type);
 
-        auto conf = std::make_shared<milvus::knowhere::IVFSQCfg>();
+        auto conf = std::make_shared<knowhere::IVFSQCfg>();
         conf->nlist = 1638;
         conf->d = dim;
-        conf->gpu_id = DEVICEID;
-        conf->metric_type = milvus::knowhere::METRICTYPE::L2;
+        conf->gpu_id = DEVICE_ID;
+        conf->metric_type = knowhere::METRICTYPE::L2;
         conf->k = k;
         conf->nbits = 8;
         conf->nprobe = 1;
@@ -249,11 +250,11 @@ TEST_F(GPURESTEST, gpuivfsq) {
         //        auto result = index_->Search(query_dataset, conf);
         //        AssertAnns(result, nq, k);
 
-        auto cpu_idx = milvus::knowhere::cloner::CopyGpuToCpu(index_, milvus::knowhere::Config());
+        auto cpu_idx = knowhere::cloner::CopyGpuToCpu(index_, knowhere::Config());
         cpu_idx->Seal();
 
-        milvus::knowhere::TimeRecorder tc("knowhere GPUSQ8");
-        auto search_idx = milvus::knowhere::cloner::CopyCpuToGpu(cpu_idx, DEVICEID, milvus::knowhere::Config());
+        knowhere::TimeRecorder tc("knowhere GPUSQ8");
+        auto search_idx = knowhere::cloner::CopyCpuToGpu(cpu_idx, DEVICE_ID, knowhere::Config());
         tc.RecordSection("Copy to gpu");
         for (int i = 0; i < search_count; ++i) {
             search_idx->Search(query_dataset, conf);
@@ -269,7 +270,7 @@ TEST_F(GPURESTEST, gpuivfsq) {
         faiss::Index* ori_index = faiss::index_factory(dim, index_description, faiss::METRIC_L2);
 
         faiss::gpu::StandardGpuResources res;
-        auto device_index = faiss::gpu::index_cpu_to_gpu(&res, DEVICEID, ori_index);
+        auto device_index = faiss::gpu::index_cpu_to_gpu(&res, DEVICE_ID, ori_index);
         device_index->train(nb, xb.data());
         device_index->add(nb, xb.data());
 
@@ -284,8 +285,8 @@ TEST_F(GPURESTEST, gpuivfsq) {
         faiss::gpu::GpuClonerOptions option;
         option.allInGpu = true;
 
-        milvus::knowhere::TimeRecorder tc("ori GPUSQ8");
-        faiss::Index* search_idx = faiss::gpu::index_cpu_to_gpu(&res, DEVICEID, cpu_index, &option);
+        knowhere::TimeRecorder tc("ori GPUSQ8");
+        faiss::Index* search_idx = faiss::gpu::index_cpu_to_gpu(&res, DEVICE_ID, cpu_index, &option);
         tc.RecordSection("Copy to gpu");
         for (int i = 0; i < search_count; ++i) {
             search_idx->search(nq, xq.data(), k, dis, ids);

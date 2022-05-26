@@ -37,7 +37,7 @@ GPUIVF_NM::Train(const DatasetPtr& dataset_ptr, const Config& config) {
         ResScope rs(gpu_res, gpu_id_, true);
         faiss::gpu::GpuIndexIVFFlatConfig idx_config;
         idx_config.device = gpu_id_;
-        int32_t nlist = config[IndexParams::nlist];
+        int32_t nlist = GetIndexParamNlist(config);
         faiss::MetricType metric_type = GetMetricType(config);
         auto device_index =
             new faiss::gpu::GpuIndexIVFFlat(gpu_res->faiss_res.get(), dim, nlist, metric_type, idx_config);
@@ -59,11 +59,6 @@ GPUIVF_NM::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) {
     } else {
         KNOWHERE_THROW_MSG("Add IVF can't get gpu resource");
     }
-}
-
-void
-GPUIVF_NM::Load(const BinarySet& binary_set) {
-    // not supported
 }
 
 VecIndexPtr
@@ -126,6 +121,29 @@ GPUIVF_NM::SerializeImpl(const IndexType& type) {
 }
 
 void
+GPUIVF_NM::LoadImpl(const BinarySet& binary_set, const IndexType& type) {
+    auto binary = binary_set.GetByName("IVF");
+    MemoryIOReader reader;
+    {
+        reader.total = binary->size;
+        reader.data_ = binary->data.get();
+
+        faiss::Index* index = faiss::read_index(&reader);
+
+        if (auto temp_res = FaissGpuResourceMgr::GetInstance().GetRes(gpu_id_)) {
+            ResScope rs(temp_res, gpu_id_, false);
+            auto device_index = faiss::gpu::index_cpu_to_gpu(temp_res->faiss_res.get(), gpu_id_, index);
+            index_.reset(device_index);
+            res_ = temp_res;
+        } else {
+            KNOWHERE_THROW_MSG("Load error, can't get gpu resource");
+        }
+
+        delete index;
+    }
+}
+
+void
 GPUIVF_NM::QueryImpl(int64_t n,
                      const float* data,
                      int64_t k,
@@ -135,7 +153,7 @@ GPUIVF_NM::QueryImpl(int64_t n,
                      const faiss::BitsetView bitset) {
     auto device_index = std::dynamic_pointer_cast<faiss::gpu::GpuIndexIVF>(index_);
     if (device_index) {
-        device_index->nprobe = config[IndexParams::nprobe];
+        device_index->nprobe = GetIndexParamNprobe(config);
         ResScope rs(res_, gpu_id_);
 
         // if query size > 2048 we search by blocks to avoid malloc issue

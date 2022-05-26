@@ -17,8 +17,7 @@
 #include <utility>
 
 #include <faiss/gpu/StandardGpuResources.h>
-
-#include "utils/BlockingQueue.h"
+#include "knowhere/common/BlockingQueue.h"
 
 namespace knowhere {
 

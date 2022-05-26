@@ -274,13 +274,13 @@ struct ArrayInvertedLists : InvertedLists {
 };
 
 struct ReadOnlyArrayInvertedLists: InvertedLists {
-#ifdef USE_GPU
+    // for GPU
     PageLockMemoryPtr pin_readonly_codes;
     PageLockMemoryPtr pin_readonly_ids;
-#else
+
+    // for CPU
     std::vector<uint8_t> readonly_codes;
     std::vector<idx_t> readonly_ids;
-#endif
 
     std::vector<size_t> readonly_length;
     std::vector<size_t> readonly_offset;

@@ -21,6 +21,16 @@
 /tests/gtest/
 /tests/faiss_test
 
+faiss/gpu/test/TestCodePacking
+faiss/gpu/test/TestGpuDistance
+faiss/gpu/test/TestGpuIndexBinaryFlat
+faiss/gpu/test/TestGpuIndexFlat
+faiss/gpu/test/TestGpuIndexIVFFlat
+faiss/gpu/test/TestGpuIndexIVFPQ
+faiss/gpu/test/TestGpuIndexIVFScalarQuantizer
+faiss/gpu/test/TestGpuMemoryException
+faiss/gpu/test/TestGpuSelect
+
 **/CMakeFiles/*
 CMakeCache.txt
 Makefile

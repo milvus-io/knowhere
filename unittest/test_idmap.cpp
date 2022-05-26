@@ -27,6 +27,7 @@
 #include "knowhere/utils/distances_simd.h"
 #include "unittest/range_utils.h"
 #include "unittest/utils.h"
+#include "unittest/Helper.h"
 
 using ::testing::Combine;
 using ::testing::TestWithParam;
@@ -38,7 +39,7 @@ class IDMAPTest : public DataGen, public TestWithParam<knowhere::IndexMode> {
     SetUp() override {
         Init_with_default();
 #ifdef KNOWHERE_GPU_VERSION
-        knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICEID, PINMEM, TEMPMEM, RESNUM);
+        knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICE_ID, PINMEM, TEMPMEM, RESNUM);
 #endif
         index_mode_ = GetParam();
         index_type_ = knowhere::IndexEnum::INDEX_FAISS_IDMAP;
@@ -97,10 +98,11 @@ TEST_P(IDMAPTest, idmap_basic) {
     AssertAnns(result, nq, k);
     // PrintResult(result, nq, k);
 
+
 #ifdef KNOWHERE_GPU_VERSION
     if (index_mode_ == knowhere::IndexMode::MODE_GPU) {
         // cpu to gpu
-        index_ = std::dynamic_pointer_cast<knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICEID, conf));
+        index_ = std::dynamic_pointer_cast<knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICE_ID, conf));
     }
 #endif
 
@@ -137,7 +139,7 @@ TEST_P(IDMAPTest, idmap_serialize) {
 #ifdef KNOWHERE_GPU_VERSION
     if (index_mode_ == knowhere::IndexMode::MODE_GPU) {
         // cpu to gpu
-        index_ = std::dynamic_pointer_cast<knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICEID, conf));
+        index_ = std::dynamic_pointer_cast<knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICE_ID, conf));
     }
 #endif
 
@@ -178,7 +180,7 @@ TEST_P(IDMAPTest, idmap_slice) {
 #ifdef KNOWHERE_GPU_VERSION
     if (index_mode_ == knowhere::IndexMode::MODE_GPU) {
         // cpu to gpu
-        index_ = std::dynamic_pointer_cast<knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICEID, conf));
+        index_ = std::dynamic_pointer_cast<knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICE_ID, conf));
     }
 #endif
 
@@ -268,7 +270,7 @@ TEST_P(IDMAPTest, idmap_copy) {
     knowhere::Config conf{
         {knowhere::meta::DIM, dim},
         {knowhere::meta::TOPK, k},
-        {knowhere::Metric::TYPE, knowhere::Metric::L2}
+        {knowhere::meta::METRIC_TYPE, knowhere::metric::L2}
     };
 
     index_->BuildAll(base_dataset, conf);
@@ -286,7 +288,7 @@ TEST_P(IDMAPTest, idmap_copy) {
 
     // cpu to gpu
     ASSERT_ANY_THROW(knowhere::cloner::CopyCpuToGpu(index_, -1, conf));
-    auto clone_index = knowhere::cloner::CopyCpuToGpu(index_, DEVICEID, conf);
+    auto clone_index = knowhere::cloner::CopyCpuToGpu(index_, DEVICE_ID, conf);
     auto clone_result = clone_index->Query(query_dataset, conf, nullptr);
 
     AssertAnns(clone_result, nq, k);
@@ -310,9 +312,9 @@ TEST_P(IDMAPTest, idmap_copy) {
     ASSERT_TRUE(std::static_pointer_cast<knowhere::IDMAP>(host_index)->GetRawVectors() != nullptr);
 
     // gpu to gpu
-    auto device_index = knowhere::cloner::CopyCpuToGpu(index_, DEVICEID, conf);
+    auto device_index = knowhere::cloner::CopyCpuToGpu(index_, DEVICE_ID, conf);
     auto new_device_index =
-        std::static_pointer_cast<knowhere::GPUIDMAP>(device_index)->CopyGpuToGpu(DEVICEID, conf);
+        std::static_pointer_cast<knowhere::GPUIDMAP>(device_index)->CopyGpuToGpu(DEVICE_ID, conf);
     auto device_result = new_device_index->Query(query_dataset, conf, nullptr);
     AssertAnns(device_result, nq, k);
 }

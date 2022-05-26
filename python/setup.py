@@ -38,6 +38,7 @@ INCLUDE_DIRS = [
     os.path.join(KNOWHERE_ROOT, "thirdparty/any-lite/include"),
     os.path.join(KNOWHERE_ROOT, "thirdparty/nlohmann_json/include"),
     os.path.join(KNOWHERE_ROOT, "thirdparty/easyloggingpp/src"),
+    os.path.abspath("/usr/local/cuda/include"),
 ]
 
 LIBRARY_DIRS = [os.path.join(KNOWHERE_ROOT, "cmake_build", "knowhere")]

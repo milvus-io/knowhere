@@ -10,6 +10,7 @@
 # or implied. See the License for the specific language governing permissions and limitations under the License
 
 include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty)
+include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/faiss)
 include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService)
 include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib)
 include_directories(${KNOWHERE_SOURCE_DIR}/knowhere)

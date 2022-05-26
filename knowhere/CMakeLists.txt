@@ -13,6 +13,7 @@
 
 include_directories(${KNOWHERE_SOURCE_DIR}/knowhere)
 include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty)
+include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/faiss)
 include_directories(${KNOWHERE_SOURCE_DIR}/knowhere/utils)
 
 set(KNOWHERE_THIRDPARTY_SRC ${KNOWHERE_SOURCE_DIR}/thirdparty)
