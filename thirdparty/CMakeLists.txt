@@ -71,48 +71,25 @@ macro(build_faiss)
 
     # header only mman-win32 for MSYS
     if (MSYS)
-	set(MMAN_INCLUDE_FLAGS "-I ${KNOWHERE_THIRDPARTY_SRC}/mman-win32")
+        set(MMAN_INCLUDE_FLAGS "-I ${KNOWHERE_THIRDPARTY_SRC}/mman-win32")
     endif ()
-
-
     set( FAISS_CMAKE_ARGS
             "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
             "-DCMAKE_BUILD_TYPE=Release"
             "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
             "-DCMAKE_CUDA_COMPILER=${CMAKE_CUDA_COMPILER}"
-	    "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} -fpermissive -I ${KNOWHERE_SOURCE_DIR} ${MMAN_INCLUDE_FLAGS}"
+            "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} -fpermissive -I ${KNOWHERE_SOURCE_DIR} ${MMAN_INCLUDE_FLAGS}"
             "-DFAISS_ENABLE_PYTHON=OFF"
-            "-DFAISS_ENABLE_GPU=OFF"
+            "-DFAISS_ENABLE_GPU=${KNOWHERE_GPU_VERSION}"
             "-DBUILD_TESTING=${ENABLE_FAISS_UNIT_TEST}"
             )
-
-    message( STATUS "${FAISS_CONFIGURE_ARGS}" )
-
-    message( STATUS "Build Faiss with OpenBlas/LAPACK" )
-    set( FAISS_CONFIGURE_ARGS ${FAISS_CONFIGURE_ARGS}
-         "LDFLAGS=-L${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
-         )
-
-    if ( KNOWHERE_GPU_VERSION )
-        if ( NOT MILVUS_CUDA_ARCH OR MILVUS_CUDA_ARCH STREQUAL "DEFAULT" )
-            set( FAISS_CONFIGURE_ARGS ${FAISS_CONFIGURE_ARGS}
-                 "--with-cuda=${CUDA_TOOLKIT_ROOT_DIR}"
-                 "--with-cuda-arch=-gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61 -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_75,code=sm_75"
-                 )
-        else ()
-            STRING( REPLACE ";" " " MILVUS_CUDA_ARCH "${MILVUS_CUDA_ARCH}" )
-            set( FAISS_CONFIGURE_ARGS ${FAISS_CONFIGURE_ARGS}
-                 "--with-cuda=${CUDA_TOOLKIT_ROOT_DIR}"
-                 "--with-cuda-arch=${MILVUS_CUDA_ARCH}"
-                 )
-        endif ()
-    else ()
-        set( FAISS_CONFIGURE_ARGS ${FAISS_CONFIGURE_ARGS}
-                 --without-cuda )
-    endif ()
-
-    message( STATUS "Building FAISS with configure args -${FAISS_CONFIGURE_ARGS}" )
-
+    if(KNOWHERE_GPU_VERSION)
+        set(FAISS_CMAKE_ARGS "${FAISS_CMAKE_ARGS}"
+            "-DCMAKE_CUDA_ARCHITECTURES=75;70;61;60"
+            "-DCMAKE_CUDA_FLAGS=-Xcompiler -fPIC -std=c++11 -D_FORCE_INLINES --expt-extended-lambda -I${CMAKE_SOURCE_DIR}"
+            )
+    endif()
+    message( STATUS "Building FAISS with configure args -${FAISS_CMAKE_ARGS}" )
     #Notice: there will not set LDFLAGS value
     externalproject_add( faiss_ep
             SOURCE_DIR

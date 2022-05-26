@@ -24,6 +24,10 @@ using Graph = std::vector<std::vector<int64_t>>;
 
 class GPUIDMAP : public IDMAP, public GPUIndex {
  public:
+    explicit GPUIDMAP(const int& device_id) : IDMAP(), GPUIndex(device_id) {
+        index_mode_ = IndexMode::MODE_GPU;
+    }
+
     explicit GPUIDMAP(std::shared_ptr<faiss::Index> index, const int64_t device_id, ResPtr& res)
         : IDMAP(std::move(index)), GPUIndex(device_id, res) {
         index_mode_ = IndexMode::MODE_GPU;

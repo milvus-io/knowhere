@@ -33,6 +33,12 @@ typedef uint64_t size_t;
 #include <index/vector_index/IndexHNSW.h>
 #include <index/vector_index/IndexIVF.h>
 #include <index/vector_index/IndexIVFSQ.h>
+#include <index/vector_index/IndexIDMAP.h>
+#include <index/vector_index/gpu/IndexGPUIVF.h>
+#include <index/vector_index/gpu/IndexGPUIVFPQ.h>
+#include <index/vector_index/gpu/IndexGPUIVFSQ.h>
+#include <index/vector_offset_index/IndexIVF_NM.h>
+
 using namespace knowhere;
 %}
 
@@ -59,6 +65,11 @@ import_array();
 %include <index/vector_index/IndexHNSW.h>
 %include <index/vector_index/IndexIVF.h>
 %include <index/vector_index/IndexIVFSQ.h>
+%include <index/vector_index/IndexIDMAP.h>
+%include <index/vector_index/gpu/IndexGPUIVF.h>
+%include <index/vector_index/gpu/IndexGPUIVFPQ.h>
+%include <index/vector_index/gpu/IndexGPUIVFSQ.h>
+%include <index/vector_offset_index/IndexIVF_NM.h>
 
 %shared_ptr(knowhere::Dataset)
 
@@ -110,5 +121,14 @@ faiss::BitsetView EmptyBitSetView(){
 faiss::BitsetView ArrayToBitsetView(uint8_t *block, int size){
     return faiss::BitsetView(block, size);
 }
+
+void InitGpuResource(int dev_id, int pin_mem, int temp_mem, int res_num){
+    knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(dev_id, pin_mem,temp_mem, res_num);
+}
+
+void ReleaseGpuResource(){
+    knowhere::FaissGpuResourceMgr::GetInstance().Free();
+}
+
 %}
 

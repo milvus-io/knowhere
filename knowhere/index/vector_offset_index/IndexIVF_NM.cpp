@@ -65,6 +65,7 @@ IVF_NM::Load(const BinarySet& binary_set) {
     auto invlists = ivf_index->invlists;
     auto d = ivf_index->d;
     prefix_sum_ = std::shared_ptr<size_t[]>(new size_t[invlists->nlist]);
+    size_t curr_index = 0;
 
 #if 0
     if (STATISTICS_LEVEL >= 3) {
@@ -76,7 +77,6 @@ IVF_NM::Load(const BinarySet& binary_set) {
     auto ails = dynamic_cast<faiss::ArrayInvertedLists*>(invlists);
     size_t nb = binary->size / invlists->code_size;
     auto arranged_data = new float[d * nb];
-    size_t curr_index = 0;
     for (size_t i = 0; i < invlists->nlist; i++) {
         auto list_size = ails->ids[i].size();
         for (size_t j = 0; j < list_size; j++) {
@@ -353,7 +353,11 @@ IVF_NM::QueryByRangeImpl(int64_t n,
         radius *= radius;
     }
 
+#ifndef KNOWHERE_GPU_VERSION
     auto arranged_data = data_.get();
+#else
+    auto arranged_data = static_cast<uint8_t*>(ro_codes_->data);
+#endif
 
     faiss::RangeSearchResult res(n);
     ivf_index->range_search_without_codes(n, xq, arranged_data, prefix_sum_.get(), radius, &res, bitset);

@@ -126,7 +126,8 @@ void GpuIndexFlat::copyFrom(const faiss::IndexFlat* index) {
     xb_.clear();
 
     if (flatConfig_.storeInCpu) {
-        xb_ = index->xb;
+        xb_.resize(index->codes.size()/sizeof(float));
+        memcpy(&xb_[0], index->get_xb(), index->codes.size());
     }
 }
 
@@ -239,7 +240,7 @@ void GpuIndexFlat::searchImpl_(
             resources_.get(), makeTempAlloc(AllocType::Other, stream), {n, k});
 
     // Copy bitset to GPU
-    if (!bitset) {
+    if (bitset.empty()) {
         auto bitsetDevice = toDeviceTemporary<uint8_t, 1>(
                 resources_.get(),
                 config_.device,

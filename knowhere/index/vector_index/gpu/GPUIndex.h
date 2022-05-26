@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "knowhere/index/vector_index/VecIndex.h"
+#include "knowhere/index/VecIndex.h"
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
 
 namespace knowhere {

@@ -33,13 +33,13 @@ GPUIVFPQ::Train(const DatasetPtr& dataset_ptr, const Config& config) {
         ResScope rs(gpu_res, gpu_id_, true);
         faiss::gpu::GpuIndexIVFPQConfig idx_config;
         idx_config.device = static_cast<int32_t>(gpu_id_);
-        int32_t nlist = config[IndexParams::nlist];
-        int32_t m = config[IndexParams::m];
-        int32_t nbits = config[IndexParams::nbits];
+        int32_t nlist = GetIndexParamNlist(config);
+        int32_t m = GetIndexParamM(config);
+        int32_t nbits = GetIndexParamNbits(config);
         faiss::MetricType metric_type = GetMetricType(config);
         index_ = std::make_shared<faiss::gpu::GpuIndexIVFPQ>(gpu_res->faiss_res.get(), dim, nlist, m, nbits,
                                                              metric_type, idx_config);
-        device_index->train(rows, reinterpret_cast<const float*>(p_data));
+        index_->train(rows, reinterpret_cast<const float*>(p_data));
         res_ = gpu_res;
     } else {
         KNOWHERE_THROW_MSG("Build IVFPQ can't get gpu resource");
@@ -59,7 +59,7 @@ GPUIVFPQ::CopyGpuToCpu(const Config& config) {
 std::shared_ptr<faiss::IVFSearchParameters>
 GPUIVFPQ::GenParams(const Config& config) {
     auto params = std::make_shared<faiss::IVFPQSearchParameters>();
-    params->nprobe = config[IndexParams::nprobe];
+    params->nprobe = GetIndexParamNprobe(config);
     // params->scan_table_threshold = config["scan_table_threhold"]
     // params->polysemous_ht = config["polysemous_ht"]
     // params->max_codes = config["max_codes"]
