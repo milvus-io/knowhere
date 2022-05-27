@@ -108,7 +108,7 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
             } else if (type == IndexEnum::INDEX_FAISS_IDMAP) {
                 return std::make_shared<knowhere::GPUIDMAP>(gpu_device);
             } else if (type == IndexEnum::INDEX_FAISS_IVFFLAT) {
-                return std::make_shared<knowhere::GPUIVF_NM>(gpu_device);
+                return std::make_shared<knowhere::GPUIVF>(gpu_device);
             } else if (type == IndexEnum::INDEX_FAISS_IVFPQ) {
                 return std::make_shared<knowhere::GPUIVFPQ>(gpu_device);
             } else if (type == IndexEnum::INDEX_FAISS_IVFSQ8) {
