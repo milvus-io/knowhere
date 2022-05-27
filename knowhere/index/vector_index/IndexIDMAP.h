@@ -43,6 +43,9 @@ class IDMAP : public VecIndex, public FaissBaseIndex {
     AddWithoutIds(const DatasetPtr&, const Config&) override;
 
     DatasetPtr
+    GetVectorById(const DatasetPtr&, const Config&) override;
+
+    DatasetPtr
     Query(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
 
     DatasetPtr

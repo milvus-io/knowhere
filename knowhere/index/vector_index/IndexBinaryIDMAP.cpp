@@ -37,6 +37,35 @@ BinaryIDMAP::Load(const BinarySet& index_binary) {
 }
 
 DatasetPtr
+BinaryIDMAP::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
+    if (!index_) {
+        KNOWHERE_THROW_MSG("index not initialize");
+    }
+
+    GET_DATA_WITH_IDS(dataset_ptr)
+
+    uint8_t* p_x = nullptr;
+    auto release_when_exception = [&]() {
+        if (p_x != nullptr) {
+            free(p_x);
+        }
+    };
+
+    try {
+        p_x = (uint8_t*)malloc(sizeof(uint8_t) * (dim / 8) * rows);
+        auto bin_idmap_index = dynamic_cast<faiss::IndexBinaryFlat*>(index_.get());
+        bin_idmap_index->get_vector_by_id(rows, p_ids, p_x);
+        return GenResultDataset(p_x);
+    } catch (faiss::FaissException& e) {
+        release_when_exception();
+        KNOWHERE_THROW_MSG(e.what());
+    } catch (std::exception& e) {
+        release_when_exception();
+        KNOWHERE_THROW_MSG(e.what());
+    }
+}
+
+DatasetPtr
 BinaryIDMAP::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::BitsetView bitset) {
     if (!index_) {
         KNOWHERE_THROW_MSG("index not initialize");

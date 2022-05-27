@@ -46,11 +46,9 @@ class DataGen {
     std::vector<uint8_t> xb_bin;
     std::vector<uint8_t> xq_bin;
     std::vector<int64_t> ids;
-    std::vector<int64_t> xids;
     knowhere::DatasetPtr base_dataset = nullptr;
     knowhere::DatasetPtr query_dataset = nullptr;
     knowhere::DatasetPtr id_dataset = nullptr;
-    knowhere::DatasetPtr xid_dataset = nullptr;
 
     std::vector<uint8_t> bitset_data;
     faiss::BitsetViewPtr bitset;
@@ -61,7 +59,6 @@ GenAll(const int64_t dim,
        const int64_t nb,
        std::vector<float>& xb,
        std::vector<int64_t>& ids,
-       std::vector<int64_t>& xids,
        const int64_t nq,
        std::vector<float>& xq);
 
@@ -70,7 +67,6 @@ GenAll(const int64_t dim,
        const int64_t nb,
        std::vector<uint8_t>& xb,
        std::vector<int64_t>& ids,
-       std::vector<int64_t>& xids,
        const int64_t nq,
        std::vector<uint8_t>& xq);
 
@@ -81,7 +77,6 @@ GenBase(const int64_t dim,
         int64_t* ids,
         const int64_t nq,
         const void* xq,
-        int64_t* xids,
         const bool is_binary);
 
 enum class CheckMode {
@@ -101,16 +96,14 @@ AssertVec(const knowhere::DatasetPtr& result,
           const knowhere::DatasetPtr& base_dataset,
           const knowhere::DatasetPtr& id_dataset,
           const int n,
-          const int dim,
-          const CheckMode check_mode = CheckMode::CHECK_EQUAL);
+          const int dim);
 
 void
 AssertBinVec(const knowhere::DatasetPtr& result,
              const knowhere::DatasetPtr& base_dataset,
              const knowhere::DatasetPtr& id_dataset,
              const int n,
-             const int dim,
-             const CheckMode check_mode = CheckMode::CHECK_EQUAL);
+             const int dim);
 
 void
 PrintResult(const knowhere::DatasetPtr& result, const int& nq, const int& k);

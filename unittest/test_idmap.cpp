@@ -91,13 +91,15 @@ TEST_P(IDMAPTest, idmap_basic) {
     ASSERT_TRUE(index_->GetRawVectors() != nullptr);
     ASSERT_GT(index_->Size(), 0);
 
+    auto result = index_->GetVectorById(id_dataset, conf);
+    AssertVec(result, base_dataset, id_dataset, nq, dim);
+
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
     ASSERT_TRUE(adapter->CheckSearch(conf, index_type_, index_mode_));
 
-    auto result = index_->Query(query_dataset, conf, nullptr);
-    AssertAnns(result, nq, k);
-    // PrintResult(result, nq, k);
-
+    auto result1 = index_->Query(query_dataset, conf, nullptr);
+    AssertAnns(result1, nq, k);
+    // PrintResult(result1, nq, k);
 
 #ifdef KNOWHERE_GPU_VERSION
     if (index_mode_ == knowhere::IndexMode::MODE_GPU) {

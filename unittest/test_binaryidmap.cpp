@@ -77,11 +77,14 @@ TEST_P(BinaryIDMAPTest, binaryidmap_basic) {
     ASSERT_TRUE(index_->GetRawVectors() != nullptr);
     ASSERT_GT(index_->Size(), 0);
 
+    auto result = index_->GetVectorById(id_dataset, conf_);
+    AssertBinVec(result, base_dataset, id_dataset, nq, dim);
+
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
     ASSERT_TRUE(adapter->CheckSearch(conf_, index_type_, index_mode_));
 
-    auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, k);
+    auto result1 = index_->Query(query_dataset, conf_, nullptr);
+    AssertAnns(result1, nq, k);
     // PrintResult(result, nq, k);
 
     auto binaryset = index_->Serialize(conf_);

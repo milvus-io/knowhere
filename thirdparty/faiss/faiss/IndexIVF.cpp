@@ -1447,6 +1447,20 @@ void IndexIVF::reconstruct(idx_t key, float* recons) const {
     reconstruct_from_offset(lo_listno(lo), lo_offset(lo), recons);
 }
 
+void IndexIVF::reconstruct_without_codes(
+        idx_t key,
+        const uint8_t* arranged_codes,
+        const size_t* prefix_sum,
+        float* recons) const {
+    idx_t lo = direct_map.get(key);
+    reconstruct_from_offset_without_codes(
+            lo_listno(lo),
+            lo_offset(lo),
+            arranged_codes,
+            prefix_sum,
+            recons);
+}
+
 void IndexIVF::reconstruct_n(idx_t i0, idx_t ni, float* recons) const {
     FAISS_THROW_IF_NOT(ni == 0 || (i0 >= 0 && i0 + ni <= ntotal));
 
@@ -1537,6 +1551,15 @@ void IndexIVF::reconstruct_from_offset(
         int64_t /*offset*/,
         float* /*recons*/) const {
     FAISS_THROW_MSG("reconstruct_from_offset not implemented");
+}
+
+void IndexIVF::reconstruct_from_offset_without_codes(
+        int64_t /*list_no*/,
+        int64_t /*offset*/,
+        const uint8_t* /*arranged_codes*/,
+        const size_t* /*prefix_sum*/,
+        float* /*recons*/) const {
+    FAISS_THROW_MSG("reconstruct_from_offset_without_codes not implemented");
 }
 
 void IndexIVF::reset() {

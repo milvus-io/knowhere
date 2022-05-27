@@ -32,7 +32,7 @@ DataGen::Generate(const int dim, const int nb, const int nq, const bool is_binar
     this->nq = nq;
 
     if (!is_binary) {
-        GenAll(dim, nb, xb, ids, xids, nq, xq);
+        GenAll(dim, nb, xb, ids, nq, xq);
         assert(xb.size() == (size_t)dim * nb);
         assert(xq.size() == (size_t)dim * nq);
 
@@ -40,7 +40,7 @@ DataGen::Generate(const int dim, const int nb, const int nq, const bool is_binar
         query_dataset = knowhere::GenDataset(nq, dim, xq.data());
     } else {
         int64_t dim_x = dim / 8;
-        GenAll(dim_x, nb, xb_bin, ids, xids, nq, xq_bin);
+        GenAll(dim_x, nb, xb_bin, ids, nq, xq_bin);
         assert(xb_bin.size() == (size_t)dim_x * nb);
         assert(xq_bin.size() == (size_t)dim_x * nq);
 
@@ -48,8 +48,8 @@ DataGen::Generate(const int dim, const int nb, const int nq, const bool is_binar
         query_dataset = knowhere::GenDataset(nq, dim, xq_bin.data());
     }
 
-    id_dataset = knowhere::GenDataset(nq, dim, nullptr);
-    xid_dataset = knowhere::GenDataset(nq, dim, nullptr);
+    // used to test GetVectorById [0, nq-1]
+    id_dataset = knowhere::GenDatasetWithIds(nq, dim, ids.data());
 
     bitset_data.resize(nb/8);
     for (int64_t i = 0; i < nq; ++i) {
@@ -63,14 +63,12 @@ GenAll(const int64_t dim,
        const int64_t nb,
        std::vector<float>& xb,
        std::vector<int64_t>& ids,
-       std::vector<int64_t>& xids,
        const int64_t nq,
        std::vector<float>& xq) {
     xb.resize(nb * dim);
     xq.resize(nq * dim);
     ids.resize(nb);
-    xids.resize(1);
-    GenBase(dim, nb, xb.data(), ids.data(), nq, xq.data(), xids.data(), false);
+    GenBase(dim, nb, xb.data(), ids.data(), nq, xq.data(), false);
 }
 
 void
@@ -78,14 +76,12 @@ GenAll(const int64_t dim,
        const int64_t nb,
        std::vector<uint8_t>& xb,
        std::vector<int64_t>& ids,
-       std::vector<int64_t>& xids,
        const int64_t nq,
        std::vector<uint8_t>& xq) {
     xb.resize(nb * dim);
     xq.resize(nq * dim);
     ids.resize(nb);
-    xids.resize(1);
-    GenBase(dim, nb, xb.data(), ids.data(), nq, xq.data(), xids.data(), true);
+    GenBase(dim, nb, xb.data(), ids.data(), nq, xq.data(), true);
 }
 
 void
@@ -95,7 +91,6 @@ GenBase(const int64_t dim,
         int64_t* ids,
         const int64_t nq,
         const void* xq,
-        int64_t* xids,
         bool is_binary) {
     if (!is_binary) {
         float* xb_f = (float*)xb;
@@ -124,7 +119,6 @@ GenBase(const int64_t dim,
             xq_u[i] = xb_u[i];
         }
     }
-    xids[0] = 3;  // pseudo random
 }
 
 void
@@ -145,53 +139,44 @@ AssertAnns(const knowhere::DatasetPtr& result, const int nq, const int k, const 
     }
 }
 
-#if 0
 void
-AssertVec(const knowhere::DatasetPtr& result, const knowhere::DatasetPtr& base_dataset,
-          const knowhere::DatasetPtr& id_dataset, const int n, const int dim, const CheckMode check_mode) {
+AssertVec(const knowhere::DatasetPtr& result,
+          const knowhere::DatasetPtr& base_dataset,
+          const knowhere::DatasetPtr& id_dataset,
+          const int n,
+          const int dim) {
     float* base = (float*)knowhere::GetDatasetTensor(base_dataset);
-    auto ids = knowhere::GetDatasetIDs(id_dataset);
+    auto ids = knowhere::GetDatasetInputIDs(id_dataset);
     auto x = (float*)knowhere::GetDatasetTensor(result);
     for (auto i = 0; i < n; i++) {
         auto id = ids[i];
         for (auto j = 0; j < dim; j++) {
-            switch (check_mode) {
-                case CheckMode::CHECK_EQUAL: {
-                    ASSERT_EQ(*(base + id * dim + j), *(x + i * dim + j));
-                    break;
-                }
-                case CheckMode::CHECK_NOT_EQUAL: {
-                    ASSERT_NE(*(base + id * dim + j), *(x + i * dim + j));
-                    break;
-                }
-                case CheckMode::CHECK_APPROXIMATE_EQUAL: {
-                    float a = *(base + id * dim + j);
-                    float b = *(x + i * dim + j);
-                    ASSERT_TRUE((std::fabs(a - b) / std::fabs(a)) < 0.1);
-                    break;
-                }
-                default:
-                    ASSERT_TRUE(false);
-                    break;
-            }
+            float va = *(base + id * dim + j);
+            float vb = *(x + i * dim + j);
+            ASSERT_EQ(va, vb);
         }
     }
 }
 
 void
-AssertBinVec(const knowhere::DatasetPtr& result, const knowhere::DatasetPtr& base_dataset,
-             const knowhere::DatasetPtr& id_dataset, const int n, const int dim, const CheckMode check_mode) {
+AssertBinVec(const knowhere::DatasetPtr& result,
+             const knowhere::DatasetPtr& base_dataset,
+             const knowhere::DatasetPtr& id_dataset,
+             const int n,
+             const int dim) {
     auto base = (uint8_t*)knowhere::GetDatasetTensor(base_dataset);
-    auto ids = knowhere::GetDatasetIDs(id_dataset;
-    auto x = (float*)knowhere::GetDatasetTensor(result);
-    for (auto i = 0; i < 1; i++) {
+    auto ids = knowhere::GetDatasetInputIDs(id_dataset);
+    auto x = (uint8_t*)knowhere::GetDatasetTensor(result);
+    int dim_uint8 = dim / 8;
+    for (auto i = 0; i < n; i++) {
         auto id = ids[i];
-        for (auto j = 0; j < dim; j++) {
-            ASSERT_EQ(*(base + id * dim + j), *(x + i * dim + j));
+        for (auto j = 0; j < dim_uint8; j++) {
+            uint8_t va = *(base + id * dim_uint8 + j);
+            uint8_t vb = *(x + i * dim_uint8 + j);
+            ASSERT_EQ(va, vb);
         }
     }
 }
-#endif
 
 void
 PrintResult(const knowhere::DatasetPtr& result, const int& nq, const int& k) {

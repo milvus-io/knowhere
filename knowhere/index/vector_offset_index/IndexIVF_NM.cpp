@@ -134,6 +134,35 @@ IVF_NM::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) {
 }
 
 DatasetPtr
+IVF_NM::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
+    if (!index_ || !index_->is_trained) {
+        KNOWHERE_THROW_MSG("index not initialize or trained");
+    }
+
+    GET_DATA_WITH_IDS(dataset_ptr)
+
+    float* p_x = nullptr;
+    auto release_when_exception = [&]() {
+        if (p_x != nullptr) {
+            free(p_x);
+        }
+    };
+
+    try {
+        p_x = (float*)malloc(sizeof(float) * dim * rows);
+        auto ivf_index = dynamic_cast<faiss::IndexIVF*>(index_.get());
+        ivf_index->get_vector_by_id_without_codes(rows, p_ids, data_.get(), prefix_sum_.get(), p_x);
+        return GenResultDataset(p_x);
+    } catch (faiss::FaissException& e) {
+        release_when_exception();
+        KNOWHERE_THROW_MSG(e.what());
+    } catch (std::exception& e) {
+        release_when_exception();
+        KNOWHERE_THROW_MSG(e.what());
+    }
+}
+
+DatasetPtr
 IVF_NM::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::BitsetView bitset) {
     if (!index_ || !index_->is_trained) {
         KNOWHERE_THROW_MSG("index not initialize or trained");

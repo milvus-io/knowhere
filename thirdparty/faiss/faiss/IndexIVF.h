@@ -310,6 +310,12 @@ struct IndexIVF : Index, Level1Quantizer {
      */
     void reconstruct(idx_t key, float* recons) const override;
 
+    void reconstruct_without_codes(
+            idx_t key,
+            const uint8_t* arranged_codes,
+            const size_t* prefix_sum,
+            float* recons) const override;
+
     /** Update a subset of vectors.
      *
      * The index must have a direct_map
@@ -358,6 +364,13 @@ struct IndexIVF : Index, Level1Quantizer {
     virtual void reconstruct_from_offset(
             int64_t list_no,
             int64_t offset,
+            float* recons) const;
+
+    virtual void reconstruct_from_offset_without_codes(
+            int64_t list_no,
+            int64_t offset,
+            const uint8_t* arranged_codes,
+            const size_t* prefix_sum,
             float* recons) const;
 
     /// Dataset manipulation functions

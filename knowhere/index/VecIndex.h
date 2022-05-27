@@ -44,6 +44,11 @@ class VecIndex : public Index {
     AddWithoutIds(const DatasetPtr& dataset, const Config& config) = 0;
 
     virtual DatasetPtr
+    GetVectorById(const DatasetPtr& dataset, const Config& config) {
+        KNOWHERE_THROW_MSG("GetVectorById not supported yet");
+    }
+
+    virtual DatasetPtr
     Query(const DatasetPtr& dataset, const Config& config, const faiss::BitsetView bitset) = 0;
 
     virtual DatasetPtr

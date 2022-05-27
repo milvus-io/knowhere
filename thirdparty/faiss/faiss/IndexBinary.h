@@ -83,6 +83,16 @@ struct IndexBinary {
      */
     virtual void add_with_ids(idx_t n, const uint8_t* x, const idx_t* xids);
 
+    /** Query n raw vectors from the index by ids.
+     *
+     * return n raw vectors.
+     *
+     * @param n     input num of xids
+     * @param xids  input labels of the NNs, size n
+     * @param x     output raw vectors, size n * d
+     */
+    virtual void get_vector_by_id(idx_t n, const idx_t* xids, uint8_t* x);
+
     /** Query n vectors of dimension d to the index.
      *
      * return at most k vectors. If there are not enough results for a

@@ -103,11 +103,14 @@ TEST_P(IVFNMTest, ivfnm_basic) {
 
     LoadRawData(index_, base_dataset, conf_);
 
+    auto result = index_->GetVectorById(id_dataset, conf_);
+    AssertVec(result, base_dataset, id_dataset, nq, dim);
+
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
     ASSERT_TRUE(adapter->CheckSearch(conf_, index_type_, index_mode_));
 
-    auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, k);
+    auto result1 = index_->Query(query_dataset, conf_, nullptr);
+    AssertAnns(result1, nq, k);
 
 #ifdef KNOWHERE_GPU_VERSION
     // copy cpu to gpu
