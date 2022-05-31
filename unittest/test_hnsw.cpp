@@ -74,11 +74,14 @@ TEST_P(HNSWTest, HNSW_basic) {
 
     index_->Load(bs);
 
+    auto result = index_->GetVectorById(id_dataset, conf_);
+    AssertVec(result, base_dataset, id_dataset, nq, dim);
+
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
     ASSERT_TRUE(adapter->CheckSearch(conf_, index_type_, index_mode_));
 
-    auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, k);
+    auto result1 = index_->Query(query_dataset, conf_, nullptr);
+    AssertAnns(result1, nq, k);
 
     auto result2 = index_->Query(query_dataset, conf_, *bitset);
     AssertAnns(result2, nq, k, CheckMode::CHECK_NOT_EQUAL);
