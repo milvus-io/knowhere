@@ -60,11 +60,11 @@ IVF_NM::Load(const BinarySet& binary_set) {
 
     // Construct arranged data from original data
     auto binary = binary_set.GetByName(RAW_DATA);
-    auto original_data = reinterpret_cast<const float*>(binary->data.get());
     auto ivf_index = static_cast<faiss::IndexIVF*>(index_.get());
     auto invlists = ivf_index->invlists;
     auto d = ivf_index->d;
-    prefix_sum_ = std::shared_ptr<size_t[]>(new size_t[invlists->nlist]);
+    size_t nb = binary->size / invlists->code_size;
+    ivf_index->prefix_sum.resize(invlists->nlist);
     size_t curr_index = 0;
 
 #if 0
@@ -75,17 +75,16 @@ IVF_NM::Load(const BinarySet& binary_set) {
 
 #ifndef KNOWHERE_GPU_VERSION
     auto ails = dynamic_cast<faiss::ArrayInvertedLists*>(invlists);
-    size_t nb = binary->size / invlists->code_size;
-    auto arranged_data = new float[d * nb];
+    ivf_index->arranged_codes.resize(d * nb * sizeof(float));
     for (size_t i = 0; i < invlists->nlist; i++) {
         auto list_size = ails->ids[i].size();
         for (size_t j = 0; j < list_size; j++) {
-            memcpy(arranged_data + d * (curr_index + j), original_data + d * ails->ids[i][j], d * sizeof(float));
+            memcpy(ivf_index->arranged_codes.data() + d * (curr_index + j) * sizeof(float),
+                   binary->data.get() + d * ails->ids[i][j] * sizeof(float), d * sizeof(float));
         }
-        prefix_sum_[i] = curr_index;
+        ivf_index->prefix_sum[i] = curr_index;
         curr_index += list_size;
     }
-    data_ = std::shared_ptr<uint8_t[]>(reinterpret_cast<uint8_t*>(arranged_data));
 #else
     auto rol = dynamic_cast<faiss::ReadOnlyArrayInvertedLists*>(invlists);
     auto arranged_data = reinterpret_cast<float*>(rol->pin_readonly_codes->data);
@@ -94,20 +93,20 @@ IVF_NM::Load(const BinarySet& binary_set) {
     for (size_t i = 0; i < invlists->nlist; i++) {
         auto list_size = lengths[i];
         for (size_t j = 0; j < list_size; j++) {
-            memcpy(arranged_data + d * (curr_index + j), original_data + d * rol_ids[curr_index + j],
+            memcpy(arranged_data + d * (curr_index + j),
+                   binary->data.get() + d * rol_ids[curr_index + j] * sizeof(float),
                    d * sizeof(float));
         }
-        prefix_sum_[i] = curr_index;
+        ivf_index->prefix_sum[i] = curr_index;
         curr_index += list_size;
     }
 
     /* hold codes shared pointer */
     ro_codes_ = rol->pin_readonly_codes;
-    data_ = nullptr;
 #endif
-    //    LOG_KNOWHERE_DEBUG_ << "IndexIVF_FLAT::Load finished, show statistics:";
-    //    auto ivf_stats = std::dynamic_pointer_cast<IVFStatistics>(stats);
-    //    LOG_KNOWHERE_DEBUG_ << ivf_stats->ToString();
+    // LOG_KNOWHERE_DEBUG_ << "IndexIVF_FLAT::Load finished, show statistics:";
+    // auto ivf_stats = std::dynamic_pointer_cast<IVFStatistics>(stats);
+    // LOG_KNOWHERE_DEBUG_ << ivf_stats->ToString();
 }
 
 void
@@ -151,7 +150,7 @@ IVF_NM::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
     try {
         p_x = (float*)malloc(sizeof(float) * dim * rows);
         auto ivf_index = dynamic_cast<faiss::IndexIVF*>(index_.get());
-        ivf_index->get_vector_by_id_without_codes(rows, p_ids, data_.get(), prefix_sum_.get(), p_x);
+        ivf_index->get_vector_by_id_without_codes(rows, p_ids, p_x);
         return GenResultDataset(p_x);
     } catch (faiss::FaissException& e) {
         release_when_exception();
@@ -326,13 +325,11 @@ IVF_NM::QueryImpl(int64_t n,
         ivf_index->parallel_mode = 0;
     }
 
-#ifndef KNOWHERE_GPU_VERSION
-    auto arranged_data = data_.get();
-#else
+#ifdef KNOWHERE_GPU_VERSION
     auto arranged_data = static_cast<const uint8_t*>(ro_codes_->data);
 #endif
     auto ivf_stats = std::dynamic_pointer_cast<IVFStatistics>(stats);
-    ivf_index->search_without_codes(n, xq, arranged_data, prefix_sum_.get(), k, distances, labels, bitset);
+    ivf_index->search_without_codes(n, xq, k, distances, labels, bitset);
 #if 0
     stdclock::time_point after = stdclock::now();
     double search_cost = (std::chrono::duration<double, std::micro>(after - before)).count();
@@ -382,14 +379,8 @@ IVF_NM::QueryByRangeImpl(int64_t n,
         radius *= radius;
     }
 
-#ifndef KNOWHERE_GPU_VERSION
-    auto arranged_data = data_.get();
-#else
-    auto arranged_data = static_cast<uint8_t*>(ro_codes_->data);
-#endif
-
     faiss::RangeSearchResult res(n);
-    ivf_index->range_search_without_codes(n, xq, arranged_data, prefix_sum_.get(), radius, &res, bitset);
+    ivf_index->range_search_without_codes(n, xq, radius, &res, bitset);
 
     distances = res.distances;
     labels = res.labels;

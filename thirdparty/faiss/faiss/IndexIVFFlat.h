@@ -45,8 +45,6 @@ struct IndexIVFFlat : IndexIVF {
     void get_vector_by_id_without_codes(
             idx_t n,
             const idx_t* xids,
-            const uint8_t* arranged_codes,
-            const size_t* prefix_sum,
             float* x) override;
 
     void encode_vectors(
@@ -65,8 +63,6 @@ struct IndexIVFFlat : IndexIVF {
     void reconstruct_from_offset_without_codes(
             int64_t list_no,
             int64_t offset,
-            const uint8_t* arranged_codes,
-            const size_t* prefix_sum,
             float* recons) const override;
 
     void sa_decode(idx_t n, const uint8_t* bytes, float* x) const override;

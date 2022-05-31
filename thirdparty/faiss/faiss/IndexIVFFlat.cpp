@@ -130,12 +130,10 @@ void IndexIVFFlat::get_vector_by_id(
 void IndexIVFFlat::get_vector_by_id_without_codes(
         idx_t n,
         const idx_t* xids,
-        const uint8_t* arranged_codes,
-        const size_t* prefix_sum,
         float* x) {
     make_direct_map(true);
     for (idx_t i = 0; i < n; i++) {
-        reconstruct_without_codes(xids[i], arranged_codes, prefix_sum, x + i * d);
+        reconstruct_without_codes(xids[i], x + i * d);
     }
 }
 
@@ -272,10 +270,9 @@ void IndexIVFFlat::reconstruct_from_offset(
 void IndexIVFFlat::reconstruct_from_offset_without_codes(
         int64_t list_no,
         int64_t offset,
-        const uint8_t* arranged_codes,
-        const size_t* prefix_sum,
         float* recons) const {
-    memcpy(recons, arranged_codes + (prefix_sum[list_no] + offset) * code_size, code_size);
+    auto idx = prefix_sum[list_no] + offset;
+    memcpy(recons, arranged_codes.data() + idx * code_size, code_size);
 }
 
 /*****************************************

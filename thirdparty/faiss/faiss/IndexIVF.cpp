@@ -710,8 +710,6 @@ void IndexIVF::search_preassigned(
 void IndexIVF::search_without_codes(
         idx_t n,
         const float* x,
-        const uint8_t* arranged_codes,
-        const size_t* prefix_sum,
         idx_t k,
         float* distances,
         idx_t* labels,
@@ -725,8 +723,6 @@ void IndexIVF::search_without_codes(
     auto sub_search_func = [this, k, nprobe, bitset](
                                    idx_t n,
                                    const float* x,
-                                   const uint8_t* arranged_codes,
-                                   const size_t* prefix_sum,
                                    float* distances,
                                    idx_t* labels,
                                    IndexIVFStats* ivf_stats) {
@@ -742,8 +738,6 @@ void IndexIVF::search_without_codes(
         search_preassigned_without_codes(
                 n,
                 x,
-                arranged_codes,
-                prefix_sum,
                 k,
                 idx.get(),
                 coarse_dis.get(),
@@ -774,8 +768,6 @@ void IndexIVF::search_without_codes(
                     sub_search_func(
                             i1 - i0,
                             x + i0 * d,
-                            arranged_codes,
-                            prefix_sum,
                             distances + i0 * k,
                             labels + i0 * k,
                             &stats[slice]);
@@ -797,15 +789,13 @@ void IndexIVF::search_without_codes(
     } else {
         // handle paralellization at level below (or don't run in parallel at
         // all)
-        sub_search_func(n, x, arranged_codes, prefix_sum, distances, labels, &indexIVF_stats);
+        sub_search_func(n, x, distances, labels, &indexIVF_stats);
     }
 }
 
 void IndexIVF::search_preassigned_without_codes(
         idx_t n,
         const float* x,
-        const uint8_t* arranged_codes,
-        const size_t* prefix_sum,
         idx_t k,
         const idx_t* keys,
         const float* coarse_dis ,
@@ -889,7 +879,6 @@ void IndexIVF::search_preassigned_without_codes(
         // set porperly) and storing results in simi and idxi
         auto scan_one_list = [&](idx_t key,
                                  float coarse_dis_i,
-                                 const uint8_t* arranged_codes,
                                  float* simi,
                                  idx_t* idxi,
                                  const BitsetView bitset) {
@@ -916,7 +905,8 @@ void IndexIVF::search_preassigned_without_codes(
             nlistv++;
 
             try {
-                InvertedLists::ScopedCodes scodes(invlists, key, arranged_codes);
+                InvertedLists::ScopedCodes
+                    scodes(invlists, key, arranged_codes.data());
 
                 std::unique_ptr<InvertedLists::ScopedIds> sids;
                 const Index::idx_t* ids = nullptr;
@@ -966,7 +956,6 @@ void IndexIVF::search_preassigned_without_codes(
                     nscan += scan_one_list(
                             keys[i * nprobe + ik],
                             coarse_dis[i * nprobe + ik],
-                            arranged_codes,
                             simi,
                             idxi,
                             bitset);
@@ -997,7 +986,6 @@ void IndexIVF::search_preassigned_without_codes(
                     ndis += scan_one_list(
                             keys[i * nprobe + ik],
                             coarse_dis[i * nprobe + ik],
-                            arranged_codes,
                             local_dis.data(),
                             local_idx.data(),
                             bitset);
@@ -1040,7 +1028,6 @@ void IndexIVF::search_preassigned_without_codes(
                 ndis += scan_one_list(
                         keys[ij],
                         coarse_dis[ij],
-                        arranged_codes,
                         local_dis.data(),
                         local_idx.data(),
                         bitset);
@@ -1255,8 +1242,6 @@ void IndexIVF::range_search_preassigned(
 void IndexIVF::range_search_without_codes(
         idx_t nx,
         const float* x,
-        const uint8_t* arranged_codes,
-        const size_t* prefix_sum,
         float radius,
         RangeSearchResult* result,
         const BitsetView bitset) const {
@@ -1274,8 +1259,6 @@ void IndexIVF::range_search_without_codes(
     range_search_preassigned_without_codes(
             nx,
             x,
-            arranged_codes,
-            prefix_sum,
             radius,
             keys.get(),
             coarse_dis.get(),
@@ -1291,8 +1274,6 @@ void IndexIVF::range_search_without_codes(
 void IndexIVF::range_search_preassigned_without_codes(
         idx_t nx,
         const float* x,
-        const uint8_t* arranged_codes,
-        const size_t* prefix_sum,
         float radius,
         const idx_t* keys,
         const float* coarse_dis,
@@ -1333,7 +1314,6 @@ void IndexIVF::range_search_preassigned_without_codes(
 
         auto scan_list_func = [&](size_t i,
                                   size_t ik,
-                                  const uint8_t* arranged_codes,
                                   RangeQueryResult& qres,
                                   const BitsetView bitset) {
             idx_t key = keys[i * nprobe + ik]; /* select the list  */
@@ -1352,7 +1332,8 @@ void IndexIVF::range_search_preassigned_without_codes(
                 return;
 
             try {
-                InvertedLists::ScopedCodes scodes(invlists, key, arranged_codes);
+                InvertedLists::ScopedCodes
+                    scodes(invlists, key, arranged_codes.data());
                 InvertedLists::ScopedIds ids(invlists, key);
 
                 scanner->set_list(key, coarse_dis[i * nprobe + ik]);
@@ -1378,7 +1359,7 @@ void IndexIVF::range_search_preassigned_without_codes(
                 RangeQueryResult& qres = pres.new_result(i);
 
                 for (size_t ik = 0; ik < nprobe; ik++) {
-                    scan_list_func(i, ik, arranged_codes, qres, bitset);
+                    scan_list_func(i, ik, qres, bitset);
                 }
             }
 
@@ -1390,7 +1371,7 @@ void IndexIVF::range_search_preassigned_without_codes(
 
 #pragma omp for schedule(dynamic)
                 for (int64_t ik = 0; ik < nprobe; ik++) {
-                    scan_list_func(i, ik, arranged_codes, qres, bitset);
+                    scan_list_func(i, ik, qres, bitset);
                 }
             }
         } else if (parallel_mode == 2) {
@@ -1406,7 +1387,7 @@ void IndexIVF::range_search_preassigned_without_codes(
                     qres = &pres.new_result(i);
                     scanner->set_query(x + i * d);
                 }
-                scan_list_func(i, ik, arranged_codes, *qres, bitset);
+                scan_list_func(i, ik, *qres, bitset);
             }
         } else {
             FAISS_THROW_FMT("parallel_mode %d not supported\n", parallel_mode);
@@ -1447,18 +1428,9 @@ void IndexIVF::reconstruct(idx_t key, float* recons) const {
     reconstruct_from_offset(lo_listno(lo), lo_offset(lo), recons);
 }
 
-void IndexIVF::reconstruct_without_codes(
-        idx_t key,
-        const uint8_t* arranged_codes,
-        const size_t* prefix_sum,
-        float* recons) const {
+void IndexIVF::reconstruct_without_codes(idx_t key, float* recons) const {
     idx_t lo = direct_map.get(key);
-    reconstruct_from_offset_without_codes(
-            lo_listno(lo),
-            lo_offset(lo),
-            arranged_codes,
-            prefix_sum,
-            recons);
+    reconstruct_from_offset_without_codes(lo_listno(lo), lo_offset(lo), recons);
 }
 
 void IndexIVF::reconstruct_n(idx_t i0, idx_t ni, float* recons) const {
@@ -1556,8 +1528,6 @@ void IndexIVF::reconstruct_from_offset(
 void IndexIVF::reconstruct_from_offset_without_codes(
         int64_t /*list_no*/,
         int64_t /*offset*/,
-        const uint8_t* /*arranged_codes*/,
-        const size_t* /*prefix_sum*/,
         float* /*recons*/) const {
     FAISS_THROW_MSG("reconstruct_from_offset_without_codes not implemented");
 }
@@ -1565,6 +1535,8 @@ void IndexIVF::reconstruct_from_offset_without_codes(
 void IndexIVF::reset() {
     direct_map.clear();
     invlists->reset();
+    arranged_codes.clear();
+    prefix_sum.clear();
     ntotal = 0;
 }
 
