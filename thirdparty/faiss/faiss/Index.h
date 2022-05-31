@@ -115,6 +115,23 @@ struct Index {
      */
     virtual void add_with_ids_without_codes(idx_t n, const float* x, const idx_t* xids);
 
+    /** query n raw vectors from the index by ids.
+     *
+     * return n raw vectors.
+     *
+     * @param n     input num of xids
+     * @param xids  input labels of the NNs, size n
+     * @param x     output raw vectors, size n * d
+     */
+    virtual void get_vector_by_id(idx_t n, const idx_t* xids, float* x);
+
+    virtual void get_vector_by_id_without_codes(
+        idx_t n,
+        const idx_t* xids,
+        const uint8_t* arranged_codes,
+        const size_t* prefix_sum,
+        float* x);
+
     /** query n vectors of dimension d to the index.
      *
      * return at most k vectors. If there are not enough results for a
@@ -177,6 +194,12 @@ struct Index {
      * @param recons      reconstucted vector (size d)
      */
     virtual void reconstruct(idx_t key, float* recons) const;
+
+    virtual void reconstruct_without_codes(
+            idx_t key,
+            const uint8_t* arranged_codes,
+            const size_t* prefix_sum,
+            float* recons) const;
 
     /** Reconstruct vectors i0 to i0 + ni - 1
      *

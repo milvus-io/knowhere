@@ -27,6 +27,22 @@ GenDataset(const int64_t nb, const int64_t dim, const void* xb) {
 }
 
 DatasetPtr
+GenDatasetWithIds(const int64_t n, const int64_t dim, const int64_t* ids) {
+    auto ret_ds = std::make_shared<Dataset>();
+    SetDatasetRows(ret_ds, n);
+    SetDatasetDim(ret_ds, dim);
+    SetDatasetInputIDs(ret_ds, ids);
+    return ret_ds;
+}
+
+DatasetPtr
+GenResultDataset(const void* tensor) {
+    auto ret_ds = std::make_shared<Dataset>();
+    SetDatasetTensor(ret_ds, tensor);
+    return ret_ds;
+}
+
+DatasetPtr
 GenResultDataset(const int64_t* ids, const float* distance) {
     auto ret_ds = std::make_shared<Dataset>();
     SetDatasetIDs(ret_ds, ids);

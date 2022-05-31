@@ -35,6 +35,8 @@ struct IndexBinaryFlat : IndexBinary {
 
     void add(idx_t n, const uint8_t* x) override;
 
+    void get_vector_by_id(idx_t n, const idx_t* xids, uint8_t* x) override;
+
     void reset() override;
 
     void search(

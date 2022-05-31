@@ -94,6 +94,8 @@ TEST_P(IVFTest, ivf_basic) {
     EXPECT_EQ(index_->Dim(), dim);
     ASSERT_GT(index_->Size(), 0);
 
+    ASSERT_ANY_THROW(index_->GetVectorById(id_dataset, conf_));
+
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
     ASSERT_TRUE(adapter->CheckSearch(conf_, index_type_, index_mode_));
 

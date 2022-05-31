@@ -75,11 +75,14 @@ TEST_P(BinaryIVFTest, binaryivf_basic) {
     EXPECT_EQ(index_->Dim(), dim);
     ASSERT_GT(index_->Size(), 0);
 
+    auto result = index_->GetVectorById(id_dataset, conf_);
+    AssertBinVec(result, base_dataset, id_dataset, nq, dim);
+
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
     ASSERT_TRUE(adapter->CheckSearch(conf_, index_type_, index_mode_));
 
-    auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, knowhere::GetMetaTopk(conf_));
+    auto result1 = index_->Query(query_dataset, conf_, nullptr);
+    AssertAnns(result1, nq, knowhere::GetMetaTopk(conf_));
     // PrintResult(result, nq, k);
 
     auto result2 = index_->Query(query_dataset, conf_, *bitset);

@@ -30,14 +30,14 @@ inline void func_name(DatasetPtr& ds_ptr, T value) {    \
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DEFINE_DATASET_GETTER(GetDatasetDim, meta::DIM, int64_t);
-DEFINE_DATASET_SETTER(SetDatasetDim, meta::DIM, int64_t);
+DEFINE_DATASET_GETTER(GetDatasetDim, meta::DIM, const int64_t);
+DEFINE_DATASET_SETTER(SetDatasetDim, meta::DIM, const int64_t);
 
 DEFINE_DATASET_GETTER(GetDatasetTensor, meta::TENSOR, const void*);
 DEFINE_DATASET_SETTER(SetDatasetTensor, meta::TENSOR, const void*);
 
-DEFINE_DATASET_GETTER(GetDatasetRows, meta::ROWS, int64_t);
-DEFINE_DATASET_SETTER(SetDatasetRows, meta::ROWS, int64_t);
+DEFINE_DATASET_GETTER(GetDatasetRows, meta::ROWS, const int64_t);
+DEFINE_DATASET_SETTER(SetDatasetRows, meta::ROWS, const int64_t);
 
 DEFINE_DATASET_GETTER(GetDatasetIDs, meta::IDS, const int64_t*);
 DEFINE_DATASET_SETTER(SetDatasetIDs, meta::IDS, const int64_t*);
@@ -48,7 +48,15 @@ DEFINE_DATASET_SETTER(SetDatasetDistance, meta::DISTANCE, const float*);
 DEFINE_DATASET_GETTER(GetDatasetLims, meta::LIMS, const size_t*);
 DEFINE_DATASET_SETTER(SetDatasetLims, meta::LIMS, const size_t*);
 
+DEFINE_DATASET_GETTER(GetDatasetInputIDs, meta::INPUT_IDS, const int64_t*);
+DEFINE_DATASET_SETTER(SetDatasetInputIDs, meta::INPUT_IDS, const int64_t*);
+
 ///////////////////////////////////////////////////////////////////////////////
+
+#define GET_DATA_WITH_IDS(ds_ptr)                     \
+    auto rows = knowhere::GetDatasetRows(ds_ptr);     \
+    auto dim = knowhere::GetDatasetDim(ds_ptr);       \
+    auto p_ids = knowhere::GetDatasetInputIDs(ds_ptr);
 
 #define GET_TENSOR_DATA(ds_ptr)                       \
     auto rows = knowhere::GetDatasetRows(ds_ptr);     \
@@ -60,6 +68,12 @@ DEFINE_DATASET_SETTER(SetDatasetLims, meta::LIMS, const size_t*);
 
 extern DatasetPtr
 GenDataset(const int64_t nb, const int64_t dim, const void* xb);
+
+extern DatasetPtr
+GenDatasetWithIds(const int64_t n, const int64_t dim, const int64_t* ids);
+
+extern DatasetPtr
+GenResultDataset(const void* tensor);
 
 extern DatasetPtr
 GenResultDataset(const int64_t* ids, const float* distance);

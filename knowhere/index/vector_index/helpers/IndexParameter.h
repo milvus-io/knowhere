@@ -30,6 +30,7 @@ constexpr MetaType DISTANCE = "distance";
 constexpr MetaType LIMS = "lims";
 constexpr MetaType TOPK = "k";
 constexpr MetaType RADIUS = "radius";
+constexpr MetaType INPUT_IDS = "input_ids";
 constexpr MetaType DEVICE_ID = "gpu_id";
 };  // namespace meta
 

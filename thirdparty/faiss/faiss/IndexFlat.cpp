@@ -23,6 +23,12 @@ namespace faiss {
 IndexFlat::IndexFlat(idx_t d, MetricType metric)
         : IndexFlatCodes(sizeof(float) * d, d, metric) {}
 
+void IndexFlat::get_vector_by_id(idx_t n, const idx_t* xids, float* x) {
+    for (idx_t i = 0; i < n; i++) {
+        memcpy(x + i * d, get_xb() + xids[i] * d, code_size);
+    }
+}
+
 void IndexFlat::search(
         idx_t n,
         const float* x,

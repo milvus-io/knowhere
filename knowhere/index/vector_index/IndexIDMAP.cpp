@@ -70,6 +70,35 @@ IDMAP::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) {
 }
 
 DatasetPtr
+IDMAP::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
+    if (!index_) {
+        KNOWHERE_THROW_MSG("index not initialize");
+    }
+
+    GET_DATA_WITH_IDS(dataset_ptr)
+
+    float* p_x = nullptr;
+    auto release_when_exception = [&]() {
+        if (p_x != nullptr) {
+            free(p_x);
+        }
+    };
+
+    try {
+        p_x = (float*)malloc(sizeof(float) * dim * rows);
+        auto idmap_index = dynamic_cast<faiss::IndexFlat*>(index_.get());
+        idmap_index->get_vector_by_id(rows, p_ids, p_x);
+        return GenResultDataset(p_x);
+    } catch (faiss::FaissException& e) {
+        release_when_exception();
+        KNOWHERE_THROW_MSG(e.what());
+    } catch (std::exception& e) {
+        release_when_exception();
+        KNOWHERE_THROW_MSG(e.what());
+    }
+}
+
+DatasetPtr
 IDMAP::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::BitsetView bitset) {
     if (!index_) {
         KNOWHERE_THROW_MSG("index not initialize");

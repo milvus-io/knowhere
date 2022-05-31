@@ -132,6 +132,13 @@ void IndexBinaryIVF::add_core(
     ntotal += n_add;
 }
 
+void IndexBinaryIVF::get_vector_by_id(idx_t n, const idx_t* xids, uint8_t* x) {
+    make_direct_map(true);
+    for (idx_t i = 0; i < n; i++) {
+        reconstruct(xids[i], x + i * d / 8);
+    }
+}
+
 void IndexBinaryIVF::make_direct_map(bool b) {
     if (b) {
         direct_map.set_type(DirectMap::Array, invlists, ntotal);
