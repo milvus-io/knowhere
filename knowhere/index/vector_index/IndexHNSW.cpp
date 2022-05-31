@@ -25,14 +25,6 @@
 
 namespace knowhere {
 
-// void
-// normalize_vector(float* data, float* norm_array, size_t dim) {
-//     float norm = 0.0f;
-//     for (int i = 0; i < dim; i++) norm += data[i] * data[i];
-//     norm = 1.0f / (sqrtf(norm) + 1e-30f);
-//     for (int i = 0; i < dim; i++) norm_array[i] = data[i] * norm;
-// }
-
 BinarySet
 IndexHNSW::Serialize(const Config& config) {
     if (!index_) {
@@ -125,6 +117,21 @@ IndexHNSW::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) {
 #endif
     // LOG_KNOWHERE_DEBUG_ << "IndexHNSW::Train finished, show statistics:";
     // LOG_KNOWHERE_DEBUG_ << GetStatistics()->ToString();
+}
+
+DatasetPtr
+IndexHNSW::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
+    if (!index_) {
+        KNOWHERE_THROW_MSG("index not initialize");
+    }
+
+    GET_DATA_WITH_IDS(dataset_ptr)
+
+    float* p_x = (float*)malloc(sizeof(float) * dim * rows);
+    for (int64_t i = 0; i < rows; i++) {
+        memcpy(p_x + i * dim, index_->getDataByInternalId(p_ids[i]), dim * sizeof(float));
+    }
+    return GenResultDataset(p_x);
 }
 
 DatasetPtr
