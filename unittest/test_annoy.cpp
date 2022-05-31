@@ -64,11 +64,14 @@ TEST_P(AnnoyTest, annoy_basic) {
     ASSERT_EQ(index_->Dim(), dim);
     ASSERT_GT(index_->Size(), 0);
 
+    auto result = index_->GetVectorById(id_dataset, conf);
+    AssertVec(result, base_dataset, id_dataset, nq, dim);
+
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
     ASSERT_TRUE(adapter->CheckSearch(conf, index_type_, index_mode_));
 
-    auto result = index_->Query(query_dataset, conf, nullptr);
-    AssertAnns(result, nq, k);
+    auto result1 = index_->Query(query_dataset, conf, nullptr);
+    AssertAnns(result1, nq, k);
 }
 
 TEST_P(AnnoyTest, annoy_delete) {

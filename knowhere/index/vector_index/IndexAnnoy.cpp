@@ -106,6 +106,21 @@ IndexAnnoy::BuildAll(const DatasetPtr& dataset_ptr, const Config& config) {
 }
 
 DatasetPtr
+IndexAnnoy::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
+    if (!index_) {
+        KNOWHERE_THROW_MSG("index not initialize");
+    }
+
+    GET_DATA_WITH_IDS(dataset_ptr)
+
+    float* p_x = (float*)malloc(sizeof(float) * dim * rows);
+    for (int64_t i = 0; i < rows; i++) {
+        index_->get_item(p_ids[i], p_x + i * dim);
+    }
+    return GenResultDataset(p_x);
+}
+
+DatasetPtr
 IndexAnnoy::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::BitsetView bitset) {
     if (!index_) {
         KNOWHERE_THROW_MSG("index not initialize or trained");

@@ -31,16 +31,16 @@ class IndexAnnoy : public VecIndex {
     }
 
     BinarySet
-    Serialize(const Config& config) override;
+    Serialize(const Config&) override;
 
     void
-    Load(const BinarySet& index_binary) override;
+    Load(const BinarySet&) override;
 
     void
-    BuildAll(const DatasetPtr& dataset_ptr, const Config& config) override;
+    BuildAll(const DatasetPtr&, const Config&) override;
 
     void
-    Train(const DatasetPtr& dataset_ptr, const Config& config) override {
+    Train(const DatasetPtr&, const Config&) override {
         KNOWHERE_THROW_MSG("Annoy not support build item dynamically, please invoke BuildAll interface.");
     }
 
@@ -50,7 +50,10 @@ class IndexAnnoy : public VecIndex {
     }
 
     DatasetPtr
-    Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::BitsetView bitset) override;
+    GetVectorById(const DatasetPtr&, const Config&) override;
+
+    DatasetPtr
+    Query(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
 
     int64_t
     Count() override;
