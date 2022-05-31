@@ -241,8 +241,12 @@ class Benchmark_knowhere_float : public Benchmark_sift {
     const std::vector<int32_t> NLISTs_ = {1024};
     const std::vector<int32_t> NPROBEs_ = {1, 2, 4, 8, 16, 32, 64, 128, 256};
 
+    // IVFPQ index params
+    const std::vector<int32_t> Ms_ = {8, 16, 32};
+    const int32_t NBITS_ = 8;
+
     // HNSW index params
-    const std::vector<int32_t> Ms_ = {16};
+    const std::vector<int32_t> HNSW_Ms_ = {16};
     const std::vector<int32_t> EFCONs_ = {100};
     const std::vector<int32_t> EFs_ = {16, 32, 64, 128, 256};
 
@@ -261,7 +265,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IDMAP) {
     test_idmap(conf);
 }
 
-TEST_F(Benchmark_knowhere_float, TEST_IVFFLAT_NM) {
+TEST_F(Benchmark_knowhere_float, TEST_IVF_FLAT_NM) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
 
     knowhere::Config conf = cfg_;
@@ -281,7 +285,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IVFFLAT_NM) {
     }
 }
 
-TEST_F(Benchmark_knowhere_float, TEST_IVFSQ8) {
+TEST_F(Benchmark_knowhere_float, TEST_IVF_SQ8) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFSQ8;
 
     knowhere::Config conf = cfg_;
@@ -294,11 +298,28 @@ TEST_F(Benchmark_knowhere_float, TEST_IVFSQ8) {
     }
 }
 
+TEST_F(Benchmark_knowhere_float, TEST_IVF_PQ) {
+    index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFPQ;
+
+    knowhere::Config conf = cfg_;
+    knowhere::SetIndexParamNbits(conf, NBITS_);
+    for (auto m : Ms_) {
+        knowhere::SetIndexParamM(conf, m);
+        for (auto nlist : NLISTs_) {
+            std::string index_file_name = get_index_name({nlist, m});
+            knowhere::SetIndexParamNlist(conf, nlist);
+            create_cpu_index(index_file_name, conf);
+            index_->Load(binary_set_);
+            test_ivf(conf);
+        }
+    }
+}
+
 TEST_F(Benchmark_knowhere_float, TEST_HNSW) {
     index_type_ = knowhere::IndexEnum::INDEX_HNSW;
 
     knowhere::Config conf = cfg_;
-    for (auto M : Ms_) {
+    for (auto M : HNSW_Ms_) {
         knowhere::SetIndexParamHNSWM(conf, M);
         for (auto efc : EFCONs_) {
             std::string index_file_name = get_index_name({M, efc});

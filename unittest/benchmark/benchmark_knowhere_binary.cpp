@@ -244,7 +244,7 @@ TEST_F(Benchmark_knowhere_binary, TEST_BINARY_IDMAP) {
     test_binary_idmap(conf);
 }
 
-TEST_F(Benchmark_knowhere_binary, TEST_BINARY_IVFFLAT) {
+TEST_F(Benchmark_knowhere_binary, TEST_BINARY_IVF_FLAT) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_BIN_IVFFLAT;
 
     knowhere::Config conf = cfg_;
