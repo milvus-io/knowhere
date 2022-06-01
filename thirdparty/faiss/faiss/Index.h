@@ -128,8 +128,6 @@ struct Index {
     virtual void get_vector_by_id_without_codes(
         idx_t n,
         const idx_t* xids,
-        const uint8_t* arranged_codes,
-        const size_t* prefix_sum,
         float* x);
 
     /** query n vectors of dimension d to the index.
@@ -195,11 +193,7 @@ struct Index {
      */
     virtual void reconstruct(idx_t key, float* recons) const;
 
-    virtual void reconstruct_without_codes(
-            idx_t key,
-            const uint8_t* arranged_codes,
-            const size_t* prefix_sum,
-            float* recons) const;
+    virtual void reconstruct_without_codes(idx_t key, float* recons) const;
 
     /** Reconstruct vectors i0 to i0 + ni - 1
      *

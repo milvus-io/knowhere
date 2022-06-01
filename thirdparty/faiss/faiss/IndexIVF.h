@@ -104,6 +104,20 @@ struct IndexIVF : Index, Level1Quantizer {
     size_t nprobe;    ///< number of probes at query time
     size_t max_codes; ///< max nb of codes to visit to do a query
 
+    /** Used for index IVF_NM currently to reduce index size
+     *
+     * arranged_codes: vector raw data re-ordered by invlists:
+     *   [0,     n0-1]       vector data for invlists[0]
+     *   [n0,    n0+n1-1]    vector data for invlists[1]
+     *   [n0+n1, n0+n1+n2-1] vector data for invlists[2]
+     *   ... ...
+     *
+     * prefix_sum: the start offset of invlists in arranged_codes:
+     *   {0, n0, n0+n1, n0+n1+n2, ...}
+     */
+    std::vector<uint8_t> arranged_codes;
+    std::vector<size_t> prefix_sum;
+
     /** Parallel mode determines how queries are parallelized with OpenMP
      *
      * 0 (default): split over queries
@@ -225,8 +239,6 @@ struct IndexIVF : Index, Level1Quantizer {
     virtual void search_preassigned_without_codes(
             idx_t n,
             const float* x,
-            const uint8_t* arranged_codes,
-            const size_t* prefix_sum,
             idx_t k,
             const idx_t* assign,
             const float* centroid_dis,
@@ -250,8 +262,6 @@ struct IndexIVF : Index, Level1Quantizer {
     void search_without_codes(
             idx_t n,
             const float* x,
-            const uint8_t* arranged_codes,
-            const size_t* prefix_sum,
             idx_t k,
             float* distances,
             idx_t* labels,
@@ -267,8 +277,6 @@ struct IndexIVF : Index, Level1Quantizer {
     void range_search_without_codes(
             idx_t n,
             const float* x,
-            const uint8_t* arranged_codes,
-            const size_t* prefix_sum,
             float radius,
             RangeSearchResult* result,
             const BitsetView bitset = nullptr) const;
@@ -288,8 +296,6 @@ struct IndexIVF : Index, Level1Quantizer {
     void range_search_preassigned_without_codes(
             idx_t nx,
             const float* x,
-            const uint8_t* arranged_codes,
-            const size_t* prefix_sum,
             float radius,
             const idx_t* keys,
             const float* coarse_dis,
@@ -310,11 +316,7 @@ struct IndexIVF : Index, Level1Quantizer {
      */
     void reconstruct(idx_t key, float* recons) const override;
 
-    void reconstruct_without_codes(
-            idx_t key,
-            const uint8_t* arranged_codes,
-            const size_t* prefix_sum,
-            float* recons) const override;
+    void reconstruct_without_codes(idx_t key, float* recons) const override;
 
     /** Update a subset of vectors.
      *
@@ -369,8 +371,6 @@ struct IndexIVF : Index, Level1Quantizer {
     virtual void reconstruct_from_offset_without_codes(
             int64_t list_no,
             int64_t offset,
-            const uint8_t* arranged_codes,
-            const size_t* prefix_sum,
             float* recons) const;
 
     /// Dataset manipulation functions
