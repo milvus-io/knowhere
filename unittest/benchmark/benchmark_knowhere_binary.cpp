@@ -40,10 +40,10 @@ class Benchmark_knowhere_binary : public Benchmark_sift {
             const knowhere::BinaryPtr data = it->second;
             size_t data_size = data->size;
 
-            writer(&name_size, sizeof(size_t));
-            writer(&data->size, sizeof(data->size));
+            writer(&name_size, sizeof(name_size));
+            writer(&data_size, sizeof(data_size));
             writer((void*)name.c_str(), name_size);
-            writer(data->data.get(), data->size);
+            writer(data->data.get(), data_size);
         }
     }
 
