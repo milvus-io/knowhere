@@ -156,8 +156,12 @@ class Benchmark_faiss : public Benchmark_sift {
     const std::vector<int32_t> NLISTs_ = {1024};
     const std::vector<int32_t> NPROBEs_ = {1, 2, 4, 8, 16, 32, 64, 128, 256};
 
+    // IVFPQ index params
+    const std::vector<int32_t> Ms_ = {8, 16, 32};
+    const int32_t NBITS_ = 8;
+
     // HNSW index params
-    const std::vector<int32_t> Ms_ = {16};
+    const std::vector<int32_t> HNSW_Ms_ = {16};
     const std::vector<int32_t> EFCONs_ = {100};
     const std::vector<int32_t> EFs_ = {16, 32, 64, 128, 256};
 };
@@ -171,7 +175,7 @@ TEST_F(Benchmark_faiss, TEST_IDMAP) {
     test_idmap();
 }
 
-TEST_F(Benchmark_faiss, TEST_IVFFLAT) {
+TEST_F(Benchmark_faiss, TEST_IVF_FLAT) {
     std::string index_type = "Flat";
     for (auto nlist : NLISTs_) {
         index_key_ = "IVF" + std::to_string(nlist) + "," + index_type;
@@ -181,7 +185,7 @@ TEST_F(Benchmark_faiss, TEST_IVFFLAT) {
     }
 }
 
-TEST_F(Benchmark_faiss, TEST_IVFSQ8) {
+TEST_F(Benchmark_faiss, TEST_IVF_SQ8) {
     std::string index_type = "SQ8";
     for (auto nlist : NLISTs_) {
         index_key_ = "IVF" + std::to_string(nlist) + "," + index_type;
@@ -191,9 +195,23 @@ TEST_F(Benchmark_faiss, TEST_IVFSQ8) {
     }
 }
 
+TEST_F(Benchmark_faiss, TEST_IVF_PQ) {
+    std::string index_type = "PQ";
+    for (auto m : Ms_) {
+        for (auto nlist : NLISTs_) {
+            index_key_ =
+                "IVF" + std::to_string(nlist) + "," + index_type + std::to_string(m) + "x" + std::to_string(NBITS_);
+            std::string index_file_name =
+                ann_test_name_ + "_IVF" + std::to_string(nlist) + "_" + std::to_string(m) + "_" + index_type + ".index";
+            create_cpu_index(index_file_name);
+            test_ivf(nlist);
+        }
+    }
+}
+
 TEST_F(Benchmark_faiss, TEST_HNSW) {
     std::string index_type = "Flat";
-    for (auto M : Ms_) {
+    for (auto M : HNSW_Ms_) {
         index_key_ = "HNSW" + std::to_string(M) + "," + index_type;
         for (auto efc : EFCONs_) {
             std::string index_file_name =
