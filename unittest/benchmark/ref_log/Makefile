@@ -13,7 +13,7 @@ test_faiss_hnsw:
 	./benchmark_faiss --gtest_filter="Benchmark_faiss.TEST_HNSW" | tee test_faiss_hnsw.log
 
 # Test Knowhere index
-test_knowhere_all: test_knowhere_idmap test_knowhere_ivf_flat_nm test_knowhere_ivf_sq8 test_knowhere_ivf_pq test_knowhere_hnsw test_knowhere_annoy test_knowhere_rhnsw_flat test_knowhere_rhnsw_sq8 test_knowhere_rhnsw_pq
+test_knowhere_all: test_knowhere_idmap test_knowhere_ivf_flat_nm test_knowhere_ivf_sq8 test_knowhere_ivf_pq test_knowhere_hnsw test_knowhere_annoy test_knowhere_rhnsw_flat test_knowhere_rhnsw_sq test_knowhere_rhnsw_pq
 
 test_knowhere_idmap:
 	./benchmark_knowhere_float --gtest_filter="Benchmark_knowhere_float.TEST_IDMAP" | tee test_knowhere_idmap.log
@@ -29,8 +29,8 @@ test_knowhere_annoy:
 	./benchmark_knowhere_float --gtest_filter="Benchmark_knowhere_float.TEST_ANNOY" | tee test_knowhere_annoy.log
 test_knowhere_rhnsw_flat:
 	./benchmark_knowhere_float --gtest_filter="Benchmark_knowhere_float.TEST_RHNSW_FLAT" | tee test_knowhere_rhnsw_flat.log
-test_knowhere_rhnsw_sq8:
-	./benchmark_knowhere_float --gtest_filter="Benchmark_knowhere_float.TEST_RHNSW_SQ8" | tee test_knowhere_rhnsw_sq8.log
+test_knowhere_rhnsw_sq:
+	./benchmark_knowhere_float --gtest_filter="Benchmark_knowhere_float.TEST_RHNSW_SQ" | tee test_knowhere_rhnsw_sq.log
 test_knowhere_rhnsw_pq:
 	./benchmark_knowhere_float --gtest_filter="Benchmark_knowhere_float.TEST_RHNSW_PQ" | tee test_knowhere_rhnsw_pq.log
 

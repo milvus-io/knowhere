@@ -40,10 +40,10 @@ class Benchmark_knowhere_float : public Benchmark_sift {
             const knowhere::BinaryPtr data = it->second;
             size_t data_size = data->size;
 
-            writer(&name_size, sizeof(size_t));
-            writer(&data->size, sizeof(data->size));
+            writer(&name_size, sizeof(name_size));
+            writer(&data_size, sizeof(data_size));
             writer((void*)name.c_str(), name_size);
-            writer(data->data.get(), data->size);
+            writer(data->data.get(), data_size);
         }
     }
 
@@ -341,5 +341,63 @@ TEST_F(Benchmark_knowhere_float, TEST_ANNOY) {
         create_cpu_index(index_file_name, conf);
         index_->Load(binary_set_);
         test_annoy(conf);
+    }
+}
+
+TEST_F(Benchmark_knowhere_float, TEST_RHNSW_FLAT) {
+    index_type_ = knowhere::IndexEnum::INDEX_RHNSWFlat;
+
+    knowhere::Config conf = cfg_;
+    for (auto M : HNSW_Ms_) {
+        knowhere::SetIndexParamHNSWM(conf, M);
+        for (auto efc : EFCONs_) {
+            std::string index_file_name = get_index_name({M, efc});
+            knowhere::SetIndexParamEfConstruction(conf, efc);
+            create_cpu_index(index_file_name, conf);
+
+            // RHNSW index should load raw data
+            knowhere::BinaryPtr bin = std::make_shared<knowhere::Binary>();
+            bin->data = std::shared_ptr<uint8_t[]>((uint8_t*)xb_, [&](uint8_t*) {});
+            bin->size = dim_ * nb_ * sizeof(float);
+            binary_set_.Append(RAW_DATA, bin);
+
+            index_->Load(binary_set_);
+            test_hnsw(conf);
+        }
+    }
+}
+
+TEST_F(Benchmark_knowhere_float, TEST_RHNSW_SQ) {
+    index_type_ = knowhere::IndexEnum::INDEX_RHNSWSQ;
+
+    knowhere::Config conf = cfg_;
+    for (auto M : HNSW_Ms_) {
+        knowhere::SetIndexParamHNSWM(conf, M);
+        for (auto efc : EFCONs_) {
+            std::string index_file_name = get_index_name({M, efc});
+            knowhere::SetIndexParamEfConstruction(conf, efc);
+            create_cpu_index(index_file_name, conf);
+            index_->Load(binary_set_);
+            test_hnsw(conf);
+        }
+    }
+}
+
+TEST_F(Benchmark_knowhere_float, TEST_RHNSW_PQ) {
+    index_type_ = knowhere::IndexEnum::INDEX_RHNSWPQ;
+
+    knowhere::Config conf = cfg_;
+    for (auto M : HNSW_Ms_) {
+        knowhere::SetIndexParamHNSWM(conf, M);
+        for (auto efc : EFCONs_) {
+            knowhere::SetIndexParamEfConstruction(conf, efc);
+            for (auto m : Ms_) {
+                knowhere::SetIndexParamPQM(conf, m);
+                std::string index_file_name = get_index_name({M, efc, m});
+                create_cpu_index(index_file_name, conf);
+                index_->Load(binary_set_);
+                test_hnsw(conf);
+            }
+        }
     }
 }
