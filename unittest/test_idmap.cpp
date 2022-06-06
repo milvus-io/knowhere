@@ -213,12 +213,13 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
 
     auto test_range_search_l2 = [&](float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
+        std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        RunRangeSearchBF<CMin<float>>(golden_labels, golden_lims, xb, nb, xq, nq, dim,
+        RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, xb.data(), nb, xq.data(), nq, dim,
                                       radius * radius, faiss::fvec_L2sqr_ref, bitset);
 
         auto result = index_->QueryByRange(qd, conf, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, nq, radius * radius, golden_labels, golden_lims, true);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius * radius, golden_labels.data(), golden_lims.data(), true);
     };
 
     auto old_blas_threshold = knowhere::KnowhereConfig::GetBlasThreshold();
@@ -245,12 +246,13 @@ TEST_P(IDMAPTest, idmap_range_search_ip) {
 
     auto test_range_search_ip = [&](float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
+        std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        RunRangeSearchBF<CMax<float>>(golden_labels, golden_lims, xb, nb, xq, nq, dim,
+        RunRangeSearchBF<CMax<float>>(golden_labels, golden_distances, golden_lims, xb.data(), nb, xq.data(), nq, dim,
                                       radius, faiss::fvec_inner_product_ref, bitset);
 
         auto result = index_->QueryByRange(qd, conf, bitset);
-        CheckRangeSearchResult<CMax<float>>(result, nq, radius, golden_labels, golden_lims, true);
+        CheckRangeSearchResult<CMax<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), true);
     };
 
     auto old_blas_threshold = knowhere::KnowhereConfig::GetBlasThreshold();
