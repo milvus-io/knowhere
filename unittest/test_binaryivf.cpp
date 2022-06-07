@@ -146,11 +146,13 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_hamming) {
 
     auto test_range_search_hamming = [&](float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
+        std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        RunRangeSearchBF<CMin<float>>(golden_labels, golden_lims, xb_bin, nb, xq_bin, nq, dim, radius, hamming_dis, bitset);
+        RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, xb_bin.data(), nb, xq_bin.data(),
+                                      nq, dim, radius, hamming_dis, bitset);
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels, golden_lims, false);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false);
     };
 
     test_range_search_hamming(hamming_radius, nullptr);
@@ -171,11 +173,13 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_jaccard) {
 
     auto test_range_search_jaccard = [&](float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
+        std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        RunRangeSearchBF<CMin<float>>(golden_labels, golden_lims, xb_bin, nb, xq_bin, nq, dim, radius, jaccard_dis, bitset);
+        RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, xb_bin.data(), nb, xq_bin.data(),
+                                      nq, dim, radius, jaccard_dis, bitset);
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels, golden_lims, false);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false);
     };
 
     test_range_search_jaccard(jaccard_radius, nullptr);
@@ -195,11 +199,13 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_tanimoto) {
 
     auto test_range_search_tanimoto = [&](float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
+        std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        RunRangeSearchBF<CMin<float>>(golden_labels, golden_lims, xb_bin, nb, xq_bin, nq, dim, radius, tanimoto_dis, bitset);
+        RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, xb_bin.data(), nb, xq_bin.data(),
+                                      nq, dim, radius, tanimoto_dis, bitset);
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels, golden_lims, false);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false);
     };
 
     test_range_search_tanimoto(tanimoto_radius, nullptr);

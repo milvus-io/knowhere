@@ -138,12 +138,13 @@ TEST_P(HNSWTest, hnsw_range_search_l2) {
 
     auto test_range_search_l2 = [&](float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
+        std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        RunRangeSearchBF<CMin<float>>(golden_labels, golden_lims, xb, nb, xq, nq, dim,
+        RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, xb.data(), nb, xq.data(), nq, dim,
                                       radius * radius, faiss::fvec_L2sqr_ref, bitset);
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, nq, radius * radius, golden_labels, golden_lims, false);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius * radius, golden_labels.data(), golden_lims.data(), false);
     };
 
     for (float radius: {4.1f, 4.2f, 4.3f}) {
@@ -163,12 +164,13 @@ TEST_P(HNSWTest, hnsw_range_search_ip) {
 
     auto test_range_search_ip = [&](float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
+        std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        RunRangeSearchBF<CMax<float>>(golden_labels, golden_lims, xb, nb, xq, nq, dim,
+        RunRangeSearchBF<CMax<float>>(golden_labels, golden_distances, golden_lims, xb.data(), nb, xq.data(), nq, dim,
                                       radius, faiss::fvec_inner_product_ref, bitset);
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMax<float>>(result, nq, radius, golden_labels, golden_lims, false);
+        CheckRangeSearchResult<CMax<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false);
     };
 
     for (float radius: {42.0f, 43.0f, 44.0f}) {

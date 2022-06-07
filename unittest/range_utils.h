@@ -42,10 +42,11 @@ inline float tanimoto_dis(const uint8_t* pa, const uint8_t* pb, const size_t cod
 template <class C>
 void RunRangeSearchBF(
     std::vector<int64_t>& golden_ids,
+    std::vector<float>& golden_distances,
     std::vector<size_t>& golden_lims,
-    const std::vector<float>& xb,
+    const float* xb,
     const int64_t nb,
-    const std::vector<float>& xq,
+    const float* xq,
     const int64_t nq,
     const int64_t dim,
     const float radius,
@@ -54,13 +55,14 @@ void RunRangeSearchBF(
 
     golden_lims.push_back(0);
     for (auto i = 0; i < nq; ++i) {
-        const float* pq = xq.data() + i * dim;
+        const float* pq = xq + i * dim;
         for (auto j = 0; j < nb; ++j) {
             if (bitset.empty() || !bitset.test(j)) {
-                const float* pb = xb.data() + j * dim;
-                auto dis = func(pq, pb, dim);
-                if (C::cmp(dis, radius)) {
+                const float* pb = xb + j * dim;
+                auto dist = func(pq, pb, dim);
+                if (C::cmp(dist, radius)) {
                     golden_ids.push_back(j);
+                    golden_distances.push_back(dist);
                 }
             }
         }
@@ -71,10 +73,11 @@ void RunRangeSearchBF(
 template <class C>
 void RunRangeSearchBF(
     std::vector<int64_t>& golden_ids,
+    std::vector<float>& golden_distances,
     std::vector<size_t>& golden_lims,
-    const std::vector<uint8_t>& xb,
+    const uint8_t* xb,
     const int64_t nb,
-    const std::vector<uint8_t>& xq,
+    const uint8_t* xq,
     const int64_t nq,
     const int64_t dim,
     const float radius,
@@ -83,13 +86,14 @@ void RunRangeSearchBF(
 
     golden_lims.push_back(0);
     for (auto i = 0; i < nq; ++i) {
-        const uint8_t* pq = xq.data() + i * dim / 8;
+        const uint8_t* pq = xq + i * dim / 8;
         for (auto j = 0; j < nb; ++j) {
             if (bitset.empty() || !bitset.test(j)) {
-                const uint8_t* pb = xb.data() + j * dim / 8;
+                const uint8_t* pb = xb + j * dim / 8;
                 auto dist = func(pq, pb, dim/8);
                 if (C::cmp(dist, radius)) {
                     golden_ids.push_back(j);
+                    golden_distances.push_back(dist);
                 }
             }
         }
@@ -102,8 +106,8 @@ void CheckRangeSearchResult(
     const knowhere::DatasetPtr& result,
     const int64_t nq,
     const float radius,
-    const std::vector<int64_t>& golden_ids,
-    const std::vector<size_t>& golden_lims,
+    const int64_t* golden_ids,
+    const size_t* golden_lims,
     const bool is_idmap) {
 
     auto lims = knowhere::GetDatasetLims(result);
@@ -119,8 +123,8 @@ void CheckRangeSearchResult(
         }
 
         int64_t recall_cnt = 0;
-        std::unordered_set<int64_t> golden_ids_set(golden_ids.begin() + golden_lims[i],
-                                                  golden_ids.begin() + golden_lims[i+1]);
+        std::unordered_set<int64_t> golden_ids_set(golden_ids + golden_lims[i],
+                                                   golden_ids + golden_lims[i+1]);
         for (int j = lims[i]; j < lims[i+1]; j++) {
             bool hit = (golden_ids_set.count(ids[j]) == 1);
             if (hit) {
