@@ -55,6 +55,11 @@ static const char* METRIC_TAN_STR = "tanimoto";
  * SIFT     128         1,000,000   10,000      100         Euclidean   HDF5 (501MB)
  *************************************************************************************/
 
+#define CALC_TIME_SPAN(X)       \
+    double t_start = elapsed(); \
+    X;                          \
+    double t_diff = elapsed() - t_start;
+
 class Benchmark_sift : public ::testing::Test {
  public:
     void
@@ -506,7 +511,7 @@ class Benchmark_sift : public ::testing::Test {
     void* xq_ = nullptr;
     int32_t nb_;
     int32_t nq_;
-    float* gt_radius_;           // ground-truth radius
+    float* gt_radius_ = nullptr; // ground-truth radius
     int32_t* gt_lims_ = nullptr; // ground-truth lims
     int32_t* gt_ids_ = nullptr;  // ground-truth labels
     void* gt_dist_ = nullptr;    // ground-truth distances
