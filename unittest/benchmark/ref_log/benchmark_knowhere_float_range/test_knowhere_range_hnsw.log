@@ -6,28 +6,28 @@ Note: Google Test filter = Benchmark_knowhere_float_range.TEST_HNSW
 [ RUN      ] Benchmark_knowhere_float_range.TEST_HNSW
 [0.000 s] Loading HDF5 file: sift-128-euclidean-range.hdf5
 [0.000 s] Loading train data
-[0.199 s] Loading test data
-[0.201 s] Loading ground truth data
-2022-06-07 18:16:35,550 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
-2022-06-07 18:16:35,551 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
-[0.203 s] Creating CPU index "HNSW"
-[0.204 s] Reading index file: sift-128-euclidean-range_HNSW_16_100_20.index
-[0.204 s] Building all on 1000000 vectors
-[104.734 s] Writing index file: sift-128-euclidean-range_HNSW_16_100_20.index
+[0.186 s] Loading test data
+[0.188 s] Loading ground truth data
+2022-06-08 20:38:53,635 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
+2022-06-08 20:38:53,635 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+[0.190 s] Creating CPU index "HNSW"
+[0.190 s] Reading index file: sift-128-euclidean-range_HNSW_16_100_20.index
+[0.190 s] Building all on 1000000 vectors
+[50.130 s] Writing index file: sift-128-euclidean-range_HNSW_16_100_20.index
 
-[105.531 s] sift-128-euclidean-range | HNSW | M=16 | efConstruction=100
+[50.895 s] sift-128-euclidean-range | HNSW | M=16 | efConstruction=100
 ================================================================================
-  ef =   16, nq = 10000, elapse = 1.8342s, R@ = 0.0000, A@ = -nan
-  ef =   32, nq = 10000, elapse = 2.6562s, R@ = 0.0000, A@ = -nan
-  ef =   64, nq = 10000, elapse = 4.6919s, R@ = 0.0000, A@ = -nan
-  ef =  128, nq = 10000, elapse = 8.3082s, R@ = 0.0000, A@ = -nan
-  ef =  256, nq = 10000, elapse = 15.3515s, R@ = 0.0000, A@ = -nan
+  ef =   16, nq = 10000, elapse = 0.7227s, R@ = 0.0000, A@ = -nan
+  ef =   32, nq = 10000, elapse = 1.0283s, R@ = 0.0000, A@ = -nan
+  ef =   64, nq = 10000, elapse = 1.7962s, R@ = 0.0000, A@ = -nan
+  ef =  128, nq = 10000, elapse = 3.2314s, R@ = 0.0000, A@ = -nan
+  ef =  256, nq = 10000, elapse = 5.7384s, R@ = 0.0000, A@ = -nan
 ================================================================================
-[139.891 s] Test 'sift-128-euclidean-range/HNSW' done
+[63.768 s] Test 'sift-128-euclidean-range/HNSW' done
 
-[       OK ] Benchmark_knowhere_float_range.TEST_HNSW (139940 ms)
-[----------] 1 test from Benchmark_knowhere_float_range (139940 ms total)
+[       OK ] Benchmark_knowhere_float_range.TEST_HNSW (63816 ms)
+[----------] 1 test from Benchmark_knowhere_float_range (63816 ms total)
 
 [----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (139940 ms total)
+[==========] 1 test from 1 test case ran. (63816 ms total)
 [  PASSED  ] 1 test.

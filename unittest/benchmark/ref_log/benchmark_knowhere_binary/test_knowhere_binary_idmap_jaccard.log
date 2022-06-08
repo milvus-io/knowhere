@@ -6,24 +6,24 @@ Note: Google Test filter = Benchmark_knowhere_binary.TEST_BINARY_IDMAP
 [ RUN      ] Benchmark_knowhere_binary.TEST_BINARY_IDMAP
 [0.000 s] Loading HDF5 file: sift-4096-jaccard.hdf5
 [0.000 s] Loading train data
-[0.372 s] Loading test data
-[0.375 s] Loading ground truth data
-2022-06-01 12:48:18,305 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
-2022-06-01 12:48:18,306 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
-[0.378 s] Creating CPU index "BIN_FLAT"
-[0.379 s] Reading index file: sift-4096-jaccard_BIN_FLAT.index
-[0.379 s] Building all on 1000000 vectors
-[0.573 s] Writing index file: sift-4096-jaccard_BIN_FLAT.index
+[0.354 s] Loading test data
+[0.358 s] Loading ground truth data
+2022-06-08 21:02:06,638 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
+2022-06-08 21:02:06,638 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+[0.361 s] Creating CPU index "BIN_FLAT"
+[0.361 s] Reading index file: sift-4096-jaccard_BIN_FLAT.index
+[0.361 s] Building all on 1000000 vectors
+[0.559 s] Writing index file: sift-4096-jaccard_BIN_FLAT.index
 
-[1.137 s] sift-4096-jaccard | BIN_FLAT 
+[1.128 s] sift-4096-jaccard | BIN_FLAT 
 ================================================================================
-  nq = 10000, k =   10, elapse = 867.0350s, R@ = 0.9983
+  nq = 10000, k =   10, elapse = 82.3851s, R@ = 0.9983
 ================================================================================
-[868.210 s] Test 'sift-4096-jaccard/BIN_FLAT' done
+[83.520 s] Test 'sift-4096-jaccard/BIN_FLAT' done
 
-[       OK ] Benchmark_knowhere_binary.TEST_BINARY_IDMAP (868240 ms)
-[----------] 1 test from Benchmark_knowhere_binary (868240 ms total)
+[       OK ] Benchmark_knowhere_binary.TEST_BINARY_IDMAP (83557 ms)
+[----------] 1 test from Benchmark_knowhere_binary (83558 ms total)
 
 [----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (868240 ms total)
+[==========] 1 test from 1 test case ran. (83558 ms total)
 [  PASSED  ] 1 test.
