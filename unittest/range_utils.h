@@ -53,7 +53,10 @@ void RunRangeSearchBF(
     const fvec_func_ptr func,
     const faiss::BitsetView bitset) {
 
-    golden_lims.push_back(0);
+    std::vector<std::vector<int64_t>> ids_v(nq);
+    std::vector<std::vector<float>> distances_v(nq);
+
+#pragma omp parallel for
     for (auto i = 0; i < nq; ++i) {
         const float* pq = xq + i * dim;
         for (auto j = 0; j < nb; ++j) {
@@ -61,11 +64,17 @@ void RunRangeSearchBF(
                 const float* pb = xb + j * dim;
                 auto dist = func(pq, pb, dim);
                 if (C::cmp(dist, radius)) {
-                    golden_ids.push_back(j);
-                    golden_distances.push_back(dist);
+                    ids_v[i].push_back(j);
+                    distances_v[i].push_back(dist);
                 }
             }
         }
+    }
+
+    golden_lims.push_back(0);
+    for (auto i = 0; i < nq; ++i) {
+        golden_ids.insert(golden_ids.end(), ids_v[i].begin(), ids_v[i].end());
+        golden_distances.insert(golden_distances.end(), distances_v[i].begin(), distances_v[i].end());
         golden_lims.push_back(golden_ids.size());
     }
 }
@@ -84,7 +93,10 @@ void RunRangeSearchBF(
     const binary_float_func_ptr func,
     const faiss::BitsetView bitset) {
 
-    golden_lims.push_back(0);
+    std::vector<std::vector<int64_t>> ids_v(nq);
+    std::vector<std::vector<float>> distances_v(nq);
+
+#pragma omp parallel for
     for (auto i = 0; i < nq; ++i) {
         const uint8_t* pq = xq + i * dim / 8;
         for (auto j = 0; j < nb; ++j) {
@@ -92,11 +104,17 @@ void RunRangeSearchBF(
                 const uint8_t* pb = xb + j * dim / 8;
                 auto dist = func(pq, pb, dim/8);
                 if (C::cmp(dist, radius)) {
-                    golden_ids.push_back(j);
-                    golden_distances.push_back(dist);
+                    ids_v[i].push_back(j);
+                    distances_v[i].push_back(dist);
                 }
             }
         }
+    }
+
+    golden_lims.push_back(0);
+    for (auto i = 0; i < nq; ++i) {
+        golden_ids.insert(golden_ids.end(), ids_v[i].begin(), ids_v[i].end());
+        golden_distances.insert(golden_distances.end(), distances_v[i].begin(), distances_v[i].end());
         golden_lims.push_back(golden_ids.size());
     }
 }
