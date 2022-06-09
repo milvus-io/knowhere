@@ -6,28 +6,28 @@ Note: Google Test filter = Benchmark_knowhere_float.TEST_ANNOY
 [ RUN      ] Benchmark_knowhere_float.TEST_ANNOY
 [0.000 s] Loading HDF5 file: sift-128-euclidean.hdf5
 [0.000 s] Loading train data
-[0.192 s] Loading test data
-[0.193 s] Loading ground truth data
-2022-06-01 14:44:27,446 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
-2022-06-01 14:44:27,446 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
-[0.195 s] Creating CPU index "ANNOY"
-[0.195 s] Reading index file: sift-128-euclidean_ANNOY_32.index
-[0.195 s] Building all on 1000000 vectors
-[256.885 s] Writing index file: sift-128-euclidean_ANNOY_32.index
+[0.183 s] Loading test data
+[0.185 s] Loading ground truth data
+2022-06-08 17:20:31,757 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
+2022-06-08 17:20:31,757 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+[0.186 s] Creating CPU index "ANNOY"
+[0.186 s] Reading index file: sift-128-euclidean_ANNOY_32.index
+[0.186 s] Building all on 1000000 vectors
+[48.954 s] Writing index file: sift-128-euclidean_ANNOY_32.index
 
-[258.354 s] sift-128-euclidean | ANNOY | n_trees=32 
+[50.445 s] sift-128-euclidean | ANNOY | n_trees=32 
 ================================================================================
-  search_k =   16, nq = 10000, k =   10, elapse = 0.3122s, R@ = 0.1739
-  search_k =   32, nq = 10000, k =   10, elapse = 0.3100s, R@ = 0.1761
-  search_k =   64, nq = 10000, k =   10, elapse = 0.4130s, R@ = 0.2629
-  search_k =  128, nq = 10000, k =   10, elapse = 0.5008s, R@ = 0.3460
-  search_k =  256, nq = 10000, k =   10, elapse = 0.6389s, R@ = 0.4616
+  search_k =   16, nq = 10000, k =   10, elapse = 0.0452s, R@ = 0.1739
+  search_k =   32, nq = 10000, k =   10, elapse = 0.0446s, R@ = 0.1761
+  search_k =   64, nq = 10000, k =   10, elapse = 0.0705s, R@ = 0.2629
+  search_k =  128, nq = 10000, k =   10, elapse = 0.0825s, R@ = 0.3460
+  search_k =  256, nq = 10000, k =   10, elapse = 0.1547s, R@ = 0.4616
 ================================================================================
-[260.708 s] Test 'sift-128-euclidean/ANNOY' done
+[50.879 s] Test 'sift-128-euclidean/ANNOY' done
 
-[       OK ] Benchmark_knowhere_float.TEST_ANNOY (260770 ms)
-[----------] 1 test from Benchmark_knowhere_float (260770 ms total)
+[       OK ] Benchmark_knowhere_float.TEST_ANNOY (50963 ms)
+[----------] 1 test from Benchmark_knowhere_float (50963 ms total)
 
 [----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (260770 ms total)
+[==========] 1 test from 1 test case ran. (50963 ms total)
 [  PASSED  ] 1 test.

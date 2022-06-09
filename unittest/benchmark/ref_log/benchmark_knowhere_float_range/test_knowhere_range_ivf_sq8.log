@@ -6,32 +6,32 @@ Note: Google Test filter = Benchmark_knowhere_float_range.TEST_IVF_SQ8
 [ RUN      ] Benchmark_knowhere_float_range.TEST_IVF_SQ8
 [0.000 s] Loading HDF5 file: sift-128-euclidean-range.hdf5
 [0.000 s] Loading train data
-[0.191 s] Loading test data
-[0.192 s] Loading ground truth data
-2022-06-07 17:53:40,102 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
-2022-06-07 17:53:40,102 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
-[0.194 s] Creating CPU index "IVF_SQ8"
-[0.194 s] Reading index file: sift-128-euclidean-range_IVF_SQ8_1024.index
-[0.194 s] Building all on 1000000 vectors
-[35.742 s] Writing index file: sift-128-euclidean-range_IVF_SQ8_1024.index
+[0.203 s] Loading test data
+[0.204 s] Loading ground truth data
+2022-06-08 20:35:55,100 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
+2022-06-08 20:35:55,100 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+[0.206 s] Creating CPU index "IVF_SQ8"
+[0.206 s] Reading index file: sift-128-euclidean-range_IVF_SQ8_1024.index
+[0.206 s] Building all on 1000000 vectors
+[12.793 s] Writing index file: sift-128-euclidean-range_IVF_SQ8_1024.index
 
-[35.950 s] sift-128-euclidean-range | IVF_SQ8 | nlist=1024
+[13.000 s] sift-128-euclidean-range | IVF_SQ8 | nlist=1024
 ================================================================================
-  nprobe =    1, nq = 10000, elapse = 0.2748s, R@ = 0.4327, A@ = 0.9975
-  nprobe =    2, nq = 10000, elapse = 0.3966s, R@ = 0.6743, A@ = 0.9973
-  nprobe =    4, nq = 10000, elapse = 0.7606s, R@ = 0.8792, A@ = 0.9970
-  nprobe =    8, nq = 10000, elapse = 0.8128s, R@ = 0.9659, A@ = 0.9967
-  nprobe =   16, nq = 10000, elapse = 1.4917s, R@ = 0.9911, A@ = 0.9966
-  nprobe =   32, nq = 10000, elapse = 2.8305s, R@ = 0.9954, A@ = 0.9966
-  nprobe =   64, nq = 10000, elapse = 5.4321s, R@ = 0.9956, A@ = 0.9966
-  nprobe =  128, nq = 10000, elapse = 10.1659s, R@ = 0.9956, A@ = 0.9966
-  nprobe =  256, nq = 10000, elapse = 19.3907s, R@ = 0.9956, A@ = 0.9966
+  nprobe =    1, nq = 10000, elapse = 0.2610s, R@ = 0.4327, A@ = 0.9975
+  nprobe =    2, nq = 10000, elapse = 0.3378s, R@ = 0.6743, A@ = 0.9973
+  nprobe =    4, nq = 10000, elapse = 0.4734s, R@ = 0.8792, A@ = 0.9970
+  nprobe =    8, nq = 10000, elapse = 0.7998s, R@ = 0.9659, A@ = 0.9967
+  nprobe =   16, nq = 10000, elapse = 1.5044s, R@ = 0.9911, A@ = 0.9966
+  nprobe =   32, nq = 10000, elapse = 2.7387s, R@ = 0.9954, A@ = 0.9966
+  nprobe =   64, nq = 10000, elapse = 5.2076s, R@ = 0.9956, A@ = 0.9966
+  nprobe =  128, nq = 10000, elapse = 10.1134s, R@ = 0.9956, A@ = 0.9966
+  nprobe =  256, nq = 10000, elapse = 19.3206s, R@ = 0.9956, A@ = 0.9966
 ================================================================================
-[84.654 s] Test 'sift-128-euclidean-range/IVF_SQ8' done
+[55.392 s] Test 'sift-128-euclidean-range/IVF_SQ8' done
 
-[       OK ] Benchmark_knowhere_float_range.TEST_IVF_SQ8 (84679 ms)
-[----------] 1 test from Benchmark_knowhere_float_range (84679 ms total)
+[       OK ] Benchmark_knowhere_float_range.TEST_IVF_SQ8 (55413 ms)
+[----------] 1 test from Benchmark_knowhere_float_range (55413 ms total)
 
 [----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (84679 ms total)
+[==========] 1 test from 1 test case ran. (55413 ms total)
 [  PASSED  ] 1 test.

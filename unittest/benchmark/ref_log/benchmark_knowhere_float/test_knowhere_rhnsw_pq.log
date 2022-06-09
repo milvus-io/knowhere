@@ -6,58 +6,58 @@ Note: Google Test filter = Benchmark_knowhere_float.TEST_RHNSW_PQ
 [ RUN      ] Benchmark_knowhere_float.TEST_RHNSW_PQ
 [0.000 s] Loading HDF5 file: sift-128-euclidean.hdf5
 [0.000 s] Loading train data
-[0.191 s] Loading test data
-[0.193 s] Loading ground truth data
-2022-06-02 10:42:44,496 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
-2022-06-02 10:42:44,496 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
-[0.195 s] Creating CPU index "RHNSW_PQ"
-[0.195 s] Reading index file: sift-128-euclidean_RHNSW_PQ_16_100_8.index
-[0.195 s] Building all on 1000000 vectors
-[35.216 s] Writing index file: sift-128-euclidean_RHNSW_PQ_16_100_8.index
+[0.188 s] Loading test data
+[0.190 s] Loading ground truth data
+2022-06-08 17:22:50,845 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
+2022-06-08 17:22:50,845 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+[0.191 s] Creating CPU index "RHNSW_PQ"
+[0.191 s] Reading index file: sift-128-euclidean_RHNSW_PQ_16_100_8.index
+[0.192 s] Building all on 1000000 vectors
+[22.234 s] Writing index file: sift-128-euclidean_RHNSW_PQ_16_100_8.index
 
-[35.433 s] sift-128-euclidean | RHNSW_PQ | M=16 | efConstruction=100
+[22.499 s] sift-128-euclidean | RHNSW_PQ | M=16 | efConstruction=100
 ================================================================================
-  ef =   16, nq = 10000, k =   10, elapse = 0.1899s, R@ = 0.2587
-  ef =   32, nq = 10000, k =   10, elapse = 0.1644s, R@ = 0.2937
-  ef =   64, nq = 10000, k =   10, elapse = 0.1886s, R@ = 0.3112
-  ef =  128, nq = 10000, k =   10, elapse = 0.2493s, R@ = 0.3167
-  ef =  256, nq = 10000, k =   10, elapse = 0.3540s, R@ = 0.3169
+  ef =   16, nq = 10000, k =   10, elapse = 0.1012s, R@ = 0.2569
+  ef =   32, nq = 10000, k =   10, elapse = 0.0672s, R@ = 0.2921
+  ef =   64, nq = 10000, k =   10, elapse = 0.0976s, R@ = 0.3115
+  ef =  128, nq = 10000, k =   10, elapse = 0.1583s, R@ = 0.3167
+  ef =  256, nq = 10000, k =   10, elapse = 0.2837s, R@ = 0.3169
 ================================================================================
-[36.760 s] Test 'sift-128-euclidean/RHNSW_PQ' done
+[23.244 s] Test 'sift-128-euclidean/RHNSW_PQ' done
 
-[36.760 s] Creating CPU index "RHNSW_PQ"
-[36.767 s] Reading index file: sift-128-euclidean_RHNSW_PQ_16_100_16.index
-[36.770 s] Building all on 1000000 vectors
-[82.400 s] Writing index file: sift-128-euclidean_RHNSW_PQ_16_100_16.index
+[23.244 s] Creating CPU index "RHNSW_PQ"
+[23.253 s] Reading index file: sift-128-euclidean_RHNSW_PQ_16_100_16.index
+[23.259 s] Building all on 1000000 vectors
+[49.752 s] Writing index file: sift-128-euclidean_RHNSW_PQ_16_100_16.index
 
-[82.703 s] sift-128-euclidean | RHNSW_PQ | M=16 | efConstruction=100
+[49.980 s] sift-128-euclidean | RHNSW_PQ | M=16 | efConstruction=100
 ================================================================================
-  ef =   16, nq = 10000, k =   10, elapse = 0.1526s, R@ = 0.4828
-  ef =   32, nq = 10000, k =   10, elapse = 0.1553s, R@ = 0.5207
-  ef =   64, nq = 10000, k =   10, elapse = 0.2058s, R@ = 0.5394
-  ef =  128, nq = 10000, k =   10, elapse = 0.3328s, R@ = 0.5461
-  ef =  256, nq = 10000, k =   10, elapse = 0.6377s, R@ = 0.5483
+  ef =   16, nq = 10000, k =   10, elapse = 0.0886s, R@ = 0.4829
+  ef =   32, nq = 10000, k =   10, elapse = 0.0820s, R@ = 0.5202
+  ef =   64, nq = 10000, k =   10, elapse = 0.1389s, R@ = 0.5385
+  ef =  128, nq = 10000, k =   10, elapse = 0.2963s, R@ = 0.5462
+  ef =  256, nq = 10000, k =   10, elapse = 0.5201s, R@ = 0.5483
 ================================================================================
-[84.372 s] Test 'sift-128-euclidean/RHNSW_PQ' done
+[51.143 s] Test 'sift-128-euclidean/RHNSW_PQ' done
 
-[84.372 s] Creating CPU index "RHNSW_PQ"
-[84.379 s] Reading index file: sift-128-euclidean_RHNSW_PQ_16_100_32.index
-[84.383 s] Building all on 1000000 vectors
-[155.228 s] Writing index file: sift-128-euclidean_RHNSW_PQ_16_100_32.index
+[51.143 s] Creating CPU index "RHNSW_PQ"
+[51.152 s] Reading index file: sift-128-euclidean_RHNSW_PQ_16_100_32.index
+[51.157 s] Building all on 1000000 vectors
+[94.357 s] Writing index file: sift-128-euclidean_RHNSW_PQ_16_100_32.index
 
-[155.440 s] sift-128-euclidean | RHNSW_PQ | M=16 | efConstruction=100
+[94.574 s] sift-128-euclidean | RHNSW_PQ | M=16 | efConstruction=100
 ================================================================================
-  ef =   16, nq = 10000, k =   10, elapse = 0.1669s, R@ = 0.6171
-  ef =   32, nq = 10000, k =   10, elapse = 0.2002s, R@ = 0.6702
-  ef =   64, nq = 10000, k =   10, elapse = 0.2683s, R@ = 0.6980
-  ef =  128, nq = 10000, k =   10, elapse = 0.4186s, R@ = 0.7088
-  ef =  256, nq = 10000, k =   10, elapse = 0.6786s, R@ = 0.7121
+  ef =   16, nq = 10000, k =   10, elapse = 0.0722s, R@ = 0.6180
+  ef =   32, nq = 10000, k =   10, elapse = 0.1111s, R@ = 0.6706
+  ef =   64, nq = 10000, k =   10, elapse = 0.1881s, R@ = 0.6973
+  ef =  128, nq = 10000, k =   10, elapse = 0.3331s, R@ = 0.7086
+  ef =  256, nq = 10000, k =   10, elapse = 0.6348s, R@ = 0.7118
 ================================================================================
-[157.359 s] Test 'sift-128-euclidean/RHNSW_PQ' done
+[95.952 s] Test 'sift-128-euclidean/RHNSW_PQ' done
 
-[       OK ] Benchmark_knowhere_float.TEST_RHNSW_PQ (157385 ms)
-[----------] 1 test from Benchmark_knowhere_float (157385 ms total)
+[       OK ] Benchmark_knowhere_float.TEST_RHNSW_PQ (95994 ms)
+[----------] 1 test from Benchmark_knowhere_float (95994 ms total)
 
 [----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (157385 ms total)
+[==========] 1 test from 1 test case ran. (95994 ms total)
 [  PASSED  ] 1 test.

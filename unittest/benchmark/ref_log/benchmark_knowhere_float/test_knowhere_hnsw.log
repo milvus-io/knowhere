@@ -6,28 +6,28 @@ Note: Google Test filter = Benchmark_knowhere_float.TEST_HNSW
 [ RUN      ] Benchmark_knowhere_float.TEST_HNSW
 [0.000 s] Loading HDF5 file: sift-128-euclidean.hdf5
 [0.000 s] Loading train data
-[0.176 s] Loading test data
-[0.178 s] Loading ground truth data
-2022-06-01 14:42:28,252 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
-2022-06-01 14:42:28,252 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
-[0.180 s] Creating CPU index "HNSW"
-[0.180 s] Reading index file: sift-128-euclidean_HNSW_16_100.index
-[0.180 s] Building all on 1000000 vectors
-[105.107 s] Writing index file: sift-128-euclidean_HNSW_16_100.index
+[0.191 s] Loading test data
+[0.193 s] Loading ground truth data
+2022-06-08 17:19:36,908 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
+2022-06-08 17:19:36,908 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+[0.194 s] Creating CPU index "HNSW"
+[0.194 s] Reading index file: sift-128-euclidean_HNSW_16_100.index
+[0.194 s] Building all on 1000000 vectors
+[51.327 s] Writing index file: sift-128-euclidean_HNSW_16_100.index
 
-[105.895 s] sift-128-euclidean | HNSW | M=16 | efConstruction=100
+[52.103 s] sift-128-euclidean | HNSW | M=16 | efConstruction=100
 ================================================================================
-  ef =   16, nq = 10000, k =   10, elapse = 0.2436s, R@ = 0.7876
-  ef =   32, nq = 10000, k =   10, elapse = 0.3788s, R@ = 0.8914
-  ef =   64, nq = 10000, k =   10, elapse = 0.6943s, R@ = 0.9556
-  ef =  128, nq = 10000, k =   10, elapse = 1.2534s, R@ = 0.9856
-  ef =  256, nq = 10000, k =   10, elapse = 2.2989s, R@ = 0.9959
+  ef =   16, nq = 10000, k =   10, elapse = 0.1350s, R@ = 0.7899
+  ef =   32, nq = 10000, k =   10, elapse = 0.2254s, R@ = 0.8923
+  ef =   64, nq = 10000, k =   10, elapse = 0.3931s, R@ = 0.9561
+  ef =  128, nq = 10000, k =   10, elapse = 0.6720s, R@ = 0.9853
+  ef =  256, nq = 10000, k =   10, elapse = 1.2321s, R@ = 0.9956
 ================================================================================
-[110.955 s] Test 'sift-128-euclidean/HNSW' done
+[54.797 s] Test 'sift-128-euclidean/HNSW' done
 
-[       OK ] Benchmark_knowhere_float.TEST_HNSW (110998 ms)
-[----------] 1 test from Benchmark_knowhere_float (110998 ms total)
+[       OK ] Benchmark_knowhere_float.TEST_HNSW (54851 ms)
+[----------] 1 test from Benchmark_knowhere_float (54851 ms total)
 
 [----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (110998 ms total)
+[==========] 1 test from 1 test case ran. (54851 ms total)
 [  PASSED  ] 1 test.
