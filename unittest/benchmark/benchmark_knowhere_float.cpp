@@ -166,6 +166,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IDMAP) {
     std::string index_file_name = get_index_name({});
     create_cpu_index(index_file_name, conf);
     index_->Load(binary_set_);
+    binary_set_.clear();
     test_idmap(conf);
 }
 
@@ -185,6 +186,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_FLAT_NM) {
         binary_set_.Append(RAW_DATA, bin);
 
         index_->Load(binary_set_);
+        binary_set_.clear();
         test_ivf(conf);
     }
 }
@@ -198,6 +200,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_SQ8) {
         knowhere::SetIndexParamNlist(conf, nlist);
         create_cpu_index(index_file_name, conf);
         index_->Load(binary_set_);
+        binary_set_.clear();
         test_ivf(conf);
     }
 }
@@ -214,6 +217,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_PQ) {
             knowhere::SetIndexParamNlist(conf, nlist);
             create_cpu_index(index_file_name, conf);
             index_->Load(binary_set_);
+            binary_set_.clear();
             test_ivf(conf);
         }
     }
@@ -230,6 +234,7 @@ TEST_F(Benchmark_knowhere_float, TEST_HNSW) {
             knowhere::SetIndexParamEfConstruction(conf, efc);
             create_cpu_index(index_file_name, conf);
             index_->Load(binary_set_);
+            binary_set_.clear();
             test_hnsw(conf);
         }
     }
@@ -244,6 +249,7 @@ TEST_F(Benchmark_knowhere_float, TEST_ANNOY) {
         std::string index_file_name = get_index_name({n});
         create_cpu_index(index_file_name, conf);
         index_->Load(binary_set_);
+        binary_set_.clear();
         test_annoy(conf);
     }
 }
@@ -266,6 +272,7 @@ TEST_F(Benchmark_knowhere_float, TEST_RHNSW_FLAT) {
             binary_set_.Append(RAW_DATA, bin);
 
             index_->Load(binary_set_);
+            binary_set_.clear();
             test_hnsw(conf);
         }
     }
@@ -282,6 +289,7 @@ TEST_F(Benchmark_knowhere_float, TEST_RHNSW_SQ) {
             knowhere::SetIndexParamEfConstruction(conf, efc);
             create_cpu_index(index_file_name, conf);
             index_->Load(binary_set_);
+            binary_set_.clear();
             test_hnsw(conf);
         }
     }
@@ -300,6 +308,7 @@ TEST_F(Benchmark_knowhere_float, TEST_RHNSW_PQ) {
                 std::string index_file_name = get_index_name({M, efc, m});
                 create_cpu_index(index_file_name, conf);
                 index_->Load(binary_set_);
+                binary_set_.clear();
                 test_hnsw(conf);
             }
         }

@@ -177,6 +177,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IDMAP) {
     std::string index_file_name = get_index_name({});
     create_cpu_index(index_file_name, conf);
     index_->Load(binary_set_);
+    binary_set_.clear();
     test_idmap(conf);
 }
 
@@ -196,6 +197,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IVF_FLAT_NM) {
         binary_set_.Append(RAW_DATA, bin);
 
         index_->Load(binary_set_);
+        binary_set_.clear();
         test_ivf(conf);
     }
 }
@@ -209,6 +211,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IVF_SQ8) {
         knowhere::SetIndexParamNlist(conf, nlist);
         create_cpu_index(index_file_name, conf);
         index_->Load(binary_set_);
+        binary_set_.clear();
         test_ivf(conf);
     }
 }
@@ -225,6 +228,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IVF_PQ) {
             knowhere::SetIndexParamNlist(conf, nlist);
             create_cpu_index(index_file_name, conf);
             index_->Load(binary_set_);
+            binary_set_.clear();
             test_ivf(conf);
         }
     }
@@ -243,6 +247,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_HNSW) {
                 std::string index_file_name = get_index_name({M, efc, k});
                 create_cpu_index(index_file_name, conf);
                 index_->Load(binary_set_);
+                binary_set_.clear();
                 test_hnsw(conf);
             }
         }

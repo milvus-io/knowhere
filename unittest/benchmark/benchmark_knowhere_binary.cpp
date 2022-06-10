@@ -145,6 +145,7 @@ TEST_F(Benchmark_knowhere_binary, TEST_BINARY_IDMAP) {
     std::string index_file_name = get_index_name({});
     create_cpu_index(index_file_name, conf);
     index_->Load(binary_set_);
+    binary_set_.clear();
     test_binary_idmap(conf);
 }
 
@@ -157,6 +158,7 @@ TEST_F(Benchmark_knowhere_binary, TEST_BINARY_IVF_FLAT) {
         knowhere::SetIndexParamNlist(conf, nlist);
         create_cpu_index(index_file_name, conf);
         index_->Load(binary_set_);
+        binary_set_.clear();
         test_binary_ivf(conf);
     }
 }

@@ -170,6 +170,7 @@ TEST_F(Benchmark_knowhere_perf, TEST_IDMAP) {
 
     create_cpu_index(index_file_name, conf);
     index_->Load(binary_set_);
+    binary_set_.clear();
     test_idmap(conf);
 }
 
@@ -189,6 +190,7 @@ TEST_F(Benchmark_knowhere_perf, TEST_IVFFLAT_NM) {
     binary_set_.Append(RAW_DATA, bin);
 
     index_->Load(binary_set_);
+    binary_set_.clear();
     test_ivf(conf);
 }
 
@@ -201,6 +203,7 @@ TEST_F(Benchmark_knowhere_perf, TEST_IVFSQ8) {
 
     create_cpu_index(index_file_name, conf);
     index_->Load(binary_set_);
+    binary_set_.clear();
     test_ivf(conf);
 }
 
@@ -214,6 +217,7 @@ TEST_F(Benchmark_knowhere_perf, TEST_HNSW) {
 
     create_cpu_index(index_file_name, conf);
     index_->Load(binary_set_);
+    binary_set_.clear();
     test_hnsw(conf);
 }
 
@@ -226,5 +230,6 @@ TEST_F(Benchmark_knowhere_perf, TEST_ANNOY) {
 
     create_cpu_index(index_file_name, conf);
     index_->Load(binary_set_);
+    binary_set_.clear();
     test_annoy(conf);
 }
