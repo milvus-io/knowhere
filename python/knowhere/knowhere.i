@@ -24,7 +24,6 @@ typedef uint64_t size_t;
 #include <numpy/arrayobject.h>
 #endif
 #include <common/Dataset.h>
-#include <index/vector_index/adapter/VectorAdapter.h>
 #include <common/BinarySet.h>
 #include <common/Utils.h>
 #include <common/Config.h>
@@ -55,7 +54,6 @@ import_array();
 %include <std_map.i>
 %include <std_shared_ptr.i>
 %include <common/Dataset.h>
-%include <index/vector_index/adapter/VectorAdapter.h>
 %include <utils/BitsetView.h>
 %include <common/BinarySet.h>
 %include <common/Utils.h>
@@ -93,13 +91,17 @@ DOWNCAST ( IndexAnnoy )
 
 
 knowhere::DatasetPtr ArrayToDataSet( float* xb,int nb, int dim){
-    return knowhere::GenDataset(nb, dim, xb);
+    auto ret_ds = std::make_shared<Dataset>();
+    ret_ds->Set<int64_t>("rows", nb);
+    ret_ds->Set<int64_t>("dim", dim);
+    ret_ds->Set<const void *>("tensor", xb);
+    return ret_ds;
 };
 
 void DumpResultDataSet(knowhere::DatasetPtr result, float *dis, int nq_1, int k_1, 
                        int *ids,int nq_2, int k_2){
-    auto ids_ = knowhere::GetDatasetIDs(result);
-    auto dist_ = knowhere::GetDatasetDistance(result);
+    auto ids_ = result->Get<const int64_t *>("ids");
+    auto dist_ = result->Get<const float *>("distance");
     assert(nq_1==nq_2);
     assert(k_1==k_2);
     for (int i = 0; i < nq_1; i++) {
