@@ -29,7 +29,7 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere {
             auto lims = knowhere::GetDatasetLims(result);
             float recall = CalcRecall(ids, lims, nq);
             float accuracy = CalcAccuracy(ids, lims, nq);
-            printf("  nq = %4d, elapse = %.4fs, R@ = %.4f, A@ = %.4f\n", nq, t_diff, recall, accuracy);
+            printf("  nq = %4d, elapse = %6.3fs, R@ = %.4f, A@ = %.4f\n", nq, t_diff, recall, accuracy);
         }
         printf("================================================================================\n");
         printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(),
@@ -53,7 +53,7 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere {
                 auto lims = knowhere::GetDatasetLims(result);
                 float recall = CalcRecall(ids, lims, nq);
                 float accuracy = CalcAccuracy(ids, lims, nq);
-                printf("  nprobe = %4d, nq = %4d, elapse = %.4fs, R@ = %.4f, A@ = %.4f\n",
+                printf("  nprobe = %4d, nq = %4d, elapse = %6.3fs, R@ = %.4f, A@ = %.4f\n",
                        nprobe, nq, t_diff, recall, accuracy);
             }
         }
@@ -80,7 +80,7 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere {
                 auto lims = knowhere::GetDatasetLims(result);
                 float recall = CalcRecall(ids, lims, nq);
                 float accuracy = CalcAccuracy(ids, lims, nq);
-                printf("  ef = %4d, nq = %4d, elapse = %.4fs, R@ = %.4f, A@ = %.4f\n",
+                printf("  ef = %4d, nq = %4d, elapse = %6.3fs, R@ = %.4f, A@ = %.4f\n",
                        ef, nq, t_diff, recall, accuracy);
             }
         }
