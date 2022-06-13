@@ -30,7 +30,7 @@ class Benchmark_knowhere_perf : public Benchmark_knowhere {
                 CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf, nullptr));
                 auto ids = knowhere::GetDatasetIDs(result);
                 float recall = CalcRecall(ids, i, NQ_STEP_, k);
-                printf("  No.%4d: nq = [%4d, %4d), k = %4d, elapse = %.4fs, R@ = %.4f\n", no++, i, i + NQ_STEP_, k,
+                printf("  No.%4d: nq = [%4d, %4d), k = %4d, elapse = %6.3fs, R@ = %.4f\n", no++, i, i + NQ_STEP_, k,
                        t_diff, recall);
             }
         }
@@ -57,7 +57,7 @@ class Benchmark_knowhere_perf : public Benchmark_knowhere {
                     CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf, nullptr));
                     auto ids = knowhere::GetDatasetIDs(result);
                     float recall = CalcRecall(ids, i, NQ_STEP_, k);
-                    printf("  No.%4d: nprobe = %4d, nq = [%4d, %4d), k = %4d, elapse = %.4fs, R@ = %.4f\n", no++,
+                    printf("  No.%4d: nprobe = %4d, nq = [%4d, %4d), k = %4d, elapse = %6.3fs, R@ = %.4f\n", no++,
                            nprobe, i, i + NQ_STEP_, k, t_diff, recall);
                 }
             }
@@ -86,7 +86,7 @@ class Benchmark_knowhere_perf : public Benchmark_knowhere {
                     CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf, nullptr));
                     auto ids = knowhere::GetDatasetIDs(result);
                     float recall = CalcRecall(ids, i, NQ_STEP_, k);
-                    printf("  No.%4d: ef = %4d, nq = [%4d, %4d), k = %4d, elapse = %.4fs, R@ = %.4f\n", no++, ef, i,
+                    printf("  No.%4d: ef = %4d, nq = [%4d, %4d), k = %4d, elapse = %6.3fs, R@ = %.4f\n", no++, ef, i,
                            i + NQ_STEP_, k, t_diff, recall);
                 }
             }
@@ -114,7 +114,7 @@ class Benchmark_knowhere_perf : public Benchmark_knowhere {
                     CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf, nullptr));
                     auto ids = knowhere::GetDatasetIDs(result);
                     float recall = CalcRecall(ids, i, NQ_STEP_, k);
-                    printf("  No.%4d: search_k = %4d, nq = [%4d, %4d), k = %4d, elapse = %.4fs, R@ = %.4f\n", no++, sk,
+                    printf("  No.%4d: search_k = %4d, nq = [%4d, %4d), k = %4d, elapse = %6.3fs, R@ = %.4f\n", no++, sk,
                            i, i + NQ_STEP_, k, t_diff, recall);
                 }
             }

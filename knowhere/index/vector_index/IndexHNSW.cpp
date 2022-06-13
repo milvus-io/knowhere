@@ -236,6 +236,10 @@ IndexHNSW::QueryByRange(const DatasetPtr& dataset,
     index_->setEf(GetIndexParamEf(config));
     bool is_IP = (index_->metric_type_ == 1);  // InnerProduct: 1
 
+    if (!is_IP) {
+        radius *= radius;
+    }
+
     std::vector<std::vector<int64_t>> result_id_array(rows);
     std::vector<std::vector<float>> result_dist_array(rows);
     std::vector<size_t> result_lims(rows + 1, 0);

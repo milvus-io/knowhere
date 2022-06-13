@@ -29,7 +29,7 @@ class Benchmark_knowhere_binary : public Benchmark_knowhere {
                 CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf, nullptr));
                 auto ids = knowhere::GetDatasetIDs(result);
                 float recall = CalcRecall(ids, nq, k);
-                printf("  nq = %4d, k = %4d, elapse = %.4fs, R@ = %.4f\n", nq, k, t_diff, recall);
+                printf("  nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", nq, k, t_diff, recall);
             }
         }
         printf("================================================================================\n");
@@ -54,7 +54,7 @@ class Benchmark_knowhere_binary : public Benchmark_knowhere {
                     CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf, nullptr));
                     auto ids = knowhere::GetDatasetIDs(result);
                     float recall = CalcRecall(ids, nq, k);
-                    printf("  nprobe = %4d, nq = %4d, k = %4d, elapse = %.4fs, R@ = %.4f\n", nprobe, nq, k, t_diff,
+                    printf("  nprobe = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", nprobe, nq, k, t_diff,
                            recall);
                 }
             }
