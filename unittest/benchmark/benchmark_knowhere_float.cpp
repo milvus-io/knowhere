@@ -65,6 +65,38 @@ class Benchmark_knowhere_float : public Benchmark_knowhere {
     }
 
     void
+    test_ivf_hnsw(const knowhere::Config& cfg) {
+        auto conf = cfg;
+        auto nlist = knowhere::GetIndexParamNlist(conf);
+        auto M = knowhere::GetIndexParamHNSWM(conf);
+        auto efConstruction = knowhere::GetIndexParamEfConstruction(conf);
+
+        printf("\n[%0.3f s] %s | %s nlist=%ld | M=%ld | efConstruction=%ld\n", get_time_diff(), ann_test_name_.c_str(),
+               std::string(index_type_).c_str(), nlist, M, efConstruction);
+        printf("================================================================================\n");
+        for (auto nprobe : NPROBEs_) {
+            knowhere::SetIndexParamNprobe(conf, nprobe);
+            for (auto ef : EFs_) {
+                knowhere::SetIndexParamEf(conf, ef);
+                for (auto nq : NQs_) {
+                    knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
+                    for (auto k : TOPKs_) {
+                        knowhere::SetMetaTopk(conf, k);
+                        CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf, nullptr));
+                        auto ids = knowhere::GetDatasetIDs(result);
+                        float recall = CalcRecall(ids, nq, k);
+                        printf("  nprobe = %4d, ef = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n",
+                               nprobe, ef, nq, k, t_diff, recall);
+                    }
+                }
+            }
+        }
+        printf("================================================================================\n");
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(),
+               std::string(index_type_).c_str());
+    }
+
+    void
     test_hnsw(const knowhere::Config& cfg) {
         auto conf = cfg;
         auto M = knowhere::GetIndexParamHNSWM(conf);
@@ -175,8 +207,9 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_FLAT_NM) {
 
     knowhere::Config conf = cfg_;
     for (auto nlist : NLISTs_) {
-        std::string index_file_name = get_index_name({nlist});
         knowhere::SetIndexParamNlist(conf, nlist);
+
+        std::string index_file_name = get_index_name({nlist});
         create_cpu_index(index_file_name, conf);
 
         // IVFFLAT_NM should load raw data
@@ -196,8 +229,9 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_SQ8) {
 
     knowhere::Config conf = cfg_;
     for (auto nlist : NLISTs_) {
-        std::string index_file_name = get_index_name({nlist});
         knowhere::SetIndexParamNlist(conf, nlist);
+
+        std::string index_file_name = get_index_name({nlist});
         create_cpu_index(index_file_name, conf);
         index_->Load(binary_set_);
         binary_set_.clear();
@@ -213,12 +247,34 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_PQ) {
     for (auto m : Ms_) {
         knowhere::SetIndexParamM(conf, m);
         for (auto nlist : NLISTs_) {
-            std::string index_file_name = get_index_name({nlist, m});
             knowhere::SetIndexParamNlist(conf, nlist);
+
+            std::string index_file_name = get_index_name({nlist, m});
             create_cpu_index(index_file_name, conf);
             index_->Load(binary_set_);
             binary_set_.clear();
             test_ivf(conf);
+        }
+    }
+}
+
+TEST_F(Benchmark_knowhere_float, TEST_IVF_HNSW) {
+    index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFHNSW;
+
+    knowhere::Config conf = cfg_;
+    for (auto nlist : NLISTs_) {
+        knowhere::SetIndexParamNlist(conf, nlist);
+        for (auto M : HNSW_Ms_) {
+            knowhere::SetIndexParamHNSWM(conf, M);
+            for (auto efc : EFCONs_) {
+                knowhere::SetIndexParamEfConstruction(conf, efc);
+
+                std::string index_file_name = get_index_name({nlist, M, efc});
+                create_cpu_index(index_file_name, conf);
+                index_->Load(binary_set_);
+                binary_set_.clear();
+                test_ivf_hnsw(conf);
+            }
         }
     }
 }
@@ -230,8 +286,9 @@ TEST_F(Benchmark_knowhere_float, TEST_HNSW) {
     for (auto M : HNSW_Ms_) {
         knowhere::SetIndexParamHNSWM(conf, M);
         for (auto efc : EFCONs_) {
-            std::string index_file_name = get_index_name({M, efc});
             knowhere::SetIndexParamEfConstruction(conf, efc);
+
+            std::string index_file_name = get_index_name({M, efc});
             create_cpu_index(index_file_name, conf);
             index_->Load(binary_set_);
             binary_set_.clear();
@@ -246,6 +303,7 @@ TEST_F(Benchmark_knowhere_float, TEST_ANNOY) {
     knowhere::Config conf = cfg_;
     for (auto n : N_TREEs_) {
         knowhere::SetIndexParamNtrees(conf, n);
+
         std::string index_file_name = get_index_name({n});
         create_cpu_index(index_file_name, conf);
         index_->Load(binary_set_);
@@ -261,8 +319,9 @@ TEST_F(Benchmark_knowhere_float, TEST_RHNSW_FLAT) {
     for (auto M : HNSW_Ms_) {
         knowhere::SetIndexParamHNSWM(conf, M);
         for (auto efc : EFCONs_) {
-            std::string index_file_name = get_index_name({M, efc});
             knowhere::SetIndexParamEfConstruction(conf, efc);
+
+            std::string index_file_name = get_index_name({M, efc});
             create_cpu_index(index_file_name, conf);
 
             // RHNSW index should load raw data
@@ -285,8 +344,9 @@ TEST_F(Benchmark_knowhere_float, TEST_RHNSW_SQ) {
     for (auto M : HNSW_Ms_) {
         knowhere::SetIndexParamHNSWM(conf, M);
         for (auto efc : EFCONs_) {
-            std::string index_file_name = get_index_name({M, efc});
             knowhere::SetIndexParamEfConstruction(conf, efc);
+
+            std::string index_file_name = get_index_name({M, efc});
             create_cpu_index(index_file_name, conf);
             index_->Load(binary_set_);
             binary_set_.clear();
@@ -305,6 +365,7 @@ TEST_F(Benchmark_knowhere_float, TEST_RHNSW_PQ) {
             knowhere::SetIndexParamEfConstruction(conf, efc);
             for (auto m : Ms_) {
                 knowhere::SetIndexParamPQM(conf, m);
+
                 std::string index_file_name = get_index_name({M, efc, m});
                 create_cpu_index(index_file_name, conf);
                 index_->Load(binary_set_);

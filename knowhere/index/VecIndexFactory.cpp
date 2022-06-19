@@ -21,6 +21,7 @@
 #include "index/vector_index/IndexIDMAP.h"
 #include "index/vector_index/IndexIVFPQ.h"
 #include "index/vector_index/IndexIVFSQ.h"
+#include "index/vector_index/IndexIVFHNSW.h"
 #include "index/vector_index/IndexRHNSWFlat.h"
 #include "index/vector_index/IndexRHNSWPQ.h"
 #include "index/vector_index/IndexRHNSWSQ.h"
@@ -68,6 +69,8 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
                 return std::make_shared<knowhere::IVFPQ>();
             } else if (type == IndexEnum::INDEX_FAISS_IVFSQ8) {
                 return std::make_shared<knowhere::IVFSQ>();
+            } else if (type == IndexEnum::INDEX_FAISS_IVFHNSW) {
+                return std::make_shared<knowhere::IVFHNSW>();
             } else if (type == IndexEnum::INDEX_ANNOY) {
                 return std::make_shared<knowhere::IndexAnnoy>();
             } else if (type == IndexEnum::INDEX_HNSW) {
