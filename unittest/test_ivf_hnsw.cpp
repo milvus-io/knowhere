@@ -10,15 +10,12 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <gtest/gtest.h>
-#include <iostream>
 #include <thread>
 
 #include "knowhere/common/Exception.h"
-#include "knowhere/common/Timer.h"
 #include "knowhere/index/IndexType.h"
-#include "knowhere/index/vector_index/IndexIVF.h"
-#include "knowhere/index/vector_index/IndexIVFHNSW.h"
-#include "knowhere/index/vector_index/adapter/VectorAdapter.h"
+#include "knowhere/index/VecIndexFactory.h"
+#include "knowhere/index/vector_index/ConfAdapterMgr.h"
 
 #include "unittest/Helper.h"
 #include "unittest/utils.h"
@@ -34,7 +31,7 @@ class IVFHNSWTest : public DataGen,
     SetUp() override {
         std::tie(index_type_, index_mode_) = GetParam();
         Generate(dim, nb, nq);
-        index_ = std::make_shared<knowhere::IVFHNSW>();
+        index_ = knowhere::VecIndexFactory::GetInstance().CreateVecIndex(index_type_, index_mode_);
         conf_ = ParamGenerator::GetInstance().Gen(index_type_);
     }
 
@@ -73,8 +70,14 @@ TEST_P(IVFHNSWTest, ivfhnsw_basic_cpu) {
     EXPECT_EQ(index_->Dim(), dim);
     ASSERT_GT(index_->Size(), 0);
 
-    auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, k);
+    auto result = index_->GetVectorById(id_dataset, conf_);
+    AssertVec(result, base_dataset, id_dataset, nq, dim);
+
+    auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
+    ASSERT_TRUE(adapter->CheckSearch(conf_, index_type_, index_mode_));
+
+    auto result1 = index_->Query(query_dataset, conf_, nullptr);
+    AssertAnns(result1, nq, k);
 }
 
 TEST_P(IVFHNSWTest, ivfhnsw_slice) {
