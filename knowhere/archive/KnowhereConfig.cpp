@@ -36,38 +36,38 @@ KnowhereConfig::SetSimdType(const SimdType simd_type) {
         faiss::faiss_use_avx512 = true;
         faiss::faiss_use_avx2 = true;
         faiss::faiss_use_sse4_2 = true;
-        LOG_KNOWHERE_DEBUG_ << "FAISS expect simdType::AUTO";
+        LOG_KNOWHERE_INFO_ << "FAISS expect simdType::AUTO";
     } else if (simd_type == SimdType::AVX512) {
         faiss::faiss_use_avx512 = true;
         faiss::faiss_use_avx2 = true;
         faiss::faiss_use_sse4_2 = true;
-        LOG_KNOWHERE_DEBUG_ << "FAISS expect simdType::AVX512";
+        LOG_KNOWHERE_INFO_ << "FAISS expect simdType::AVX512";
     } else if (simd_type == SimdType::AVX2) {
         faiss::faiss_use_avx512 = false;
         faiss::faiss_use_avx2 = true;
         faiss::faiss_use_sse4_2 = true;
-        LOG_KNOWHERE_DEBUG_ << "FAISS expect simdType::AVX2";
+        LOG_KNOWHERE_INFO_ << "FAISS expect simdType::AVX2";
     } else if (simd_type == SimdType::SSE4_2) {
         faiss::faiss_use_avx512 = false;
         faiss::faiss_use_avx2 = false;
         faiss::faiss_use_sse4_2 = true;
-        LOG_KNOWHERE_DEBUG_ << "FAISS expect simdType::SSE4_2";
+        LOG_KNOWHERE_INFO_ << "FAISS expect simdType::SSE4_2";
     } else if (simd_type == SimdType::GENERIC) {
         faiss::faiss_use_avx512 = false;
         faiss::faiss_use_avx2 = false;
         faiss::faiss_use_sse4_2 = false;
-        LOG_KNOWHERE_DEBUG_ << "FAISS expect simdType::GENERIC";
+        LOG_KNOWHERE_INFO_ << "FAISS expect simdType::GENERIC";
     }
 
     std::string simd_str;
     faiss::hook_init(simd_str);
-    LOG_KNOWHERE_DEBUG_ << "FAISS hook " << simd_str;
+    LOG_KNOWHERE_INFO_ << "FAISS hook " << simd_str;
     return simd_str;
 }
 
 void
 KnowhereConfig::SetIndexFileSliceSize(const int64_t size) {
-    LOG_KNOWHERE_DEBUG_ << "Set knowhere::index_file_slice_size to " << size;
+    LOG_KNOWHERE_INFO_ << "Set knowhere::index_file_slice_size to " << size;
     knowhere::index_file_slice_size = size;
 }
 
@@ -78,6 +78,7 @@ KnowhereConfig::GetIndexFileSliceSize() {
 
 void
 KnowhereConfig::SetBlasThreshold(const int64_t use_blas_threshold) {
+    LOG_KNOWHERE_INFO_ << "Set faiss::distance_compute_blas_threshold to " << use_blas_threshold;
     faiss::distance_compute_blas_threshold = static_cast<int>(use_blas_threshold);
 }
 
@@ -88,6 +89,7 @@ KnowhereConfig::GetBlasThreshold() {
 
 void
 KnowhereConfig::SetEarlyStopThreshold(const double early_stop_threshold) {
+    LOG_KNOWHERE_INFO_ << "Set faiss::early_stop_threshold to " << early_stop_threshold;
     faiss::early_stop_threshold = early_stop_threshold;
 }
 
@@ -98,6 +100,7 @@ KnowhereConfig::GetEarlyStopThreshold() {
 
 void
 KnowhereConfig::SetClusteringType(const ClusteringType clustering_type) {
+    LOG_KNOWHERE_INFO_ << "Set faiss::clustering_type to " << clustering_type;
     switch (clustering_type) {
         case ClusteringType::K_MEANS:
         default:
@@ -111,6 +114,7 @@ KnowhereConfig::SetClusteringType(const ClusteringType clustering_type) {
 
 void
 KnowhereConfig::SetStatisticsLevel(const int32_t stat_level) {
+    LOG_KNOWHERE_INFO_ << "Set knowhere::STATISTICS_LEVEL to " << stat_level;
     knowhere::STATISTICS_LEVEL = stat_level;
     faiss::STATISTICS_LEVEL = stat_level;
 }
@@ -129,6 +133,7 @@ KnowhereConfig::SetLogHandler() {
 void
 KnowhereConfig::InitGPUResource(const std::vector<int64_t>& gpu_ids) {
     for (auto id : gpu_ids) {
+        LOG_KNOWHERE_INFO_ << "init GPU resource for gpu id: " << id;
         // device_id, pinned_memory, temp_memory, resource_num
         knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(id, 256 * M_BYTE, 256 * M_BYTE, 2);
     }
@@ -136,6 +141,7 @@ KnowhereConfig::InitGPUResource(const std::vector<int64_t>& gpu_ids) {
 
 void
 KnowhereConfig::FreeGPUResource() {
+    LOG_KNOWHERE_INFO_ << "free GPU resource";
     knowhere::FaissGpuResourceMgr::GetInstance().Free();  // Release gpu resources.
 }
 #endif
