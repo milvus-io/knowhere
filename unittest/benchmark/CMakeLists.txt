@@ -25,10 +25,6 @@ set(depend_libs
         ${LAPACK_LIBRARIES}
         )
 
-set(basic_libs
-        gomp gfortran pthread
-        )
-
 set( UTIL_SRCS
         ${KNOWHERE_SOURCE_DIR}/unittest/utils.cpp
         )
@@ -37,7 +33,7 @@ set( UTIL_SRCS
 macro(benchmark_test target file)
     set(FILE_SRCS ${UTIL_SRCS} ${file})
     add_executable(${target} ${FILE_SRCS})
-    target_link_libraries(${target} ${depend_libs} ${unittest_libs} ${basic_libs})
+    target_link_libraries(${target} ${depend_libs} ${unittest_libs})
     install(TARGETS ${target} DESTINATION unittest)
 endmacro()
 

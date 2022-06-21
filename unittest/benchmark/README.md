@@ -10,16 +10,21 @@ Download HDF5 data files from:
   https://github.com/erikbern/ann-benchmarks
 
 #### Step 3:
-Update 'milvus/core/src/index/unittest/CMakeLists.txt',
-uncomment "#add_subdirectory(faiss_benchmark)".
+Update 'knowhere/unittest/CMakeLists.txt',
+uncomment "#add_subdirectory(benchmark)".
 
 #### Step 4:
-Build Milvus with unittest enabled: "./build.sh -t Release -u",
-binary 'test_faiss_benchmark' will be generated.
+Build Knowhere with unittest enabled: "./build.sh -t Release -u",
+all benchmark binaries will be generated.
 
 #### Step 5:
-Put HDF5 data files into the same directory with binary 'test_faiss_benchmark'.
+Put HDF5 data files into the directory 'output/unittest'.
+Copy 'knowhere/unittest/benchmark/ref_log/Makefile' to 'output/unittest'.
 
 #### Step 6:
-Run test binary 'test_faiss_benchmark'.
-
+Run benchmark test using following commands:
+  - make test_faiss_all
+  - make test_knowhere_all
+  - make test_knowhere_range_all
+  - make test_knowhere_binary_all
+  - make test_knowhere_binary_range_all
