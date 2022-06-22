@@ -1,9 +1,28 @@
-### To run this FAISS benchmark, please follow these steps:
+## Benchmark description
+
+ Binary Name | Description
+-------------|------------
+benchmark_faiss | benchmark to test FAISS `Query` for IDMAP and IVF serial index types
+benchmark_knowhere_binary | benchmark to test knowhere `Query` for all binary index types
+benchmark_knowhere_binary_range | benchmark to test knowhere `QueryByRange` for all supported binary index types
+benchmark_knowhere_float | benchmark to test knowhere `Query` for all float index types
+benchmark_knowhere_float_range | benchmark to test knowhere `QueryByRange` for all supported float index types
+benchmark_knowhere_perf | benchmark to call knowhere `Query` periodically to simulate high CPU load
+
+## How to run benchmark
  
 #### Step 1:
-Download the HDF5 source from:
+Download latest HDF5 from:
   https://support.hdfgroup.org/ftp/HDF5/releases/
-and build/install to "/usr/local/hdf5".
+
+Use following commands to build HDF5 from source and install to "/usr/local/hdf5"
+```bash
+$ cd hdf5-1.13.1
+$ ./configure --prefix=/usr/local/hdf5 --enable-fortran
+$ make -j8
+$ make check
+$ sudo make install
+```
 
 #### Step 2:
 Download HDF5 data files from:
