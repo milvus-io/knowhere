@@ -108,11 +108,11 @@ class Benchmark_faiss : public Benchmark_sift {
     }
 
     void
-    test_hnsw(const int64_t M, const int64_t efConstruction) {
+    test_hnsw(const int32_t M, const int32_t efConstruction) {
         idx_t* I = new idx_t[NQs_.back() * TOPKs_.back()];
         distance_t* D = new distance_t[NQs_.back() * TOPKs_.back()];
 
-        printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld\n", get_time_diff(), ann_test_name_.c_str(),
+        printf("\n[%0.3f s] %s | %s | M=%d | efConstruction=%d\n", get_time_diff(), ann_test_name_.c_str(),
                index_key_.c_str(), M, efConstruction);
         printf("================================================================================\n");
         for (auto ef : EFs_) {

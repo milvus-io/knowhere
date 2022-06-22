@@ -45,7 +45,7 @@ class Benchmark_knowhere_perf : public Benchmark_knowhere {
         auto nlist = knowhere::GetIndexParamNlist(conf);
 
         int32_t no = 0;
-        printf("\n[%0.3f s] %s | %s | nlist=%ld\n", get_time_diff(), ann_test_name_.c_str(),
+        printf("\n[%0.3f s] %s | %s | nlist=%lld\n", get_time_diff(), ann_test_name_.c_str(),
                std::string(index_type_).c_str(), nlist);
         printf("================================================================================\n");
         for (int32_t i = 0; i + NQ_STEP_ <= GT_NQ_; i = (i + NQ_STEP_) % GT_NQ_) {
@@ -74,7 +74,7 @@ class Benchmark_knowhere_perf : public Benchmark_knowhere {
         auto efConstruction = knowhere::GetIndexParamEfConstruction(conf);
 
         int32_t no = 0;
-        printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld\n", get_time_diff(), ann_test_name_.c_str(),
+        printf("\n[%0.3f s] %s | %s | M=%lld | efConstruction=%lld\n", get_time_diff(), ann_test_name_.c_str(),
                std::string(index_type_).c_str(), M, efConstruction);
         printf("================================================================================\n");
         for (int32_t i = 0; i + NQ_STEP_ <= GT_NQ_; i = (i + NQ_STEP_) % GT_NQ_) {
@@ -102,7 +102,7 @@ class Benchmark_knowhere_perf : public Benchmark_knowhere {
         auto n_trees = knowhere::GetIndexParamNtrees(conf);
 
         int32_t no = 0;
-        printf("\n[%0.3f s] %s | %s | n_trees=%ld \n", get_time_diff(), ann_test_name_.c_str(),
+        printf("\n[%0.3f s] %s | %s | n_trees=%lld \n", get_time_diff(), ann_test_name_.c_str(),
                std::string(index_type_).c_str(), n_trees);
         printf("================================================================================\n");
         for (int32_t i = 0; i + NQ_STEP_ <= GT_NQ_; i = (i + NQ_STEP_) % GT_NQ_) {

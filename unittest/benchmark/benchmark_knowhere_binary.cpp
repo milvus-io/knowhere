@@ -42,7 +42,7 @@ class Benchmark_knowhere_binary : public Benchmark_knowhere {
         auto conf = cfg;
         auto nlist = knowhere::GetIndexParamNlist(conf);
 
-        printf("\n[%0.3f s] %s | %s | nlist=%ld\n", get_time_diff(), ann_test_name_.c_str(),
+        printf("\n[%0.3f s] %s | %s | nlist=%lld\n", get_time_diff(), ann_test_name_.c_str(),
                std::string(index_type_).c_str(), nlist);
         printf("================================================================================\n");
         for (auto nprobe : NPROBEs_) {

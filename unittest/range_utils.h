@@ -140,7 +140,7 @@ void CheckRangeSearchResult(
             ASSERT_EQ(size, golden_size);
         }
 
-        int64_t recall_cnt = 0;
+        int32_t recall_cnt = 0;
         std::unordered_set<int64_t> golden_ids_set(golden_ids + golden_lims[i],
                                                    golden_ids + golden_lims[i+1]);
         for (int j = lims[i]; j < lims[i+1]; j++) {
@@ -154,7 +154,7 @@ void CheckRangeSearchResult(
             ASSERT_TRUE(C::cmp(distances[j], radius));
         }
 
-        int64_t accuracy_cnt = 0;
+        int32_t accuracy_cnt = 0;
         std::vector<int64_t> ids_array(ids + lims[i], ids + lims[i+1]);
         std::unordered_set<int64_t> ids_set(ids_array.begin(), ids_array.end());
         for (size_t j = golden_lims[i]; j < golden_lims[i+1]; j++) {
@@ -167,7 +167,7 @@ void CheckRangeSearchResult(
             }
         }
 
-        printf("\tNo.%2d: recall = %.2f (%4ld / %4ld),  accuracy = %.2f (%4ld / %4ld)\n", i,
+        printf("\tNo.%2d: recall = %.2f (%4d / %4ld),  accuracy = %.2f (%4d / %4ld)\n", i,
                (recall_cnt * 1.0f / golden_size), recall_cnt, golden_size,
                (accuracy_cnt * 1.0f / size), accuracy_cnt, size);
     }

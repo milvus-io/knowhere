@@ -985,7 +985,7 @@ public:
       memcpy(_get(_n_nodes + (S)i), _get(_roots[i]), _s);
     _n_nodes += _roots.size();
 
-    if (_verbose) showUpdate("has %ld nodes\n", _n_nodes);
+    if (_verbose) showUpdate("has %lld nodes\n", _n_nodes);
     
     if (_on_disk) {
       if (!remap_memory_and_truncate(&_nodes, _fd,
@@ -1125,7 +1125,7 @@ public:
     _loaded = true;
     _built = true;
     _n_items = m;
-    if (_verbose) showUpdate("found %lu roots with degree %ld\n", _roots.size(), m);
+    if (_verbose) showUpdate("found %lu roots with degree %lld\n", _roots.size(), m);
     return true;
   }
 
@@ -1226,7 +1226,7 @@ protected:
     }
     
     _nodes_size = new_nodes_size;
-    if (_verbose) showUpdate("Reallocating to %ld nodes: old_address=%p, new_address=%p\n", new_nodes_size, old, _nodes);
+    if (_verbose) showUpdate("Reallocating to %lld nodes: old_address=%p, new_address=%p\n", new_nodes_size, old, _nodes);
   }
 
   void _allocate_size(S n, ThreadedBuildPolicy& threaded_build_policy) {
@@ -1308,7 +1308,7 @@ protected:
           bool side = D::side(m, n->v, _f, _random);
           children_indices[side].push_back(j);
         } else {
-          showUpdate("No node for index %ld?\n", j);
+          showUpdate("No node for index %lld?\n", j);
         }
       }
 
@@ -1484,7 +1484,7 @@ protected:
     _loaded = true;
     _built = true;
     _n_items = m;
-    if (_verbose) showUpdate("found %lu roots with degree %ld\n", _roots.size(), m);
+    if (_verbose) showUpdate("found %lu roots with degree %lld\n", _roots.size(), m);
     return true;
   }
 };

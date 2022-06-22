@@ -58,7 +58,7 @@ CheckIntegerRange(const Config& cfg, const std::string_view& key, int64_t min, i
     }
     int64_t value = GetValueFromConfig<int64_t>(cfg, key);
     if (value < min || value > max) {
-        KNOWHERE_THROW_FORMAT("Param '%s'(%ld) is not in range [%ld, %ld]", key.data(), value, min, max);
+        KNOWHERE_THROW_FORMAT("Param '%s'(%lld) is not in range [%lld, %lld]", key.data(), value, min, max);
     }
 }
 

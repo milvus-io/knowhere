@@ -41,7 +41,7 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere {
         auto conf = cfg;
         auto nlist = knowhere::GetIndexParamNlist(conf);
 
-        printf("\n[%0.3f s] %s | %s | nlist=%ld\n", get_time_diff(), ann_test_name_.c_str(),
+        printf("\n[%0.3f s] %s | %s | nlist=%lld\n", get_time_diff(), ann_test_name_.c_str(),
                std::string(index_type_).c_str(), nlist);
         printf("================================================================================\n");
         for (auto nprobe : NPROBEs_) {
@@ -68,7 +68,7 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere {
         auto M = knowhere::GetIndexParamHNSWM(conf);
         auto efConstruction = knowhere::GetIndexParamEfConstruction(conf);
 
-        printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld\n", get_time_diff(), ann_test_name_.c_str(),
+        printf("\n[%0.3f s] %s | %s | M=%lld | efConstruction=%lld\n", get_time_diff(), ann_test_name_.c_str(),
                std::string(index_type_).c_str(), M, efConstruction);
         printf("================================================================================\n");
         for (auto ef : EFs_) {
