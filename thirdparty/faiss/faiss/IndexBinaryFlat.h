@@ -22,6 +22,9 @@ struct IndexBinaryFlat : IndexBinary {
     /// database vectors, size ntotal * d / 8
     std::vector<uint8_t> xb;
 
+    /// external database vectors, size ntotal * d / 8
+    uint8_t* xb_ex = nullptr;
+
     /** Select between using a heap or counting to select the k smallest values
      * when scanning inverted lists.
      */
@@ -34,6 +37,8 @@ struct IndexBinaryFlat : IndexBinary {
     IndexBinaryFlat(idx_t d, MetricType metric);
 
     void add(idx_t n, const uint8_t* x) override;
+
+    void add_ex(idx_t n, const uint8_t* x) override;
 
     void get_vector_by_id(idx_t n, const idx_t* xids, uint8_t* x) override;
 
@@ -60,6 +65,11 @@ struct IndexBinaryFlat : IndexBinary {
      * the semantics of this operation are different from the usual ones:
      * the new ids are shifted. */
     size_t remove_ids(const IDSelector& sel) override;
+
+    const uint8_t* get_xb() const {
+        return xb_ex != nullptr ? (const uint8_t*)xb_ex
+                                : (const uint8_t*)xb.data();
+    }
 
     IndexBinaryFlat() {}
 };

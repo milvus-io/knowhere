@@ -32,6 +32,10 @@ void IndexBinary::assign(idx_t n, const uint8_t* x, idx_t* labels, idx_t k)
     search(n, x, k, distances.data(), labels);
 }
 
+void IndexBinary::add_ex(idx_t, const uint8_t*) {
+    FAISS_THROW_MSG("add_ex not implemented for this type of index");
+}
+
 void IndexBinary::add_with_ids(idx_t, const uint8_t*, const idx_t*) {
     FAISS_THROW_MSG("add_with_ids not implemented for this type of index");
 }
