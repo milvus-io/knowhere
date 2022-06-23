@@ -41,6 +41,11 @@ class IDMAPTest : public DataGen, public TestWithParam<knowhere::IndexMode> {
 #ifdef KNOWHERE_GPU_VERSION
         knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(DEVICE_ID, PINMEM, TEMPMEM, RESNUM);
 #endif
+        conf_ = knowhere::Config{
+            {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
+            {knowhere::meta::DIM, dim},
+            {knowhere::meta::TOPK, k},
+        };
         index_mode_ = GetParam();
         index_type_ = knowhere::IndexEnum::INDEX_FAISS_IDMAP;
         index_ = std::make_shared<knowhere::IDMAP>();
@@ -54,6 +59,7 @@ class IDMAPTest : public DataGen, public TestWithParam<knowhere::IndexMode> {
     }
 
  protected:
+    knowhere::Config conf_;
     knowhere::IDMAPPtr index_ = nullptr;
     knowhere::IndexMode index_mode_;
     knowhere::IndexType index_type_;
@@ -72,51 +78,45 @@ INSTANTIATE_TEST_CASE_P(
 TEST_P(IDMAPTest, idmap_basic) {
     ASSERT_TRUE(!xb.empty());
 
-    knowhere::Config conf{
-        {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
-        {knowhere::meta::DIM, dim},
-        {knowhere::meta::TOPK, k},
-    };
-
     // null faiss index
     {
-        ASSERT_ANY_THROW(index_->Serialize(conf));
-        ASSERT_ANY_THROW(index_->Query(query_dataset, conf, nullptr));
-        ASSERT_ANY_THROW(index_->AddWithoutIds(nullptr, conf));
+        ASSERT_ANY_THROW(index_->Serialize(conf_));
+        ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
+        ASSERT_ANY_THROW(index_->AddWithoutIds(nullptr, conf_));
     }
 
-    index_->BuildAll(base_dataset, conf);
+    index_->BuildAll(base_dataset, conf_);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
     ASSERT_TRUE(index_->GetRawVectors() != nullptr);
     ASSERT_GT(index_->Size(), 0);
 
-    auto result = index_->GetVectorById(id_dataset, conf);
+    auto result = index_->GetVectorById(id_dataset, conf_);
     AssertVec(result, base_dataset, id_dataset, nq, dim);
 
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
-    ASSERT_TRUE(adapter->CheckSearch(conf, index_type_, index_mode_));
+    ASSERT_TRUE(adapter->CheckSearch(conf_, index_type_, index_mode_));
 
-    auto result1 = index_->Query(query_dataset, conf, nullptr);
+    auto result1 = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result1, nq, k);
     // PrintResult(result1, nq, k);
 
 #ifdef KNOWHERE_GPU_VERSION
     if (index_mode_ == knowhere::IndexMode::MODE_GPU) {
         // cpu to gpu
-        index_ = std::dynamic_pointer_cast<knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICE_ID, conf));
+        index_ = std::dynamic_pointer_cast<knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICE_ID, conf_));
     }
 #endif
 
-    auto binaryset = index_->Serialize(conf);
+    auto binaryset = index_->Serialize(conf_);
     auto new_index = std::make_shared<knowhere::IDMAP>();
     new_index->Load(binaryset);
-    auto result2 = new_index->Query(query_dataset, conf, nullptr);
+    auto result2 = new_index->Query(query_dataset, conf_, nullptr);
     AssertAnns(result2, nq, k);
     // PrintResult(re_result, nq, k);
 
     // query with bitset
-    auto result_bs_1 = index_->Query(query_dataset, conf, *bitset);
+    auto result_bs_1 = index_->Query(query_dataset, conf_, *bitset);
     AssertAnns(result_bs_1, nq, k, CheckMode::CHECK_NOT_EQUAL);
 }
 
@@ -130,27 +130,21 @@ TEST_P(IDMAPTest, idmap_serialize) {
         reader(ret, bin->size);
     };
 
-    knowhere::Config conf{
-        {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
-        {knowhere::meta::DIM, dim},
-        {knowhere::meta::TOPK, k},
-    };
-
-    index_->BuildAll(base_dataset, conf);
+    index_->BuildAll(base_dataset, conf_);
 
 #ifdef KNOWHERE_GPU_VERSION
     if (index_mode_ == knowhere::IndexMode::MODE_GPU) {
         // cpu to gpu
-        index_ = std::dynamic_pointer_cast<knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICE_ID, conf));
+        index_ = std::dynamic_pointer_cast<knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICE_ID, conf_));
     }
 #endif
 
-    auto re_result = index_->Query(query_dataset, conf, nullptr);
+    auto re_result = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(re_result, nq, k);
     // PrintResult(re_result, nq, k);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
-    auto binaryset = index_->Serialize(conf);
+    auto binaryset = index_->Serialize(conf_);
     auto bin = binaryset.GetByName("IVF");
 
     std::string filename = temp_path("/tmp/idmap_test_serialize.bin");
@@ -164,50 +158,41 @@ TEST_P(IDMAPTest, idmap_serialize) {
     index_->Load(binaryset);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
-    auto result = index_->Query(query_dataset, conf, nullptr);
+    auto result = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result, nq, k);
     // PrintResult(result, nq, k);
 }
 
 TEST_P(IDMAPTest, idmap_slice) {
-    knowhere::Config conf{
-        {knowhere::meta::SLICE_SIZE, knowhere::index_file_slice_size},
-        {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
-        {knowhere::meta::DIM, dim},
-        {knowhere::meta::TOPK, k},
-    };
+    knowhere::SetMetaSliceSize(conf_, knowhere::index_file_slice_size);
 
-    index_->BuildAll(base_dataset, conf);
+    index_->BuildAll(base_dataset, conf_);
 
 #ifdef KNOWHERE_GPU_VERSION
     if (index_mode_ == knowhere::IndexMode::MODE_GPU) {
         // cpu to gpu
-        index_ = std::dynamic_pointer_cast<knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICE_ID, conf));
+        index_ = std::dynamic_pointer_cast<knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICE_ID, conf_));
     }
 #endif
 
-    auto re_result = index_->Query(query_dataset, conf, nullptr);
+    auto re_result = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(re_result, nq, k);
     // PrintResult(re_result, nq, k);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
-    auto binaryset = index_->Serialize(conf);
+    auto binaryset = index_->Serialize(conf_);
 
     index_->Load(binaryset);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
-    auto result = index_->Query(query_dataset, conf, nullptr);
+    auto result = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result, nq, k);
     // PrintResult(result, nq, k);
 }
 
 TEST_P(IDMAPTest, idmap_range_search_l2) {
-    knowhere::Config conf{
-        {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
-        {knowhere::meta::DIM, dim},
-    };
-
-    index_->BuildAll(base_dataset, conf);
+    knowhere::SetMetaMetricType(conf_, knowhere::metric::L2);
+    index_->BuildAll(base_dataset, conf_);
 
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
@@ -218,7 +203,7 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
         RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, xb.data(), nb, xq.data(), nq, dim,
                                       radius * radius, faiss::fvec_L2sqr_ref, bitset);
 
-        auto result = index_->QueryByRange(qd, conf, bitset);
+        auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMin<float>>(result, nq, radius * radius, golden_labels.data(), golden_lims.data(), true);
     };
 
@@ -226,7 +211,7 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
     for (int64_t blas_threshold : {0, 20}) {
         knowhere::KnowhereConfig::SetBlasThreshold(blas_threshold);
         for (float radius: {4.1f, 4.2f, 4.3f}) {
-            knowhere::SetMetaRadius(conf, radius);
+            knowhere::SetMetaRadius(conf_, radius);
             test_range_search_l2(radius, nullptr);
             test_range_search_l2(radius, *bitset);
         }
@@ -235,12 +220,8 @@ TEST_P(IDMAPTest, idmap_range_search_l2) {
 }
 
 TEST_P(IDMAPTest, idmap_range_search_ip) {
-    knowhere::Config conf{
-        {knowhere::meta::METRIC_TYPE, knowhere::metric::IP},
-        {knowhere::meta::DIM, dim},
-    };
-
-    index_->BuildAll(base_dataset, conf);
+    knowhere::SetMetaMetricType(conf_, knowhere::metric::IP);
+    index_->BuildAll(base_dataset, conf_);
 
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
@@ -251,7 +232,7 @@ TEST_P(IDMAPTest, idmap_range_search_ip) {
         RunRangeSearchBF<CMax<float>>(golden_labels, golden_distances, golden_lims, xb.data(), nb, xq.data(), nq, dim,
                                       radius, faiss::fvec_inner_product_ref, bitset);
 
-        auto result = index_->QueryByRange(qd, conf, bitset);
+        auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMax<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), true);
     };
 
@@ -259,7 +240,7 @@ TEST_P(IDMAPTest, idmap_range_search_ip) {
     for (int64_t blas_threshold : {0, 20}) {
         knowhere::KnowhereConfig::SetBlasThreshold(blas_threshold);
         for (float radius: {42.0f, 43.0f, 44.0f}) {
-            knowhere::SetMetaRadius(conf, radius);
+            knowhere::SetMetaRadius(conf_, radius);
             test_range_search_ip(radius, nullptr);
             test_range_search_ip(radius, *bitset);
         }
@@ -271,55 +252,49 @@ TEST_P(IDMAPTest, idmap_range_search_ip) {
 TEST_P(IDMAPTest, idmap_copy) {
     ASSERT_TRUE(!xb.empty());
 
-    knowhere::Config conf{
-        {knowhere::meta::DIM, dim},
-        {knowhere::meta::TOPK, k},
-        {knowhere::meta::METRIC_TYPE, knowhere::metric::L2}
-    };
-
-    index_->BuildAll(base_dataset, conf);
+    index_->BuildAll(base_dataset, conf_);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
     ASSERT_TRUE(index_->GetRawVectors() != nullptr);
-    auto result = index_->Query(query_dataset, conf, nullptr);
+    auto result = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result, nq, k);
     // PrintResult(result, nq, k);
 
     // clone
     // auto clone_index = index_->Clone();
-    // auto clone_result = clone_index->Search(query_dataset, conf);
+    // auto clone_result = clone_index->Search(query_dataset, conf_);
     // AssertAnns(clone_result, nq, k);
 
     // cpu to gpu
-    ASSERT_ANY_THROW(knowhere::cloner::CopyCpuToGpu(index_, -1, conf));
-    auto clone_index = knowhere::cloner::CopyCpuToGpu(index_, DEVICE_ID, conf);
-    auto clone_result = clone_index->Query(query_dataset, conf, nullptr);
+    ASSERT_ANY_THROW(knowhere::cloner::CopyCpuToGpu(index_, -1, conf_));
+    auto clone_index = knowhere::cloner::CopyCpuToGpu(index_, DEVICE_ID, conf_);
+    auto clone_result = clone_index->Query(query_dataset, conf_, nullptr);
 
     AssertAnns(clone_result, nq, k);
     ASSERT_THROW({ std::static_pointer_cast<knowhere::GPUIDMAP>(clone_index)->GetRawVectors(); },
                  knowhere::KnowhereException);
-    ASSERT_ANY_THROW(clone_index->Serialize(conf));
+    ASSERT_ANY_THROW(clone_index->Serialize(conf_));
 
-    auto binary = clone_index->Serialize(conf);
+    auto binary = clone_index->Serialize(conf_);
     clone_index->Load(binary);
-    auto new_result = clone_index->Query(query_dataset, conf, nullptr);
+    auto new_result = clone_index->Query(query_dataset, conf_, nullptr);
     AssertAnns(new_result, nq, k);
 
     // auto clone_gpu_idx = clone_index->Clone();
-    // auto clone_gpu_res = clone_gpu_idx->Search(query_dataset, conf);
+    // auto clone_gpu_res = clone_gpu_idx->Search(query_dataset, conf_);
     // AssertAnns(clone_gpu_res, nq, k);
 
     // gpu to cpu
-    auto host_index = knowhere::cloner::CopyGpuToCpu(clone_index, conf);
-    auto host_result = host_index->Query(query_dataset, conf, nullptr);
+    auto host_index = knowhere::cloner::CopyGpuToCpu(clone_index, conf_);
+    auto host_result = host_index->Query(query_dataset, conf_, nullptr);
     AssertAnns(host_result, nq, k);
     ASSERT_TRUE(std::static_pointer_cast<knowhere::IDMAP>(host_index)->GetRawVectors() != nullptr);
 
     // gpu to gpu
-    auto device_index = knowhere::cloner::CopyCpuToGpu(index_, DEVICE_ID, conf);
+    auto device_index = knowhere::cloner::CopyCpuToGpu(index_, DEVICE_ID, conf_);
     auto new_device_index =
-        std::static_pointer_cast<knowhere::GPUIDMAP>(device_index)->CopyGpuToGpu(DEVICE_ID, conf);
-    auto device_result = new_device_index->Query(query_dataset, conf, nullptr);
+        std::static_pointer_cast<knowhere::GPUIDMAP>(device_index)->CopyGpuToGpu(DEVICE_ID, conf_);
+    auto device_result = new_device_index->Query(query_dataset, conf_, nullptr);
     AssertAnns(device_result, nq, k);
 }
 #endif
