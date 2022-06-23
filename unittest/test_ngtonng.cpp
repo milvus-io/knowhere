@@ -31,6 +31,7 @@ class NGTONNGTest : public DataGen, public TestWithParam<std::string> {
         Generate(128, 10000, 10);
         index_ = std::make_shared<knowhere::IndexNGTONNG>();
         conf = knowhere::Config{
+            {knowhere::meta::SLICE_SIZE, knowhere::index_file_slice_size},
             {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
             {knowhere::meta::DIM, dim},
             {knowhere::meta::TOPK, 10},
@@ -39,7 +40,6 @@ class NGTONNGTest : public DataGen, public TestWithParam<std::string> {
             {knowhere::indexparam::MAX_SEARCH_EDGES, 50},
             {knowhere::indexparam::OUTGOING_EDGE_SIZE, 5},
             {knowhere::indexparam::INCOMING_EDGE_SIZE, 40},
-            {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
         };
     }
 

@@ -56,9 +56,9 @@ class NSGInterfaceTest : public DataGen, public ::testing::Test {
         };
 
         search_conf = knowhere::Config{
+            {knowhere::meta::SLICE_SIZE, knowhere::index_file_slice_size},
             {knowhere::meta::TOPK, k},
             {knowhere::IndexParams::search_length, 30},
-            {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
         };
     }
 

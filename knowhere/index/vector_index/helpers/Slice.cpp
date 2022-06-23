@@ -13,14 +13,14 @@
 #include <memory>
 #include <vector>
 
-#include "common/Utils.h"
+#include "index/vector_index/helpers/IndexParameter.h"
+#include "index/vector_index/helpers/Slice.h"
 
 namespace knowhere {
 
-const int64_t DEFAULT_INDEX_FILE_SLICE_SIZE = 4;
-const char* INDEX_FILE_SLICE_SIZE_IN_MEGABYTE = "SLICE_SIZE";
-static const char* INDEX_FILE_SLICE_META = "SLICE_META";
+const int64_t DEFAULT_INDEX_FILE_SLICE_SIZE = 4; // megabytes
 
+static const char* INDEX_FILE_SLICE_META = "SLICE_META";
 static const char* META = "meta";
 static const char* NAME = "name";
 static const char* SLICE_NUM = "slice_num";
@@ -78,7 +78,7 @@ Assemble(BinarySet& binarySet) {
 
 void
 Disassemble(BinarySet& binarySet, const Config& config) {
-    if (!config.contains(INDEX_FILE_SLICE_SIZE_IN_MEGABYTE)) {
+    if (!CheckKeyInConfig(config, meta::SLICE_SIZE)) {
         return;
     }
 
@@ -92,7 +92,7 @@ Disassemble(BinarySet& binarySet, const Config& config) {
         }
     }
 
-    const int64_t slice_size_in_byte = config[INDEX_FILE_SLICE_SIZE_IN_MEGABYTE].get<int64_t>() << 20;
+    const int64_t slice_size_in_byte = GetMetaSliceSize(config) << 20;
     std::vector<std::string> slice_key_list;
     for (auto& kv : binarySet.binary_map_) {
         if (kv.second->size > slice_size_in_byte) {

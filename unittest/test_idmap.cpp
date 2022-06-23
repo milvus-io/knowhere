@@ -171,10 +171,10 @@ TEST_P(IDMAPTest, idmap_serialize) {
 
 TEST_P(IDMAPTest, idmap_slice) {
     knowhere::Config conf{
+        {knowhere::meta::SLICE_SIZE, knowhere::index_file_slice_size},
         {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
         {knowhere::meta::DIM, dim},
         {knowhere::meta::TOPK, k},
-        {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
     };
 
     index_->BuildAll(base_dataset, conf);

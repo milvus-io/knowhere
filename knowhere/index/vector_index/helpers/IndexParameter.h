@@ -21,6 +21,7 @@ namespace knowhere {
 using MetaType = std::string_view;
 
 namespace meta {
+constexpr MetaType SLICE_SIZE = "SLICE_SIZE";
 constexpr MetaType METRIC_TYPE = "metric_type";
 constexpr MetaType DIM = "dim";
 constexpr MetaType TENSOR = "tensor";
@@ -86,14 +87,19 @@ constexpr MetricType SUPERSTRUCTURE = "SUPERSTRUCTURE";
 }  // namespace metric
 
 ///////////////////////////////////////////////////////////////////////////////
+inline bool
+CheckKeyInConfig(const Config& cfg, const std::string_view& key) {
+    return cfg.contains(std::string(key));
+}
+
 template <typename T>
-T
+inline T
 GetValueFromConfig(const Config& cfg, const std::string_view& key) {
     return cfg.at(std::string(key)).get<T>();
 }
 
 template <typename T>
-void
+inline void
 SetValueToConfig(Config& cfg, const std::string_view& key, const T value) {
     cfg[std::string(key)] = value;
 }
@@ -110,6 +116,8 @@ inline void func_name(Config& cfg, T1 value) {          \
 
 ///////////////////////////////////////////////////////////////////////////////
 // APIs to access meta
+DEFINE_CONFIG_GETTER(GetMetaSliceSize, meta::SLICE_SIZE, int64_t)
+DEFINE_CONFIG_SETTER(SetMetaSliceSize, meta::SLICE_SIZE, int64_t, int64_t)
 
 DEFINE_CONFIG_GETTER(GetMetaMetricType, meta::METRIC_TYPE, std::string)
 DEFINE_CONFIG_SETTER(SetMetaMetricType, meta::METRIC_TYPE, MetricType, std::string)
