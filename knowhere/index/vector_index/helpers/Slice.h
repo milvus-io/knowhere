@@ -19,7 +19,6 @@
 
 namespace knowhere {
 
-extern const char* INDEX_FILE_SLICE_SIZE_IN_MEGABYTE;
 extern int64_t index_file_slice_size;
 
 void

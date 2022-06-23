@@ -31,11 +31,11 @@ class BinaryIDMAPTest : public DataGen,
         Init_with_default(true);
 
         conf_ = knowhere::Config{
+            {knowhere::meta::SLICE_SIZE, knowhere::index_file_slice_size},
             {knowhere::meta::METRIC_TYPE, knowhere::metric::HAMMING},
             {knowhere::meta::DIM, dim},
             {knowhere::meta::TOPK, k},
             {knowhere::meta::RADIUS, radius},
-            {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
         };
         index_mode_ = GetParam();
         index_type_ = knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP;

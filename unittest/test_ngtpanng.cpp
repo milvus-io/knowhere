@@ -31,6 +31,7 @@ class NGTPANNGTest : public DataGen, public TestWithParam<std::string> {
         Generate(128, 10000, 10);
         index_ = std::make_shared<knowhere::IndexNGTPANNG>();
         conf = knowhere::Config{
+            {knowhere::meta::SLICE_SIZE, knowhere::index_file_slice_size},
             {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
             {knowhere::meta::DIM, dim},
             {knowhere::meta::TOPK, 10},
@@ -39,7 +40,6 @@ class NGTPANNGTest : public DataGen, public TestWithParam<std::string> {
             {knowhere::indexParam::MAX_SEARCH_EDGES, 50},
             {knowhere::indexParam::FORCEDLY_PRUNED_EDGE_SIZE, 60},
             {knowhere::indexParam::SELECTIVELY_PRUNED_EDGE_SIZE, 30},
-            {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
         };
     }
 

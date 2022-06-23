@@ -13,8 +13,8 @@
 
 #include "archive/KnowhereConfig.h"
 #include "common/Log.h"
-#include "common/Utils.h"
 #include "index/vector_index/Statistics.h"
+#include "index/vector_index/helpers/Slice.h"
 #include "faiss/Clustering.h"
 #include "faiss/FaissHook.h"
 #include "faiss/utils/distances.h"

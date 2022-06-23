@@ -28,12 +28,12 @@ class AnnoyTest : public DataGen, public TestWithParam<std::string> {
         Generate(128, 10000, 10);
         index_ = std::make_shared<knowhere::IndexAnnoy>();
         conf = knowhere::Config{
+            {knowhere::meta::SLICE_SIZE, knowhere::index_file_slice_size},
             {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
             {knowhere::meta::DIM, dim},
             {knowhere::meta::TOPK, 10},
             {knowhere::indexparam::N_TREES, 4},
             {knowhere::indexparam::SEARCH_K, 100},
-            {knowhere::INDEX_FILE_SLICE_SIZE_IN_MEGABYTE, knowhere::index_file_slice_size},
         };
     }
 
