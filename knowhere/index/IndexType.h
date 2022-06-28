@@ -11,44 +11,44 @@
 
 #pragma once
 
-#include <string_view>
+#include <string>
 
 namespace knowhere {
 
-using IndexType = std::string_view;
+using IndexType = std::string;
 
 namespace IndexEnum {
 
-constexpr IndexType INVALID = "";
+constexpr const char* INVALID = "";
 
-constexpr IndexType INDEX_FAISS_BIN_IDMAP = "BIN_FLAT";
-constexpr IndexType INDEX_FAISS_BIN_IVFFLAT = "BIN_IVF_FLAT";
+constexpr const char* INDEX_FAISS_BIN_IDMAP = "BIN_FLAT";
+constexpr const char* INDEX_FAISS_BIN_IVFFLAT = "BIN_IVF_FLAT";
 
-constexpr IndexType INDEX_FAISS_IDMAP = "FLAT";
-constexpr IndexType INDEX_FAISS_IVFFLAT = "IVF_FLAT";
-constexpr IndexType INDEX_FAISS_IVFPQ = "IVF_PQ";
-constexpr IndexType INDEX_FAISS_IVFSQ8 = "IVF_SQ8";
-constexpr IndexType INDEX_FAISS_IVFSQ8H = "IVF_SQ8_HYBRID";
-constexpr IndexType INDEX_FAISS_IVFHNSW = "IVF_HNSW";
+constexpr const char* INDEX_FAISS_IDMAP = "FLAT";
+constexpr const char* INDEX_FAISS_IVFFLAT = "IVF_FLAT";
+constexpr const char* INDEX_FAISS_IVFPQ = "IVF_PQ";
+constexpr const char* INDEX_FAISS_IVFSQ8 = "IVF_SQ8";
+constexpr const char* INDEX_FAISS_IVFSQ8H = "IVF_SQ8_HYBRID";
+constexpr const char* INDEX_FAISS_IVFHNSW = "IVF_HNSW";
 
-constexpr IndexType INDEX_ANNOY = "ANNOY";
-constexpr IndexType INDEX_HNSW = "HNSW";
-constexpr IndexType INDEX_RHNSWFlat = "RHNSW_FLAT";
-constexpr IndexType INDEX_RHNSWPQ = "RHNSW_PQ";
-constexpr IndexType INDEX_RHNSWSQ = "RHNSW_SQ";
+constexpr const char* INDEX_ANNOY = "ANNOY";
+constexpr const char* INDEX_HNSW = "HNSW";
+constexpr const char* INDEX_RHNSWFlat = "RHNSW_FLAT";
+constexpr const char* INDEX_RHNSWPQ = "RHNSW_PQ";
+constexpr const char* INDEX_RHNSWSQ = "RHNSW_SQ";
 
 #ifdef KNOWHERE_SUPPORT_NGT
-constexpr IndexType INDEX_NGTPANNG = "NGT_PANNG";
-constexpr IndexType INDEX_NGTONNG = "NGT_ONNG";
+constexpr const char* INDEX_NGTPANNG = "NGT_PANNG";
+constexpr const char* INDEX_NGTONNG = "NGT_ONNG";
 #endif
 
 #ifdef KNOWHERE_SUPPORT_NSG
-constexpr IndexType INDEX_NSG = "NSG";
+constexpr const char* INDEX_NSG = "NSG";
 #endif
 
 #ifdef KNOWHERE_SUPPORT_SPTAG
-constexpr IndexType INDEX_SPTAG_KDT_RNT = "SPTAG_KDT_RNT";
-constexpr IndexType INDEX_SPTAG_BKT_RNT = "SPTAG_BKT_RNT";
+constexpr const char* INDEX_SPTAG_KDT_RNT = "SPTAG_KDT_RNT";
+constexpr const char* INDEX_SPTAG_BKT_RNT = "SPTAG_BKT_RNT";
 #endif
 
 }  // namespace IndexEnum

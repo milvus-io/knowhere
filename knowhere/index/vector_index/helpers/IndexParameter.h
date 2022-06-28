@@ -18,90 +18,86 @@
 
 namespace knowhere {
 
-using MetaType = std::string_view;
-
 namespace meta {
-constexpr MetaType SLICE_SIZE = "SLICE_SIZE";
-constexpr MetaType METRIC_TYPE = "metric_type";
-constexpr MetaType DIM = "dim";
-constexpr MetaType TENSOR = "tensor";
-constexpr MetaType ROWS = "rows";
-constexpr MetaType IDS = "ids";
-constexpr MetaType DISTANCE = "distance";
-constexpr MetaType LIMS = "lims";
-constexpr MetaType TOPK = "k";
-constexpr MetaType RADIUS = "radius";
-constexpr MetaType INPUT_IDS = "input_ids";
-constexpr MetaType DEVICE_ID = "gpu_id";
+constexpr const char* SLICE_SIZE = "SLICE_SIZE";
+constexpr const char* METRIC_TYPE = "metric_type";
+constexpr const char* DIM = "dim";
+constexpr const char* TENSOR = "tensor";
+constexpr const char* ROWS = "rows";
+constexpr const char* IDS = "ids";
+constexpr const char* DISTANCE = "distance";
+constexpr const char* LIMS = "lims";
+constexpr const char* TOPK = "k";
+constexpr const char* RADIUS = "radius";
+constexpr const char* INPUT_IDS = "input_ids";
+constexpr const char* DEVICE_ID = "gpu_id";
 };  // namespace meta
-
-using IndexParamType = std::string_view;
 
 namespace indexparam {
 // IVF Params
-constexpr IndexParamType NPROBE = "nprobe";
-constexpr IndexParamType NLIST = "nlist";
-constexpr IndexParamType NBITS = "nbits";   // PQ/SQ
-constexpr IndexParamType M = "m";           // PQ param for IVFPQ
-constexpr IndexParamType PQ_M = "PQM";      // PQ param for RHNSWPQ
+constexpr const char* NPROBE = "nprobe";
+constexpr const char* NLIST = "nlist";
+constexpr const char* NBITS = "nbits";   // PQ/SQ
+constexpr const char* M = "m";           // PQ param for IVFPQ
+constexpr const char* PQ_M = "PQM";      // PQ param for RHNSWPQ
 // HNSW Params
-constexpr IndexParamType EFCONSTRUCTION = "efConstruction";
-constexpr IndexParamType HNSW_M = "M";
-constexpr IndexParamType EF = "ef";
-constexpr IndexParamType HNSW_K = "range_k";
+constexpr const char* EFCONSTRUCTION = "efConstruction";
+constexpr const char* HNSW_M = "M";
+constexpr const char* EF = "ef";
+constexpr const char* HNSW_K = "range_k";
 // Annoy Params
-constexpr IndexParamType N_TREES = "n_trees";
-constexpr IndexParamType SEARCH_K = "search_k";
+constexpr const char* N_TREES = "n_trees";
+constexpr const char* SEARCH_K = "search_k";
 #ifdef KNOWHERE_SUPPORT_NGT
 // NGT Params
-constexpr IndexParamType EDGE_SIZE = "edge_size";
+constexpr const char* EDGE_SIZE = "edge_size";
 // NGT Search Params
-constexpr IndexParamType EPSILON = "epsilon";
-constexpr IndexParamType MAX_SEARCH_EDGES = "max_search_edges";
+constexpr const char* EPSILON = "epsilon";
+constexpr const char* MAX_SEARCH_EDGES = "max_search_edges";
 // NGT_PANNG Params
-constexpr IndexParamType FORCEDLY_PRUNED_EDGE_SIZE = "forcedly_pruned_edge_size";
-constexpr IndexParamType SELECTIVELY_PRUNED_EDGE_SIZE = "selectively_pruned_edge_size";
+constexpr const char* FORCEDLY_PRUNED_EDGE_SIZE = "forcedly_pruned_edge_size";
+constexpr const char* SELECTIVELY_PRUNED_EDGE_SIZE = "selectively_pruned_edge_size";
 // NGT_ONNG Params
-constexpr IndexParamType OUTGOING_EDGE_SIZE = "outgoing_edge_size";
-constexpr IndexParamType INCOMING_EDGE_SIZE = "incoming_edge_size";
+constexpr const char* OUTGOING_EDGE_SIZE = "outgoing_edge_size";
+constexpr const char* INCOMING_EDGE_SIZE = "incoming_edge_size";
 #endif
 #ifdef KNOWHERE_SUPPORT_NSG
 // NSG Params
-constexpr IndexParamType KNNG = "knng";
-constexpr IndexParamType SEARCH_LENGTH = "search_length";
-constexpr IndexParamType OUT_DEGREE = "out_degree";
-constexpr IndexParamType CANDIDATE = "candidate_pool_size";
+constexpr const char* KNNG = "knng";
+constexpr const char* SEARCH_LENGTH = "search_length";
+constexpr const char* OUT_DEGREE = "out_degree";
+constexpr const char* CANDIDATE = "candidate_pool_size";
 #endif
 }  // namespace indexparam
 
-using MetricType = std::string_view;
+using MetricType = std::string;
 
 namespace metric {
-constexpr MetricType IP = "IP";
-constexpr MetricType L2 = "L2";
-constexpr MetricType HAMMING = "HAMMING";
-constexpr MetricType JACCARD = "JACCARD";
-constexpr MetricType TANIMOTO = "TANIMOTO";
-constexpr MetricType SUBSTRUCTURE = "SUBSTRUCTURE";
-constexpr MetricType SUPERSTRUCTURE = "SUPERSTRUCTURE";
+constexpr const char* IP = "IP";
+constexpr const char* L2 = "L2";
+constexpr const char* HAMMING = "HAMMING";
+constexpr const char* JACCARD = "JACCARD";
+constexpr const char* TANIMOTO = "TANIMOTO";
+constexpr const char* SUBSTRUCTURE = "SUBSTRUCTURE";
+constexpr const char* SUPERSTRUCTURE = "SUPERSTRUCTURE";
 }  // namespace metric
 
 ///////////////////////////////////////////////////////////////////////////////
 inline bool
-CheckKeyInConfig(const Config& cfg, const std::string_view& key) {
-    return cfg.contains(std::string(key));
+CheckKeyInConfig(const Config& cfg, const std::string& key) {
+    return cfg.contains(key);
 }
 
 template <typename T>
 inline T
-GetValueFromConfig(const Config& cfg, const std::string_view& key) {
-    return cfg.at(std::string(key)).get<T>();
+GetValueFromConfig(const Config& cfg, const std::string& key) {
+    return cfg.at(key).get<T>();
 }
 
 template <typename T>
 inline void
-SetValueToConfig(Config& cfg, const std::string_view& key, const T value) {
-    cfg[std::string(key)] = value;
+SetValueToConfig(Config& cfg, const std::string& key, const T value) {
+    cfg[key] = value;
 }
 
 #define DEFINE_CONFIG_GETTER(func_name, key, T) \
@@ -109,73 +105,73 @@ inline T func_name(const Config& cfg) {         \
     return GetValueFromConfig<T>(cfg, key);     \
 }
 
-#define DEFINE_CONFIG_SETTER(func_name, key, T1, T2)    \
-inline void func_name(Config& cfg, T1 value) {          \
-    SetValueToConfig<T2>(cfg, key, (T2)(value));        \
+#define DEFINE_CONFIG_SETTER(func_name, key, T) \
+inline void func_name(Config& cfg, T value) {   \
+    SetValueToConfig<T>(cfg, key, (T)(value));  \
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // APIs to access meta
 DEFINE_CONFIG_GETTER(GetMetaSliceSize, meta::SLICE_SIZE, int64_t)
-DEFINE_CONFIG_SETTER(SetMetaSliceSize, meta::SLICE_SIZE, int64_t, int64_t)
+DEFINE_CONFIG_SETTER(SetMetaSliceSize, meta::SLICE_SIZE, int64_t)
 
 DEFINE_CONFIG_GETTER(GetMetaMetricType, meta::METRIC_TYPE, std::string)
-DEFINE_CONFIG_SETTER(SetMetaMetricType, meta::METRIC_TYPE, MetricType, std::string)
+DEFINE_CONFIG_SETTER(SetMetaMetricType, meta::METRIC_TYPE, std::string)
 
 DEFINE_CONFIG_GETTER(GetMetaRows, meta::ROWS, int64_t)
-DEFINE_CONFIG_SETTER(SetMetaRows, meta::ROWS, int64_t, int64_t)
+DEFINE_CONFIG_SETTER(SetMetaRows, meta::ROWS, int64_t)
 
 DEFINE_CONFIG_GETTER(GetMetaDim, meta::DIM, int64_t)
-DEFINE_CONFIG_SETTER(SetMetaDim, meta::DIM, int64_t, int64_t)
+DEFINE_CONFIG_SETTER(SetMetaDim, meta::DIM, int64_t)
 
 DEFINE_CONFIG_GETTER(GetMetaTopk, meta::TOPK, int64_t)
-DEFINE_CONFIG_SETTER(SetMetaTopk, meta::TOPK, int64_t, int64_t)
+DEFINE_CONFIG_SETTER(SetMetaTopk, meta::TOPK, int64_t)
 
 DEFINE_CONFIG_GETTER(GetMetaRadius, meta::RADIUS, float)
-DEFINE_CONFIG_SETTER(SetMetaRadius, meta::RADIUS, float, float)
+DEFINE_CONFIG_SETTER(SetMetaRadius, meta::RADIUS, float)
 
 DEFINE_CONFIG_GETTER(GetMetaDeviceID, meta::DEVICE_ID, int64_t)
-DEFINE_CONFIG_SETTER(SetMetaDeviceID, meta::DEVICE_ID, int64_t , int64_t)
+DEFINE_CONFIG_SETTER(SetMetaDeviceID, meta::DEVICE_ID, int64_t)
 
 ///////////////////////////////////////////////////////////////////////////////
 // APIs to access indexparam
 
 DEFINE_CONFIG_GETTER(GetIndexParamNprobe, indexparam::NPROBE, int64_t)
-DEFINE_CONFIG_SETTER(SetIndexParamNprobe, indexparam::NPROBE, int64_t, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamNprobe, indexparam::NPROBE, int64_t)
 
 DEFINE_CONFIG_GETTER(GetIndexParamNlist, indexparam::NLIST, int64_t)
-DEFINE_CONFIG_SETTER(SetIndexParamNlist, indexparam::NLIST, int64_t, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamNlist, indexparam::NLIST, int64_t)
 
 DEFINE_CONFIG_GETTER(GetIndexParamNbits, indexparam::NBITS, int64_t)
-DEFINE_CONFIG_SETTER(SetIndexParamNbits, indexparam::NBITS, int64_t, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamNbits, indexparam::NBITS, int64_t)
 
 // PQ param for IVFPQ
 DEFINE_CONFIG_GETTER(GetIndexParamM, indexparam::M, int64_t)
-DEFINE_CONFIG_SETTER(SetIndexParamM, indexparam::M, int64_t, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamM, indexparam::M, int64_t)
 
 // PQ param for RHNSWPQ
 DEFINE_CONFIG_GETTER(GetIndexParamPQM, indexparam::PQ_M, int64_t)
-DEFINE_CONFIG_SETTER(SetIndexParamPQM, indexparam::PQ_M, int64_t, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamPQM, indexparam::PQ_M, int64_t)
 
 // HNSW Params
 DEFINE_CONFIG_GETTER(GetIndexParamEfConstruction, indexparam::EFCONSTRUCTION, int64_t)
-DEFINE_CONFIG_SETTER(SetIndexParamEfConstruction, indexparam::EFCONSTRUCTION, int64_t, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamEfConstruction, indexparam::EFCONSTRUCTION, int64_t)
 
 DEFINE_CONFIG_GETTER(GetIndexParamHNSWM, indexparam::HNSW_M, int64_t)
-DEFINE_CONFIG_SETTER(SetIndexParamHNSWM, indexparam::HNSW_M, int64_t, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamHNSWM, indexparam::HNSW_M, int64_t)
 
 DEFINE_CONFIG_GETTER(GetIndexParamEf, indexparam::EF, int64_t)
-DEFINE_CONFIG_SETTER(SetIndexParamEf, indexparam::EF, int64_t, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamEf, indexparam::EF, int64_t)
 
 DEFINE_CONFIG_GETTER(GetIndexParamHNSWK, indexparam::HNSW_K, int64_t)
-DEFINE_CONFIG_SETTER(SetIndexParamHNSWK, indexparam::HNSW_K, int64_t, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamHNSWK, indexparam::HNSW_K, int64_t)
 
 // Annoy Params
 DEFINE_CONFIG_GETTER(GetIndexParamNtrees, indexparam::N_TREES, int64_t)
-DEFINE_CONFIG_SETTER(SetIndexParamNtrees, indexparam::N_TREES, int64_t, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamNtrees, indexparam::N_TREES, int64_t)
 
 DEFINE_CONFIG_GETTER(GetIndexParamSearchK, indexparam::SEARCH_K, int64_t)
-DEFINE_CONFIG_SETTER(SetIndexParamSearchK, indexparam::SEARCH_K, int64_t, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamSearchK, indexparam::SEARCH_K, int64_t)
 
 ///////////////////////////////////////////////////////////////////////////////
 // other
