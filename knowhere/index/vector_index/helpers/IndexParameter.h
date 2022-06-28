@@ -12,9 +12,11 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 
+#include "faiss/MetricType.h"
 #include "knowhere/common/Config.h"
-#include "knowhere/common/MetricType.h"
+#include "knowhere/common/Exception.h"
 
 namespace knowhere {
 
@@ -175,11 +177,28 @@ DEFINE_CONFIG_SETTER(SetIndexParamSearchK, indexparam::SEARCH_K, int64_t)
 
 ///////////////////////////////////////////////////////////////////////////////
 // other
-faiss::MetricType GetMetricType(const std::string& type);
+static const std::unordered_map<knowhere::MetricType, faiss::MetricType> metric_map = {
+    {metric::L2, faiss::MetricType::METRIC_L2},
+    {metric::IP, faiss::MetricType::METRIC_INNER_PRODUCT},
+    {metric::JACCARD, faiss::MetricType::METRIC_Jaccard},
+    {metric::TANIMOTO, faiss::MetricType::METRIC_Tanimoto},
+    {metric::HAMMING, faiss::MetricType::METRIC_Hamming},
+    {metric::SUBSTRUCTURE, faiss::MetricType::METRIC_Substructure},
+    {metric::SUPERSTRUCTURE, faiss::MetricType::METRIC_Superstructure},
+};
 
 inline faiss::MetricType
-GetMetricType(const Config& cfg) {
-    return GetMetricType(GetMetaMetricType(cfg));
+GetFaissMetricType(const MetricType& type) {
+    try {
+        return metric_map.at(type);
+    } catch (...) {
+        KNOWHERE_THROW_FORMAT("Metric type '%s' invalid", type.data());
+    }
+}
+
+inline faiss::MetricType
+GetFaissMetricType(const Config& cfg) {
+    return GetFaissMetricType(GetMetaMetricType(cfg));
 }
 
 }  // namespace knowhere
