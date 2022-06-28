@@ -49,16 +49,16 @@ class Dataset {
     }
     template <typename T>
     void
-    Set(const std::string_view& k, T&& v) {
+    Set(const std::string& k, T&& v) {
         std::lock_guard<std::mutex> lk(mutex_);
-        data_[std::string(k)] = std::make_shared<Value>(std::forward<T>(v));
+        data_[k] = std::make_shared<Value>(std::forward<T>(v));
     }
 
     template <typename T>
     T
-    Get(const std::string_view& k) {
+    Get(const std::string& k) {
         std::lock_guard<std::mutex> lk(mutex_);
-        return std::any_cast<T>(*(data_.at(std::string(k))));
+        return std::any_cast<T>(*(data_.at(k)));
     }
 
     const std::map<std::string, ValuePtr>&

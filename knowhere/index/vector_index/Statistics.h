@@ -67,10 +67,10 @@ class Statistics {
      * Get index type
      * @retval: index type in string
      */
-//    const std::string_view&
-//    IndexType() {
-//        return index_type;
-//    }
+    // const std::string&
+    // IndexType() {
+    //     return index_type;
+    // }
 
     /*
      * To string (may be for log output)

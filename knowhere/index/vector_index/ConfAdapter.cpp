@@ -48,12 +48,11 @@ static const std::vector<MetricType> default_binary_metric_array{metric::HAMMING
                                                                  metric::SUPERSTRUCTURE};
 
 inline void
-CheckIntegerRange(const Config& cfg, const std::string_view& key, int64_t min, int64_t max) {
-    std::string sk(key);
-    if (!cfg.contains(sk)) {
+CheckIntegerRange(const Config& cfg, const std::string& key, int64_t min, int64_t max) {
+    if (!cfg.contains(key)) {
         KNOWHERE_THROW_FORMAT("Param '%s' not exist", key.data());
     }
-    if (!cfg[sk].is_number_integer()) {
+    if (!cfg[key].is_number_integer()) {
         KNOWHERE_THROW_FORMAT("Param '%s' should be an integer", key.data());
     }
     int64_t value = GetValueFromConfig<int64_t>(cfg, key);
@@ -63,11 +62,11 @@ CheckIntegerRange(const Config& cfg, const std::string_view& key, int64_t min, i
 }
 
 inline void
-CheckFloatRange(const Config& cfg, const std::string_view& key, float min, float max) {
-    if (!cfg.contains(std::string(key))) {
+CheckFloatRange(const Config& cfg, const std::string& key, float min, float max) {
+    if (!cfg.contains(key)) {
         KNOWHERE_THROW_FORMAT("Param '%s' not exist", key.data());
     }
-    if (!cfg[std::string(key)].is_number_float()) {
+    if (!cfg[key].is_number_float()) {
         KNOWHERE_THROW_FORMAT("Param '%s' should be a float", key.data());
     }
     float value = GetValueFromConfig<float>(cfg, key);
