@@ -82,7 +82,7 @@ void
 IndexRHNSWSQ::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     try {
         GET_TENSOR_DATA_DIM(dataset_ptr)
-        faiss::MetricType metric_type = GetMetricType(config);
+        faiss::MetricType metric_type = GetFaissMetricType(config);
         int32_t efConstruction = GetIndexParamEfConstruction(config);
 
         auto idx =

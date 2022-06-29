@@ -35,7 +35,7 @@ void
 IVFPQ::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA_DIM(dataset_ptr)
 
-    faiss::MetricType metric_type = GetMetricType(config);
+    faiss::MetricType metric_type = GetFaissMetricType(config);
     faiss::Index* coarse_quantizer = new faiss::IndexFlat(dim, metric_type);
     auto index = std::make_shared<faiss::IndexIVFPQ>(coarse_quantizer, dim, GetIndexParamNlist(config),
                                                      GetIndexParamM(config), GetIndexParamNbits(config), metric_type);

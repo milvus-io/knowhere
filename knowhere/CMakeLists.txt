@@ -58,7 +58,6 @@ set(vector_index_srcs
         index/VecIndexFactory.cpp
         index/vector_index/adapter/VectorAdapter.cpp
         index/vector_index/helpers/FaissIO.cpp
-        index/vector_index/helpers/IndexParameter.cpp
         index/vector_index/helpers/Slice.cpp
         index/vector_index/ConfAdapter.cpp
         index/vector_index/ConfAdapterMgr.cpp
