@@ -19,13 +19,22 @@ IndexFlatCodes::IndexFlatCodes() : code_size(0) {}
 
 void IndexFlatCodes::add(idx_t n, const float* x) {
     FAISS_THROW_IF_NOT(is_trained);
+    FAISS_THROW_IF_NOT(codes_ex == nullptr);
     codes.resize((ntotal + n) * code_size);
     sa_encode(n, x, &codes[ntotal * code_size]);
     ntotal += n;
 }
 
+void IndexFlatCodes::add_ex(idx_t n, const float* x) {
+    FAISS_THROW_IF_NOT(is_trained);
+    FAISS_THROW_IF_NOT(codes.empty());
+    codes_ex = (uint8_t*)x;
+    ntotal = n;
+}
+
 void IndexFlatCodes::reset() {
     codes.clear();
+    codes_ex = nullptr;
     ntotal = 0;
 }
 

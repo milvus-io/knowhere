@@ -42,6 +42,10 @@ class BinaryIDMAP : public VecIndex, public FaissBaseBinaryIndex {
     void
     AddWithoutIds(const DatasetPtr&, const Config&) override;
 
+    // set external vector data pointer instead of adding real vector data in
+    void
+    AddExWithoutIds(const DatasetPtr&, const Config&);
+
     DatasetPtr
     GetVectorById(const DatasetPtr&, const Config&) override;
 

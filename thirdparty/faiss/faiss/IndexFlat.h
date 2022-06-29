@@ -66,10 +66,12 @@ struct IndexFlat : IndexFlatCodes {
 
     // get pointer to the floating point data
     float* get_xb() {
-        return (float*)codes.data();
+        return codes_ex != nullptr ? (float*)codes_ex
+                                   : (float*)codes.data();
     }
     const float* get_xb() const {
-        return (const float*)codes.data();
+        return codes_ex != nullptr ? (const float*)codes_ex
+                                   : (const float*)codes.data();
     }
 
     IndexFlat() {}

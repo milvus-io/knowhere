@@ -25,6 +25,11 @@ BinaryIDMAP::Serialize(const Config& config) {
         KNOWHERE_THROW_MSG("index not initialize");
     }
 
+    // serialize disabled when using xb_ex
+    if (dynamic_cast<faiss::IndexBinaryFlat*>(index_.get())->xb_ex != nullptr) {
+        KNOWHERE_THROW_MSG("serialize not supported for BinaryIDMAP with xb_ex");
+    }
+
     auto ret = SerializeImpl(index_type_);
     Disassemble(ret, config);
     return ret;
@@ -163,10 +168,17 @@ BinaryIDMAP::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) 
     if (!index_) {
         KNOWHERE_THROW_MSG("index not initialize");
     }
-
     GET_TENSOR_DATA(dataset_ptr)
-
     index_->add(rows, reinterpret_cast<const uint8_t*>(p_data));
+}
+
+void
+BinaryIDMAP::AddExWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) {
+    if (!index_) {
+        KNOWHERE_THROW_MSG("index not initialize");
+    }
+    GET_TENSOR_DATA(dataset_ptr)
+    index_->add_ex(rows, reinterpret_cast<const uint8_t*>(p_data));
 }
 
 void
@@ -182,7 +194,7 @@ const uint8_t*
 BinaryIDMAP::GetRawVectors() {
     try {
         auto flat_index = dynamic_cast<faiss::IndexBinaryFlat*>(index_.get());
-        return flat_index->xb.data();
+        return flat_index->get_xb();
     } catch (std::exception& e) {
         KNOWHERE_THROW_MSG(e.what());
     }

@@ -93,6 +93,11 @@ struct Index {
      */
     virtual void add(idx_t n, const float* x) = 0;
 
+    /** Set external vector data pointer, instead of adding real n vectors
+     *  into the index.
+     */
+    virtual void add_ex(idx_t n, const float* x);
+
     /** Same as add, but only add ids, not codes
      *
      * @param n      nb of training vectors
