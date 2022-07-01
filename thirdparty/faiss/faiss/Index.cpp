@@ -38,12 +38,6 @@ void Index::assign(idx_t n, const float* x, idx_t* labels, float* distances) con
     }
 }
 
-void Index::add_ex(
-        idx_t /*n*/,
-        const float* /*x*/) {
-    FAISS_THROW_MSG("add_ex not implemented for this type of index");
-}
-
 void Index::add_with_ids(
         idx_t /*n*/,
         const float* /*x*/,
@@ -54,14 +48,14 @@ void Index::add_with_ids(
 void Index::add_without_codes(
         idx_t /*n*/,
         const float* /*x*/) {
-    FAISS_THROW_MSG("add_without_codes not implemented for this type of index");
+  FAISS_THROW_MSG("add_without_codes not implemented for this type of index");
 }
 
 void Index::add_with_ids_without_codes(
         idx_t /*n*/,
         const float* /*x*/,
         const idx_t* /*xids*/) {
-    FAISS_THROW_MSG("add_with_ids_without_codes not implemented for this type of index");
+  FAISS_THROW_MSG("add_with_ids_without_codes not implemented for this type of index");
 }
 
 void Index::get_vector_by_id(

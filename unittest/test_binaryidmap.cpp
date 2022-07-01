@@ -101,27 +101,6 @@ TEST_P(BinaryIDMAPTest, binaryidmap_basic) {
     // AssertAneq(result4, nq, k);
 }
 
-TEST_P(BinaryIDMAPTest, binaryidmap_ex_basic) {
-    ASSERT_TRUE(!xb_bin.empty());
-
-    index_->Train(base_dataset, conf_);
-    index_->AddExWithoutIds(base_dataset, conf_);
-    EXPECT_EQ(index_->Count(), nb);
-    EXPECT_EQ(index_->Dim(), dim);
-    ASSERT_TRUE(index_->GetRawVectors() != nullptr);
-    ASSERT_GT(index_->Size(), 0);
-
-    auto result = index_->GetVectorById(id_dataset, conf_);
-    AssertBinVec(result, base_dataset, id_dataset, nq, dim);
-
-    auto result1 = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result1, nq, k);
-    // PrintResult(result, nq, k);
-
-    auto result_bs_1 = index_->Query(query_dataset, conf_, *bitset);
-    AssertAnns(result_bs_1, nq, k, CheckMode::CHECK_NOT_EQUAL);
-}
-
 TEST_P(BinaryIDMAPTest, binaryidmap_serialize) {
     auto serialize = [](const std::string& filename, knowhere::BinaryPtr& bin, uint8_t* ret) {
         {

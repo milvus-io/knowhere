@@ -27,20 +27,13 @@ IndexBinaryFlat::IndexBinaryFlat(idx_t d, MetricType metric)
         : IndexBinary(d, metric) {}
 
 void IndexBinaryFlat::add(idx_t n, const uint8_t* x) {
-    FAISS_THROW_IF_NOT(xb_ex == nullptr);
     xb.insert(xb.end(), x, x + n * code_size);
     ntotal += n;
 }
 
-void IndexBinaryFlat::add_ex(idx_t n, const uint8_t* x) {
-    FAISS_THROW_IF_NOT(xb.empty());
-    xb_ex = (uint8_t*)x;
-    ntotal = n;
-}
-
 void IndexBinaryFlat::get_vector_by_id(idx_t n, const idx_t* xids, uint8_t* x) {
     for (idx_t i = 0; i < n; i++) {
-        memcpy(x + i * code_size, get_xb() + xids[i] * code_size, code_size);
+        memcpy(x + i * code_size, xb.data() + xids[i] * code_size, code_size);
     }
 }
 
@@ -63,7 +56,7 @@ void IndexBinaryFlat::search(
         float_maxheap_array_t res = {
                 size_t(n), size_t(k), labels, D
         };
-        binary_distance_knn_hc(METRIC_Jaccard, &res, x, get_xb(), ntotal, code_size, bitset);
+        binary_distance_knn_hc(METRIC_Jaccard, &res, x, xb.data(), ntotal, code_size, bitset);
 
         if (metric_type == METRIC_Tanimoto) {
             for (int i = 0; i < k * n; i++) {
@@ -74,12 +67,12 @@ void IndexBinaryFlat::search(
         int_maxheap_array_t res = {
                 size_t(n), size_t(k), labels, distances
         };
-        binary_distance_knn_hc(METRIC_Hamming, &res, x, get_xb(), ntotal, code_size, bitset);
+        binary_distance_knn_hc(METRIC_Hamming, &res, x, xb.data(), ntotal, code_size, bitset);
     } else if (metric_type == METRIC_Substructure || metric_type == METRIC_Superstructure) {
         float *D = reinterpret_cast<float*>(distances);
 
         // only matched ids will be chosen, not to use heap
-        binary_distance_knn_mc(metric_type, x, get_xb(), n, ntotal, k,
+        binary_distance_knn_mc(metric_type, x, xb.data(), n, ntotal, k,
                                code_size, D, labels, bitset);
     } else {
         FAISS_ASSERT_FMT(false, "invalid metric type %d", (int)metric_type);
@@ -109,7 +102,7 @@ size_t IndexBinaryFlat::remove_ids(const IDSelector& sel) {
 }
 
 void IndexBinaryFlat::reconstruct(idx_t key, uint8_t* recons) const {
-    memcpy(recons, get_xb() + code_size * key, sizeof(*recons) * code_size);
+    memcpy(recons, &(xb[code_size * key]), sizeof(*recons) * code_size);
 }
 
 void IndexBinaryFlat::range_search(
@@ -123,7 +116,7 @@ void IndexBinaryFlat::range_search(
             binary_range_search<CMin<float, int64_t>, float>(
                     METRIC_Jaccard,
                     x,
-                    get_xb(),
+                    xb.data(),
                     n,
                     ntotal,
                     radius,
@@ -136,7 +129,7 @@ void IndexBinaryFlat::range_search(
             binary_range_search<CMin<float, int64_t>, float>(
                     METRIC_Tanimoto,
                     x,
-                    get_xb(),
+                    xb.data(),
                     n,
                     ntotal,
                     radius,
@@ -149,7 +142,7 @@ void IndexBinaryFlat::range_search(
             binary_range_search<CMin<int, int64_t>, int>(
                     METRIC_Hamming,
                     x,
-                    get_xb(),
+                    xb.data(),
                     n,
                     ntotal,
                     static_cast<int>(radius),
