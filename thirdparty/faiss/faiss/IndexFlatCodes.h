@@ -22,18 +22,12 @@ struct IndexFlatCodes : Index {
     /// encoded dataset, size ntotal * code_size
     std::vector<uint8_t> codes;
 
-    // external encoded dataset , size ntotal * code_size
-    uint8_t* codes_ex = nullptr;
-
     IndexFlatCodes();
 
     IndexFlatCodes(size_t code_size, idx_t d, MetricType metric = METRIC_L2);
 
     /// default add uses sa_encode
     void add(idx_t n, const float* x) override;
-
-    // add external vector data
-    void add_ex(idx_t n, const float* x) override;
 
     void reset() override;
 
