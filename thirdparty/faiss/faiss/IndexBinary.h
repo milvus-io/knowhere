@@ -74,11 +74,6 @@ struct IndexBinary {
      */
     virtual void add(idx_t n, const uint8_t* x) = 0;
 
-    /** Set external vector data pointer, instead of adding real n vectors
-     *  into the index.
-     */
-    virtual void add_ex(idx_t n, const uint8_t* x);
-
     /** Same as add, but stores xids instead of sequential ids.
      *
      * The default implementation fails with an assertion, as it is
