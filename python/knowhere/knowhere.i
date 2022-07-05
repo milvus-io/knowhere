@@ -25,7 +25,6 @@ typedef uint64_t size_t;
 #endif
 #include <common/Dataset.h>
 #include <common/BinarySet.h>
-#include <common/Utils.h>
 #include <common/Config.h>
 #include <common/Typedef.h>
 #include <index/vector_index/IndexAnnoy.h>
@@ -33,9 +32,12 @@ typedef uint64_t size_t;
 #include <index/vector_index/IndexIVF.h>
 #include <index/vector_index/IndexIVFSQ.h>
 #include <index/vector_index/IndexIDMAP.h>
+#include <index/vector_index/IndexBinaryIDMAP.h>
+#ifdef KNOWHERE_GPU_VERSION
 #include <index/vector_index/gpu/IndexGPUIVF.h>
 #include <index/vector_index/gpu/IndexGPUIVFPQ.h>
 #include <index/vector_index/gpu/IndexGPUIVFSQ.h>
+#endif
 #include <index/vector_offset_index/IndexIVF_NM.h>
 
 using namespace knowhere;
@@ -56,7 +58,6 @@ import_array();
 %include <common/Dataset.h>
 %include <utils/BitsetView.h>
 %include <common/BinarySet.h>
-%include <common/Utils.h>
 %include <common/Config.h>
 %include <common/Typedef.h>
 %include <index/vector_index/IndexAnnoy.h>
@@ -64,9 +65,12 @@ import_array();
 %include <index/vector_index/IndexIVF.h>
 %include <index/vector_index/IndexIVFSQ.h>
 %include <index/vector_index/IndexIDMAP.h>
+%include <index/vector_index/IndexBinaryIDMAP.h>
+#ifdef KNOWHERE_GPU_VERSION
 %include <index/vector_index/gpu/IndexGPUIVF.h>
 %include <index/vector_index/gpu/IndexGPUIVFPQ.h>
 %include <index/vector_index/gpu/IndexGPUIVFSQ.h>
+#endif
 %include <index/vector_offset_index/IndexIVF_NM.h>
 
 %shared_ptr(knowhere::Dataset)
@@ -85,6 +89,9 @@ DOWNCAST ( IndexAnnoy )
 
 %apply (float* IN_ARRAY2, int DIM1, int DIM2) {(float* xb, int nb, int dim)}
 %apply (uint8_t *IN_ARRAY1, int DIM1) {(uint8_t *block, int size)}
+%apply (int *IN_ARRAY1, int DIM1) {(int *lims, int len)}
+%apply (int *IN_ARRAY1, int DIM1) {(int *ids, int len)}
+%apply (float *IN_ARRAY1, int DIM1) {(float *dis, int len)}
 %apply (float* INPLACE_ARRAY2, int DIM1, int DIM2){(float *dis,int nq_1,int k_1)}
 %apply (int *INPLACE_ARRAY2, int DIM1, int DIM2){(int *ids,int nq_2,int k_2)}
 %inline %{
@@ -112,6 +119,30 @@ void DumpResultDataSet(knowhere::DatasetPtr result, float *dis, int nq_1, int k_
     }
 }
 
+void DumpRangeResultIds(knowhere::DatasetPtr result, int *ids, int len){
+    auto ids_ = result->Get<const int64_t *>("ids");
+    for(int i=0; i<len; ++i)
+    {
+        *(ids+i)=*((int64_t*)(ids_)+i);
+    }
+}
+
+void DumpRangeResultLimits(knowhere::DatasetPtr result, int *lims, int len){
+    auto lims_ = result->Get<const size_t *>("lims");
+    for(int i=0; i<len; ++i)
+    {
+      *(lims+i) = *((int64_t*)(lims_)+i);
+    }
+}
+
+void DumpRangeResultDis(knowhere::DatasetPtr result, float *dis, int len){
+    auto dist_ = result->Get<const float *>("distance");
+    for(int i=0; i<len; ++i)
+    {
+     *(dis+i) = *((float *)(dist_)+i);
+    }
+}
+
 knowhere::Config CreateConfig(std::string str){
     return knowhere::Config::parse(str);
 }
@@ -124,6 +155,7 @@ faiss::BitsetView ArrayToBitsetView(uint8_t *block, int size){
     return faiss::BitsetView(block, size);
 }
 
+#ifdef KNOWHERE_GPU_VERSION
 void InitGpuResource(int dev_id, int pin_mem, int temp_mem, int res_num){
     knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(dev_id, pin_mem,temp_mem, res_num);
 }
@@ -131,6 +163,7 @@ void InitGpuResource(int dev_id, int pin_mem, int temp_mem, int res_num){
 void ReleaseGpuResource(){
     knowhere::FaissGpuResourceMgr::GetInstance().Free();
 }
+#endif
 
 %}
 

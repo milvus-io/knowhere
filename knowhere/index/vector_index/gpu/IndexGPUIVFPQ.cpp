@@ -36,7 +36,7 @@ GPUIVFPQ::Train(const DatasetPtr& dataset_ptr, const Config& config) {
         int32_t nlist = GetIndexParamNlist(config);
         int32_t m = GetIndexParamM(config);
         int32_t nbits = GetIndexParamNbits(config);
-        faiss::MetricType metric_type = GetMetricType(config);
+        faiss::MetricType metric_type = GetFaissMetricType(config);
         index_ = std::make_shared<faiss::gpu::GpuIndexIVFPQ>(gpu_res->faiss_res.get(), dim, nlist, m, nbits,
                                                              metric_type, idx_config);
         index_->train(rows, reinterpret_cast<const float*>(p_data));

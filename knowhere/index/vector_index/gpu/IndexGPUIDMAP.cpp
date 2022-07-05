@@ -104,7 +104,7 @@ GPUIDMAP::QueryImpl(int64_t n,
     ResScope rs(res_, gpu_id_);
 
     // assign the metric type
-    index_->metric_type = GetMetricType(config);
+    index_->metric_type = GetFaissMetricType(config);
     index_->search(n, data, k, distances, labels, bitset);
 }
 

@@ -38,7 +38,7 @@ GPUIVF::Train(const DatasetPtr& dataset_ptr, const Config& config) {
         faiss::gpu::GpuIndexIVFFlatConfig idx_config;
         idx_config.device = static_cast<int32_t>(gpu_id_);
         int32_t nlist = GetIndexParamNlist(config);
-        faiss::MetricType metric_type = GetMetricType(config);
+        faiss::MetricType metric_type = GetFaissMetricType(config);
         index_ = std::make_shared<faiss::gpu::GpuIndexIVFFlat>(gpu_res->faiss_res.get(), dim, nlist, metric_type,
                                                                idx_config);
         index_->train(rows, reinterpret_cast<const float*>(p_data));
