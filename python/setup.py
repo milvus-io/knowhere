@@ -24,12 +24,14 @@ class CustomBuildPy(build_py):
 
 
 def CheckCUDA():
-    os_loc = os.path.join(KNOWHERE_ROOT, "cmake_build/knowhere/libknowhere.so")
-    x = os.popen("ldd " + os_loc).read()
+    lib_path = os.path.join(KNOWHERE_ROOT, "cmake_build/knowhere/libknowhere.so")
+    x = os.popen("ldd " + lib_path).read()
     if x.find("libcudart.so") != -1:
         return True
     return False
 
+
+is_cuda_ver = CheckCUDA()
 
 DEFINE_MACROS = [
     ("FINTEGER", "int"),
@@ -37,7 +39,7 @@ DEFINE_MACROS = [
     ("SWIG_PYTHON_SILENT_MEMLEAK", "1"),
 ]
 
-if CheckCUDA():
+if is_cuda_ver:
     DEFINE_MACROS.append(("KNOWHERE_GPU_VERSION", "1"))
 
 INCLUDE_DIRS = [
@@ -51,7 +53,7 @@ INCLUDE_DIRS = [
     os.path.join(KNOWHERE_ROOT, "thirdparty/easyloggingpp/src"),
 ]
 
-if CheckCUDA():
+if is_cuda_ver:
     INCLUDE_DIRS.append(os.path.abspath("/usr/local/cuda/include"))
 
 
@@ -61,10 +63,14 @@ EXTRA_LINK_ARGS = [
     "-lknowhere",
     "-Wl,-rpath,$ORIGIN/../../../",
 ]
+
 SWIG_OPTS = [
     "-c++",
     "-I" + os.path.join(KNOWHERE_ROOT, "knowhere"),
 ]
+
+if is_cuda_ver:
+    SWIG_OPTS.append("-DKNOWHERE_GPU_VERSION=1")
 
 _swigknowhere = Extension(
     "knowhere._swigknowhere",

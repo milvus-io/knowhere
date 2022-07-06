@@ -1,3 +1,4 @@
+
 %module swigknowhere;
 
 #pragma SWIG nowarn=321
@@ -14,8 +15,9 @@ typedef uint64_t size_t;
 
 
 %{
-#include <stdint.h>
 #include <omp.h>
+#include <stdint.h>
+
 #include <memory>
 #ifdef SWIGPYTHON
 #undef popcount64
@@ -23,23 +25,23 @@ typedef uint64_t size_t;
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 #endif
-#include <common/Dataset.h>
 #include <common/BinarySet.h>
 #include <common/Config.h>
+#include <common/Dataset.h>
 #include <common/Typedef.h>
 #include <index/vector_index/IndexAnnoy.h>
+#include <index/vector_index/IndexBinaryIDMAP.h>
 #include <index/vector_index/IndexHNSW.h>
+#include <index/vector_index/IndexIDMAP.h>
 #include <index/vector_index/IndexIVF.h>
 #include <index/vector_index/IndexIVFSQ.h>
-#include <index/vector_index/IndexIDMAP.h>
-#include <index/vector_index/IndexBinaryIDMAP.h>
 #ifdef KNOWHERE_GPU_VERSION
 #include <index/vector_index/gpu/IndexGPUIVF.h>
 #include <index/vector_index/gpu/IndexGPUIVFPQ.h>
 #include <index/vector_index/gpu/IndexGPUIVFSQ.h>
 #endif
 #include <index/vector_offset_index/IndexIVF_NM.h>
-
+#include <archive/KnowhereConfig.h>
 using namespace knowhere;
 %}
 
@@ -94,73 +96,97 @@ DOWNCAST ( IndexAnnoy )
 %apply (float *IN_ARRAY1, int DIM1) {(float *dis, int len)}
 %apply (float* INPLACE_ARRAY2, int DIM1, int DIM2){(float *dis,int nq_1,int k_1)}
 %apply (int *INPLACE_ARRAY2, int DIM1, int DIM2){(int *ids,int nq_2,int k_2)}
+
+
 %inline %{
 
 
-knowhere::DatasetPtr ArrayToDataSet( float* xb,int nb, int dim){
+knowhere::DatasetPtr
+ArrayToDataSet(float* xb, int nb, int dim) {
     auto ret_ds = std::make_shared<Dataset>();
     ret_ds->Set<int64_t>("rows", nb);
     ret_ds->Set<int64_t>("dim", dim);
-    ret_ds->Set<const void *>("tensor", xb);
+    ret_ds->Set<const void*>("tensor", xb);
     return ret_ds;
 };
 
-void DumpResultDataSet(knowhere::DatasetPtr result, float *dis, int nq_1, int k_1, 
-                       int *ids,int nq_2, int k_2){
-    auto ids_ = result->Get<const int64_t *>("ids");
-    auto dist_ = result->Get<const float *>("distance");
-    assert(nq_1==nq_2);
-    assert(k_1==k_2);
+void
+DumpResultDataSet(const knowhere::DatasetPtr& result, float* dis, int nq_1, int k_1, int* ids, int nq_2, int k_2) {
+    auto ids_ = result->Get<const int64_t*>("ids");
+    auto dist_ = result->Get<const float*>("distance");
+    assert(nq_1 == nq_2);
+    assert(k_1 == k_2);
     for (int i = 0; i < nq_1; i++) {
         for (int j = 0; j < k_1; ++j) {
-            *(ids+i*k_1+j) = *((int64_t*)(ids_) + i * k_1 + j);
-            *(dis+i*k_1+j) = *((float*)(dist_) + i * k_1 + j);
+            *(ids + i * k_1 + j) = *((int64_t*)(ids_) + i * k_1 + j);
+            *(dis + i * k_1 + j) = *((float*)(dist_) + i * k_1 + j);
         }
     }
 }
 
-void DumpRangeResultIds(knowhere::DatasetPtr result, int *ids, int len){
-    auto ids_ = result->Get<const int64_t *>("ids");
-    for(int i=0; i<len; ++i)
-    {
-        *(ids+i)=*((int64_t*)(ids_)+i);
+void
+DumpRangeResultIds(const knowhere::DatasetPtr& result, int* ids, int len) {
+    auto ids_ = result->Get<const int64_t*>("ids");
+    for (int i = 0; i < len; ++i) {
+        *(ids + i) = *((int64_t*)(ids_) + i);
     }
 }
 
-void DumpRangeResultLimits(knowhere::DatasetPtr result, int *lims, int len){
-    auto lims_ = result->Get<const size_t *>("lims");
-    for(int i=0; i<len; ++i)
-    {
-      *(lims+i) = *((int64_t*)(lims_)+i);
+void
+DumpRangeResultLimits(const knowhere::DatasetPtr& result, int* lims, int len) {
+    auto lims_ = result->Get<const size_t*>("lims");
+    for (int i = 0; i < len; ++i) {
+        *(lims + i) = *((int64_t*)(lims_) + i);
     }
 }
 
-void DumpRangeResultDis(knowhere::DatasetPtr result, float *dis, int len){
-    auto dist_ = result->Get<const float *>("distance");
-    for(int i=0; i<len; ++i)
-    {
-     *(dis+i) = *((float *)(dist_)+i);
+void
+DumpRangeResultDis(const knowhere::DatasetPtr& result, float* dis, int len) {
+    auto dist_ = result->Get<const float*>("distance");
+    for (int i = 0; i < len; ++i) {
+        *(dis + i) = *((float*)(dist_) + i);
     }
 }
 
-knowhere::Config CreateConfig(std::string str){
+knowhere::Config
+CreateConfig(const std::string& str) {
     return knowhere::Config::parse(str);
 }
 
-faiss::BitsetView EmptyBitSetView(){
+void
+SetSimdType(const std::string& str) {
+    if (str == "auto") {
+        knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AUTO);
+    }
+    if (str == "avx512") {
+        knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX512);
+    }
+    if (str == "avx2") {
+        knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX2);
+    }
+    if (str == "sse4_2" || str == "avx") {
+        knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::SSE4_2);
+    }
+}
+
+faiss::BitsetView
+EmptyBitSetView() {
     return faiss::BitsetView(nullptr);
 };
 
-faiss::BitsetView ArrayToBitsetView(uint8_t *block, int size){
+faiss::BitsetView
+ArrayToBitsetView(uint8_t* block, int size) {
     return faiss::BitsetView(block, size);
 }
 
 #ifdef KNOWHERE_GPU_VERSION
-void InitGpuResource(int dev_id, int pin_mem, int temp_mem, int res_num){
-    knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(dev_id, pin_mem,temp_mem, res_num);
+void
+InitGpuResource(int dev_id, int pin_mem, int temp_mem, int res_num) {
+    knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(dev_id, pin_mem, temp_mem, res_num);
 }
 
-void ReleaseGpuResource(){
+void
+ReleaseGpuResource() {
     knowhere::FaissGpuResourceMgr::GetInstance().Free();
 }
 #endif
