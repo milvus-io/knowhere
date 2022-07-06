@@ -1,0 +1,48 @@
+int total_timeout_minutes = 60
+def knowhere_wheel='knowhere-1.0.0-cp38-cp38-linux_x86_64.whl'
+pipeline {
+    agent {
+        kubernetes {
+            label 'knowhere-test' 
+            inheritFrom 'default'
+            yamlFile 'ci/pod/test.yaml'
+            defaultContainer 'main'
+        }
+    }
+    options {
+        timeout(time: total_timeout_minutes, unit: 'MINUTES')
+        buildDiscarder logRotator(artifactDaysToKeepStr: '30')
+        parallelsAlwaysFailFast()
+        disableConcurrentBuilds()
+
+    }
+    stages {
+        stage("Build"){
+
+            steps {
+                script{
+                    sh "./build.sh -t Debug"
+                    sh 'cd python  && python3 setup.py bdist_wheel'
+                    dir('python'){
+                      archiveArtifacts artifacts: "dist/${knowhere_wheel}", followSymlinks: false
+                    }
+                }
+            }    
+        }
+        stage("Test"){
+            steps {
+                script{
+                    checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], 
+                    userRemoteConfigs: [[credentialsId: 'milvus-ci', url: 'https://github.com/milvus-io/knowhere-test.git']]])   
+                    dir('tests'){
+                      unarchive mapping: ["dist/${knowhere_wheel}": "${knowhere_wheel}"]
+                      sh "ls -lah"
+                      sh "pip3 install ${knowhere_wheel} \
+                          && pip3 install -r requirements.txt &&  pytest -v -m recall"
+                    }
+                }
+            }    
+        }
+        
+    }
+}
