@@ -1,4 +1,5 @@
 from .swigknowhere import *
+import numpy as np
 
 
 def CreateIndex(index_name):
@@ -10,6 +11,10 @@ def CreateIndex(index_name):
         return IVFSQ()
     if index_name == "hnsw":
         return IndexHNSW()
+    if index_name == "idmap":
+        return IDMAP()
+    if index_name == "binary_idmap":
+        return BinaryIDMAP()
     if index_name == "gpu_ivf":
         return GPUIVF(-1)
     if index_name == "gpu_ivfpq":
@@ -18,7 +23,7 @@ def CreateIndex(index_name):
         return GPUIVFSQ(-1)
     raise ValueError(
         """ index name only support 
-            'annoy' 'ivf' 'ivfsq' 'hnsw'
+            'annoy' 'ivf' 'ivfsq' 'hnsw' 'idmap' 'binary_idmap'
             'gpu_ivf', 'gpu_ivfsq', 'gpu_ivfpq'."""
     )
 
@@ -31,3 +36,36 @@ class GpuContext:
 
     def __del__(self):
         ReleaseGpuResource()
+
+
+def UnpackRangeResults(results, nq):
+    lims = np.zeros(
+        [
+            nq + 1,
+        ],
+        dtype=np.int32,
+    )
+    DumpRangeResultLimits(results, lims)
+    dis = np.zeros(
+        [
+            lims[-1],
+        ],
+        dtype=np.float32,
+    )
+    DumpRangeResultDis(results, dis)
+    ids = np.zeros(
+        [
+            lims[-1],
+        ],
+        dtype=np.int32,
+    )
+    DumpRangeResultIds(results, ids)
+
+    dis_list = []
+    ids_list = []
+
+    for idx in range(nq):
+        dis_list.append(dis[lims[idx] : lims[idx + 1]])
+        ids_list.append(ids[lims[idx] : lims[idx + 1]])
+
+    return ids_list, dis_list

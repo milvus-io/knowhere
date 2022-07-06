@@ -23,11 +23,22 @@ class CustomBuildPy(build_py):
         return build_py.run(self)
 
 
+def CheckCUDA():
+    os_loc = os.path.join(KNOWHERE_ROOT, "cmake_build/knowhere/libknowhere.so")
+    x = os.popen("ldd " + os_loc).read()
+    if x.find("libcudart.so") != -1:
+        return True
+    return False
+
+
 DEFINE_MACROS = [
     ("FINTEGER", "int"),
     ("SWIGWORDSIZE64", "1"),
     ("SWIG_PYTHON_SILENT_MEMLEAK", "1"),
 ]
+
+if CheckCUDA():
+    DEFINE_MACROS.append(("KNOWHERE_GPU_VERSION", "1"))
 
 INCLUDE_DIRS = [
     get_numpy_include(),
@@ -38,8 +49,11 @@ INCLUDE_DIRS = [
     os.path.join(KNOWHERE_ROOT, "thirdparty/any-lite/include"),
     os.path.join(KNOWHERE_ROOT, "thirdparty/nlohmann_json/include"),
     os.path.join(KNOWHERE_ROOT, "thirdparty/easyloggingpp/src"),
-    os.path.abspath("/usr/local/cuda/include"),
 ]
+
+if CheckCUDA():
+    INCLUDE_DIRS.append(os.path.abspath("/usr/local/cuda/include"))
+
 
 LIBRARY_DIRS = [os.path.join(KNOWHERE_ROOT, "cmake_build", "knowhere")]
 EXTRA_COMPILE_ARGS = ["-fPIC", "-std=c++17"]

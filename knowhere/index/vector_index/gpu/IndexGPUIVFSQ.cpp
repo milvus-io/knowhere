@@ -36,7 +36,7 @@ GPUIVFSQ::Train(const DatasetPtr& dataset_ptr, const Config& config) {
         faiss::gpu::GpuIndexIVFScalarQuantizerConfig idx_config;
         idx_config.device = static_cast<int32_t>(gpu_id_);
         int32_t nlist = GetIndexParamNlist(config);
-        faiss::MetricType metric_type = GetMetricType(config);
+        faiss::MetricType metric_type = GetFaissMetricType(config);
         index_ = std::make_shared<faiss::gpu::GpuIndexIVFScalarQuantizer>(
             gpu_res->faiss_res.get(), dim, nlist, faiss::QuantizerType::QT_8bit, metric_type, true, idx_config);
         index_->train(rows, (float*)p_data);
