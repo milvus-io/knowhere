@@ -57,7 +57,7 @@ sudo apt install swig python3-dev
 after build knowhere:
 
 ```bash
-cd knowhere/python
+cd python
 python3 setup.py bdist_wheel
 ```
 
@@ -70,7 +70,7 @@ pip3 install dist/knowhere-1.0.0-cp38-cp38-linux_x86_64.whl
 clean
 
 ```bash
-cd knowhere/python
+cd python
 rm -rf build
 rm -rf dist
 rm -rf knowhere.egg-info
