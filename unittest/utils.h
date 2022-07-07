@@ -106,6 +106,9 @@ AssertBinVec(const knowhere::DatasetPtr& result,
              const int dim);
 
 void
+normalize(float* vec, int64_t n, int64_t dim);
+
+void
 PrintResult(const knowhere::DatasetPtr& result, const int& nq, const int& k);
 
 struct FileIOWriter {

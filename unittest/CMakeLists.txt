@@ -53,6 +53,7 @@ set(ALL_INDEXING_SRCS
         test_annoy.cpp
         test_binaryidmap.cpp
         test_binaryivf.cpp
+        test_bruteforce.cpp
         test_customized_index.cpp
         test_hnsw.cpp
         test_idmap.cpp

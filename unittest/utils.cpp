@@ -179,6 +179,21 @@ AssertBinVec(const knowhere::DatasetPtr& result,
 }
 
 void
+normalize(float* vec, int64_t n, int64_t dim) {
+    for (int64_t i = 0; i < n; i++) {
+        double vecLen = 0.0, inv_vecLen = 0.0;
+        for (int64_t j = 0; j < dim; j++) {
+            double val = vec[i * dim + j];
+            vecLen += val * val;
+        }
+        inv_vecLen = 1.0 / std::sqrt(vecLen);
+        for (int64_t j = 0; j < dim; j++) {
+            vec[i * dim + j] = (float)(vec[i * dim + j] * inv_vecLen);
+        }
+    }
+}
+
+void
 PrintResult(const knowhere::DatasetPtr& result, const int& nq, const int& k) {
     auto ids = knowhere::GetDatasetIDs(result);
     auto dist = knowhere::GetDatasetDistance(result);
