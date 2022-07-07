@@ -30,4 +30,4 @@ spec:
           name: cifs-test-secret
         options:
           mountOptions: vers=1.0
-          networkPath: //172.16.70.249/test/milvus
+          networkPath: //172.16.70.249/test
