@@ -2,7 +2,13 @@ from .swigknowhere import *
 import numpy as np
 
 
-def CreateIndex(index_name):
+def CreateIndex(index_name, simd_type="auto"):
+
+    if simd_type not in ["auto", "avx512", "avx2", "avx", "sse4_2"]:
+        raise ValueError("simd type only support auto avx512 avx2 avx sse4_2")
+
+    SetSimdType(simd_type)
+
     if index_name == "annoy":
         return IndexAnnoy()
     if index_name == "ivf":
