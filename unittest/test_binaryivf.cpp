@@ -148,8 +148,8 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_hamming) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, xb_bin.data(), nb, xq_bin.data(),
-                                      nq, dim, radius, hamming_dis, bitset);
+        RunBinaryRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, knowhere::metric::HAMMING,
+                                            xb_bin.data(), nb, xq_bin.data(), nq, dim, radius, bitset);
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false);
@@ -175,8 +175,8 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_jaccard) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, xb_bin.data(), nb, xq_bin.data(),
-                                      nq, dim, radius, jaccard_dis, bitset);
+        RunBinaryRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, knowhere::metric::JACCARD,
+                                            xb_bin.data(), nb, xq_bin.data(), nq, dim, radius, bitset);
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false);
@@ -201,8 +201,8 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_tanimoto) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, xb_bin.data(), nb, xq_bin.data(),
-                                      nq, dim, radius, tanimoto_dis, bitset);
+        RunBinaryRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, knowhere::metric::TANIMOTO,
+                                            xb_bin.data(), nb, xq_bin.data(), nq, dim, radius, bitset);
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false);

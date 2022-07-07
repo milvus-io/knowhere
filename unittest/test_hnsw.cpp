@@ -17,7 +17,6 @@
 #include "knowhere/index/vector_index/IndexHNSW.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
-#include "knowhere/utils/distances_simd.h"
 #include "unittest/Helper.h"
 #include "unittest/range_utils.h"
 #include "unittest/utils.h"
@@ -140,8 +139,8 @@ TEST_P(HNSWTest, hnsw_range_search_l2) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, xb.data(), nb, xq.data(), nq, dim,
-                                      radius * radius, faiss::fvec_L2sqr_ref, bitset);
+        RunFloatRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, knowhere::metric::L2,
+                                           xb.data(), nb, xq.data(), nq, dim, radius, bitset);
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMin<float>>(result, nq, radius * radius, golden_labels.data(), golden_lims.data(), false);
@@ -166,8 +165,8 @@ TEST_P(HNSWTest, hnsw_range_search_ip) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        RunRangeSearchBF<CMax<float>>(golden_labels, golden_distances, golden_lims, xb.data(), nb, xq.data(), nq, dim,
-                                      radius, faiss::fvec_inner_product_ref, bitset);
+        RunFloatRangeSearchBF<CMax<float>>(golden_labels, golden_distances, golden_lims, knowhere::metric::IP,
+                                           xb.data(), nb, xq.data(), nq, dim, radius, bitset);
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMax<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false);

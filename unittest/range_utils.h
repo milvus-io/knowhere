@@ -18,39 +18,55 @@
 #include <faiss/utils/BinaryDistance.h>
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #include "knowhere/utils/BitsetView.h"
+#include "knowhere/utils/distances_simd.h"
 
-typedef float (*fvec_func_ptr)(const float*, const float*, size_t);
-typedef float (*binary_float_func_ptr)(const uint8_t*, const uint8_t*, const size_t);
-
-inline float hamming_dis(const uint8_t* pa, const uint8_t* pb, const size_t code_size) {
-    return faiss::xor_popcnt(pa, pb, code_size);
+inline float float_vec_dist(
+    const knowhere::MetricType metric_type,
+    const float* pa,
+    const float* pb,
+    const size_t dim) {
+    assert(metric_type == knowhere::metric::L2 || metric_type == knowhere::metric::IP);
+    if (metric_type == knowhere::metric::L2) {
+        return std::sqrt(faiss::fvec_L2sqr_ref(pa, pb, dim));
+    } else {
+        return faiss::fvec_inner_product_ref(pa, pb, dim);
+    }
 }
 
-inline float jaccard_dis(const uint8_t* pa, const uint8_t* pb, const size_t code_size) {
-    auto and_value = faiss::and_popcnt(pa, pb, code_size);
-    auto or_value = faiss::or_popcnt(pa, pb, code_size);
-    return 1.0 - (float)and_value / or_value;
-}
-
-inline float tanimoto_dis(const uint8_t* pa, const uint8_t* pb, const size_t code_size) {
-    auto and_value = faiss::and_popcnt(pa, pb, code_size);
-    auto or_value = faiss::or_popcnt(pa, pb, code_size);
-    auto v = 1.0 - (float)and_value / or_value;
-    return (-log2(1 - v));
+inline float binary_vec_dist(
+    const knowhere::MetricType metric_type,
+    const uint8_t* pa,
+    const uint8_t* pb,
+    const size_t code_size) {
+    assert(metric_type == knowhere::metric::HAMMING ||
+           metric_type == knowhere::metric::JACCARD ||
+           metric_type == knowhere::metric::TANIMOTO);
+    if (metric_type == knowhere::metric::HAMMING) {
+        return faiss::xor_popcnt(pa, pb, code_size);
+    } else if (metric_type == knowhere::metric::JACCARD) {
+        auto and_value = faiss::and_popcnt(pa, pb, code_size);
+        auto or_value = faiss::or_popcnt(pa, pb, code_size);
+        return 1.0 - (float)and_value / or_value;
+    } else {
+        auto and_value = faiss::and_popcnt(pa, pb, code_size);
+        auto or_value = faiss::or_popcnt(pa, pb, code_size);
+        auto v = 1.0 - (float)and_value / or_value;
+        return (-log2(1 - v));
+    }
 }
 
 template <class C>
-void RunRangeSearchBF(
+void RunFloatRangeSearchBF(
     std::vector<int64_t>& golden_ids,
     std::vector<float>& golden_distances,
     std::vector<size_t>& golden_lims,
+    const knowhere::MetricType metric_type,
     const float* xb,
     const int64_t nb,
     const float* xq,
     const int64_t nq,
     const int64_t dim,
     const float radius,
-    const fvec_func_ptr func,
     const faiss::BitsetView bitset) {
 
     std::vector<std::vector<int64_t>> ids_v(nq);
@@ -62,7 +78,7 @@ void RunRangeSearchBF(
         for (auto j = 0; j < nb; ++j) {
             if (bitset.empty() || !bitset.test(j)) {
                 const float* pb = xb + j * dim;
-                auto dist = func(pq, pb, dim);
+                auto dist = float_vec_dist(metric_type, pq, pb, dim);
                 if (C::cmp(dist, radius)) {
                     ids_v[i].push_back(j);
                     distances_v[i].push_back(dist);
@@ -80,17 +96,17 @@ void RunRangeSearchBF(
 }
 
 template <class C>
-void RunRangeSearchBF(
+void RunBinaryRangeSearchBF(
     std::vector<int64_t>& golden_ids,
     std::vector<float>& golden_distances,
     std::vector<size_t>& golden_lims,
+    const knowhere::MetricType metric_type,
     const uint8_t* xb,
     const int64_t nb,
     const uint8_t* xq,
     const int64_t nq,
     const int64_t dim,
     const float radius,
-    const binary_float_func_ptr func,
     const faiss::BitsetView bitset) {
 
     std::vector<std::vector<int64_t>> ids_v(nq);
@@ -102,7 +118,7 @@ void RunRangeSearchBF(
         for (auto j = 0; j < nb; ++j) {
             if (bitset.empty() || !bitset.test(j)) {
                 const uint8_t* pb = xb + j * dim / 8;
-                auto dist = func(pq, pb, dim/8);
+                auto dist = binary_vec_dist(metric_type, pq, pb, dim/8);
                 if (C::cmp(dist, radius)) {
                     ids_v[i].push_back(j);
                     distances_v[i].push_back(dist);
