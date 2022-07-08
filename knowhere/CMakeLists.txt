@@ -26,6 +26,7 @@ set(external_srcs
 
 set(config_srcs
         archive/KnowhereConfig.cpp
+        archive/BruteForce.cpp
         )
 
 if (KNOWHERE_SUPPORT_NGT)
