@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <string>
 #include <unordered_map>
 
@@ -190,7 +191,9 @@ static const std::unordered_map<knowhere::MetricType, faiss::MetricType> metric_
 inline faiss::MetricType
 GetFaissMetricType(const MetricType& type) {
     try {
-        return metric_map.at(type);
+        std::string type_str = type;
+        std::transform(type_str.begin(), type_str.end(), type_str.begin(), toupper);
+        return metric_map.at(type_str);
     } catch (...) {
         KNOWHERE_THROW_FORMAT("Metric type '%s' invalid", type.data());
     }
