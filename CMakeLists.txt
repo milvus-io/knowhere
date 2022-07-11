@@ -240,18 +240,19 @@ config_summary()
 
 
 #***************************** Source files ****************************
-add_subdirectory( knowhere/utils )
-add_subdirectory( thirdparty )
-add_subdirectory( knowhere )
-
-if ( KNOWHERE_BUILD_TESTS )
-    if ( BUILD_COVERAGE STREQUAL "ON" )
+if ( BUILD_COVERAGE STREQUAL "ON" )
         append_flags( CMAKE_CXX_FLAGS
                       FLAGS
                            "-fprofile-arcs"
                            "-ftest-coverage"
                            )
-    endif ()
+endif ()
+
+add_subdirectory( knowhere/utils )
+add_subdirectory( thirdparty )
+add_subdirectory( knowhere )
+
+if ( KNOWHERE_BUILD_TESTS )
     append_flags( CMAKE_CXX_FLAGS FLAGS "-DELPP_DISABLE_LOGS")
 
     add_subdirectory( unittest )

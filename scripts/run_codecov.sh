@@ -84,7 +84,8 @@ fi
 ${LCOV_CMD} -r "${FILE_INFO_COMBINE}" -o "${FILE_INFO_OUTPUT}" \
     "/usr/*" \
     "*/unittest/*" \
-    "*/thirdparty/*"
+    "*/thirdparty/*" \
+    "*/usr/include/*"
 
 if [ $? -ne 0 ]; then
     echo "generate ${FILE_INFO_OUTPUT} failed"
