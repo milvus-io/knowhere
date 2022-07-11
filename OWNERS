@@ -4,11 +4,13 @@ filters:
       - cydrain
       - landyliu
       - xiaofan-luan
+      - liliu-z
 
     approvers:
       - cydrain
       - landyliu
       - xiaofan-luan
+      - liliu-z
 
   "tests":
     reviewers:
