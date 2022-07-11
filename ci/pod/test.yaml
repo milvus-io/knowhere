@@ -23,11 +23,14 @@ spec:
       name: db-data
   volumes:
     - name: db-data
-      flexVolume:
-        driver: fstab/cifs
-        fsType: cifs
-        secretRef:
-          name: cifs-test-secret
-        options:
-          mountOptions: vers=1.0
-          networkPath: //172.16.70.249/test
+      nfs:
+        server: 172.16.70.248
+        path: /zilliz/milvus   
+      # flexVolume:
+      #   driver: fstab/cifs
+      #   fsType: cifs
+      #   secretRef:
+      #     name: cifs-test-secret
+      #   options:
+      #     mountOptions: vers=1.0
+      #     networkPath: //172.16.70.249/test
