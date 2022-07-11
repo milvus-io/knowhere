@@ -36,37 +36,51 @@ BruteForceSearch(const knowhere::MetricType& metric_type,
                  int64_t* labels,
                  float* distances,
                  const faiss::BitsetView bitset) {
-    if (metric_type == knowhere::metric::L2) {
-        faiss::float_maxheap_array_t buf{(size_t)nq, (size_t)topk, labels, distances};
-        faiss::knn_L2sqr((const float*)xq, (const float*)xb, dim, nq, nb, &buf, nullptr, bitset);
-    } else if (metric_type == knowhere::metric::IP) {
-        faiss::float_minheap_array_t buf{(size_t)nq, (size_t)topk, labels, distances};
-        faiss::knn_inner_product((const float*)xq, (const float*)xb, dim, nq, nb, &buf, bitset);
-    } else if (metric_type == knowhere::metric::JACCARD || metric_type == knowhere::metric::TANIMOTO) {
-        faiss::float_maxheap_array_t res = {size_t(nq), size_t(topk), labels, distances};
-        binary_distance_knn_hc(
-            faiss::METRIC_Jaccard, &res, (const uint8_t*)xq, (const uint8_t*)xb, nb, dim / 8, bitset);
+    auto faiss_metric_type = GetFaissMetricType(metric_type);
 
-        if (metric_type == knowhere::metric::TANIMOTO) {
-            for (int i = 0; i < topk * nq; i++) {
-                distances[i] = faiss::Jaccard_2_Tanimoto(distances[i]);
+    switch (faiss_metric_type) {
+        case faiss::METRIC_L2: {
+            faiss::float_maxheap_array_t buf{(size_t)nq, (size_t)topk, labels, distances};
+            faiss::knn_L2sqr((const float*)xq, (const float*)xb, dim, nq, nb, &buf, nullptr, bitset);
+            break;
+        }
+        case faiss::METRIC_INNER_PRODUCT: {
+            faiss::float_minheap_array_t buf{(size_t)nq, (size_t)topk, labels, distances};
+            faiss::knn_inner_product((const float*)xq, (const float*)xb, dim, nq, nb, &buf, bitset);
+            break;
+        }
+        case faiss::METRIC_Jaccard:
+        case faiss::METRIC_Tanimoto: {
+            faiss::float_maxheap_array_t res = {size_t(nq), size_t(topk), labels, distances};
+            binary_distance_knn_hc(faiss::METRIC_Jaccard, &res, (const uint8_t*)xq, (const uint8_t*)xb, nb, dim / 8,
+                                   bitset);
+
+            if (faiss_metric_type == faiss::METRIC_Tanimoto) {
+                for (int i = 0; i < topk * nq; i++) {
+                    distances[i] = faiss::Jaccard_2_Tanimoto(distances[i]);
+                }
             }
+            break;
         }
-    } else if (metric_type == knowhere::metric::HAMMING) {
-        std::vector<int32_t> int_distances(nq * topk);
-        faiss::int_maxheap_array_t res = {size_t(nq), size_t(topk), labels, int_distances.data()};
-        binary_distance_knn_hc(
-            faiss::METRIC_Hamming, &res, (const uint8_t*)xq, (const uint8_t*)xb, nb, dim / 8, bitset);
-        for (int i = 0; i < nq * topk; ++i) {
-            distances[i] = int_distances[i];
+        case faiss::METRIC_Hamming: {
+            std::vector<int32_t> int_distances(nq * topk);
+            faiss::int_maxheap_array_t res = {size_t(nq), size_t(topk), labels, int_distances.data()};
+            binary_distance_knn_hc(faiss::METRIC_Hamming, &res, (const uint8_t*)xq, (const uint8_t*)xb, nb, dim / 8,
+                                   bitset);
+            for (int i = 0; i < nq * topk; ++i) {
+                distances[i] = int_distances[i];
+            }
+            break;
         }
-    } else if (metric_type == knowhere::metric::SUBSTRUCTURE || metric_type == knowhere::metric::SUPERSTRUCTURE) {
-        // only matched ids will be chosen, not to use heap
-        auto faiss_metric_type = knowhere::GetFaissMetricType(metric_type);
-        binary_distance_knn_mc(faiss_metric_type, (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, topk, dim / 8,
-                               distances, labels, bitset);
-    } else {
-        KNOWHERE_THROW_MSG("BruteForce search not support metric type: " + metric_type);
+        case faiss::METRIC_Substructure:
+        case faiss::METRIC_Superstructure: {
+            // only matched ids will be chosen, not to use heap
+            binary_distance_knn_mc(faiss_metric_type, (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, topk, dim / 8,
+                                   distances, labels, bitset);
+            break;
+        }
+        default:
+            KNOWHERE_THROW_MSG("BruteForce search not support metric type: " + metric_type);
     }
 }
 

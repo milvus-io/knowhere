@@ -44,12 +44,10 @@ TEST_P(BruteForceTest, float_basic) {
     Init_with_default();
     std::vector<int64_t> labels(nq * k);
     std::vector<float> distances(nq * k);
-    std::vector<knowhere::MetricType> array = {
-        knowhere::metric::L2,
-        knowhere::metric::IP,
-    };
+    std::vector<std::string> array = {"l2", "ip"};
     for (std::string& metric_type : array) {
-        if (metric_type == knowhere::metric::IP) {
+        auto faiss_metric_type = knowhere::GetFaissMetricType(metric_type);
+        if (faiss_metric_type == faiss::METRIC_INNER_PRODUCT) {
             normalize(xb.data(), nb, dim);
             normalize(xq.data(), nq, dim);
         }
@@ -72,13 +70,7 @@ TEST_P(BruteForceTest, binary_basic) {
     Init_with_default(true);
     std::vector<int64_t> labels(nq * k);
     std::vector<float> distances(nq * k);
-    std::vector<knowhere::MetricType> array = {
-        knowhere::metric::HAMMING,
-        knowhere::metric::JACCARD,
-        knowhere::metric::TANIMOTO,
-        knowhere::metric::SUPERSTRUCTURE,
-        knowhere::metric::SUBSTRUCTURE,
-    };
+    std::vector<std::string> array = {"hamming", "jaccard", "tanimoto", "superstructure", "substructure"};
     for (std::string& metric_type : array) {
         knowhere::BruteForceSearch(metric_type, xb_bin.data(), xq_bin.data(), dim, nb, nq, k, labels.data(),
                                    distances.data(), nullptr);
