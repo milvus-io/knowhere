@@ -8,7 +8,7 @@ spec:
   enableServiceLinks: false
   containers:
   - name: main
-    image: milvusdb/knowhere-cpu-build:amd64-ubuntu20.04-20220720-b37ee93
+    image: harbor.milvus.io/dockerhub/milvusdb/knowhere-cpu-build:amd64-ubuntu20.04-20220802-c691c3b
     tty: true
     args: ["cat"]
     resources:

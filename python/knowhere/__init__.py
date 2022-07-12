@@ -40,6 +40,25 @@ def CreateIndex(index_name, simd_type="auto"):
     )
 
 
+def CreateIndexDiskANN(index_name, index_prefix, metric_type, simd_type="auto"):
+
+    if simd_type not in ["auto", "avx512", "avx2", "avx", "sse4_2"]:
+        raise ValueError("simd type only support auto avx512 avx2 avx sse4_2")
+
+    SetSimdType(simd_type)
+
+    if index_name == "diskann_f":
+        return buildDiskANNf(index_prefix, metric_type)
+    if index_name == "diskann_i8":
+        return buildDiskANNi8(index_prefix, metric_type)
+    if index_name == "diskann_ui8":
+        return buildDiskANNui8(index_prefix, metric_type)
+    raise ValueError(
+        """ index name only support 
+            'diskann_f' 'diskann_i8' 'diskann_ui8'."""
+    )
+
+
 class GpuContext:
     def __init__(
         self, dev_id=0, pin_mem=200 * 1024 * 1024, temp_mem=300 * 1024 * 1024, res_num=2
@@ -93,3 +112,12 @@ def UnpackRangeResults(results, nq):
         ids_list.append(ids[lims[idx] : lims[idx + 1]])
 
     return ids_list, dis_list
+
+
+def ReadFromFBIN(filename):
+    with open(filename, 'rb') as f:
+        n = np.fromfile(f, dtype=np.int32, count=1)[0]
+        dim = np.fromfile(f, dtype=np.int32, count=1)[0]
+        arr = np.fromfile(f, dtype=np.float32)
+        arr.resize(n, dim)
+    return arr

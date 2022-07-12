@@ -14,7 +14,12 @@
 include_directories(${KNOWHERE_SOURCE_DIR}/knowhere)
 include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty)
 include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/faiss)
+include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/DiskANN)
 include_directories(${KNOWHERE_SOURCE_DIR}/knowhere/utils)
+
+if ( KNOWHERE_WITH_DISKANN )
+        include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/DiskANN)  
+endif()
 
 set(KNOWHERE_THIRDPARTY_SRC ${KNOWHERE_SOURCE_DIR}/thirdparty)
 set(external_srcs
@@ -81,6 +86,18 @@ set(vector_index_srcs
         index/vector_index/Statistics.cpp
         )
 
+if ( KNOWHERE_WITH_DISKANN )
+    set(vector_index_srcs
+            index/vector_index/IndexDiskANN.cpp
+            index/vector_index/IndexDiskANNConfig.cpp
+            ${vector_index_srcs}
+            )
+    set(KNOWHERE_INCLUDE_DIRS
+            ${KNOWHERE_INCLUDE_DIRS}
+            ${DISKANN_INCLUDE_DIR}
+            )
+endif()
+
 set(vector_offset_index_srcs
         index/vector_offset_index/OffsetBaseIndex.cpp
         index/vector_offset_index/IndexIVF_NM.cpp
@@ -141,6 +158,15 @@ if (KNOWHERE_SUPPORT_NGT)
             ${depend_libs}
             )
 endif ()
+
+if (KNOWHERE_WITH_DISKANN)
+      set(depend_libs
+             ${depend_libs}
+             diskann
+             aio
+             ${MKL_LIBRARIES}
+             )
+endif()
 
 if (KNOWHERE_GPU_VERSION)
     include_directories(${CUDA_INCLUDE_DIRS})
