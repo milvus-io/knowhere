@@ -94,6 +94,30 @@ class Benchmark_sift : public ::testing::Test {
         ann_test_name_ = test_name;
     }
 
+    /* Distance checking is only meaningful for binary index or FLAT index */
+    void
+    CheckDistance(const knowhere::MetricType& metric_type,
+                  const int64_t* ids,
+                  const float* distances,
+                  const size_t* lims,
+                  int32_t nq) {
+        const float FLOAT_DIFF = 0.00001;
+        const bool is_L2 = (metric_type == knowhere::metric::L2);
+        for (int32_t i = 0; i < nq; i++) {
+            std::unordered_set<int32_t> gt_ids_set(gt_ids_ + gt_lims_[i], gt_ids_ + gt_lims_[i + 1]);
+            std::unordered_map<int32_t, float> gt_map;
+            for (auto j = gt_lims_[i]; j < gt_lims_[i + 1]; j++) {
+                gt_map[gt_ids_[j]] = gt_dist_[j];
+            }
+            for (auto j = lims[i]; j < lims[i + 1]; j++) {
+                if (gt_ids_set.count(ids[j]) > 0) {
+                    float dist = (is_L2) ? std::sqrt(distances[j]) : distances[j];
+                    ASSERT_LT(std::abs(dist - gt_map[ids[j]]), FLOAT_DIFF);
+                }
+            }
+        }
+    }
+
     float
     CalcRecall(const int64_t* ids, int32_t nq, int32_t k) {
         int32_t min_k = std::min(gt_k_, k);
@@ -235,15 +259,8 @@ class Benchmark_sift : public ::testing::Test {
         gt_ids_ = (int32_t*)hdf5_read(ann_file_name, HDF5_DATASET_NEIGHBORS, H5T_INTEGER, gt_k_, gt_nq);
         assert(gt_nq == nq_ || !"incorrect nq of ground truth labels");
 
-#if 0
-        if (!is_binary) {
-            gt_dist_ = hdf5_read(ann_file_name, HDF5_DATASET_DISTANCES, H5T_FLOAT, gt_k_, gt_nq);
-            assert(gt_nq == nq_ || !"incorrect nq of ground truth distance");
-        } else {
-            gt_dist_ = hdf5_read(ann_file_name, HDF5_DATASET_DISTANCES, H5T_INTEGER, gt_k_, gt_nq);
-            assert(gt_nq == nq_ || !"incorrect nq of ground truth distance");
-        }
-#endif
+        gt_dist_ = (float*)hdf5_read(ann_file_name, HDF5_DATASET_DISTANCES, H5T_FLOAT, gt_k_, gt_nq);
+        assert(gt_nq == nq_ || !"incorrect nq of ground truth distance");
     }
 
     template <bool is_binary>
@@ -296,14 +313,8 @@ class Benchmark_sift : public ::testing::Test {
         gt_ids_ = (int32_t*)hdf5_read(ann_file_name, HDF5_DATASET_NEIGHBORS, H5T_INTEGER, cols, rows);
         assert((cols == gt_lims_[nq_] && rows == 1) || !"incorrect dims of ground truth labels");
 
-#if 0
-        if (!is_binary) {
-            gt_dist_ = hdf5_read(ann_file_name, HDF5_DATASET_DISTANCES, H5T_FLOAT, cols, rows);
-        } else {
-            gt_dist_ = hdf5_read(ann_file_name, HDF5_DATASET_DISTANCES, H5T_INTEGER, cols, rows);
-        }
+        gt_dist_ = (float*)hdf5_read(ann_file_name, HDF5_DATASET_DISTANCES, H5T_FLOAT, cols, rows);
         assert((cols == gt_lims_[nq_] && rows == 1) || !"incorrect dims of ground truth distances");
-#endif
     }
 
     void
@@ -324,7 +335,7 @@ class Benchmark_sift : public ::testing::Test {
             delete[] gt_ids_;
         }
         if (gt_dist_ != nullptr) {
-            delete[](float*) gt_dist_;
+            delete[] gt_dist_;
         }
     }
 
@@ -514,6 +525,6 @@ class Benchmark_sift : public ::testing::Test {
     float* gt_radius_ = nullptr; // ground-truth radius
     int32_t* gt_lims_ = nullptr; // ground-truth lims
     int32_t* gt_ids_ = nullptr;  // ground-truth labels
-    void* gt_dist_ = nullptr;    // ground-truth distances
+    float* gt_dist_ = nullptr;   // ground-truth distances
     int32_t gt_k_;
 };

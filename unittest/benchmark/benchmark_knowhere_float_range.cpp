@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "unittest/benchmark/benchmark_knowhere.h"
+#include "unittest/range_utils.h"
 
 class Benchmark_knowhere_float_range : public Benchmark_knowhere {
  public:
@@ -26,7 +27,9 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere {
             knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
             CALC_TIME_SPAN(auto result = index_->QueryByRange(ds_ptr, conf, nullptr));
             auto ids = knowhere::GetDatasetIDs(result);
+            auto distances = knowhere::GetDatasetDistance(result);
             auto lims = knowhere::GetDatasetLims(result);
+            CheckDistance(metric_type_, ids, distances, lims, nq);
             float recall = CalcRecall(ids, lims, nq);
             float accuracy = CalcAccuracy(ids, lims, nq);
             printf("  nq = %4d, elapse = %6.3fs, R@ = %.4f, A@ = %.4f\n", nq, t_diff, recall, accuracy);
@@ -133,13 +136,15 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere {
     const std::vector<int32_t> HNSW_Ks_ = {20};
 };
 
-// This testcase can be used to generate sift1m HDF5 file
+// This testcase can be used to generate HDF5 file
 // Following these steps:
-//   1. set_ann_test_name("sift-128-euclidean")
+//   1. set_ann_test_name, eg. "sift-128-euclidean" or "glove-200-angular"
 //   2. use parse_ann_test_name() and load_hdf5_data<false>()
-//   3. set expected distance calculation API for RunRangeSearchBF
-//   4. specify the hdf5 file name to generate
-//   5. run this testcase
+//   3. comment SetMetaRadius()
+//   4. set radius to a right value
+//   5. use RunFloatRangeSearchBF<CMin<float>> for L2, or RunFloatRangeSearchBF<CMax<float>> for IP
+//   6. specify the hdf5 file name to generate
+//   7. run this testcase
 #if 0
 TEST_F(Benchmark_knowhere_float_range, TEST_CREATE_HDF5) {
     // set this radius to get about 1M result dataset for 10k nq
@@ -148,8 +153,8 @@ TEST_F(Benchmark_knowhere_float_range, TEST_CREATE_HDF5) {
     std::vector<int64_t> golden_labels;
     std::vector<float> golden_distances;
     std::vector<size_t> golden_lims;
-    RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, (const float*)xb_, nb_,
-                                  (const float*)xq_, nq_, dim_, radius * radius, faiss::fvec_L2sqr_ref, nullptr);
+    RunFloatRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, metric_type_,
+                                       (const float*)xb_, nb_, (const float*)xq_, nq_, dim_, radius, nullptr);
 
     // convert golden_lims and golden_ids to int32
     std::vector<int32_t> golden_lims_int(nq_ + 1);
@@ -166,7 +171,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_CREATE_HDF5) {
     assert(dim_ == 128);
     assert(nq_ == 10000);
     hdf5_write_range<false>("sift-128-euclidean-range.hdf5", dim_, xb_, nb_, xq_, nq_, radius,
-                           golden_lims_int.data(), golden_ids_int.data(), golden_distances.data());
+                            golden_lims_int.data(), golden_ids_int.data(), golden_distances.data());
 }
 #endif
 
