@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "unittest/benchmark/benchmark_knowhere.h"
+#include "unittest/range_utils.h"
 
 class Benchmark_knowhere_binary_range : public Benchmark_knowhere {
  public:
@@ -26,7 +27,9 @@ class Benchmark_knowhere_binary_range : public Benchmark_knowhere {
             knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
             CALC_TIME_SPAN(auto result = index_->QueryByRange(ds_ptr, conf, nullptr));
             auto ids = knowhere::GetDatasetIDs(result);
+            auto distances = knowhere::GetDatasetDistance(result);
             auto lims = knowhere::GetDatasetLims(result);
+            CheckDistance(metric_type_, ids, distances, lims, nq);
             float recall = CalcRecall(ids, lims, nq);
             float accuracy = CalcAccuracy(ids, lims, nq);
             printf("  nq = %4d, elapse = %6.3fs, R@ = %.4f, A@ = %.4f\n", nq, t_diff, recall, accuracy);
@@ -116,8 +119,8 @@ TEST_F(Benchmark_knowhere_binary_range, TEST_CREATE_HDF5) {
     std::vector<int64_t> golden_labels;
     std::vector<float> golden_distances;
     std::vector<size_t> golden_lims;
-    RunRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, (const uint8_t*)xb_, nb_,
-                                  (const uint8_t*)xq_, nq_, dim_, radius, hamming_dis, nullptr);
+    RunBinaryRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, metric_type_,
+                                        (const uint8_t*)xb_, nb_, (const uint8_t*)xq_, nq_, dim_, radius, nullptr);
 
     // convert golden_lims and golden_ids to int32
     std::vector<int32_t> golden_lims_int(nq_ + 1);
