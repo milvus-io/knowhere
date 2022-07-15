@@ -821,7 +821,8 @@ namespace diskann {
                                            float *     distances,
                                            const _u64  beam_width,
                                            const bool  use_reorder_data,
-                                           QueryStats *stats) {
+                                           QueryStats *stats,
+                                           faiss::BitsetView bitset_view) {
     ThreadData<T> data = this->thread_data.pop();
     while (data.scratch.sector_scratch == nullptr) {
       this->thread_data.wait_for_push_notify();
@@ -1015,9 +1016,10 @@ namespace diskann {
             cur_expanded_dist = disk_pq_table.l2_distance(
                 query_float, (_u8 *) node_fp_coords_copy);
         }
-        full_retset.push_back(
-            Neighbor((unsigned) cached_nhood.first, cur_expanded_dist, true));
-
+        if (bitset_view.empty() || !bitset_view.test(cached_nhood.first)) {
+          full_retset.push_back(
+              Neighbor((unsigned) cached_nhood.first, cur_expanded_dist, true));
+        }
         _u64      nnbrs = cached_nhood.second.first;
         unsigned *node_nbrs = cached_nhood.second.second;
 
@@ -1093,8 +1095,10 @@ namespace diskann {
             cur_expanded_dist = disk_pq_table.l2_distance(
                 query_float, (_u8 *) node_fp_coords_copy);
         }
-        full_retset.push_back(
-            Neighbor(frontier_nhood.first, cur_expanded_dist, true));
+        if (bitset_view.empty() || !bitset_view.test(frontier_nhood.first)) {
+          full_retset.push_back(
+              Neighbor(frontier_nhood.first, cur_expanded_dist, true));
+        }
         unsigned *node_nbrs = (node_buf + 1);
         // compute node_nbrs <-> query dist in PQ space
         cpu_timer.reset();
@@ -1245,6 +1249,7 @@ namespace diskann {
                                      std::vector<_u64> & indices,
                                      std::vector<float> &distances,
                                      const _u64          beam_width,
+                                     faiss::BitsetView   bitset_view,
                                      QueryStats *        stats) {
     _u32 res_count = 0;
 
@@ -1257,7 +1262,8 @@ namespace diskann {
       for (auto &x : distances)
         x = std::numeric_limits<float>::max();
       this->cached_beam_search(query1, l_search, l_search, indices.data(),
-                               distances.data(), beam_width, false, stats);
+                               distances.data(), beam_width, false, stats,
+                               bitset_view);
       for (_u32 i = 0; i < l_search; i++) {
         if (distances[i] > (float) range) {
           res_count = i;
