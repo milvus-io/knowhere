@@ -146,20 +146,20 @@ class Benchmark_knowhere_perf : public Benchmark_knowhere {
  protected:
     const int32_t GT_NQ_ = 10000;
     const int32_t NQ_STEP_ = 10;
-    const std::vector<int32_t> TOPKs_ = {10};
+    const std::vector<int32_t> TOPKs_ = {100};
 
     // IVF index params
-    const int32_t NLIST_ = 128;
+    const int32_t NLIST_ = 1024;
     const std::vector<int32_t> NPROBEs_ = {16};
 
     // HNSW index params
     const int32_t M_ = 16;
-    const int32_t EFCON_ = 100;
-    const std::vector<int32_t> EFs_ = {16};
+    const int32_t EFCON_ = 200;
+    const std::vector<int32_t> EFs_ = {64};
 
     // ANNOY index params
-    const int32_t N_TREE_ = 32;
-    const std::vector<int32_t> SEARCH_Ks_ = {16};
+    const int32_t N_TREE_ = 8;
+    const std::vector<int32_t> SEARCH_Ks_ = {100};
 };
 
 TEST_F(Benchmark_knowhere_perf, TEST_IDMAP) {

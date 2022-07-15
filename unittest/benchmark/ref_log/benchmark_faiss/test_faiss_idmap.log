@@ -6,25 +6,26 @@ Note: Google Test filter = Benchmark_faiss.TEST_IDMAP
 [ RUN      ] Benchmark_faiss.TEST_IDMAP
 [0.000 s] Loading HDF5 file: sift-128-euclidean.hdf5
 [0.000 s] Loading train data
-[0.200 s] Loading test data
-[0.202 s] Loading ground truth data
-2022-06-01 15:19:42,473 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS expect simdType::AUTO
-2022-06-01 15:19:42,473 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS hook AVX2
-[0.203 s] Reading index file: sift-128-euclidean_Flat.index
-[0.203 s] Creating CPU index "Flat" d=128
-[0.203 s] Training on 1000000 vectors
-[0.203 s] Indexing on 1000000 vectors
-[0.393 s] Writing index file: sift-128-euclidean_Flat.index
+[0.176 s] Loading test data
+[0.177 s] Loading ground truth data
+2022-07-20 22:11:02,852 INFO [default] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS expect simdType::AVX2
+2022-07-20 22:11:02,853 INFO [default] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.180 s] Reading index file: sift-128-euclidean_Flat.index
+[0.180 s] Creating CPU index "Flat" d=128
+[0.180 s] Training on 1000000 vectors
+[0.180 s] Indexing on 1000000 vectors
+[0.372 s] Writing index file: sift-128-euclidean_Flat.index
 
-[0.584 s] sift-128-euclidean | Flat 
+[0.565 s] sift-128-euclidean | Flat 
 ================================================================================
-  nq = 10000, k =   10, elapse = 174.2370s, R@ = 0.9993
+  nq = 10000, k =  100, elapse = 33.8535s, R@ = 0.9999
 ================================================================================
-[174.879 s] Test 'sift-128-euclidean/Flat' done
+[34.487 s] Test 'sift-128-euclidean/Flat' done
 
-[       OK ] Benchmark_faiss.TEST_IDMAP (174880 ms)
-[----------] 1 test from Benchmark_faiss (174880 ms total)
+[       OK ] Benchmark_faiss.TEST_IDMAP (34487 ms)
+[----------] 1 test from Benchmark_faiss (34487 ms total)
 
 [----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (174880 ms total)
+[==========] 1 test from 1 test case ran. (34487 ms total)
 [  PASSED  ] 1 test.

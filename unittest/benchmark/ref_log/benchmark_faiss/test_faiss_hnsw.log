@@ -6,29 +6,31 @@ Note: Google Test filter = Benchmark_faiss.TEST_HNSW
 [ RUN      ] Benchmark_faiss.TEST_HNSW
 [0.000 s] Loading HDF5 file: sift-128-euclidean.hdf5
 [0.000 s] Loading train data
-[0.180 s] Loading test data
+[0.179 s] Loading test data
 [0.181 s] Loading ground truth data
-2022-06-01 15:37:39,624 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS expect simdType::AUTO
-2022-06-01 15:37:39,624 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS hook AVX2
-[0.183 s] Reading index file: sift-128-euclidean_HNSW16_100_Flat.index
+2022-07-20 22:19:35,996 INFO [default] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS expect simdType::AVX2
+2022-07-20 22:19:35,996 INFO [default] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.183 s] Reading index file: sift-128-euclidean_HNSW16_200_Flat.index
 [0.183 s] Creating CPU index "HNSW16,Flat" d=128
-[0.192 s] Training on 1000000 vectors
-[0.192 s] Indexing on 1000000 vectors
-[30.110 s] Writing index file: sift-128-euclidean_HNSW16_100_Flat.index
+[0.184 s] Training on 1000000 vectors
+[0.184 s] Indexing on 1000000 vectors
+[21.835 s] Writing index file: sift-128-euclidean_HNSW16_200_Flat.index
 
-[30.362 s] sift-128-euclidean | HNSW16,Flat | M=16 | efConstruction=100
+[22.089 s] sift-128-euclidean | HNSW16,Flat | M=16 | efConstruction=200
 ================================================================================
-  ef =   16, nq = 10000, k =   10, elapse = 0.1262s, R@ = 0.6636
-  ef =   32, nq = 10000, k =   10, elapse = 0.1314s, R@ = 0.6636
-  ef =   64, nq = 10000, k =   10, elapse = 0.1257s, R@ = 0.6636
-  ef =  128, nq = 10000, k =   10, elapse = 0.1257s, R@ = 0.6636
-  ef =  256, nq = 10000, k =   10, elapse = 0.1257s, R@ = 0.6636
+  ef =   16, nq = 10000, k =  100, elapse = 0.1153s, R@ = 0.4790
+  ef =   32, nq = 10000, k =  100, elapse = 0.1195s, R@ = 0.4790
+  ef =   64, nq = 10000, k =  100, elapse = 0.1149s, R@ = 0.4790
+  ef =  128, nq = 10000, k =  100, elapse = 0.1146s, R@ = 0.4790
+  ef =  256, nq = 10000, k =  100, elapse = 0.1326s, R@ = 0.4790
+  ef =  512, nq = 10000, k =  100, elapse = 0.1143s, R@ = 0.4790
 ================================================================================
-[31.183 s] Test 'sift-128-euclidean/HNSW16,Flat' done
+[23.218 s] Test 'sift-128-euclidean/HNSW16,Flat' done
 
-[       OK ] Benchmark_faiss.TEST_HNSW (31183 ms)
-[----------] 1 test from Benchmark_faiss (31183 ms total)
+[       OK ] Benchmark_faiss.TEST_HNSW (23218 ms)
+[----------] 1 test from Benchmark_faiss (23218 ms total)
 
 [----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (31183 ms total)
+[==========] 1 test from 1 test case ran. (23218 ms total)
 [  PASSED  ] 1 test.

@@ -6,24 +6,25 @@ Note: Google Test filter = Benchmark_knowhere_binary.TEST_BINARY_IDMAP
 [ RUN      ] Benchmark_knowhere_binary.TEST_BINARY_IDMAP
 [0.000 s] Loading HDF5 file: sift-4096-tanimoto.hdf5
 [0.000 s] Loading train data
-[0.338 s] Loading test data
-[0.342 s] Loading ground truth data
-2022-06-08 21:12:02,332 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
-2022-06-08 21:12:02,332 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
-[0.345 s] Creating CPU index "BIN_FLAT"
-[0.345 s] Reading index file: sift-4096-tanimoto_BIN_FLAT.index
-[0.345 s] Building all on 1000000 vectors
-[0.538 s] Writing index file: sift-4096-tanimoto_BIN_FLAT.index
+[0.343 s] Loading test data
+[0.347 s] Loading ground truth data
+2022-07-20 21:36:21,201 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-07-20 21:36:21,201 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold 16384
+[0.352 s] Creating CPU index "BIN_FLAT"
+[0.352 s] Reading index file: sift-4096-tanimoto_BIN_FLAT.index
+[0.352 s] Building all on 1000000 vectors
+[0.544 s] Writing index file: sift-4096-tanimoto_BIN_FLAT.index
 
-[1.116 s] sift-4096-tanimoto | BIN_FLAT 
+[1.113 s] sift-4096-tanimoto | BIN_FLAT 
 ================================================================================
-  nq = 10000, k =   10, elapse = 80.4851s, R@ = 0.9983
+  nq = 10000, k =  100, elapse = 79.205s, R@ = 1.0000
 ================================================================================
-[81.609 s] Test 'sift-4096-tanimoto/BIN_FLAT' done
+[80.397 s] Test 'sift-4096-tanimoto/BIN_FLAT' done
 
-[       OK ] Benchmark_knowhere_binary.TEST_BINARY_IDMAP (81644 ms)
-[----------] 1 test from Benchmark_knowhere_binary (81644 ms total)
+[       OK ] Benchmark_knowhere_binary.TEST_BINARY_IDMAP (80421 ms)
+[----------] 1 test from Benchmark_knowhere_binary (80421 ms total)
 
 [----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (81644 ms total)
+[==========] 1 test from 1 test case ran. (80421 ms total)
 [  PASSED  ] 1 test.

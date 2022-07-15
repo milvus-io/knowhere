@@ -6,24 +6,25 @@ Note: Google Test filter = Benchmark_knowhere_binary_range.TEST_BINARY_IDMAP
 [ RUN      ] Benchmark_knowhere_binary_range.TEST_BINARY_IDMAP
 [0.000 s] Loading HDF5 file: sift-4096-hamming-range.hdf5
 [0.000 s] Loading train data
-[0.207 s] Loading test data
-[0.209 s] Loading ground truth data
-2022-06-08 20:51:50,871 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
-2022-06-08 20:51:50,871 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
-[0.211 s] Creating CPU index "BIN_FLAT"
-[0.211 s] Reading index file: sift-4096-hamming-range_BIN_FLAT.index
-[0.211 s] Building all on 1000000 vectors
-[0.406 s] Writing index file: sift-4096-hamming-range_BIN_FLAT.index
+[0.325 s] Loading test data
+[0.329 s] Loading ground truth data
+2022-07-20 21:05:47,645 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-07-20 21:05:47,645 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold 16384
+[0.334 s] Creating CPU index "BIN_FLAT"
+[0.334 s] Reading index file: sift-4096-hamming-range_BIN_FLAT.index
+[0.334 s] Building all on 1000000 vectors
+[0.529 s] Writing index file: sift-4096-hamming-range_BIN_FLAT.index
 
-[0.973 s] sift-4096-hamming-range | BIN_FLAT 
+[1.094 s] sift-4096-hamming-range | BIN_FLAT 
 ================================================================================
-  nq = 10000, elapse = 54.3046s, R@ = 1.0000, A@ = 1.0000
+  nq = 10000, elapse = 56.450s, R@ = 1.0000, A@ = 1.0000
 ================================================================================
-[55.469 s] Test 'sift-4096-hamming-range/BIN_FLAT' done
+[57.948 s] Test 'sift-4096-hamming-range/BIN_FLAT' done
 
-[       OK ] Benchmark_knowhere_binary_range.TEST_BINARY_IDMAP (55505 ms)
-[----------] 1 test from Benchmark_knowhere_binary_range (55505 ms total)
+[       OK ] Benchmark_knowhere_binary_range.TEST_BINARY_IDMAP (57969 ms)
+[----------] 1 test from Benchmark_knowhere_binary_range (57969 ms total)
 
 [----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (55505 ms total)
+[==========] 1 test from 1 test case ran. (57969 ms total)
 [  PASSED  ] 1 test.

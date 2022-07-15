@@ -6,73 +6,77 @@ Note: Google Test filter = Benchmark_faiss.TEST_IVF_PQ
 [ RUN      ] Benchmark_faiss.TEST_IVF_PQ
 [0.000 s] Loading HDF5 file: sift-128-euclidean.hdf5
 [0.000 s] Loading train data
-[0.180 s] Loading test data
-[0.182 s] Loading ground truth data
-2022-06-01 17:41:15,362 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS expect simdType::AUTO
-2022-06-01 17:41:15,363 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS hook AVX2
-[0.183 s] Reading index file: sift-128-euclidean_IVF1024_8_PQ.index
-[0.183 s] Creating CPU index "IVF1024,PQ8x8" d=128
-[0.184 s] Training on 1000000 vectors
-[41.623 s] Indexing on 1000000 vectors
-[67.371 s] Writing index file: sift-128-euclidean_IVF1024_8_PQ.index
+[0.177 s] Loading test data
+[0.178 s] Loading ground truth data
+2022-07-20 22:16:15,213 INFO [default] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS expect simdType::AVX2
+2022-07-20 22:16:15,213 INFO [default] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.181 s] Reading index file: sift-128-euclidean_IVF1024_8_PQ.index
+[0.181 s] Creating CPU index "IVF1024,PQ8x8" d=128
+[0.182 s] Training on 1000000 vectors
+[19.720 s] Indexing on 1000000 vectors
+[40.112 s] Writing index file: sift-128-euclidean_IVF1024_8_PQ.index
 
-[67.389 s] sift-128-euclidean | IVF1024,PQ8x8 | nlist=1024
+[40.125 s] sift-128-euclidean | IVF1024,PQ8x8 | nlist=1024
 ================================================================================
-  nprobe =    1, nq = 10000, k =   10, elapse = 0.2835s, R@ = 0.2421
-  nprobe =    2, nq = 10000, k =   10, elapse = 0.2064s, R@ = 0.3038
-  nprobe =    4, nq = 10000, k =   10, elapse = 0.2430s, R@ = 0.3473
-  nprobe =    8, nq = 10000, k =   10, elapse = 0.2879s, R@ = 0.3717
-  nprobe =   16, nq = 10000, k =   10, elapse = 0.3840s, R@ = 0.3822
-  nprobe =   32, nq = 10000, k =   10, elapse = 0.5688s, R@ = 0.3850
-  nprobe =   64, nq = 10000, k =   10, elapse = 0.9506s, R@ = 0.3855
-  nprobe =  128, nq = 10000, k =   10, elapse = 1.7418s, R@ = 0.3855
-  nprobe =  256, nq = 10000, k =   10, elapse = 3.2686s, R@ = 0.3855
+  nprobe =    1, nq = 10000, k =  100, elapse = 0.1111s, R@ = 0.2476
+  nprobe =    2, nq = 10000, k =  100, elapse = 0.0988s, R@ = 0.3343
+  nprobe =    4, nq = 10000, k =  100, elapse = 0.1635s, R@ = 0.4020
+  nprobe =    8, nq = 10000, k =  100, elapse = 0.2144s, R@ = 0.4444
+  nprobe =   16, nq = 10000, k =  100, elapse = 0.3167s, R@ = 0.4655
+  nprobe =   32, nq = 10000, k =  100, elapse = 0.4231s, R@ = 0.4735
+  nprobe =   64, nq = 10000, k =  100, elapse = 0.6968s, R@ = 0.4753
+  nprobe =  128, nq = 10000, k =  100, elapse = 1.3288s, R@ = 0.4756
+  nprobe =  256, nq = 10000, k =  100, elapse = 2.6463s, R@ = 0.4756
+  nprobe =  512, nq = 10000, k =  100, elapse = 7.3184s, R@ = 0.4756
 ================================================================================
-[75.662 s] Test 'sift-128-euclidean/IVF1024,PQ8x8' done
+[54.240 s] Test 'sift-128-euclidean/IVF1024,PQ8x8' done
 
-[75.662 s] Reading index file: sift-128-euclidean_IVF1024_16_PQ.index
-[75.662 s] Creating CPU index "IVF1024,PQ16x8" d=128
-[75.663 s] Training on 1000000 vectors
-[126.894 s] Indexing on 1000000 vectors
-[146.323 s] Writing index file: sift-128-euclidean_IVF1024_16_PQ.index
+[54.240 s] Reading index file: sift-128-euclidean_IVF1024_16_PQ.index
+[54.240 s] Creating CPU index "IVF1024,PQ16x8" d=128
+[54.241 s] Training on 1000000 vectors
+[84.434 s] Indexing on 1000000 vectors
+[89.413 s] Writing index file: sift-128-euclidean_IVF1024_16_PQ.index
 
-[146.338 s] sift-128-euclidean | IVF1024,PQ16x8 | nlist=1024
+[89.429 s] sift-128-euclidean | IVF1024,PQ16x8 | nlist=1024
 ================================================================================
-  nprobe =    1, nq = 10000, k =   10, elapse = 0.1803s, R@ = 0.3068
-  nprobe =    2, nq = 10000, k =   10, elapse = 0.2107s, R@ = 0.4076
-  nprobe =    4, nq = 10000, k =   10, elapse = 0.3233s, R@ = 0.4873
-  nprobe =    8, nq = 10000, k =   10, elapse = 0.3457s, R@ = 0.5364
-  nprobe =   16, nq = 10000, k =   10, elapse = 0.6025s, R@ = 0.5609
-  nprobe =   32, nq = 10000, k =   10, elapse = 0.9267s, R@ = 0.5697
-  nprobe =   64, nq = 10000, k =   10, elapse = 1.6736s, R@ = 0.5717
-  nprobe =  128, nq = 10000, k =   10, elapse = 2.9380s, R@ = 0.5721
-  nprobe =  256, nq = 10000, k =   10, elapse = 5.6278s, R@ = 0.5721
+  nprobe =    1, nq = 10000, k =  100, elapse = 0.0914s, R@ = 0.2750
+  nprobe =    2, nq = 10000, k =  100, elapse = 0.1053s, R@ = 0.3946
+  nprobe =    4, nq = 10000, k =  100, elapse = 0.1401s, R@ = 0.5022
+  nprobe =    8, nq = 10000, k =  100, elapse = 0.2185s, R@ = 0.5777
+  nprobe =   16, nq = 10000, k =  100, elapse = 0.3686s, R@ = 0.6202
+  nprobe =   32, nq = 10000, k =  100, elapse = 0.6935s, R@ = 0.6389
+  nprobe =   64, nq = 10000, k =  100, elapse = 1.2791s, R@ = 0.6445
+  nprobe =  128, nq = 10000, k =  100, elapse = 2.3968s, R@ = 0.6456
+  nprobe =  256, nq = 10000, k =  100, elapse = 4.7490s, R@ = 0.6457
+  nprobe =  512, nq = 10000, k =  100, elapse = 9.8220s, R@ = 0.6457
 ================================================================================
-[159.510 s] Test 'sift-128-euclidean/IVF1024,PQ16x8' done
+[110.087 s] Test 'sift-128-euclidean/IVF1024,PQ16x8' done
 
-[159.510 s] Reading index file: sift-128-euclidean_IVF1024_32_PQ.index
-[159.510 s] Creating CPU index "IVF1024,PQ32x8" d=128
-[159.511 s] Training on 1000000 vectors
-[232.277 s] Indexing on 1000000 vectors
-[254.866 s] Writing index file: sift-128-euclidean_IVF1024_32_PQ.index
+[110.087 s] Reading index file: sift-128-euclidean_IVF1024_32_PQ.index
+[110.087 s] Creating CPU index "IVF1024,PQ32x8" d=128
+[110.088 s] Training on 1000000 vectors
+[154.442 s] Indexing on 1000000 vectors
+[160.309 s] Writing index file: sift-128-euclidean_IVF1024_32_PQ.index
 
-[254.887 s] sift-128-euclidean | IVF1024,PQ32x8 | nlist=1024
+[160.330 s] sift-128-euclidean | IVF1024,PQ32x8 | nlist=1024
 ================================================================================
-  nprobe =    1, nq = 10000, k =   10, elapse = 0.2954s, R@ = 0.3444
-  nprobe =    2, nq = 10000, k =   10, elapse = 0.4261s, R@ = 0.4775
-  nprobe =    4, nq = 10000, k =   10, elapse = 0.4652s, R@ = 0.5912
-  nprobe =    8, nq = 10000, k =   10, elapse = 0.6695s, R@ = 0.6668
-  nprobe =   16, nq = 10000, k =   10, elapse = 1.0030s, R@ = 0.7075
-  nprobe =   32, nq = 10000, k =   10, elapse = 1.7453s, R@ = 0.7236
-  nprobe =   64, nq = 10000, k =   10, elapse = 3.1966s, R@ = 0.7282
-  nprobe =  128, nq = 10000, k =   10, elapse = 6.0071s, R@ = 0.7290
-  nprobe =  256, nq = 10000, k =   10, elapse = 11.3611s, R@ = 0.7291
+  nprobe =    1, nq = 10000, k =  100, elapse = 0.0982s, R@ = 0.2863
+  nprobe =    2, nq = 10000, k =  100, elapse = 0.1356s, R@ = 0.4246
+  nprobe =    4, nq = 10000, k =  100, elapse = 0.2171s, R@ = 0.5632
+  nprobe =    8, nq = 10000, k =  100, elapse = 0.3802s, R@ = 0.6723
+  nprobe =   16, nq = 10000, k =  100, elapse = 0.6656s, R@ = 0.7394
+  nprobe =   32, nq = 10000, k =  100, elapse = 1.2196s, R@ = 0.7708
+  nprobe =   64, nq = 10000, k =  100, elapse = 2.3993s, R@ = 0.7815
+  nprobe =  128, nq = 10000, k =  100, elapse = 5.3583s, R@ = 0.7838
+  nprobe =  256, nq = 10000, k =  100, elapse = 10.1807s, R@ = 0.7840
+  nprobe =  512, nq = 10000, k =  100, elapse = 18.9884s, R@ = 0.7840
 ================================================================================
-[280.405 s] Test 'sift-128-euclidean/IVF1024,PQ32x8' done
+[200.756 s] Test 'sift-128-euclidean/IVF1024,PQ32x8' done
 
-[       OK ] Benchmark_faiss.TEST_IVF_PQ (280405 ms)
-[----------] 1 test from Benchmark_faiss (280405 ms total)
+[       OK ] Benchmark_faiss.TEST_IVF_PQ (200756 ms)
+[----------] 1 test from Benchmark_faiss (200756 ms total)
 
 [----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (280405 ms total)
+[==========] 1 test from 1 test case ran. (200756 ms total)
 [  PASSED  ] 1 test.

@@ -6,24 +6,25 @@ Note: Google Test filter = Benchmark_knowhere_float.TEST_IDMAP
 [ RUN      ] Benchmark_knowhere_float.TEST_IDMAP
 [0.000 s] Loading HDF5 file: sift-128-euclidean.hdf5
 [0.000 s] Loading train data
-[0.199 s] Loading test data
-[0.200 s] Loading ground truth data
-2022-06-08 17:11:55,245 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
-2022-06-08 17:11:55,245 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
-[0.202 s] Creating CPU index "FLAT"
-[0.202 s] Reading index file: sift-128-euclidean_FLAT.index
-[0.202 s] Building all on 1000000 vectors
-[0.403 s] Writing index file: sift-128-euclidean_FLAT.index
+[0.354 s] Loading test data
+[0.361 s] Loading ground truth data
+2022-07-20 20:30:08,202 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-07-20 20:30:08,202 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold 16384
+[0.371 s] Creating CPU index "FLAT"
+[0.371 s] Reading index file: sift-128-euclidean_FLAT.index
+[0.371 s] Building all on 1000000 vectors
+[0.562 s] Writing index file: sift-128-euclidean_FLAT.index
 
-[0.978 s] sift-128-euclidean | FLAT 
+[1.133 s] sift-128-euclidean | FLAT 
 ================================================================================
-  nq = 10000, k =   10, elapse = 179.1109s, R@ = 0.9993
+  nq = 10000, k =  100, elapse = 33.097s, R@ = 0.9999
 ================================================================================
-[180.098 s] Test 'sift-128-euclidean/FLAT' done
+[34.297 s] Test 'sift-128-euclidean/FLAT' done
 
-[       OK ] Benchmark_knowhere_float.TEST_IDMAP (180164 ms)
-[----------] 1 test from Benchmark_knowhere_float (180164 ms total)
+[       OK ] Benchmark_knowhere_float.TEST_IDMAP (34318 ms)
+[----------] 1 test from Benchmark_knowhere_float (34318 ms total)
 
 [----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (180164 ms total)
+[==========] 1 test from 1 test case ran. (34318 ms total)
 [  PASSED  ] 1 test.

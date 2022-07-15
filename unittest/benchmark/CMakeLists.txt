@@ -25,6 +25,13 @@ set(depend_libs
         ${LAPACK_LIBRARIES}
         )
 
+if ( LINUX AND ENABLE_PROFILING )
+    set( depend_libs
+        ${depend_libs}
+        gperftools
+        )
+endif ()
+
 set( UTIL_SRCS
         ${KNOWHERE_SOURCE_DIR}/unittest/utils.cpp
         )

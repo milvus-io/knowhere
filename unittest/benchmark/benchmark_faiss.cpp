@@ -12,6 +12,7 @@
 #include <faiss/AutoTune.h>
 #include <faiss/index_factory.h>
 #include <faiss/index_io.h>
+#include <faiss/utils/distances.h>
 #include <gtest/gtest.h>
 
 #include <vector>
@@ -141,7 +142,8 @@ class Benchmark_faiss : public Benchmark_sift {
 
         assert(metric_str_ == METRIC_IP_STR || metric_str_ == METRIC_L2_STR);
         metric_type_ = (metric_str_ == METRIC_IP_STR) ? faiss::METRIC_INNER_PRODUCT : faiss::METRIC_L2;
-        knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AUTO);
+        knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX2);
+        printf("faiss::distance_compute_blas_threshold: %d\n", faiss::distance_compute_blas_threshold);
     }
 
  protected:
@@ -150,11 +152,11 @@ class Benchmark_faiss : public Benchmark_sift {
     faiss::Index* index_ = nullptr;
 
     const std::vector<int32_t> NQs_ = {10000};
-    const std::vector<int32_t> TOPKs_ = {10};
+    const std::vector<int32_t> TOPKs_ = {100};
 
     // IVF index params
     const std::vector<int32_t> NLISTs_ = {1024};
-    const std::vector<int32_t> NPROBEs_ = {1, 2, 4, 8, 16, 32, 64, 128, 256};
+    const std::vector<int32_t> NPROBEs_ = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512};
 
     // IVFPQ index params
     const std::vector<int32_t> Ms_ = {8, 16, 32};
@@ -162,8 +164,8 @@ class Benchmark_faiss : public Benchmark_sift {
 
     // HNSW index params
     const std::vector<int32_t> HNSW_Ms_ = {16};
-    const std::vector<int32_t> EFCONs_ = {100};
-    const std::vector<int32_t> EFs_ = {16, 32, 64, 128, 256};
+    const std::vector<int32_t> EFCONs_ = {200};
+    const std::vector<int32_t> EFs_ = {16, 32, 64, 128, 256, 512};
 };
 
 TEST_F(Benchmark_faiss, TEST_IDMAP) {
