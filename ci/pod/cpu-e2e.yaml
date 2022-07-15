@@ -18,19 +18,13 @@ spec:
       requests:
         memory: "64Gi"
         cpu: "12.0"
+    nodeSelector:
+      app: knowhere
     volumeMounts:
     - mountPath: /home/data
       name: db-data
   volumes:
     - name: db-data
       nfs:
-        server: 172.16.70.248
-        path: /zilliz/milvus   
-      # flexVolume:
-      #   driver: fstab/cifs
-      #   fsType: cifs
-      #   secretRef:
-      #     name: cifs-test-secret
-      #   options:
-      #     mountOptions: vers=1.0
-      #     networkPath: //172.16.70.249/test
+        server: 172.16.70.239
+        path: /qa

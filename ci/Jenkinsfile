@@ -3,9 +3,9 @@ def knowhere_wheel='knowhere-1.0.0-cp38-cp38-linux_x86_64.whl'
 pipeline {
     agent {
         kubernetes {
-            label 'knowhere-test' 
+            label 'knowhere-cpu-e2e' 
             inheritFrom 'default'
-            yamlFile 'ci/pod/test.yaml'
+            yamlFile 'ci/pod/cpu-e2e.yaml'
             defaultContainer 'main'
         }
     }
@@ -13,7 +13,7 @@ pipeline {
         timeout(time: total_timeout_minutes, unit: 'MINUTES')
         buildDiscarder logRotator(artifactDaysToKeepStr: '30')
         parallelsAlwaysFailFast()
-        disableConcurrentBuilds()
+        disableConcurrentBuilds(abortPrevious: true)
 
     }
     stages {
@@ -43,6 +43,8 @@ pipeline {
                       sh "pip3 install ${knowhere_wheel} \
                           && pip3 install -r requirements.txt &&  pytest -v -m recall"
                     }
+                     sh 'cp /tmp/knowhere_ci.log knowhere_ci.log'
+                     archiveArtifacts artifacts: 'knowhere_ci.log', followSymlinks: false
                 }
             }    
         }
