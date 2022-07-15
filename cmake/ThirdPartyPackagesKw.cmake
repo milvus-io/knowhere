@@ -15,6 +15,13 @@ set(KNOWHERE_THIRDPARTY_DEPENDENCIES
         FAISS
 )
 
+if ( LINUX AND KNOWHERE_WITH_DISKANN)
+    set(KNOWHERE_THIRDPARTY_DEPENDENCIES 
+        ${KNOWHERE_THIRDPARTY_DEPENDENCIES}
+        DiskANN
+        )
+endif()
+
 message(STATUS "Using ${KNOWHERE_DEPENDENCY_SOURCE} approach to find dependencies")
 
 # For each dependency, set dependency source to global default, if unset

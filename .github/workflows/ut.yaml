@@ -46,7 +46,12 @@ jobs:
           ./build.sh -l
       - name: Run Unittest
         run: |
-          ./build.sh -t Release -u
+
+          if [[ ${{ matrix.os }} == 'ubuntu-18.04' ]]
+          then
+            diskann_opt=-d
+          fi
+          ./build.sh $diskann_opt -t Release -u
           if [[ -f "output/unittest/faiss_test" ]]; then
             ./output/unittest/faiss_test
           fi

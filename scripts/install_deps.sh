@@ -33,10 +33,17 @@ esac
 if [[ "${MACHINE}" == "Linux" ]]; then
     if [[ -x "$(command -v apt)" ]]; then
         # for Ubuntu 18.04
+        #DiskANN dependencies
+        sudo apt-get install -y libboost-program-options-dev
+        sudo apt-get install -y libaio-dev libgoogle-perftools-dev clang-format
+        wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18487/l_BaseKit_p_2022.1.2.146.sh
+        sudo sh l_BaseKit_p_2022.1.2.146.sh -a --components intel.oneapi.lin.mkl.devel --action install --eula accept -s
+
         release_num=$(lsb_release -r --short)
         sudo apt install -y g++ gcc make ccache python3-dev gfortran
         if [ "$release_num" == "20.04" ];then
             sudo apt install -y python3-setuptools swig
+            sudo apt install libmkl-full-dev
         fi
         # Pre-installation of openblas can save about 15 minutes of openblas building time.
         # But the apt-installed openblas version is 0.2.20, while the latest openblas version is 0.3.19.
@@ -46,11 +53,18 @@ if [[ "${MACHINE}" == "Linux" ]]; then
         fi
     elif [[ -x "$(command -v yum)" ]]; then
         # for CentOS 7
+        #DiskANN dependencies
+        sudo yum -y install boost-program-options
+        sudo yum -y install boost libaio gperftools-devel 
+        sudo yum-config-manager --add-repo https://yum.repos.intel.com/mkl/setup/intel-mkl.repo
+        sudo yum install -y intel-mkl
+        sudo yum install -y redhat-lsb-core 
+
         sudo yum install -y epel-release centos-release-scl-rh wget && \
         sudo yum install -y git make automake ccache python3-devel \
             devtoolset-7-gcc devtoolset-7-gcc-c++ devtoolset-7-gcc-gfortran \
             llvm-toolset-7.0-clang llvm-toolset-7.0-clang-tools-extra 
-
+        
         echo "source scl_source enable devtoolset-7" | sudo tee -a /etc/profile.d/devtoolset-7.sh
         echo "source scl_source enable llvm-toolset-7.0" | sudo tee -a /etc/profile.d/llvm-toolset-7.sh
         echo "export CLANG_TOOLS_PATH=/opt/rh/llvm-toolset-7.0/root/usr/bin" | sudo tee -a /etc/profile.d/llvm-toolset-7.sh
