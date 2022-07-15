@@ -3,7 +3,7 @@ def knowhere_wheel='knowhere-1.0.0-cp38-cp38-linux_x86_64.whl'
 pipeline {
     agent {
         kubernetes {
-            label 'knowhere-cpu-e2e' 
+            label 'knowhere-e2e-cpu' 
             inheritFrom 'default'
             yamlFile 'ci/pod/cpu-e2e.yaml'
             defaultContainer 'main'

@@ -6,6 +6,8 @@ metadata:
   namespace: jenkins
 spec:
   enableServiceLinks: false
+  nodeSelector:
+    app: knowhere
   containers:
   - name: main
     image: milvusdb/knowhere-env:amd64-ubuntu20.04-20220706-bb704b6
@@ -18,8 +20,6 @@ spec:
       requests:
         memory: "64Gi"
         cpu: "12.0"
-    nodeSelector:
-      app: knowhere
     volumeMounts:
     - mountPath: /home/data
       name: db-data
