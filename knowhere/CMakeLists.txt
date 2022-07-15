@@ -14,7 +14,12 @@
 include_directories(${KNOWHERE_SOURCE_DIR}/knowhere)
 include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty)
 include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/faiss)
+include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/DiskANN)
 include_directories(${KNOWHERE_SOURCE_DIR}/knowhere/utils)
+
+if ( KNOWHERE_WITH_DISKANN )
+        include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/DiskANN)  
+endif()
 
 set(KNOWHERE_THIRDPARTY_SRC ${KNOWHERE_SOURCE_DIR}/thirdparty)
 set(external_srcs
@@ -141,6 +146,13 @@ if (KNOWHERE_SUPPORT_NGT)
             )
 endif ()
 
+if (KNOWHERE_WITH_DISKANN)
+    set(depend_libs
+            diskann
+            ${depend_libs}
+            )
+endif()
+
 if (KNOWHERE_GPU_VERSION)
     include_directories(${CUDA_INCLUDE_DIRS})
     link_directories("${CUDA_TOOLKIT_ROOT_DIR}/lib64")
@@ -186,6 +198,7 @@ set (KNOWHERE_INCLUDE_DIRS
         ${FAISS_INCLUDE_DIR}
         ${OpenBLAS_INCLUDE_DIR}
         ${LAPACK_INCLUDE_DIR}
+        ${DISKANN_INCLUDE_DIR}
         )
 
 target_include_directories(knowhere PUBLIC ${KNOWHERE_INCLUDE_DIRS})
