@@ -904,9 +904,14 @@ void IndexIVF::search_preassigned_without_codes(
 
             nlistv++;
 
-            try {
-                InvertedLists::ScopedCodes
-                    scodes(invlists, key, arranged_codes.data());
+            try { 
+#ifdef USE_GPU
+                auto rol = dynamic_cast<faiss::ReadOnlyArrayInvertedLists*>(invlists);
+                auto arranged_data = reinterpret_cast<uint8_t*>(rol->pin_readonly_codes->data);
+                InvertedLists::ScopedCodes scodes(invlists, key, arranged_data);
+#else
+                InvertedLists::ScopedCodes scodes(invlists, key, arranged_codes.data());
+#endif
 
                 std::unique_ptr<InvertedLists::ScopedIds> sids;
                 const Index::idx_t* ids = nullptr;
