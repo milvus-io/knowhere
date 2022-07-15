@@ -3,7 +3,7 @@ kind: Pod
 metadata:
   labels:
     app: knowhere-ci
-  namespace: jenkins
+  namespace: knowhere-ci
 spec:
   enableServiceLinks: false
   nodeSelector:
