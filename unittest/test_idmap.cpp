@@ -26,6 +26,7 @@
 #endif
 #include "unittest/range_utils.h"
 #include "unittest/utils.h"
+#include "unittest/Helper.h"
 
 using ::testing::Combine;
 using ::testing::TestWithParam;

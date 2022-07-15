@@ -5,7 +5,9 @@ import os
 
 KNOWHERE_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 NAME = "knowhere"
-VERSION = "1.0.0"
+VERSION = os.getenv("VERSION")
+if not VERSION:
+    VERSION = "1.0.0"
 
 
 class get_numpy_include(object):
