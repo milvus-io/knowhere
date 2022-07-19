@@ -16,6 +16,7 @@ pipeline {
         disableConcurrentBuilds(abortPrevious: true)
 
     }
+
     stages {
         stage("Build"){
 
@@ -34,6 +35,12 @@ pipeline {
             }    
         }
         stage("Test"){
+            environment {
+                PIP_TRUSTED_HOST="nexus-nexus-repository-manager.nexus"
+                PIP_INDEX_URL="http://nexus-nexus-repository-manager.nexus:8081/repository/pypi-all/simple"
+                PIP_INDEX="http://nexus-nexus-repository-manager.nexus:8081/repository/pypi-all/pypi"
+                PIP_FIND_LINKS="http://nexus-nexus-repository-manager.nexus:8081/repository/pypi-all/pypi"
+            }
             steps {
                 script{
                     checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], 
