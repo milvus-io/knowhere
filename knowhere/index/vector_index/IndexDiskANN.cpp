@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "DiskANN/include/aux_utils.h"
+#include "DiskANN/include/utils.h"
 #ifndef _WINDOWS
 #include "DiskANN/include/linux_aligned_file_reader.h"
 #else
@@ -80,6 +81,37 @@ ConvertId(const uint64_t* src, int64_t* des, size_t num) {
     }
     return successful;
 }
+
+std::vector<std::string>
+GetNecessaryFilenames(const std::string& prefix, const bool is_inner_product, const bool use_sample_cache,
+                      const bool use_sample_warmup) {
+    std::vector<std::string> filenames;
+    auto pq_pivots_filename = diskann::get_pq_pivots_filename(prefix);
+    auto disk_index_filename = diskann::get_disk_index_filename(prefix);
+
+    filenames.push_back(pq_pivots_filename);
+    filenames.push_back(diskann::get_pq_rearrangement_perm_filename(pq_pivots_filename));
+    filenames.push_back(diskann::get_pq_chunk_offsets_filename(pq_pivots_filename));
+    filenames.push_back(diskann::get_pq_centroid_filename(pq_pivots_filename));
+    filenames.push_back(diskann::get_pq_compressed_filename(prefix));
+    filenames.push_back(disk_index_filename);
+    if (is_inner_product) {
+        filenames.push_back(diskann::get_disk_index_max_base_norm_file(disk_index_filename));
+    }
+    if (use_sample_cache || use_sample_warmup) {
+        filenames.push_back(diskann::get_sample_data_filename(prefix));
+    }
+    return filenames;
+}
+
+std::vector<std::string>
+GetOptionalFilenames(const std::string& prefix) {
+    std::vector<std::string> filenames;
+    auto disk_index_filename = diskann::get_disk_index_filename(prefix);
+    filenames.push_back(diskann::get_disk_index_centroids_filename(disk_index_filename));
+    filenames.push_back(diskann::get_disk_index_medoids_filename(disk_index_filename));
+    return filenames;
+}
 }  // namespace
 
 template <typename T>
@@ -87,11 +119,29 @@ void
 IndexDiskANN<T>::AddWithoutIds(const DatasetPtr& data_set, const Config& config) {
     auto build_conf = DiskANNBuildConfig::Get(config);
 
+    auto& data_path = build_conf.data_path;
+    // Load raw data
+    if (!LoadFile(data_path)) {
+        KNOWHERE_THROW_MSG("Failed load the raw data before building.");
+    }
+
     std::stringstream stream;
     stream << build_conf.max_degree << " " << build_conf.search_list_size << " " << build_conf.search_dram_budget_gb
            << " " << build_conf.build_dram_budget_gb << " " << build_conf.num_threads << " "
            << build_conf.pq_disk_bytes;
-    diskann::build_disk_index<T>(build_conf.data_path, index_prefix_, stream.str(), metric_);
+    diskann::build_disk_index<T>(data_path, index_prefix_, stream.str(), metric_);
+
+    // Add file to the file manager
+    for (auto& filename : GetNecessaryFilenames(index_prefix_, metric_ == diskann::INNER_PRODUCT, true, true)) {
+        if (!AddFile(filename)) {
+            KNOWHERE_THROW_MSG("Failed to add file " + filename + ".");
+        }
+    }
+    for (auto& filename : GetOptionalFilenames(index_prefix_)) {
+        if (file_exists(filename) && !AddFile(filename)) {
+            KNOWHERE_THROW_MSG("Failed to add file " + filename + ".");
+        }
+    }
 }
 
 template <typename T>
@@ -102,6 +152,25 @@ IndexDiskANN<T>::Prepare(const Config& config) {
     auto prep_conf = DiskANNPrepareConfig::Get(config);
     if (is_prepared_) {
         return true;
+    }
+
+    // Load file from file manager.
+    for (auto& filename :
+         GetNecessaryFilenames(index_prefix_, metric_ == diskann::INNER_PRODUCT,
+                               prep_conf.num_nodes_to_cache > 0 && !prep_conf.use_bfs_cache, prep_conf.warm_up)) {
+        if (!LoadFile(filename)) {
+            return false;
+        }
+    }
+    for (auto& filename : GetOptionalFilenames(index_prefix_)) {
+        auto is_exist_op = file_manager_->IsExisted(filename);
+        if (!is_exist_op.has_value()) {
+            LOG_KNOWHERE_ERROR_ << "Failed to check existence of file " << filename << ".";
+            return false;
+        }
+        if (is_exist_op.value() && !LoadFile(filename)) {
+            return false;
+        }
     }
 
     // load PQ file
@@ -119,7 +188,7 @@ IndexDiskANN<T>::Prepare(const Config& config) {
         return false;
     }
 
-    std::string warmup_query_file = index_prefix_ + "_sample_data.bin";
+    std::string warmup_query_file = diskann::get_sample_data_filename(index_prefix_);
     // load cache
     if (prep_conf.num_nodes_to_cache > 0) {
         std::vector<uint32_t> node_list;
@@ -264,5 +333,25 @@ int64_t
 IndexDiskANN<T>::Dim() {
     CheckPreparation(is_prepared_);
     return pq_flash_index_->get_data_dim();
+}
+
+template <typename T>
+bool
+IndexDiskANN<T>::LoadFile(const std::string& filename) {
+    if (!file_manager_->LoadFile(filename)) {
+        LOG_KNOWHERE_ERROR_ << "Failed to load file " << filename << ".";
+        return false;
+    }
+    return true;
+}
+
+template <typename T>
+bool
+IndexDiskANN<T>::AddFile(const std::string& filename) {
+    if (!file_manager_->AddFile(filename)) {
+        LOG_KNOWHERE_ERROR_ << "Failed to load file " << filename << ".";
+        return false;
+    }
+    return true;
 }
 }  // namespace knowhere

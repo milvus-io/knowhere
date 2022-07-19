@@ -25,6 +25,7 @@ namespace knowhere {
  * so Knowhere doesn't need to offer any help for service in the future .
  */
 class FileManager {
+ public:
     /**
      * @brief Load a file to the local disk, so we can use stl lib to operate it.
      *
