@@ -6,7 +6,7 @@ on:
   push:
     # file paths to consider in the event. Optional; defaults to all.
     paths:
-      - 'build/docker/builder/**'
+      - 'ci/docker/builder/**'
       - '.github/workflows/publish-builder.yaml'
       - 'scripts/install_deps.sh'
       - '!**.md'
