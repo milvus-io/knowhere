@@ -1,4 +1,5 @@
-FROM ubuntu:20.04
+ARG BASE_IMAGE="ubuntu:20.04"
+FROM ${BASE_IMAGE}
 
 ENV CMAKE_VERSION="v3.23"
 ENV CMAKE_TAR="cmake-3.23.0-linux-x86_64.tar.gz"

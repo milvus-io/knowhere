@@ -13,7 +13,7 @@ services:
     # Build devcontainer
     build:
       context: .
-      dockerfile: ci/docker/builder/cpu/${OS_NAME}/Dockerfile
+      dockerfile: ci/docker/builder/${OS_NAME}/Dockerfile
       cache_from:
         - ${IMAGE_REPO}/knowhere-env:${IMAGE_ARCH}-${OS_NAME}-${LATEST_DATE_VERSION}
     # user: {{ CURRENT_ID }}

@@ -18,7 +18,7 @@ on:
       - '!**.md'
 
 jobs:
-  publish-builder:
+  cpu:
     name: AMD64 ${{ matrix.os }}
     runs-on: ubuntu-20.04
     timeout-minutes: 60
@@ -87,3 +87,37 @@ jobs:
         run: |
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
           echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
+  gpu:
+    name: AMD64 ${{ matrix.os }}
+    runs-on: ubuntu-20.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu20.04]
+    env:
+      OS_NAME: ${{ matrix.os }}
+      IMAGE_ARCH: amd64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Get version from system time after release step
+        id: extracter
+        run: |
+          echo "::set-output name=version::$(date +%Y%m%d)"
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+      - name: Docker Build
+        shell: bash
+        working-directory: ci/docker/builder/ubuntu20.04/
+        run: |
+          export DATE_VERSION=${{ steps.extracter.outputs.version }}-${{ steps.extracter.outputs.sha_short }}
+          docker build --build-arg BASE_IMAGE=nvidia/cuda:11.2.1-devel-ubuntu20.04 -t milvusdb/knowhere-env-gpu:${IMAGE_ARCH}-${OS_NAME}-${DATE_VERSION} .
+      - name: Docker Push
+        # if: success() && github.event_name == 'push' && github.repository == 'milvus-io/knowhere'
+        continue-on-error: true
+        shell: bash
+        run: |
+          docker login -u ${{ secrets.DOCKERHUB_USER }} \
+                       -p ${{ secrets.DOCKERHUB_TOKEN }}
+          export DATE_VERSION=${{ steps.extracter.outputs.version }}-${{ steps.extracter.outputs.sha_short }} 
+          docker push milvusdb/knowhere-env-gpu:${IMAGE_ARCH}-${OS_NAME}-${DATE_VERSION}
