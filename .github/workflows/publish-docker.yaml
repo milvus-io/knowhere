@@ -47,8 +47,9 @@ jobs:
           if [[ ${{ matrix.type }} == "gpu"  ]]; then
             if [[ ${{ matrix.function }} == "e2e"  ]]; then
               base="--build-arg BASE_IMAGE=nvidia/cuda:11.2.1-runtime-ubuntu20.04"         
+            else
+              base="--build-arg BASE_IMAGE=nvidia/cuda:11.2.1-devel-ubuntu20.04"
             fi
-            base="--build-arg BASE_IMAGE=nvidia/cuda:11.2.1-devel-ubuntu20.04"    
           fi
           docker build  ${base} --build-arg SCRIPT="${{ matrix.function }}.sh" -t milvusdb/knowhere-${{ matrix.type }}-${{ matrix.function }}:${IMAGE_ARCH}-${OS_NAME}-${DATE_VERSION} .
          
