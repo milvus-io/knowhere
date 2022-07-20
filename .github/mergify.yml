@@ -74,7 +74,19 @@ pull_request_rules:
       - "status-success!=Unit Test on macos-11"
       - "status-success!=Unit Test on MSYS"
       - "status-success!=cpu-e2e"
+      - -title~=\[skip e2e\]
     actions:
       label:
         remove:
+          - ci-passed
+
+  - name: Test passed for title skip e2e
+    conditions:
+      - base=main
+      - title~=\[skip e2e\]
+      - label=kind/improvement
+      - -files~=^(?=.*((\.(h|cpp)|CMakeLists.txt))).*$
+    actions:
+      label:
+        add:
           - ci-passed
