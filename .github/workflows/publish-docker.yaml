@@ -1,0 +1,65 @@
+name: Publish Docker Images
+# TODO: do not trigger action for some document file update
+
+# This workflow is triggered on pushes or pull request to the repository.
+on:
+  push:
+    # file paths to consider in the event. Optional; defaults to all.
+    paths:
+      - 'ci/docker/**'
+      - '.github/workflows/publish-docker.yaml'
+  pull_request:
+    # file paths to consider in the event. Optional; defaults to all.
+    paths:
+      - 'ci/docker/**'
+      - '.github/workflows/publish-docker.yaml'
+
+jobs:
+  image:
+    name: knowhere ${{ matrix.os }} ${{ matrix.type }} ${{ matrix.function }} image
+    runs-on: ubuntu-20.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu20.04]
+        function: ["build","debug","e2e"]
+        type: ["cpu","gpu"]
+    env:
+      OS_NAME: ${{ matrix.os }}
+      TYPE: ${{ matrix.type }}
+      FUNCTION: ${{ matrix.function }}
+      IMAGE_ARCH: amd64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Get version from system time after release step
+        id: extracter
+        run: |
+          echo "::set-output name=version::$(date +%Y%m%d)"
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+      - name: Docker Build
+        shell: bash
+        working-directory: ci/docker/ubuntu
+        run: |
+          export DATE_VERSION=${{ steps.extracter.outputs.version }}-${{ steps.extracter.outputs.sha_short }} 
+          base=""
+          if [[ ${{ matrix.type }} == "gpu"  ]]; then
+            if [[ ${{ matrix.function }} == "e2e"  ]]; then
+              base="--build-arg BASE_IMAGE=nvidia/cuda:11.2.1-runtime-ubuntu20.04"         
+            fi
+            base="--build-arg BASE_IMAGE=nvidia/cuda:11.2.1-devel-ubuntu20.04"    
+          fi
+          docker build  ${base} --build-arg SCRIPT="${{ matrix.function }}.sh" -t milvusdb/knowhere-${{ matrix.type }}-${{ matrix.function }}:${IMAGE_ARCH}-${OS_NAME}-${DATE_VERSION} .
+         
+      - name: Docker Push
+        if: success() && github.event_name == 'push' && github.repository == 'milvus-io/knowhere'
+        continue-on-error: true
+        shell: bash
+        run: |
+          export DATE_VERSION=${{ steps.extracter.outputs.version }}-${{ steps.extracter.outputs.sha_short }} 
+          docker login -u ${{ secrets.DOCKERHUB_USER }} \
+                       -p ${{ secrets.DOCKERHUB_TOKEN }}
+          docker push milvusdb/knowhere-${{ matrix.type }}-${{ matrix.function }}:${IMAGE_ARCH}-${OS_NAME}-${DATE_VERSION}
+          
+
