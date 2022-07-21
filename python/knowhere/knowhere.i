@@ -35,6 +35,8 @@ typedef uint64_t size_t;
 #include <index/vector_index/IndexIDMAP.h>
 #include <index/vector_index/IndexIVF.h>
 #include <index/vector_index/IndexIVFSQ.h>
+#include <index/vector_index/IndexIVFPQ.h>
+#include <index/vector_index/IndexBinaryIVF.h>
 #ifdef KNOWHERE_GPU_VERSION
 #include <index/vector_index/gpu/IndexGPUIVF.h>
 #include <index/vector_index/gpu/IndexGPUIVFPQ.h>
@@ -66,8 +68,10 @@ import_array();
 %include <index/vector_index/IndexHNSW.h>
 %include <index/vector_index/IndexIVF.h>
 %include <index/vector_index/IndexIVFSQ.h>
+%include <index/vector_index/IndexIVFPQ.h>
 %include <index/vector_index/IndexIDMAP.h>
 %include <index/vector_index/IndexBinaryIDMAP.h>
+%include <index/vector_index/IndexBinaryIVF.h>
 #ifdef KNOWHERE_GPU_VERSION
 %include <index/vector_index/gpu/IndexGPUIVF.h>
 %include <index/vector_index/gpu/IndexGPUIVFPQ.h>

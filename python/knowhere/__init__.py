@@ -9,28 +9,32 @@ def CreateIndex(index_name, simd_type="auto"):
 
     SetSimdType(simd_type)
 
-    if index_name == "annoy":
-        return IndexAnnoy()
-    if index_name == "ivf":
+    if index_name == "bin_flat":
+        return BinaryIDMAP()
+    if index_name == "bin_ivf_flat":
+        return BinaryIVF()
+    if index_name == "flat":
+        return IDMAP()
+    if index_name == "ivf_flat":
         return IVF()
-    if index_name == "ivfsq":
+    if index_name == "ivf_pq":
+        return IVFPQ()
+    if index_name == "ivf_sq8":
         return IVFSQ()
     if index_name == "hnsw":
         return IndexHNSW()
-    if index_name == "idmap":
-        return IDMAP()
-    if index_name == "binary_idmap":
-        return BinaryIDMAP()
-    if index_name == "gpu_ivf":
+    if index_name == "annoy":
+        return IndexAnnoy()
+    if index_name == "gpu_ivf_flat":
         return GPUIVF(-1)
-    if index_name == "gpu_ivfpq":
+    if index_name == "gpu_ivf_pq":
         return GPUIVFPQ(-1)
-    if index_name == "gpu_ivfsq":
+    if index_name == "gpu_ivf_sq8":
         return GPUIVFSQ(-1)
     raise ValueError(
         """ index name only support 
-            'annoy' 'ivf' 'ivfsq' 'hnsw' 'idmap' 'binary_idmap'
-            'gpu_ivf', 'gpu_ivfsq', 'gpu_ivfpq'."""
+            'bin_flat' 'bin_ivf_flat' 'flat' 'ivf_flat' 'ivf_pq' 'ivf_sq8' 'hnsw' 'annoy'
+            'gpu_ivf_flat', 'gpu_ivf_pq', 'gpu_ivf_sq8'."""
     )
 
 
