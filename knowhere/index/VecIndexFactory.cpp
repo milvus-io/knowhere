@@ -116,8 +116,6 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
                 return std::make_shared<knowhere::GPUIVFPQ>(gpu_device);
             } else if (type == IndexEnum::INDEX_FAISS_IVFSQ8) {
                 return std::make_shared<knowhere::GPUIVFSQ>(gpu_device);
-            } else if (type == IndexEnum::INDEX_FAISS_IVFSQ8H) {
-                return std::make_shared<knowhere::IVFSQHybrid>(gpu_device);
             } else {
                 KNOWHERE_THROW_FORMAT("Invalid index type %s", std::string(type).c_str());
             }
