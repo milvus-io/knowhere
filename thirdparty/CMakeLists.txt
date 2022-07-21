@@ -120,6 +120,7 @@ macro(build_faiss)
                 INTERFACE_INCLUDE_DIRECTORIES   "${FAISS_INCLUDE_DIR}")
 
     target_link_libraries( faiss INTERFACE knowhere_utils openblas )
+    
     add_dependencies( faiss faiss_ep )
 
 endmacro()
@@ -140,6 +141,57 @@ if ( KNOWHERE_WITH_FAISS AND NOT TARGET faiss_ep )
     include_directories( SYSTEM "${FAISS_INCLUDE_DIR}" )
     link_directories( SYSTEM ${FAISS_PREFIX}/${CMAKE_INSTALL_LIBDIR}/ )
 endif ()
+
+# ****************************** Thirdparty DiskANN ***************************************
+
+set( DISKANN_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/DiskANN )
+
+macro(build_diskann)
+    message( STATUS "Building DiskANN from source" )
+    set( DISKANN_PREFIX "${CMAKE_INSTALL_PREFIX}" )
+    set( DISKANN_INCLUDE_DIR "${DISKANN_PREFIX}/include" )
+    set( DISKANN_STATIC_LIB
+            "${DISKANN_PREFIX}/${CMAKE_INSTALL_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}diskann${CMAKE_STATIC_LIBRARY_SUFFIX}" )
+    set( DISKANN_CMAKE_ARGS
+            "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
+            "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+            "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+            "-DCMAKE_CXX_FLAGS= -fpermissive -I ${KNOWHERE_SOURCE_DIR}"
+            )
+    message( STATUS "Building DISKANN with configure args -${DISKANN_CMAKE_ARGS}" )
+    set( DISKANN_BUILD_DIR "${DISKANN_SOURCE_DIR}/build")
+    ExternalProject_Add( diskann_ep
+        SOURCE_DIR
+        ${DISKANN_SOURCE_DIR}
+        PATCH_COMMAND  mkdir -p build
+        BINARY_DIR ${DISKANN_BUILD_DIR}
+        CMAKE_ARGS ${DISKANN_CMAKE_ARGS}
+        BUILD_COMMAND cmake .. ${DISKANN_CMAKE_ARGS} COMMAND ${MAKE} ${MAKE_BUILD_ARGS}
+        INSTALL_COMMAND
+        ${MAKE} install
+        BUILD_ALWAYS 1 )
+
+        add_library( diskann STATIC IMPORTED )
+       
+        set_target_properties( diskann
+        PROPERTIES
+            IMPORTED_GLOBAL                 TRUE
+            IMPORTED_LOCATION               "${DISKANN_STATIC_LIB}"
+            INTERFACE_INCLUDE_DIRECTORIES   "${DISKANN_INCLUDE_DIR}")
+
+        target_link_libraries( diskann INTERFACE knowhere_utils )
+        add_dependencies( diskann diskann_ep )
+endmacro()
+
+if ( KNOWHERE_WITH_DISKANN AND NOT TARGET diskann_ep)
+    if ( DiskANN_SOURCE STREQUAL "AUTO")
+        if (NOT DiskANN_FOUND)
+            build_diskann()
+        endif ()
+    endif()
+    include_directories( SYSTEM ${DISKANN_INCLUDE_DIR})
+    link_directories( SYSTEM  "${DISKANN_PREFIX}/${CMAKE_INSTALL_LIBDIR}/" )
+endif()
 
 install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/annoy/"
         DESTINATION "include/annoy"
@@ -173,3 +225,12 @@ install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/easyloggingpp/"
         PATTERN "*.h" 
 )
 
+
+if ( KNOWHERE_WITH_DISKANN AND TARGET diskann)
+    install( DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/DiskANN/"
+    DESTINATION "include/DiskANN"
+    FILES_MATCHING
+    PATTERN "*.h"
+    PATTERN ".git*" EXCLUDE
+    )
+endif()
