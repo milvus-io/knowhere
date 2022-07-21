@@ -27,10 +27,12 @@ SUPPORT_GPU="OFF" #defaults to CPU version
 KNOWHERE_WITH_DISKANN="OFF"
 ENABLE_SANITIZER="OFF"
 
-while getopts "p:t:cglrsuzdh" arg; do
+while getopts "p:t:cdglrsuzh" arg; do
     case $arg in
         c)
             BUILD_COVERAGE="ON" ;;
+        d)
+            KNOWHERE_WITH_DISKANN="ON";;            
         g)
             SUPPORT_GPU="ON" ;;
         l)
@@ -48,8 +50,6 @@ while getopts "p:t:cglrsuzdh" arg; do
             BUILD_UNITTEST="ON" ;;
         z)
             SUPPORT_PROFILING="ON" ;;
-        d)
-            KNOWHERE_WITH_DISKANN="ON";;
         h) # help
             echo "
 
