@@ -41,6 +41,7 @@ typedef uint64_t size_t;
 #include <index/vector_index/gpu/IndexGPUIVF.h>
 #include <index/vector_index/gpu/IndexGPUIVFPQ.h>
 #include <index/vector_index/gpu/IndexGPUIVFSQ.h>
+#include <index/vector_index/gpu/IndexGPUIDMAP.h>
 #endif
 #include <index/vector_offset_index/IndexIVF_NM.h>
 #include <archive/KnowhereConfig.h>
@@ -76,6 +77,7 @@ import_array();
 %include <index/vector_index/gpu/IndexGPUIVF.h>
 %include <index/vector_index/gpu/IndexGPUIVFPQ.h>
 %include <index/vector_index/gpu/IndexGPUIVFSQ.h>
+%include <index/vector_index/gpu/IndexGPUIDMAP.h>
 #endif
 %include <index/vector_offset_index/IndexIVF_NM.h>
 
