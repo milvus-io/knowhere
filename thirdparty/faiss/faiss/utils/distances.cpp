@@ -511,7 +511,12 @@ static void knn_jaccard_blas(
 /*******************************************************
  * KNN driver functions
  *******************************************************/
-int distance_compute_blas_threshold = 16384;
+
+/* distance_compute_blas_threshold is used to decide to use BLAS or SIMD in
+ * IDMAP. Since BLAS is always slower than SIMD in testing, we change this
+ * default value from 20 to 65535 to disable BLAS.
+ */
+int distance_compute_blas_threshold = 65535;
 int distance_compute_blas_query_bs = 4096;
 int distance_compute_blas_database_bs = 1024;
 int distance_compute_min_k_reservoir = 100;
