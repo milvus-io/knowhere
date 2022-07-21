@@ -47,3 +47,22 @@ Run benchmark test using following commands:
   - make test_knowhere_range_all
   - make test_knowhere_binary_all
   - make test_knowhere_binary_range_all
+
+## Hardware Environment
+The logs under directory 'ref_log' are tested under following hardware environment:
+  - Architecture:        x86_64
+  - CPU op-mode(s):      32-bit, 64-bit
+  - Byte Order:          Little Endian
+  - CPU(s):              12
+  - Thread(s) per core:  2
+  - Core(s) per socket:  6
+  - Model name:          Intel(R) Core(TM) i7-8700 CPU @ 3.20GHz
+  - CPU MHz:             800.060
+  - CPU max MHz:         4600.0000
+  - CPU min MHz:         800.0000
+  - L1d cache:           32K
+  - L1i cache:           32K
+  - L2 cache:            256K
+  - L3 cache:            12288K
+  - Flags:               sse sse2 ssse3 sse4_1 sse4_2 avx f16c avx2
+  - Memory:              64G
