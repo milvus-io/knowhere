@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: knowhere-gpu-build
+  namespace: knowhere-ci
+spec:
+  enableServiceLinks: false
+  nodeSelector:
+    app: knowhere
+  containers:
+  - name: main
+    image: milvusdb/knowhere-gpu-build:amd64-ubuntu20.04-20220720-fb7537d
+    tty: true
+    args: ["cat"]
+    resources:
+      requests:
+        memory: "2Gi"
+        cpu: "4"
+      limits:
+        memory: "8Gi"
+        cpu: "8"
