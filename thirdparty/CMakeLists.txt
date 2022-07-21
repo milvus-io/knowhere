@@ -120,6 +120,7 @@ macro(build_faiss)
                 INTERFACE_INCLUDE_DIRECTORIES   "${FAISS_INCLUDE_DIR}")
 
     target_link_libraries( faiss INTERFACE knowhere_utils openblas )
+    
     add_dependencies( faiss faiss_ep )
 
 endmacro()

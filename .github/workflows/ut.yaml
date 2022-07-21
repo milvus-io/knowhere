@@ -46,7 +46,6 @@ jobs:
           ./build.sh -l
       - name: Run Unittest
         run: |
-
           if [[ ${{ matrix.os }} == 'ubuntu-18.04' ]]
           then
             diskann_opt=-d
@@ -56,6 +55,7 @@ jobs:
             ./output/unittest/faiss_test
           fi
           ./output/unittest/test_knowhere
+
 
   swig-build:
     name: Python3 SWIG compile

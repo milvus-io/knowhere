@@ -26,6 +26,7 @@ CUDA_COMPILER=/usr/local/cuda/bin/nvcc
 SUPPORT_GPU="OFF" #defaults to CPU version
 KNOWHERE_WITH_DISKANN="OFF"
 
+
 while getopts "p:t:cdglruzh" arg; do
     case $arg in
         c)

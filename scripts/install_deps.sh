@@ -51,6 +51,12 @@ if [[ "${MACHINE}" == "Linux" ]]; then
         if [[ "${INSTALL_OPENBLAS}" == "true" ]]; then
           sudo apt install -y libopenblas-dev
         fi
+        #DiskANN dependencies
+        sudo apt-get install -y libboost-program-options-dev
+        sudo apt-get install -y libaio-dev libgoogle-perftools-dev clang-format
+        wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18487/l_BaseKit_p_2022.1.2.146.sh
+        sudo sh l_BaseKit_p_2022.1.2.146.sh -a --components intel.oneapi.lin.mkl.devel --action install --eula accept -s
+        sudo apt-get install -y lsb-release
     elif [[ -x "$(command -v yum)" ]]; then
         # for CentOS 7
         #DiskANN dependencies
@@ -73,6 +79,12 @@ if [[ "${MACHINE}" == "Linux" ]]; then
         wget -c https://github.com/Kitware/CMake/releases/download/v3.22.2/cmake-3.22.2-linux-x86_64.tar.gz && \
         tar -zxvf cmake-3.22.2-linux-x86_64.tar.gz && \
         sudo ln -sf $(pwd)/cmake-3.22.2-linux-x86_64/bin/cmake /usr/bin/cmake
+        #DiskANN dependencies
+        sudo yum -y install boost-program-options
+        sudo yum -y install boost libaio gperftools-devel 
+        sudo yum-config-manager --add-repo https://yum.repos.intel.com/mkl/setup/intel-mkl.repo
+        sudo yum install -y intel-mkl
+        sudo yum install -y redhat-lsb-core 
     fi
 fi
 
