@@ -85,7 +85,8 @@ class Benchmark_knowhere_binary_range : public Benchmark_knowhere {
                                                          : knowhere::metric::TANIMOTO;
         knowhere::SetMetaMetricType(cfg_, metric_type_);
         knowhere::SetMetaRadius(cfg_, *gt_radius_);
-        knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AUTO);
+        knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX2);
+        printf("faiss::distance_compute_blas_threshold: %ld\n", knowhere::KnowhereConfig::GetBlasThreshold());
     }
 
     void
@@ -98,7 +99,7 @@ class Benchmark_knowhere_binary_range : public Benchmark_knowhere {
 
     // IVF index params
     const std::vector<int32_t> NLISTs_ = {1024};
-    const std::vector<int32_t> NPROBEs_ = {1, 2, 4, 8, 16, 32, 64, 128, 256};
+    const std::vector<int32_t> NPROBEs_ = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512};
 };
 
 // This testcase can be used to generate binary sift1m HDF5 file

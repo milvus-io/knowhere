@@ -6,32 +6,34 @@ Note: Google Test filter = Benchmark_knowhere_float_range.TEST_IVF_FLAT_NM
 [ RUN      ] Benchmark_knowhere_float_range.TEST_IVF_FLAT_NM
 [0.000 s] Loading HDF5 file: sift-128-euclidean-range.hdf5
 [0.000 s] Loading train data
-[0.189 s] Loading test data
-[0.191 s] Loading ground truth data
-2022-06-08 20:34:13,383 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
-2022-06-08 20:34:13,383 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
-[0.193 s] Creating CPU index "IVF_FLAT"
-[0.193 s] Reading index file: sift-128-euclidean-range_IVF_FLAT_1024.index
-[0.193 s] Building all on 1000000 vectors
-[12.315 s] Writing index file: sift-128-euclidean-range_IVF_FLAT_1024.index
+[0.177 s] Loading test data
+[0.179 s] Loading ground truth data
+2022-07-20 20:15:13,260 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-07-20 20:15:13,260 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold 16384
+[0.182 s] Creating CPU index "IVF_FLAT"
+[0.182 s] Reading index file: sift-128-euclidean-range_IVF_FLAT_1024.index
+[0.182 s] Building all on 1000000 vectors
+[12.499 s] Writing index file: sift-128-euclidean-range_IVF_FLAT_1024.index
 
-[12.578 s] sift-128-euclidean-range | IVF_FLAT | nlist=1024
+[12.762 s] sift-128-euclidean-range | IVF_FLAT | nlist=1024
 ================================================================================
-  nprobe =    1, nq = 10000, elapse = 0.3568s, R@ = 0.4340, A@ = 1.0000
-  nprobe =    2, nq = 10000, elapse = 0.5523s, R@ = 0.6766, A@ = 1.0000
-  nprobe =    4, nq = 10000, elapse = 0.8812s, R@ = 0.8826, A@ = 1.0000
-  nprobe =    8, nq = 10000, elapse = 1.6461s, R@ = 0.9700, A@ = 1.0000
-  nprobe =   16, nq = 10000, elapse = 3.0798s, R@ = 0.9954, A@ = 1.0000
-  nprobe =   32, nq = 10000, elapse = 5.7860s, R@ = 0.9997, A@ = 1.0000
-  nprobe =   64, nq = 10000, elapse = 11.3271s, R@ = 1.0000, A@ = 1.0000
-  nprobe =  128, nq = 10000, elapse = 21.7342s, R@ = 1.0000, A@ = 1.0000
-  nprobe =  256, nq = 10000, elapse = 42.0959s, R@ = 1.0000, A@ = 1.0000
+  nprobe =    1, nq = 10000, elapse =  0.214s, R@ = 0.4340, A@ = 1.0000
+  nprobe =    2, nq = 10000, elapse =  0.432s, R@ = 0.6766, A@ = 1.0000
+  nprobe =    4, nq = 10000, elapse =  0.832s, R@ = 0.8826, A@ = 1.0000
+  nprobe =    8, nq = 10000, elapse =  1.515s, R@ = 0.9700, A@ = 1.0000
+  nprobe =   16, nq = 10000, elapse =  2.903s, R@ = 0.9954, A@ = 1.0000
+  nprobe =   32, nq = 10000, elapse =  5.686s, R@ = 0.9997, A@ = 1.0000
+  nprobe =   64, nq = 10000, elapse = 11.057s, R@ = 1.0000, A@ = 1.0000
+  nprobe =  128, nq = 10000, elapse = 21.469s, R@ = 1.0000, A@ = 1.0000
+  nprobe =  256, nq = 10000, elapse = 41.710s, R@ = 1.0000, A@ = 1.0000
+  nprobe =  512, nq = 10000, elapse = 81.638s, R@ = 1.0000, A@ = 1.0000
 ================================================================================
-[101.671 s] Test 'sift-128-euclidean-range/IVF_FLAT' done
+[182.075 s] Test 'sift-128-euclidean-range/IVF_FLAT' done
 
-[       OK ] Benchmark_knowhere_float_range.TEST_IVF_FLAT_NM (101697 ms)
-[----------] 1 test from Benchmark_knowhere_float_range (101697 ms total)
+[       OK ] Benchmark_knowhere_float_range.TEST_IVF_FLAT_NM (182098 ms)
+[----------] 1 test from Benchmark_knowhere_float_range (182098 ms total)
 
 [----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (101697 ms total)
+[==========] 1 test from 1 test case ran. (182098 ms total)
 [  PASSED  ] 1 test.

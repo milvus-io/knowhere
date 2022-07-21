@@ -8,31 +8,33 @@ Note: Google Test filter = Benchmark_faiss.TEST_IVF_SQ8
 [0.000 s] Loading train data
 [0.182 s] Loading test data
 [0.184 s] Loading ground truth data
-2022-06-01 15:24:53,441 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS expect simdType::AUTO
-2022-06-01 15:24:53,442 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS hook AVX2
-[0.187 s] Reading index file: sift-128-euclidean_IVF1024_SQ8.index
-[0.187 s] Creating CPU index "IVF1024,SQ8" d=128
-[0.188 s] Training on 1000000 vectors
-[26.625 s] Indexing on 1000000 vectors
-[36.666 s] Writing index file: sift-128-euclidean_IVF1024_SQ8.index
+2022-07-20 22:14:41,549 INFO [default] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS expect simdType::AVX2
+2022-07-20 22:14:41,549 INFO [default] [KNOWHERE][SetSimdType][benchmark_faiss] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.186 s] Reading index file: sift-128-euclidean_IVF1024_SQ8.index
+[0.186 s] Creating CPU index "IVF1024,SQ8" d=128
+[0.187 s] Training on 1000000 vectors
+[9.065 s] Indexing on 1000000 vectors
+[12.557 s] Writing index file: sift-128-euclidean_IVF1024_SQ8.index
 
-[36.733 s] sift-128-euclidean | IVF1024,SQ8 | nlist=1024
+[12.623 s] sift-128-euclidean | IVF1024,SQ8 | nlist=1024
 ================================================================================
-  nprobe =    1, nq = 10000, k =   10, elapse = 0.2585s, R@ = 0.3699
-  nprobe =    2, nq = 10000, k =   10, elapse = 0.2645s, R@ = 0.5353
-  nprobe =    4, nq = 10000, k =   10, elapse = 0.4604s, R@ = 0.6994
-  nprobe =    8, nq = 10000, k =   10, elapse = 0.8427s, R@ = 0.8342
-  nprobe =   16, nq = 10000, k =   10, elapse = 1.5321s, R@ = 0.9232
-  nprobe =   32, nq = 10000, k =   10, elapse = 2.7058s, R@ = 0.9679
-  nprobe =   64, nq = 10000, k =   10, elapse = 5.1745s, R@ = 0.9825
-  nprobe =  128, nq = 10000, k =   10, elapse = 10.0401s, R@ = 0.9857
-  nprobe =  256, nq = 10000, k =   10, elapse = 19.8506s, R@ = 0.9861
+  nprobe =    1, nq = 10000, k =  100, elapse = 0.1491s, R@ = 0.2914
+  nprobe =    2, nq = 10000, k =  100, elapse = 0.2344s, R@ = 0.4401
+  nprobe =    4, nq = 10000, k =  100, elapse = 0.3482s, R@ = 0.6037
+  nprobe =    8, nq = 10000, k =  100, elapse = 0.6583s, R@ = 0.7577
+  nprobe =   16, nq = 10000, k =  100, elapse = 1.2749s, R@ = 0.8787
+  nprobe =   32, nq = 10000, k =  100, elapse = 2.4275s, R@ = 0.9519
+  nprobe =   64, nq = 10000, k =  100, elapse = 5.0662s, R@ = 0.9822
+  nprobe =  128, nq = 10000, k =  100, elapse = 10.4989s, R@ = 0.9892
+  nprobe =  256, nq = 10000, k =  100, elapse = 20.5541s, R@ = 0.9899
+  nprobe =  512, nq = 10000, k =  100, elapse = 39.0739s, R@ = 0.9899
 ================================================================================
-[78.205 s] Test 'sift-128-euclidean/IVF1024,SQ8' done
+[93.644 s] Test 'sift-128-euclidean/IVF1024,SQ8' done
 
-[       OK ] Benchmark_faiss.TEST_IVF_SQ8 (78205 ms)
-[----------] 1 test from Benchmark_faiss (78205 ms total)
+[       OK ] Benchmark_faiss.TEST_IVF_SQ8 (93645 ms)
+[----------] 1 test from Benchmark_faiss (93645 ms total)
 
 [----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (78205 ms total)
+[==========] 1 test from 1 test case ran. (93645 ms total)
 [  PASSED  ] 1 test.

@@ -6,32 +6,34 @@ Note: Google Test filter = Benchmark_knowhere_binary.TEST_BINARY_IVF_FLAT
 [ RUN      ] Benchmark_knowhere_binary.TEST_BINARY_IVF_FLAT
 [0.000 s] Loading HDF5 file: sift-4096-jaccard.hdf5
 [0.000 s] Loading train data
-[0.195 s] Loading test data
-[0.197 s] Loading ground truth data
-2022-06-08 21:03:30,037 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
-2022-06-08 21:03:30,037 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
-[0.198 s] Creating CPU index "BIN_IVF_FLAT"
-[0.198 s] Reading index file: sift-4096-jaccard_BIN_IVF_FLAT_1024.index
-[0.198 s] Building all on 1000000 vectors
-[126.694 s] Writing index file: sift-4096-jaccard_BIN_IVF_FLAT_1024.index
+[0.188 s] Loading test data
+[0.189 s] Loading ground truth data
+2022-07-20 21:27:39,165 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-07-20 21:27:39,165 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold 16384
+[0.192 s] Creating CPU index "BIN_IVF_FLAT"
+[0.192 s] Reading index file: sift-4096-jaccard_BIN_IVF_FLAT_1024.index
+[0.192 s] Building all on 1000000 vectors
+[102.924 s] Writing index file: sift-4096-jaccard_BIN_IVF_FLAT_1024.index
 
-[127.518 s] sift-4096-jaccard | BIN_IVF_FLAT | nlist=1024
+[103.697 s] sift-4096-jaccard | BIN_IVF_FLAT | nlist=1024
 ================================================================================
-  nprobe =    1, nq = 10000, k =   10, elapse = 0.7517s, R@ = 0.1085
-  nprobe =    2, nq = 10000, k =   10, elapse = 1.3671s, R@ = 0.1775
-  nprobe =    4, nq = 10000, k =   10, elapse = 2.7305s, R@ = 0.2743
-  nprobe =    8, nq = 10000, k =   10, elapse = 4.8747s, R@ = 0.3977
-  nprobe =   16, nq = 10000, k =   10, elapse = 8.5252s, R@ = 0.5458
-  nprobe =   32, nq = 10000, k =   10, elapse = 14.7983s, R@ = 0.7075
-  nprobe =   64, nq = 10000, k =   10, elapse = 25.8920s, R@ = 0.8548
-  nprobe =  128, nq = 10000, k =   10, elapse = 44.2699s, R@ = 0.9544
-  nprobe =  256, nq = 10000, k =   10, elapse = 70.6290s, R@ = 0.9934
+  nprobe =    1, nq = 10000, k =  100, elapse =  0.733s, R@ = 0.0879
+  nprobe =    2, nq = 10000, k =  100, elapse =  1.323s, R@ = 0.1472
+  nprobe =    4, nq = 10000, k =  100, elapse =  2.514s, R@ = 0.2333
+  nprobe =    8, nq = 10000, k =  100, elapse =  4.613s, R@ = 0.3484
+  nprobe =   16, nq = 10000, k =  100, elapse =  8.178s, R@ = 0.4934
+  nprobe =   32, nq = 10000, k =  100, elapse = 14.675s, R@ = 0.6602
+  nprobe =   64, nq = 10000, k =  100, elapse = 25.707s, R@ = 0.8211
+  nprobe =  128, nq = 10000, k =  100, elapse = 43.365s, R@ = 0.9407
+  nprobe =  256, nq = 10000, k =  100, elapse = 72.953s, R@ = 0.9922
+  nprobe =  512, nq = 10000, k =  100, elapse = 122.100s, R@ = 0.9991
 ================================================================================
-[301.422 s] Test 'sift-4096-jaccard/BIN_IVF_FLAT' done
+[400.608 s] Test 'sift-4096-jaccard/BIN_IVF_FLAT' done
 
-[       OK ] Benchmark_knowhere_binary.TEST_BINARY_IVF_FLAT (301467 ms)
-[----------] 1 test from Benchmark_knowhere_binary (301467 ms total)
+[       OK ] Benchmark_knowhere_binary.TEST_BINARY_IVF_FLAT (400638 ms)
+[----------] 1 test from Benchmark_knowhere_binary (400638 ms total)
 
 [----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (301467 ms total)
+[==========] 1 test from 1 test case ran. (400638 ms total)
 [  PASSED  ] 1 test.

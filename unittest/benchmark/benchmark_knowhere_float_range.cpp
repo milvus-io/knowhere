@@ -110,7 +110,8 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere {
         metric_type_ = (metric_str_ == METRIC_IP_STR) ? knowhere::metric::IP : knowhere::metric::L2;
         knowhere::SetMetaMetricType(cfg_, metric_type_);
         knowhere::SetMetaRadius(cfg_, *gt_radius_);
-        knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AUTO);
+        knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX2);
+        printf("faiss::distance_compute_blas_threshold: %ld\n", knowhere::KnowhereConfig::GetBlasThreshold());
     }
 
     void
@@ -123,7 +124,7 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere {
 
     // IVF index params
     const std::vector<int32_t> NLISTs_ = {1024};
-    const std::vector<int32_t> NPROBEs_ = {1, 2, 4, 8, 16, 32, 64, 128, 256};
+    const std::vector<int32_t> NPROBEs_ = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512};
 
     // IVFPQ index params
     const std::vector<int32_t> Ms_ = {8, 16, 32};
@@ -131,8 +132,8 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere {
 
     // HNSW index params
     const std::vector<int32_t> HNSW_Ms_ = {16};
-    const std::vector<int32_t> EFCONs_ = {100};
-    const std::vector<int32_t> EFs_ = {16, 32, 64, 128, 256};
+    const std::vector<int32_t> EFCONs_ = {200};
+    const std::vector<int32_t> EFs_ = {16, 32, 64, 128, 256, 512};
     const std::vector<int32_t> HNSW_Ks_ = {20};
 };
 

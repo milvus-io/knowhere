@@ -6,68 +6,84 @@ Note: Google Test filter = Benchmark_knowhere_float.TEST_IVF_HNSW
 [ RUN      ] Benchmark_knowhere_float.TEST_IVF_HNSW
 [0.000 s] Loading HDF5 file: sift-128-euclidean.hdf5
 [0.000 s] Loading train data
-[0.210 s] Loading test data
-[0.212 s] Loading ground truth data
-2022-06-19 10:43:35,387 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
-2022-06-19 10:43:35,387 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
-[0.213 s] Creating CPU index "IVF_HNSW"
-[0.213 s] Reading index file: sift-128-euclidean_IVF_HNSW_1024_16_100.index
-[0.213 s] Building all on 1000000 vectors
-[4.534 s] Writing index file: sift-128-euclidean_IVF_HNSW_1024_16_100.index
+[0.176 s] Loading test data
+[0.177 s] Loading ground truth data
+2022-07-20 20:37:49,839 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-07-20 20:37:49,839 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold 16384
+[0.180 s] Creating CPU index "IVF_HNSW"
+[0.180 s] Reading index file: sift-128-euclidean_IVF_HNSW_1024_16_200.index
+[0.180 s] Building all on 1000000 vectors
+[5.075 s] Writing index file: sift-128-euclidean_IVF_HNSW_1024_16_200.index
 
-[5.350 s] sift-128-euclidean | IVF_HNSW nlist=1024 | M=16 | efConstruction=100
+[5.927 s] sift-128-euclidean | IVF_HNSW nlist=1024 | M=16 | efConstruction=200
 ================================================================================
-  nprobe =    1, ef =   16, nq = 10000, k =   10, elapse =  0.207s, R@ = 0.3718
-  nprobe =    1, ef =   32, nq = 10000, k =   10, elapse =  0.197s, R@ = 0.3719
-  nprobe =    1, ef =   64, nq = 10000, k =   10, elapse =  0.206s, R@ = 0.3719
-  nprobe =    1, ef =  128, nq = 10000, k =   10, elapse =  0.235s, R@ = 0.3719
-  nprobe =    1, ef =  256, nq = 10000, k =   10, elapse =  0.250s, R@ = 0.3719
-  nprobe =    2, ef =   16, nq = 10000, k =   10, elapse =  0.387s, R@ = 0.5367
-  nprobe =    2, ef =   32, nq = 10000, k =   10, elapse =  0.388s, R@ = 0.5369
-  nprobe =    2, ef =   64, nq = 10000, k =   10, elapse =  0.389s, R@ = 0.5369
-  nprobe =    2, ef =  128, nq = 10000, k =   10, elapse =  0.416s, R@ = 0.5369
-  nprobe =    2, ef =  256, nq = 10000, k =   10, elapse =  0.441s, R@ = 0.5369
-  nprobe =    4, ef =   16, nq = 10000, k =   10, elapse =  0.746s, R@ = 0.7013
-  nprobe =    4, ef =   32, nq = 10000, k =   10, elapse =  0.748s, R@ = 0.7018
-  nprobe =    4, ef =   64, nq = 10000, k =   10, elapse =  0.760s, R@ = 0.7019
-  nprobe =    4, ef =  128, nq = 10000, k =   10, elapse =  0.769s, R@ = 0.7019
-  nprobe =    4, ef =  256, nq = 10000, k =   10, elapse =  0.790s, R@ = 0.7019
-  nprobe =    8, ef =   16, nq = 10000, k =   10, elapse =  1.448s, R@ = 0.8382
-  nprobe =    8, ef =   32, nq = 10000, k =   10, elapse =  1.456s, R@ = 0.8396
-  nprobe =    8, ef =   64, nq = 10000, k =   10, elapse =  1.449s, R@ = 0.8397
-  nprobe =    8, ef =  128, nq = 10000, k =   10, elapse =  1.464s, R@ = 0.8397
-  nprobe =    8, ef =  256, nq = 10000, k =   10, elapse =  1.496s, R@ = 0.8397
-  nprobe =   16, ef =   16, nq = 10000, k =   10, elapse =  2.833s, R@ = 0.9279
-  nprobe =   16, ef =   32, nq = 10000, k =   10, elapse =  2.846s, R@ = 0.9313
-  nprobe =   16, ef =   64, nq = 10000, k =   10, elapse =  2.853s, R@ = 0.9314
-  nprobe =   16, ef =  128, nq = 10000, k =   10, elapse =  2.864s, R@ = 0.9314
-  nprobe =   16, ef =  256, nq = 10000, k =   10, elapse =  2.885s, R@ = 0.9314
-  nprobe =   32, ef =   16, nq = 10000, k =   10, elapse =  5.573s, R@ = 0.9781
-  nprobe =   32, ef =   32, nq = 10000, k =   10, elapse =  5.587s, R@ = 0.9781
-  nprobe =   32, ef =   64, nq = 10000, k =   10, elapse =  5.570s, R@ = 0.9787
-  nprobe =   32, ef =  128, nq = 10000, k =   10, elapse =  5.573s, R@ = 0.9787
-  nprobe =   32, ef =  256, nq = 10000, k =   10, elapse =  5.633s, R@ = 0.9787
-  nprobe =   64, ef =   16, nq = 10000, k =   10, elapse = 10.899s, R@ = 0.9953
-  nprobe =   64, ef =   32, nq = 10000, k =   10, elapse = 10.920s, R@ = 0.9953
-  nprobe =   64, ef =   64, nq = 10000, k =   10, elapse = 10.935s, R@ = 0.9953
-  nprobe =   64, ef =  128, nq = 10000, k =   10, elapse = 10.924s, R@ = 0.9953
-  nprobe =   64, ef =  256, nq = 10000, k =   10, elapse = 11.051s, R@ = 0.9953
-  nprobe =  128, ef =   16, nq = 10000, k =   10, elapse = 21.375s, R@ = 0.9988
-  nprobe =  128, ef =   32, nq = 10000, k =   10, elapse = 21.370s, R@ = 0.9988
-  nprobe =  128, ef =   64, nq = 10000, k =   10, elapse = 21.364s, R@ = 0.9988
-  nprobe =  128, ef =  128, nq = 10000, k =   10, elapse = 21.623s, R@ = 0.9988
-  nprobe =  128, ef =  256, nq = 10000, k =   10, elapse = 21.414s, R@ = 0.9988
-  nprobe =  256, ef =   16, nq = 10000, k =   10, elapse = 41.818s, R@ = 0.9992
-  nprobe =  256, ef =   32, nq = 10000, k =   10, elapse = 41.832s, R@ = 0.9992
-  nprobe =  256, ef =   64, nq = 10000, k =   10, elapse = 41.926s, R@ = 0.9992
-  nprobe =  256, ef =  128, nq = 10000, k =   10, elapse = 41.813s, R@ = 0.9992
-  nprobe =  256, ef =  256, nq = 10000, k =   10, elapse = 41.851s, R@ = 0.9992
+  nprobe =    1, ef =   16, nq = 10000, k =  100, elapse =  0.209s, R@ = 0.2910
+  nprobe =    1, ef =   32, nq = 10000, k =  100, elapse =  0.199s, R@ = 0.2910
+  nprobe =    1, ef =   64, nq = 10000, k =  100, elapse =  0.223s, R@ = 0.2910
+  nprobe =    1, ef =  128, nq = 10000, k =  100, elapse =  0.224s, R@ = 0.2910
+  nprobe =    1, ef =  256, nq = 10000, k =  100, elapse =  0.263s, R@ = 0.2910
+  nprobe =    1, ef =  512, nq = 10000, k =  100, elapse =  0.298s, R@ = 0.2910
+  nprobe =    2, ef =   16, nq = 10000, k =  100, elapse =  0.390s, R@ = 0.4395
+  nprobe =    2, ef =   32, nq = 10000, k =  100, elapse =  0.395s, R@ = 0.4396
+  nprobe =    2, ef =   64, nq = 10000, k =  100, elapse =  0.397s, R@ = 0.4396
+  nprobe =    2, ef =  128, nq = 10000, k =  100, elapse =  0.407s, R@ = 0.4396
+  nprobe =    2, ef =  256, nq = 10000, k =  100, elapse =  0.437s, R@ = 0.4396
+  nprobe =    2, ef =  512, nq = 10000, k =  100, elapse =  0.510s, R@ = 0.4396
+  nprobe =    4, ef =   16, nq = 10000, k =  100, elapse =  0.763s, R@ = 0.6033
+  nprobe =    4, ef =   32, nq = 10000, k =  100, elapse =  0.744s, R@ = 0.6035
+  nprobe =    4, ef =   64, nq = 10000, k =  100, elapse =  0.747s, R@ = 0.6035
+  nprobe =    4, ef =  128, nq = 10000, k =  100, elapse =  0.766s, R@ = 0.6035
+  nprobe =    4, ef =  256, nq = 10000, k =  100, elapse =  0.789s, R@ = 0.6035
+  nprobe =    4, ef =  512, nq = 10000, k =  100, elapse =  0.835s, R@ = 0.6035
+  nprobe =    8, ef =   16, nq = 10000, k =  100, elapse =  1.433s, R@ = 0.7575
+  nprobe =    8, ef =   32, nq = 10000, k =  100, elapse =  1.456s, R@ = 0.7582
+  nprobe =    8, ef =   64, nq = 10000, k =  100, elapse =  1.461s, R@ = 0.7583
+  nprobe =    8, ef =  128, nq = 10000, k =  100, elapse =  1.470s, R@ = 0.7583
+  nprobe =    8, ef =  256, nq = 10000, k =  100, elapse =  1.495s, R@ = 0.7583
+  nprobe =    8, ef =  512, nq = 10000, k =  100, elapse =  1.538s, R@ = 0.7583
+  nprobe =   16, ef =   16, nq = 10000, k =  100, elapse =  2.828s, R@ = 0.8778
+  nprobe =   16, ef =   32, nq = 10000, k =  100, elapse =  2.814s, R@ = 0.8804
+  nprobe =   16, ef =   64, nq = 10000, k =  100, elapse =  2.829s, R@ = 0.8805
+  nprobe =   16, ef =  128, nq = 10000, k =  100, elapse =  2.841s, R@ = 0.8805
+  nprobe =   16, ef =  256, nq = 10000, k =  100, elapse =  2.878s, R@ = 0.8805
+  nprobe =   16, ef =  512, nq = 10000, k =  100, elapse =  2.912s, R@ = 0.8805
+  nprobe =   32, ef =   16, nq = 10000, k =  100, elapse =  5.534s, R@ = 0.9556
+  nprobe =   32, ef =   32, nq = 10000, k =  100, elapse =  5.521s, R@ = 0.9556
+  nprobe =   32, ef =   64, nq = 10000, k =  100, elapse =  5.542s, R@ = 0.9561
+  nprobe =   32, ef =  128, nq = 10000, k =  100, elapse =  5.564s, R@ = 0.9561
+  nprobe =   32, ef =  256, nq = 10000, k =  100, elapse =  5.584s, R@ = 0.9561
+  nprobe =   32, ef =  512, nq = 10000, k =  100, elapse =  5.628s, R@ = 0.9561
+  nprobe =   64, ef =   16, nq = 10000, k =  100, elapse = 10.856s, R@ = 0.9897
+  nprobe =   64, ef =   32, nq = 10000, k =  100, elapse = 10.829s, R@ = 0.9897
+  nprobe =   64, ef =   64, nq = 10000, k =  100, elapse = 10.831s, R@ = 0.9897
+  nprobe =   64, ef =  128, nq = 10000, k =  100, elapse = 10.843s, R@ = 0.9898
+  nprobe =   64, ef =  256, nq = 10000, k =  100, elapse = 10.903s, R@ = 0.9898
+  nprobe =   64, ef =  512, nq = 10000, k =  100, elapse = 10.913s, R@ = 0.9898
+  nprobe =  128, ef =   16, nq = 10000, k =  100, elapse = 22.569s, R@ = 0.9988
+  nprobe =  128, ef =   32, nq = 10000, k =  100, elapse = 21.226s, R@ = 0.9988
+  nprobe =  128, ef =   64, nq = 10000, k =  100, elapse = 21.218s, R@ = 0.9988
+  nprobe =  128, ef =  128, nq = 10000, k =  100, elapse = 21.207s, R@ = 0.9988
+  nprobe =  128, ef =  256, nq = 10000, k =  100, elapse = 21.499s, R@ = 0.9988
+  nprobe =  128, ef =  512, nq = 10000, k =  100, elapse = 21.323s, R@ = 0.9988
+  nprobe =  256, ef =   16, nq = 10000, k =  100, elapse = 41.371s, R@ = 0.9999
+  nprobe =  256, ef =   32, nq = 10000, k =  100, elapse = 41.489s, R@ = 0.9999
+  nprobe =  256, ef =   64, nq = 10000, k =  100, elapse = 41.554s, R@ = 0.9999
+  nprobe =  256, ef =  128, nq = 10000, k =  100, elapse = 41.394s, R@ = 0.9999
+  nprobe =  256, ef =  256, nq = 10000, k =  100, elapse = 42.978s, R@ = 0.9999
+  nprobe =  256, ef =  512, nq = 10000, k =  100, elapse = 41.411s, R@ = 0.9999
+  nprobe =  512, ef =   16, nq = 10000, k =  100, elapse = 82.277s, R@ = 0.9999
+  nprobe =  512, ef =   32, nq = 10000, k =  100, elapse = 81.362s, R@ = 0.9999
+  nprobe =  512, ef =   64, nq = 10000, k =  100, elapse = 81.496s, R@ = 0.9999
+  nprobe =  512, ef =  128, nq = 10000, k =  100, elapse = 81.389s, R@ = 0.9999
+  nprobe =  512, ef =  256, nq = 10000, k =  100, elapse = 81.394s, R@ = 0.9999
+  nprobe =  512, ef =  512, nq = 10000, k =  100, elapse = 81.315s, R@ = 0.9999
 ================================================================================
-[433.259 s] Test 'sift-128-euclidean/IVF_HNSW' done
+[1011.650 s] Test 'sift-128-euclidean/IVF_HNSW' done
 
-[       OK ] Benchmark_knowhere_float.TEST_IVF_HNSW (433291 ms)
-[----------] 1 test from Benchmark_knowhere_float (433291 ms total)
+[       OK ] Benchmark_knowhere_float.TEST_IVF_HNSW (1011674 ms)
+[----------] 1 test from Benchmark_knowhere_float (1011674 ms total)
 
 [----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (433291 ms total)
+[==========] 1 test from 1 test case ran. (1011674 ms total)
 [  PASSED  ] 1 test.

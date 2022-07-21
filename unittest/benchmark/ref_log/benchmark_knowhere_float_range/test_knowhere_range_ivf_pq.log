@@ -6,70 +6,74 @@ Note: Google Test filter = Benchmark_knowhere_float_range.TEST_IVF_PQ
 [ RUN      ] Benchmark_knowhere_float_range.TEST_IVF_PQ
 [0.000 s] Loading HDF5 file: sift-128-euclidean-range.hdf5
 [0.000 s] Loading train data
-[0.192 s] Loading test data
-[0.194 s] Loading ground truth data
-2022-06-08 20:36:50,514 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:39] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AUTO
-2022-06-08 20:36:50,514 DEBUG [default] [caiyd@unknown-host] [static std::__cxx11::string knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType)] [/home/caiyd/vec/knowhere/knowhere/archive/KnowhereConfig.cpp:64] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
-[0.196 s] Creating CPU index "IVF_PQ"
-[0.196 s] Reading index file: sift-128-euclidean-range_IVF_PQ_1024_8.index
-[0.196 s] Building all on 1000000 vectors
-[35.650 s] Writing index file: sift-128-euclidean-range_IVF_PQ_1024_8.index
+[0.212 s] Loading test data
+[0.215 s] Loading ground truth data
+2022-07-20 20:19:49,364 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-07-20 20:19:49,364 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold 16384
+[0.218 s] Creating CPU index "IVF_PQ"
+[0.218 s] Reading index file: sift-128-euclidean-range_IVF_PQ_1024_8.index
+[0.218 s] Building all on 1000000 vectors
+[34.748 s] Writing index file: sift-128-euclidean-range_IVF_PQ_1024_8.index
 
-[35.712 s] sift-128-euclidean-range | IVF_PQ | nlist=1024
+[34.802 s] sift-128-euclidean-range | IVF_PQ | nlist=1024
 ================================================================================
-  nprobe =    1, nq = 10000, elapse = 0.2615s, R@ = 0.3978, A@ = 0.7592
-  nprobe =    2, nq = 10000, elapse = 0.2440s, R@ = 0.6068, A@ = 0.7601
-  nprobe =    4, nq = 10000, elapse = 0.2913s, R@ = 0.7703, A@ = 0.7530
-  nprobe =    8, nq = 10000, elapse = 0.3044s, R@ = 0.8266, A@ = 0.7446
-  nprobe =   16, nq = 10000, elapse = 0.2858s, R@ = 0.8388, A@ = 0.7408
-  nprobe =   32, nq = 10000, elapse = 0.4774s, R@ = 0.8400, A@ = 0.7401
-  nprobe =   64, nq = 10000, elapse = 0.8429s, R@ = 0.8401, A@ = 0.7401
-  nprobe =  128, nq = 10000, elapse = 1.2711s, R@ = 0.8401, A@ = 0.7401
-  nprobe =  256, nq = 10000, elapse = 2.2803s, R@ = 0.8401, A@ = 0.7401
+  nprobe =    1, nq = 10000, elapse =  0.068s, R@ = 0.3978, A@ = 0.7592
+  nprobe =    2, nq = 10000, elapse =  0.077s, R@ = 0.6068, A@ = 0.7601
+  nprobe =    4, nq = 10000, elapse =  0.092s, R@ = 0.7703, A@ = 0.7530
+  nprobe =    8, nq = 10000, elapse =  0.160s, R@ = 0.8266, A@ = 0.7446
+  nprobe =   16, nq = 10000, elapse =  0.253s, R@ = 0.8388, A@ = 0.7408
+  nprobe =   32, nq = 10000, elapse =  0.311s, R@ = 0.8400, A@ = 0.7401
+  nprobe =   64, nq = 10000, elapse =  0.574s, R@ = 0.8401, A@ = 0.7401
+  nprobe =  128, nq = 10000, elapse =  1.024s, R@ = 0.8401, A@ = 0.7401
+  nprobe =  256, nq = 10000, elapse =  1.988s, R@ = 0.8401, A@ = 0.7401
+  nprobe =  512, nq = 10000, elapse =  4.015s, R@ = 0.8401, A@ = 0.7401
 ================================================================================
-[43.764 s] Test 'sift-128-euclidean-range/IVF_PQ' done
+[45.549 s] Test 'sift-128-euclidean-range/IVF_PQ' done
 
-[43.764 s] Creating CPU index "IVF_PQ"
-[43.765 s] Reading index file: sift-128-euclidean-range_IVF_PQ_1024_16.index
-[43.766 s] Building all on 1000000 vectors
-[65.487 s] Writing index file: sift-128-euclidean-range_IVF_PQ_1024_16.index
+[45.549 s] Creating CPU index "IVF_PQ"
+[45.550 s] Reading index file: sift-128-euclidean-range_IVF_PQ_1024_16.index
+[45.550 s] Building all on 1000000 vectors
+[67.135 s] Writing index file: sift-128-euclidean-range_IVF_PQ_1024_16.index
 
-[65.522 s] sift-128-euclidean-range | IVF_PQ | nlist=1024
+[67.170 s] sift-128-euclidean-range | IVF_PQ | nlist=1024
 ================================================================================
-  nprobe =    1, nq = 10000, elapse = 0.2461s, R@ = 0.4004, A@ = 0.8794
-  nprobe =    2, nq = 10000, elapse = 0.2268s, R@ = 0.6140, A@ = 0.8800
-  nprobe =    4, nq = 10000, elapse = 0.2613s, R@ = 0.7854, A@ = 0.8765
-  nprobe =    8, nq = 10000, elapse = 0.2689s, R@ = 0.8480, A@ = 0.8722
-  nprobe =   16, nq = 10000, elapse = 0.4076s, R@ = 0.8630, A@ = 0.8702
-  nprobe =   32, nq = 10000, elapse = 0.6156s, R@ = 0.8648, A@ = 0.8699
-  nprobe =   64, nq = 10000, elapse = 1.1625s, R@ = 0.8649, A@ = 0.8698
-  nprobe =  128, nq = 10000, elapse = 2.2021s, R@ = 0.8649, A@ = 0.8698
-  nprobe =  256, nq = 10000, elapse = 4.1401s, R@ = 0.8649, A@ = 0.8698
+  nprobe =    1, nq = 10000, elapse =  0.057s, R@ = 0.4004, A@ = 0.8794
+  nprobe =    2, nq = 10000, elapse =  0.072s, R@ = 0.6140, A@ = 0.8800
+  nprobe =    4, nq = 10000, elapse =  0.104s, R@ = 0.7854, A@ = 0.8765
+  nprobe =    8, nq = 10000, elapse =  0.162s, R@ = 0.8480, A@ = 0.8722
+  nprobe =   16, nq = 10000, elapse =  0.284s, R@ = 0.8630, A@ = 0.8702
+  nprobe =   32, nq = 10000, elapse =  0.530s, R@ = 0.8648, A@ = 0.8699
+  nprobe =   64, nq = 10000, elapse =  0.994s, R@ = 0.8649, A@ = 0.8698
+  nprobe =  128, nq = 10000, elapse =  2.228s, R@ = 0.8649, A@ = 0.8698
+  nprobe =  256, nq = 10000, elapse =  3.577s, R@ = 0.8649, A@ = 0.8698
+  nprobe =  512, nq = 10000, elapse =  7.749s, R@ = 0.8649, A@ = 0.8698
 ================================================================================
-[76.728 s] Test 'sift-128-euclidean-range/IVF_PQ' done
+[84.973 s] Test 'sift-128-euclidean-range/IVF_PQ' done
 
-[76.728 s] Creating CPU index "IVF_PQ"
-[76.729 s] Reading index file: sift-128-euclidean-range_IVF_PQ_1024_32.index
-[76.729 s] Building all on 1000000 vectors
-[103.058 s] Writing index file: sift-128-euclidean-range_IVF_PQ_1024_32.index
+[84.973 s] Creating CPU index "IVF_PQ"
+[84.973 s] Reading index file: sift-128-euclidean-range_IVF_PQ_1024_32.index
+[84.973 s] Building all on 1000000 vectors
+[111.471 s] Writing index file: sift-128-euclidean-range_IVF_PQ_1024_32.index
 
-[103.135 s] sift-128-euclidean-range | IVF_PQ | nlist=1024
+[111.563 s] sift-128-euclidean-range | IVF_PQ | nlist=1024
 ================================================================================
-  nprobe =    1, nq = 10000, elapse = 0.2569s, R@ = 0.4141, A@ = 0.9285
-  nprobe =    2, nq = 10000, elapse = 0.2684s, R@ = 0.6412, A@ = 0.9273
-  nprobe =    4, nq = 10000, elapse = 0.3959s, R@ = 0.8283, A@ = 0.9239
-  nprobe =    8, nq = 10000, elapse = 0.5175s, R@ = 0.9019, A@ = 0.9209
-  nprobe =   16, nq = 10000, elapse = 0.7994s, R@ = 0.9211, A@ = 0.9194
-  nprobe =   32, nq = 10000, elapse = 1.2400s, R@ = 0.9238, A@ = 0.9191
-  nprobe =   64, nq = 10000, elapse = 2.2605s, R@ = 0.9240, A@ = 0.9190
-  nprobe =  128, nq = 10000, elapse = 4.3892s, R@ = 0.9240, A@ = 0.9190
-  nprobe =  256, nq = 10000, elapse = 8.1533s, R@ = 0.9240, A@ = 0.9190
+  nprobe =    1, nq = 10000, elapse =  0.106s, R@ = 0.4141, A@ = 0.9285
+  nprobe =    2, nq = 10000, elapse =  0.141s, R@ = 0.6412, A@ = 0.9273
+  nprobe =    4, nq = 10000, elapse =  0.236s, R@ = 0.8283, A@ = 0.9239
+  nprobe =    8, nq = 10000, elapse =  0.302s, R@ = 0.9019, A@ = 0.9209
+  nprobe =   16, nq = 10000, elapse =  0.534s, R@ = 0.9211, A@ = 0.9194
+  nprobe =   32, nq = 10000, elapse =  1.007s, R@ = 0.9238, A@ = 0.9191
+  nprobe =   64, nq = 10000, elapse =  1.947s, R@ = 0.9240, A@ = 0.9190
+  nprobe =  128, nq = 10000, elapse =  3.870s, R@ = 0.9240, A@ = 0.9190
+  nprobe =  256, nq = 10000, elapse =  8.677s, R@ = 0.9240, A@ = 0.9190
+  nprobe =  512, nq = 10000, elapse = 15.754s, R@ = 0.9240, A@ = 0.9190
 ================================================================================
-[123.098 s] Test 'sift-128-euclidean-range/IVF_PQ' done
+[146.233 s] Test 'sift-128-euclidean-range/IVF_PQ' done
 
-[       OK ] Benchmark_knowhere_float_range.TEST_IVF_PQ (123117 ms)
-[----------] 1 test from Benchmark_knowhere_float_range (123117 ms total)
+[       OK ] Benchmark_knowhere_float_range.TEST_IVF_PQ (146245 ms)
+[----------] 1 test from Benchmark_knowhere_float_range (146245 ms total)
 
 [----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (123117 ms total)
+[==========] 1 test from 1 test case ran. (146245 ms total)
 [  PASSED  ] 1 test.
