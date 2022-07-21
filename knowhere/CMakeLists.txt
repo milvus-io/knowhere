@@ -148,8 +148,8 @@ endif ()
 
 if (KNOWHERE_WITH_DISKANN)
     set(depend_libs
-            diskann
             ${depend_libs}
+            diskann
             )
 endif()
 

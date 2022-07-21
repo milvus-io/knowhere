@@ -84,7 +84,7 @@ define_option(KNOWHERE_WITH_FAISS "Build with FAISS library" ON)
 
 define_option(KNOWHERE_WITH_FAISS_GPU_VERSION "Build with FAISS GPU version" OFF)
 
-if ( ${CMAKE_HOST_SYSTEM_NAME} MATCHES "Linux" )
+if ( LINUX )
     define_option(KNOWHERE_WITH_DISKANN "Build with DiskANN library" ON)
 endif()
 
