@@ -24,9 +24,10 @@ SUPPORT_PROFILING="OFF"
 RUN_CPPLINT="OFF"
 CUDA_COMPILER=/usr/local/cuda/bin/nvcc
 SUPPORT_GPU="OFF" #defaults to CPU version
+KNOWHERE_WITH_DISKANN="OFF"
 ENABLE_SANITIZER="OFF"
 
-while getopts "p:t:cglrsuzh" arg; do
+while getopts "p:t:cglrsuzdh" arg; do
     case $arg in
         c)
             BUILD_COVERAGE="ON" ;;
@@ -47,6 +48,8 @@ while getopts "p:t:cglrsuzh" arg; do
             BUILD_UNITTEST="ON" ;;
         z)
             SUPPORT_PROFILING="ON" ;;
+        d)
+            KNOWHERE_WITH_DISKANN="ON";;
         h) # help
             echo "
 
@@ -60,6 +63,7 @@ parameter:
 -t: build type(default: Debug)
 -u: building unit test options(default: OFF)
 -z: support CPU profiling(default: OFF)
+-d: support DiskANN(default: OFF)
 -h: help
 
 usage:
@@ -78,6 +82,11 @@ if [[ ${MAKE_CLEAN} == "ON" ]]; then
   echo "Clean faiss ..."
   cd thirdparty/faiss
   rm -rf CMakeFiles _deps CMakeCache.txt
+  cd ../../
+  echo "Cleaning DiskANN ..."
+  cd thirdparty/DiskANN
+  rm -rf build/
+  cd ../../
   exit 0
 fi
 
@@ -95,6 +104,7 @@ CMAKE_CMD="cmake -DBUILD_UNIT_TEST=${BUILD_UNITTEST} \
 -DENABLE_PROFILING=${SUPPORT_PROFILING} \
 -DKNOWHERE_GPU_VERSION=${SUPPORT_GPU} \
 -DENABLE_SANITIZER=${ENABLE_SANITIZER} \
+-DKNOWHERE_WITH_DISKANN=${KNOWHERE_WITH_DISKANN} \
 ../"
 
 echo ${CMAKE_CMD}
