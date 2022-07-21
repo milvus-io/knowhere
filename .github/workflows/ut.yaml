@@ -46,21 +46,16 @@ jobs:
           ./build.sh -l
       - name: Run Unittest
         run: |
-          if [[ ${{ matrix.os }} == 'centos7' || ${{ matrix.os }} == 'macos-11' ]]
-          then
-            ./build.sh -t Release -u
-            if [[ -f "output/unittest/faiss_test" ]]; then
-              ./output/unittest/faiss_test
-            fi
-            ./output/unittest/test_knowhere
-          else
-            ./build.sh -d -t Release -u
-            if [[ -f "output/unittest/faiss_test" ]]; then
-              ./output/unittest/faiss_test
-            fi
-            ./output/unittest/test_knowhere
-          fi
 
+          if [[ ${{ matrix.os }} == 'ubuntu-18.04' ]]
+          then
+            diskann_opt=-d
+          fi
+          ./build.sh $diskann_opt -t Release -u
+          if [[ -f "output/unittest/faiss_test" ]]; then
+            ./output/unittest/faiss_test
+          fi
+          ./output/unittest/test_knowhere
 
   swig-build:
     name: Python3 SWIG compile
