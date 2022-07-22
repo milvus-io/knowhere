@@ -19,6 +19,7 @@
 #include <set>
 #include <sstream>
 #include <string.h>
+#include <xmmintrin.h>
 #ifdef __APPLE__
 #else
 #include <malloc.h>
