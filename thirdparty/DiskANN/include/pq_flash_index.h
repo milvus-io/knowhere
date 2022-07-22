@@ -103,10 +103,14 @@ namespace diskann {
                                         const _u64          max_l_search,
                                         std::vector<_u64> & indices,
                                         std::vector<float> &distances,
-                                        const _u64          min_beam_width,
+                                        const _u64          beam_width,
                                         QueryStats *        stats = nullptr);
 
     std::shared_ptr<AlignedFileReader> &reader;
+
+    DISKANN_DLLEXPORT _u64 get_num_points() const noexcept;
+
+    DISKANN_DLLEXPORT _u64 get_data_dim() const noexcept;
 
    protected:
     DISKANN_DLLEXPORT void use_medoids_data_as_centroids();
