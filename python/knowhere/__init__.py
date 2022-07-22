@@ -25,16 +25,18 @@ def CreateIndex(index_name, simd_type="auto"):
         return IndexHNSW()
     if index_name == "annoy":
         return IndexAnnoy()
+    if index_name == "gpu_flat":
+        return GPUIDMAP(0)
     if index_name == "gpu_ivf_flat":
-        return GPUIVF(-1)
+        return GPUIVF(0)
     if index_name == "gpu_ivf_pq":
-        return GPUIVFPQ(-1)
+        return GPUIVFPQ(0)
     if index_name == "gpu_ivf_sq8":
-        return GPUIVFSQ(-1)
+        return GPUIVFSQ(0)
     raise ValueError(
         """ index name only support 
             'bin_flat' 'bin_ivf_flat' 'flat' 'ivf_flat' 'ivf_pq' 'ivf_sq8' 'hnsw' 'annoy'
-            'gpu_ivf_flat', 'gpu_ivf_pq', 'gpu_ivf_sq8'."""
+            'gpu_flat' 'gpu_ivf_flat', 'gpu_ivf_pq', 'gpu_ivf_sq8'."""
     )
 
 
