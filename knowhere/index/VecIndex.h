@@ -43,11 +43,27 @@ class VecIndex : public Index {
     virtual void
     AddWithoutIds(const DatasetPtr& dataset, const Config& config) = 0;
 
+    /**
+     * @brief Prepare the Index ready for query.
+     *
+     * @return true if the index is well prepared.
+     * @return false if any error.
+     */
+    virtual bool
+    Prepare() {
+        KNOWHERE_THROW_MSG("Prepare not supported yet");
+    }
+
     virtual DatasetPtr
     GetVectorById(const DatasetPtr& dataset, const Config& config) {
         KNOWHERE_THROW_MSG("GetVectorById not supported yet");
     }
 
+    /**
+     * @brief TopK Query. if the result size is smaller than K, this API will fill the return ids with -1 and distances
+     * with FLOAT_MIN or FLOAT_MAX depends on the metric type.
+     *
+     */
     virtual DatasetPtr
     Query(const DatasetPtr& dataset, const Config& config, const faiss::BitsetView bitset) = 0;
 

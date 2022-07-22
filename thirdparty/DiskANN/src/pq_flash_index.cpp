@@ -1204,6 +1204,13 @@ namespace diskann {
 
     // copy k_search values
     for (_u64 i = 0; i < k_search; i++) {
+      if (i >= full_retset.size()) {
+        indices[i] = -1;
+        if (distances != nullptr) {
+          distances[i] = -1;
+        }
+        continue;
+      }
       indices[i] = full_retset[i].id;
       if (distances != nullptr) {
         distances[i] = full_retset[i].distance;
@@ -1237,7 +1244,7 @@ namespace diskann {
                                      const _u64          max_l_search,
                                      std::vector<_u64> & indices,
                                      std::vector<float> &distances,
-                                     const _u64          min_beam_width,
+                                     const _u64          beam_width,
                                      QueryStats *        stats) {
     _u32 res_count = 0;
 
@@ -1247,13 +1254,10 @@ namespace diskann {
     while (!stop_flag) {
       indices.resize(l_search);
       distances.resize(l_search);
-      _u64 cur_bw =
-          min_beam_width > (l_search / 5) ? min_beam_width : l_search / 5;
-      cur_bw = (cur_bw > 100) ? 100 : cur_bw;
       for (auto &x : distances)
         x = std::numeric_limits<float>::max();
       this->cached_beam_search(query1, l_search, l_search, indices.data(),
-                               distances.data(), cur_bw, false, stats);
+                               distances.data(), beam_width, false, stats);
       for (_u32 i = 0; i < l_search; i++) {
         if (distances[i] > (float) range) {
           res_count = i;
@@ -1270,6 +1274,16 @@ namespace diskann {
     indices.resize(res_count);
     distances.resize(res_count);
     return res_count;
+  }
+
+  template<typename T>
+  _u64 PQFlashIndex<T>::get_num_points() const noexcept {
+    return num_points;
+  }
+
+  template<typename T>
+  _u64 PQFlashIndex<T>::get_data_dim() const noexcept {
+    return data_dim;
   }
 
 #ifdef EXEC_ENV_OLS

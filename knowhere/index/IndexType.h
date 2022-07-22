@@ -37,6 +37,8 @@ constexpr const char* INDEX_RHNSWFlat = "RHNSW_FLAT";
 constexpr const char* INDEX_RHNSWPQ = "RHNSW_PQ";
 constexpr const char* INDEX_RHNSWSQ = "RHNSW_SQ";
 
+constexpr const char* INDEX_DISKANN = "DISKANN";
+
 #ifdef KNOWHERE_SUPPORT_NGT
 constexpr const char* INDEX_NGTPANNG = "NGT_PANNG";
 constexpr const char* INDEX_NGTONNG = "NGT_ONNG";

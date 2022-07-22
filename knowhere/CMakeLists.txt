@@ -85,6 +85,13 @@ set(vector_index_srcs
         index/vector_index/Statistics.cpp
         )
 
+if ( KNOWHERE_WITH_DISKANN )
+    set(vector_index_srcs
+            index/vector_index/IndexDiskANN.cpp
+            ${vector_index_srcs}
+            )
+endif()
+
 set(vector_offset_index_srcs
         index/vector_offset_index/OffsetBaseIndex.cpp
         index/vector_offset_index/IndexIVF_NM.cpp
