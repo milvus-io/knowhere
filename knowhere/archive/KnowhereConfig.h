@@ -88,8 +88,6 @@ class KnowhereConfig {
     static void
     SetLogHandler();
 
-#ifdef KNOWHERE_GPU_VERSION
-    // todo: move to ohter file?
     /**
      * init GPU Resource
      */
@@ -101,7 +99,6 @@ class KnowhereConfig {
      */
     static void
     FreeGPUResource();
-#endif
 };
 
 }  // namespace knowhere

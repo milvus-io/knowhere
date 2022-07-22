@@ -129,21 +129,23 @@ KnowhereConfig::SetLogHandler() {
 #endif
 }
 
-#ifdef KNOWHERE_GPU_VERSION
 void
 KnowhereConfig::InitGPUResource(const std::vector<int64_t>& gpu_ids) {
+#ifdef KNOWHERE_GPU_VERSION
     for (auto id : gpu_ids) {
         LOG_KNOWHERE_INFO_ << "init GPU resource for gpu id: " << id;
         // device_id, pinned_memory, temp_memory, resource_num
         knowhere::FaissGpuResourceMgr::GetInstance().InitDevice(id, 256 * M_BYTE, 256 * M_BYTE, 2);
     }
+#endif
 }
 
 void
 KnowhereConfig::FreeGPUResource() {
+#ifdef KNOWHERE_GPU_VERSION
     LOG_KNOWHERE_INFO_ << "free GPU resource";
     knowhere::FaissGpuResourceMgr::GetInstance().Free();  // Release gpu resources.
-}
 #endif
+}
 
 }  // namespace knowhere
