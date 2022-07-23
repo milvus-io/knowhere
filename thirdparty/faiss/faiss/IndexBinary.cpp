@@ -36,10 +36,6 @@ void IndexBinary::add_with_ids(idx_t, const uint8_t*, const idx_t*) {
     FAISS_THROW_MSG("add_with_ids not implemented for this type of index");
 }
 
-void IndexBinary::get_vector_by_id(idx_t n, const idx_t* xids, uint8_t* x) {
-    FAISS_THROW_MSG("get_vector_by_id not implemented for this type of index");
-}
-
 size_t IndexBinary::remove_ids(const IDSelector&) {
     FAISS_THROW_MSG("remove_ids not implemented for this type of index");
     return 0;

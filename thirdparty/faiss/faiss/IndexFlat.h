@@ -24,8 +24,6 @@ struct IndexFlat : IndexFlatCodes {
 
     explicit IndexFlat(idx_t d, MetricType metric = METRIC_L2);
 
-    void get_vector_by_id(idx_t n, const idx_t* xids, float* x) override;
-
     void search(
             idx_t n,
             const float* x,

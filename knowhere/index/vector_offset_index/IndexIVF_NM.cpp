@@ -150,7 +150,12 @@ IVF_NM::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
     try {
         p_x = (float*)malloc(sizeof(float) * dim * rows);
         auto ivf_index = dynamic_cast<faiss::IndexIVF*>(index_.get());
-        ivf_index->get_vector_by_id_without_codes(rows, p_ids, p_x);
+        ivf_index->make_direct_map(true);
+        for (int64_t i = 0; i < rows; i++) {
+            int64_t id = p_ids[i];
+            KNOWHERE_THROW_IF_NOT_FMT(id >= 0 && id < ivf_index->ntotal, "invalid id %ld", id);
+            ivf_index->reconstruct_without_codes(id, p_x + i * dim);
+        }
         return GenResultDataset(p_x);
     } catch (faiss::FaissException& e) {
         release_when_exception();

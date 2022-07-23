@@ -65,7 +65,12 @@ BinaryIVF::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
     try {
         p_x = (uint8_t*)malloc(sizeof(uint8_t) * (dim / 8) * rows);
         auto bin_ivf_index = dynamic_cast<faiss::IndexBinaryIVF*>(index_.get());
-        bin_ivf_index->get_vector_by_id(rows, p_ids, p_x);
+        bin_ivf_index->make_direct_map(true);
+        for (int64_t i = 0; i < rows; i++) {
+            int64_t id = p_ids[i];
+            KNOWHERE_THROW_IF_NOT_FMT(id >= 0 && id < bin_ivf_index->ntotal, "invalid id %ld", id);
+            bin_ivf_index->reconstruct(id, p_x + i * dim / 8);
+        }
         return GenResultDataset(p_x);
     } catch (faiss::FaissException& e) {
         release_when_exception();

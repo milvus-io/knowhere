@@ -87,7 +87,11 @@ IDMAP::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
     try {
         p_x = (float*)malloc(sizeof(float) * dim * rows);
         auto idmap_index = dynamic_cast<faiss::IndexFlat*>(index_.get());
-        idmap_index->get_vector_by_id(rows, p_ids, p_x);
+        for (int64_t i = 0; i < rows; i++) {
+            int64_t id = p_ids[i];
+            KNOWHERE_THROW_IF_NOT_FMT(id >= 0 && id < idmap_index->ntotal, "invalid id %ld", id);
+            idmap_index->reconstruct(id, p_x + i * dim);
+        }
         return GenResultDataset(p_x);
     } catch (faiss::FaissException& e) {
         release_when_exception();
