@@ -181,9 +181,9 @@ IndexDiskANN<T>::Prepare(const Config& config) {
 }
 
 template <typename T>
+
 DatasetPtr
-IndexDiskANN<T>::Query(const DatasetPtr& dataset_ptr, const Config& config,
-                       const faiss::BitsetView /* not implemented yet */) {
+IndexDiskANN<T>::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::BitsetView bitset) {
     CheckPreparation(is_prepared_);
 
     auto query_conf = DiskANNQueryConfig::Get(config);
@@ -198,7 +198,7 @@ IndexDiskANN<T>::Query(const DatasetPtr& dataset_ptr, const Config& config,
 #pragma omp parallel for schedule(dynamic, 1)
     for (int64_t row = 0; row < rows; ++row) {
         pq_flash_index_->cached_beam_search(query + (row * dim), k, query_conf.search_list_size, p_id_u64 + (row * k),
-                                            p_dist + (row * k), query_conf.beamwidth, false, nullptr);
+                                            p_dist + (row * k), query_conf.beamwidth, false, nullptr, bitset);
     }
 
     if (!ConvertId(p_id_u64, p_id, k * rows)) {
@@ -209,8 +209,7 @@ IndexDiskANN<T>::Query(const DatasetPtr& dataset_ptr, const Config& config,
 
 template <typename T>
 DatasetPtr
-IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& config,
-                              const faiss::BitsetView /* not implemented yet */) {
+IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& config, const faiss::BitsetView bitset) {
     CheckPreparation(is_prepared_);
 
     auto query_conf = DiskANNQueryByRangeConfig::Get(config);
@@ -226,8 +225,10 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
     for (int64_t row = 0; row < rows; ++row) {
         std::vector<_u64> indices;
         std::vector<float> distances;
+
         auto res_count = pq_flash_index_->range_search(query + (row * dim), radius, query_conf.min_k, query_conf.max_k,
-                                                       indices, distances, query_conf.beamwidth);
+                                                       indices, distances, query_conf.beamwidth, bitset);
+
         result_id_array[row].resize(res_count);
         result_dist_array[row].resize(res_count);
         for (int32_t res_num = 0; res_num < res_count; ++res_num) {

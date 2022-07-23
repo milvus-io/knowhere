@@ -9,6 +9,8 @@
 #include "tsl/robin_map.h"
 #include "tsl/robin_set.h"
 
+#include <knowhere/utils/BitsetView.h>
+
 #include "aligned_file_reader.h"
 #include "concurrent_queue.h"
 #include "neighbor.h"
@@ -96,7 +98,9 @@ namespace diskann {
     DISKANN_DLLEXPORT void cached_beam_search(
         const T *query, const _u64 k_search, const _u64 l_search, _u64 *res_ids,
         float *res_dists, const _u64 beam_width,
-        const bool use_reorder_data = false, QueryStats *stats = nullptr);
+        const bool use_reorder_data = false, QueryStats *stats = nullptr,
+        faiss::BitsetView bitset_view = nullptr);
+
 
     DISKANN_DLLEXPORT _u32 range_search(const T *query1, const double range,
                                         const _u64          min_l_search,
@@ -104,6 +108,7 @@ namespace diskann {
                                         std::vector<_u64> & indices,
                                         std::vector<float> &distances,
                                         const _u64          beam_width,
+                                        faiss::BitsetView   bitset_view = nullptr,
                                         QueryStats *        stats = nullptr);
 
     std::shared_ptr<AlignedFileReader> &reader;
