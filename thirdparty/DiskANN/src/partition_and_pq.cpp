@@ -47,13 +47,10 @@
 
 template<typename T>
 void gen_random_slice(const std::string base_file,
-                      const std::string output_prefix, double sampling_rate) {
+                      const std::string output_file, double sampling_rate) {
   _u64            read_blk_size = 64 * 1024 * 1024;
   cached_ifstream base_reader(base_file.c_str(), read_blk_size);
-  std::ofstream sample_writer(std::string(output_prefix + "_data.bin").c_str(),
-                              std::ios::binary);
-  std::ofstream sample_id_writer(
-      std::string(output_prefix + "_ids.bin").c_str(), std::ios::binary);
+  std::ofstream sample_writer(output_file.c_str(), std::ios::binary);
 
   std::random_device
                rd;  // Will be used to obtain a seed for the random number engine
@@ -65,7 +62,6 @@ void gen_random_slice(const std::string base_file,
   size_t   npts, nd;
   uint32_t npts_u32, nd_u32;
   uint32_t num_sampled_pts_u32 = 0;
-  uint32_t one_const = 1;
 
   base_reader.read((char *) &npts_u32, sizeof(uint32_t));
   base_reader.read((char *) &nd_u32, sizeof(uint32_t));
@@ -73,8 +69,6 @@ void gen_random_slice(const std::string base_file,
                 << ". #dim: " << nd_u32 << "." << std::endl;
   sample_writer.write((char *) &num_sampled_pts_u32, sizeof(uint32_t));
   sample_writer.write((char *) &nd_u32, sizeof(uint32_t));
-  sample_id_writer.write((char *) &num_sampled_pts_u32, sizeof(uint32_t));
-  sample_id_writer.write((char *) &one_const, sizeof(uint32_t));
 
   npts = npts_u32;
   nd = nd_u32;
@@ -85,20 +79,14 @@ void gen_random_slice(const std::string base_file,
     float sample = distribution(generator);
     if (sample < sampling_rate) {
       sample_writer.write((char *) cur_row.get(), sizeof(T) * nd);
-      uint32_t cur_i_u32 = (_u32) i;
-      sample_id_writer.write((char *) &cur_i_u32, sizeof(uint32_t));
       num_sampled_pts_u32++;
     }
   }
   sample_writer.seekp(0, std::ios::beg);
   sample_writer.write((char *) &num_sampled_pts_u32, sizeof(uint32_t));
-  sample_id_writer.seekp(0, std::ios::beg);
-  sample_id_writer.write((char *) &num_sampled_pts_u32, sizeof(uint32_t));
   sample_writer.close();
-  sample_id_writer.close();
   diskann::cout << "Wrote " << num_sampled_pts_u32
-                << " points to sample file: " << output_prefix + "_data.bin"
-                << std::endl;
+                << " points to sample file: " << output_file << std::endl;
 }
 
 // streams data from the file, and samples each vector with probability p_val
@@ -354,13 +342,16 @@ int generate_pq_pivots(const float *passed_train_data, size_t num_train,
 
   diskann::save_bin<float>(pq_pivots_path.c_str(), full_pivot_data.get(),
                            (size_t) num_centers, dim);
-  std::string centroids_path = pq_pivots_path + "_centroid.bin";
+  std::string centroids_path = 
+      diskann::get_pq_centroid_filename(pq_pivots_path);
   diskann::save_bin<float>(centroids_path.c_str(), centroid.get(), (size_t) dim,
                            1);
-  std::string rearrangement_path = pq_pivots_path + "_rearrangement_perm.bin";
+  std::string rearrangement_path =
+      diskann::get_pq_rearrangement_perm_filename(pq_pivots_path);
   diskann::save_bin<uint32_t>(rearrangement_path.c_str(), rearrangement.data(),
                               rearrangement.size(), 1);
-  std::string chunk_offsets_path = pq_pivots_path + "_chunk_offsets.bin";
+  std::string chunk_offsets_path = 
+      diskann::get_pq_chunk_offsets_filename(pq_pivots_path);
   diskann::save_bin<uint32_t>(chunk_offsets_path.c_str(), chunk_offsets.data(),
                               chunk_offsets.size(), 1);
   return 0;
@@ -398,7 +389,8 @@ int generate_pq_data_from_pivots(const std::string data_file,
   } else {
     uint64_t numr, numc;
 
-    std::string centroids_path = pq_pivots_path + "_centroid.bin";
+    std::string centroids_path = 
+        diskann::get_pq_centroid_filename(pq_pivots_path);
     diskann::load_bin<float>(centroids_path.c_str(), centroid, numr, numc);
 
     if (numr != dim || numc != 1) {
@@ -406,7 +398,8 @@ int generate_pq_data_from_pivots(const std::string data_file,
       throw diskann::ANNException("Error reading centroid file.", -1,
                                   __FUNCSIG__, __FILE__, __LINE__);
     }
-    std::string rearrangement_path = pq_pivots_path + "_rearrangement_perm.bin";
+    std::string rearrangement_path =
+        diskann::get_pq_rearrangement_perm_filename(pq_pivots_path);
     diskann::load_bin<uint32_t>(rearrangement_path.c_str(), rearrangement, numr,
                                 numc);
     if (numr != dim || numc != 1) {
@@ -414,7 +407,8 @@ int generate_pq_data_from_pivots(const std::string data_file,
       throw diskann::ANNException("Error reading rearrangement file.", -1,
                                   __FUNCSIG__, __FILE__, __LINE__);
     }
-    std::string chunk_offsets_path = pq_pivots_path + "_chunk_offsets.bin";
+    std::string chunk_offsets_path = 
+        diskann::get_pq_chunk_offsets_filename(pq_pivots_path);
     diskann::load_bin<uint32_t>(chunk_offsets_path.c_str(), chunk_offsets, numr,
                                 numc);
     if (numr != (uint64_t) num_pq_chunks + 1 || numc != 1) {
@@ -1030,13 +1024,13 @@ int partition_with_ram_budget(const std::string data_file,
 
 template void DISKANN_DLLEXPORT
               gen_random_slice<int8_t>(const std::string base_file,
-                         const std::string output_prefix, double sampling_rate);
+                         const std::string output_file, double sampling_rate);
 template void DISKANN_DLLEXPORT gen_random_slice<uint8_t>(
-    const std::string base_file, const std::string output_prefix,
+    const std::string base_file, const std::string output_file,
     double sampling_rate);
 template void DISKANN_DLLEXPORT
               gen_random_slice<float>(const std::string base_file,
-                        const std::string output_prefix, double sampling_rate);
+                        const std::string output_file, double sampling_rate);
 
 template void DISKANN_DLLEXPORT
               gen_random_slice<float>(const float *inputdata, size_t npts, size_t ndims,

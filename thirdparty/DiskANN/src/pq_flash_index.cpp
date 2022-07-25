@@ -544,14 +544,16 @@ namespace diskann {
   template<typename T>
   int PQFlashIndex<T>::load(uint32_t num_threads, const char *index_prefix) {
 #endif
-    std::string pq_table_bin = std::string(index_prefix) + "_pq_pivots.bin";
+    std::string pq_table_bin = 
+        get_pq_pivots_filename(std::string(index_prefix));
     std::string pq_compressed_vectors =
-        std::string(index_prefix) + "_pq_compressed.bin";
+        get_pq_compressed_filename(std::string(index_prefix));
     std::string disk_index_file =
-        std::string(index_prefix) + "_disk.index";
-    std::string medoids_file = std::string(disk_index_file) + "_medoids.bin";
+        get_disk_index_filename(std::string(index_prefix));
+    std::string medoids_file = 
+        get_disk_index_medoids_filename(std::string(disk_index_file));
     std::string centroids_file =
-        std::string(disk_index_file) + "_centroids.bin";
+        get_disk_index_centroids_filename(std::string(disk_index_file));
 
     size_t pq_file_dim, pq_file_num_centroids;
 #ifdef EXEC_ENV_OLS
@@ -782,7 +784,8 @@ namespace diskann {
       use_medoids_data_as_centroids();
     }
 
-    std::string norm_file = std::string(disk_index_file) + "_max_base_norm.bin";
+    std::string norm_file = 
+        get_disk_index_max_base_norm_file(std::string(disk_index_file));
 
     if (file_exists(norm_file) && metric == diskann::Metric::INNER_PRODUCT) {
       _u64   dumr, dumc;

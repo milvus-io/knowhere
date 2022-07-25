@@ -970,14 +970,16 @@ namespace diskann {
     std::string base_file(dataFilePath);
     std::string data_file_to_use = base_file;
     std::string index_prefix_path(indexFilePath);
-    std::string pq_pivots_path = index_prefix_path + "_pq_pivots.bin";
+    std::string pq_pivots_path = get_pq_pivots_filename(index_prefix_path);
     std::string pq_compressed_vectors_path =
-        index_prefix_path + "_pq_compressed.bin";
+        get_pq_compressed_filename(index_prefix_path);
     std::string mem_index_path = index_prefix_path + "_mem.index";
-    std::string disk_index_path = index_prefix_path + "_disk.index";
-    std::string medoids_path = disk_index_path + "_medoids.bin";
-    std::string centroids_path = disk_index_path + "_centroids.bin";
-    std::string sample_base_prefix = index_prefix_path + "_sample";
+    std::string disk_index_path = get_disk_index_filename(index_prefix_path);
+    std::string medoids_path = 
+        get_disk_index_medoids_filename(disk_index_path);
+    std::string centroids_path = 
+        get_disk_index_centroids_filename(disk_index_path);
+    std::string sample_data_file = get_sample_data_filename(index_prefix_path);
     // optional, used if disk index file must store pq data
     std::string disk_pq_pivots_path =
         index_prefix_path + "_disk.index_pq_pivots.bin";
@@ -998,7 +1000,8 @@ namespace diskann {
       data_file_to_use = prepped_base;
       float max_norm_of_base =
           diskann::prepare_base_for_inner_products<T>(base_file, prepped_base);
-      std::string norm_file = disk_index_path + "_max_base_norm.bin";
+      std::string norm_file = 
+          get_disk_index_max_base_norm_file(disk_index_path);
       diskann::save_bin<float>(norm_file, &max_norm_of_base, 1, 1);
     }
 
@@ -1121,7 +1124,7 @@ namespace diskann {
                                    ? MAX_SAMPLE_POINTS_FOR_WARMUP
                                    : ten_percent_points;
     double sample_sampling_rate = num_sample_points / points_num;
-    gen_random_slice<T>(data_file_to_use.c_str(), sample_base_prefix,
+    gen_random_slice<T>(data_file_to_use.c_str(), sample_data_file,
                         sample_sampling_rate);
 
     std::remove(mem_index_path.c_str());
