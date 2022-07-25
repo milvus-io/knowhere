@@ -855,6 +855,51 @@ namespace diskann {
 
   template<typename T>
   Distance<T>* get_distance_function(Metric m);
+
+  inline std::string get_pq_pivots_filename(const std::string& prefix) {
+    return prefix + "_pq_pivots.bin";
+  }
+
+  inline std::string get_pq_rearrangement_perm_filename(
+      const std::string& pq_pivots_filename) {
+    return pq_pivots_filename + "_rearrangement_perm.bin";
+  }
+
+  inline std::string get_pq_chunk_offsets_filename(
+      const std::string& pq_pivots_filename) {
+    return pq_pivots_filename + "_chunk_offsets.bin";
+  }
+
+  inline std::string get_pq_centroid_filename(const std::string& pq_pivots_filename) {
+    return pq_pivots_filename + "_centroid.bin";
+  }
+
+  inline std::string get_pq_compressed_filename(const std::string& prefix) {
+    return prefix + "_pq_compressed.bin";
+  }
+
+  inline std::string get_disk_index_filename(const std::string& prefix) {
+    return prefix + "_disk.index";
+  }
+
+  inline std::string get_disk_index_medoids_filename(
+      const std::string& disk_index_filename) {
+    return disk_index_filename + "_medoids.bin";
+  }
+
+  inline std::string get_disk_index_centroids_filename(
+      const std::string& disk_index_filename) {
+    return disk_index_filename + "_centroids.bin";
+  }
+
+  inline std::string get_sample_data_filename(const std::string& prefix) {
+    return prefix + "_sample_data.bin";
+  }
+
+  inline std::string get_disk_index_max_base_norm_file(
+      const std::string& disk_index_filename) {
+    return disk_index_filename + "_max_base_norm.bin";
+  }
 };  // namespace diskann
 
 struct PivotContainer {

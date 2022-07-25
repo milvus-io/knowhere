@@ -45,11 +45,12 @@ namespace diskann {
 #else
     void load_pq_centroid_bin(const char* pq_table_file, size_t num_chunks) {
 #endif
-        std::string rearrangement_file = std::string(pq_table_file) +
-                                         "_rearrangement_perm.bin";
+        std::string rearrangement_file =
+            get_pq_rearrangement_perm_filename(std::string(pq_table_file));
     std::string chunk_offset_file =
-        std::string(pq_table_file) + "_chunk_offsets.bin";
-    std::string centroid_file = std::string(pq_table_file) + "_centroid.bin";
+        get_pq_chunk_offsets_filename(std::string(pq_table_file));
+    std::string centroid_file = 
+        get_pq_centroid_filename(std::string(pq_table_file));
 
     // bin structure: [256][ndims][ndims(float)]
     uint64_t numr, numc;

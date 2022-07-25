@@ -25,7 +25,7 @@ int aux_main(char** argv) {
   std::string base_file(argv[2]);
   std::string output_prefix(argv[3]);
   float       sampling_rate = (float) (std::atof(argv[4]));
-  gen_random_slice<T>(base_file, output_prefix, sampling_rate);
+  gen_random_slice<T>(base_file, output_prefix + "_data.bin", sampling_rate);
   return 0;
 }
 

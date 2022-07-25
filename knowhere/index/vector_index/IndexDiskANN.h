@@ -90,6 +90,12 @@ class IndexDiskANN : public VecIndex {
     }
 
  private:
+    bool
+    LoadFile(const std::string& filename);
+
+    bool
+    AddFile(const std::string& filename);
+
     std::string index_prefix_;
 
     diskann::Metric metric_;
