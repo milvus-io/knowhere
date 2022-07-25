@@ -260,7 +260,7 @@ IndexHNSW::QueryByRange(const DatasetPtr& dataset,
         result_lims[i+1] = result_lims[i] + rst.size();
     }
 
-    LOG_KNOWHERE_DEBUG_ << "Range search result num: " << result_lims.back();
+    LOG_KNOWHERE_DEBUG_ << "Range search radius: " << radius << ", result num: " << result_lims.back();
 
     auto p_id = static_cast<int64_t*>(malloc(result_lims.back() * sizeof(int64_t)));
     auto p_dist = static_cast<float*>(malloc(result_lims.back() * sizeof(float)));
