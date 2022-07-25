@@ -117,26 +117,6 @@ void IndexIVFFlat::add_with_ids_without_codes(
     ntotal += n;
 }
 
-void IndexIVFFlat::get_vector_by_id(
-        idx_t n,
-        const idx_t* xids,
-        float* x) {
-    make_direct_map(true);
-    for (idx_t i = 0; i < n; i++) {
-        reconstruct(xids[i], x + i * d);
-    }
-}
-
-void IndexIVFFlat::get_vector_by_id_without_codes(
-        idx_t n,
-        const idx_t* xids,
-        float* x) {
-    make_direct_map(true);
-    for (idx_t i = 0; i < n; i++) {
-        reconstruct_without_codes(xids[i], x + i * d);
-    }
-}
-
 void IndexIVFFlat::encode_vectors(
         idx_t n,
         const float* x,

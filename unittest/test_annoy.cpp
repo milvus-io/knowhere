@@ -14,6 +14,7 @@
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/vector_index/ConfAdapterMgr.h"
 #include "knowhere/index/vector_index/IndexAnnoy.h"
+#include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
 #include "unittest/utils.h"
 
@@ -66,6 +67,10 @@ TEST_P(AnnoyTest, annoy_basic) {
 
     auto result = index_->GetVectorById(id_dataset, conf);
     AssertVec(result, base_dataset, id_dataset, nq, dim);
+
+    std::vector<int64_t> ids_invalid(nq, nb);
+    auto id_dataset_invalid = knowhere::GenDatasetWithIds(nq, dim, ids_invalid.data());
+    ASSERT_ANY_THROW(index_->GetVectorById(id_dataset_invalid, conf));
 
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
     ASSERT_TRUE(adapter->CheckSearch(conf, index_type_, index_mode_));

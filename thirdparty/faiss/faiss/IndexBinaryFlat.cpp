@@ -31,12 +31,6 @@ void IndexBinaryFlat::add(idx_t n, const uint8_t* x) {
     ntotal += n;
 }
 
-void IndexBinaryFlat::get_vector_by_id(idx_t n, const idx_t* xids, uint8_t* x) {
-    for (idx_t i = 0; i < n; i++) {
-        memcpy(x + i * code_size, xb.data() + xids[i] * code_size, code_size);
-    }
-}
-
 void IndexBinaryFlat::reset() {
     xb.clear();
     ntotal = 0;

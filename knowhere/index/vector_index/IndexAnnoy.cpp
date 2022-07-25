@@ -115,7 +115,9 @@ IndexAnnoy::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
 
     float* p_x = (float*)malloc(sizeof(float) * dim * rows);
     for (int64_t i = 0; i < rows; i++) {
-        index_->get_item(p_ids[i], p_x + i * dim);
+        int64_t id = p_ids[i];
+        KNOWHERE_THROW_IF_NOT_FMT(id >= 0 && id < index_->get_n_items(), "invalid id %ld", id);
+        index_->get_item(id, p_x + i * dim);
     }
     return GenResultDataset(p_x);
 }

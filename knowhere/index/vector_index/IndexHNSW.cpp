@@ -129,7 +129,9 @@ IndexHNSW::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
 
     float* p_x = (float*)malloc(sizeof(float) * dim * rows);
     for (int64_t i = 0; i < rows; i++) {
-        memcpy(p_x + i * dim, index_->getDataByInternalId(p_ids[i]), dim * sizeof(float));
+        int64_t id = p_ids[i];
+        KNOWHERE_THROW_IF_NOT_FMT(id >= 0 && id < index_->cur_element_count, "invalid id %ld", id);
+        memcpy(p_x + i * dim, index_->getDataByInternalId(id), dim * sizeof(float));
     }
     return GenResultDataset(p_x);
 }

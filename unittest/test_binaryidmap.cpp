@@ -80,6 +80,10 @@ TEST_P(BinaryIDMAPTest, binaryidmap_basic) {
     auto result = index_->GetVectorById(id_dataset, conf_);
     AssertBinVec(result, base_dataset, id_dataset, nq, dim);
 
+    std::vector<int64_t> ids_invalid(nq, nb);
+    auto id_dataset_invalid = knowhere::GenDatasetWithIds(nq, dim, ids_invalid.data());
+    ASSERT_ANY_THROW(index_->GetVectorById(id_dataset_invalid, conf_));
+
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
     ASSERT_TRUE(adapter->CheckSearch(conf_, index_type_, index_mode_));
 

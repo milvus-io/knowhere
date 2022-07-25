@@ -40,13 +40,6 @@ struct IndexIVFFlat : IndexIVF {
             const float* x,
             const idx_t* xids) override;
 
-    void get_vector_by_id(idx_t n, const idx_t* xids, float* x) override;
-
-    void get_vector_by_id_without_codes(
-            idx_t n,
-            const idx_t* xids,
-            float* x) override;
-
     void encode_vectors(
             idx_t n,
             const float* x,

@@ -44,4 +44,27 @@ class KnowhereException : public std::exception {
         throw KnowhereException(__s, __PRETTY_FUNCTION__, __FILE__, __LINE__);  \
     } while (false)
 
+#define KNOWHERE_THROW_FMT KNOWHERE_THROW_FORMAT
+
+#define KNOWHERE_THROW_IF_NOT(X)                          \
+    do {                                                  \
+        if (!(X)) {                                       \
+            KNOWHERE_THROW_FMT("Error: '%s' failed", #X); \
+        }                                                 \
+    } while (false)
+
+#define KNOWHERE_THROW_IF_NOT_MSG(X, MSG)                       \
+    do {                                                        \
+        if (!(X)) {                                             \
+            KNOWHERE_THROW_FMT("Error: '%s' failed: " MSG, #X); \
+        }                                                       \
+    } while (false)
+
+#define KNOWHERE_THROW_IF_NOT_FMT(X, FMT, ...)                               \
+    do {                                                                     \
+        if (!(X)) {                                                          \
+            KNOWHERE_THROW_FMT("Error: '%s' failed: " FMT, #X, __VA_ARGS__); \
+        }                                                                    \
+    } while (false)
+
 }  // namespace knowhere
