@@ -1,0 +1,41 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_knowhere_float_range.TEST_IVF_SQ8
+[==========] Running 1 test from 1 test case.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_knowhere_float_range
+[ RUN      ] Benchmark_knowhere_float_range.TEST_IVF_SQ8
+[0.000 s] Loading HDF5 file: glove-200-angular-range.hdf5
+[0.000 s] Loading train data
+[0.295 s] Normalizing train dataset 
+[0.612 s] Loading test data
+[0.615 s] Normalizing test dataset 
+[0.617 s] Loading ground truth data
+2022-07-25 23:53:52,034 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-07-25 23:53:52,034 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.620 s] Creating CPU index "IVF_SQ8"
+[0.620 s] Reading index file: glove-200-angular-range_IVF_SQ8_1024.index
+[0.620 s] Building all on 1183514 vectors
+[28.753 s] Writing index file: glove-200-angular-range_IVF_SQ8_1024.index
+
+[29.206 s] glove-200-angular-range | IVF_SQ8 | nlist=1024, radius=0.520
+================================================================================
+  nprobe =    1, nq = 10000, elapse =  0.188s, R@ = 0.3250, A@ = 0.9961
+  nprobe =    2, nq = 10000, elapse =  0.369s, R@ = 0.4982, A@ = 0.9956
+  nprobe =    4, nq = 10000, elapse =  0.826s, R@ = 0.6904, A@ = 0.9950
+  nprobe =    8, nq = 10000, elapse =  1.327s, R@ = 0.8358, A@ = 0.9946
+  nprobe =   16, nq = 10000, elapse =  2.488s, R@ = 0.9243, A@ = 0.9941
+  nprobe =   32, nq = 10000, elapse =  4.635s, R@ = 0.9608, A@ = 0.9940
+  nprobe =   64, nq = 10000, elapse =  8.974s, R@ = 0.9772, A@ = 0.9939
+  nprobe =  128, nq = 10000, elapse = 17.819s, R@ = 0.9856, A@ = 0.9939
+  nprobe =  256, nq = 10000, elapse = 36.705s, R@ = 0.9910, A@ = 0.9939
+  nprobe =  512, nq = 10000, elapse = 69.936s, R@ = 0.9936, A@ = 0.9938
+================================================================================
+[174.276 s] Test 'glove-200-angular-range/IVF_SQ8' done
+
+[       OK ] Benchmark_knowhere_float_range.TEST_IVF_SQ8 (174303 ms)
+[----------] 1 test from Benchmark_knowhere_float_range (174303 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test case ran. (174303 ms total)
+[  PASSED  ] 1 test.

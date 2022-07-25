@@ -1,0 +1,91 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_knowhere_float.TEST_IVF_HNSW
+[==========] Running 1 test from 1 test case.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_knowhere_float
+[ RUN      ] Benchmark_knowhere_float.TEST_IVF_HNSW
+[0.000 s] Loading HDF5 file: glove-200-angular.hdf5
+[0.000 s] Loading train data
+[0.288 s] Normalizing train dataset 
+[0.593 s] Loading test data
+[0.595 s] Normalizing test dataset 
+[0.598 s] Loading ground truth data
+2022-07-25 17:25:28,291 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-07-25 17:25:28,291 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.600 s] Creating CPU index "IVF_HNSW"
+[0.600 s] Reading index file: glove-200-angular_IVF_HNSW_1024_16_200.index
+[0.600 s] Building all on 1183514 vectors
+[4.312 s] Writing index file: glove-200-angular_IVF_HNSW_1024_16_200.index
+
+[5.894 s] glove-200-angular | IVF_HNSW nlist=1024 | M=16 | efConstruction=200
+================================================================================
+  nprobe =    1, ef =   16, nq = 10000, k =  100, elapse =  0.432s, R@ = 0.2485
+  nprobe =    1, ef =   32, nq = 10000, k =  100, elapse =  0.442s, R@ = 0.2517
+  nprobe =    1, ef =   64, nq = 10000, k =  100, elapse =  0.454s, R@ = 0.2523
+  nprobe =    1, ef =  128, nq = 10000, k =  100, elapse =  0.479s, R@ = 0.2525
+  nprobe =    1, ef =  256, nq = 10000, k =  100, elapse =  0.527s, R@ = 0.2525
+  nprobe =    1, ef =  512, nq = 10000, k =  100, elapse =  0.590s, R@ = 0.2525
+  nprobe =    2, ef =   16, nq = 10000, k =  100, elapse =  0.827s, R@ = 0.3614
+  nprobe =    2, ef =   32, nq = 10000, k =  100, elapse =  0.839s, R@ = 0.3658
+  nprobe =    2, ef =   64, nq = 10000, k =  100, elapse =  0.847s, R@ = 0.3665
+  nprobe =    2, ef =  128, nq = 10000, k =  100, elapse =  0.872s, R@ = 0.3666
+  nprobe =    2, ef =  256, nq = 10000, k =  100, elapse =  0.914s, R@ = 0.3667
+  nprobe =    2, ef =  512, nq = 10000, k =  100, elapse =  0.978s, R@ = 0.3667
+  nprobe =    4, ef =   16, nq = 10000, k =  100, elapse =  1.586s, R@ = 0.4735
+  nprobe =    4, ef =   32, nq = 10000, k =  100, elapse =  1.585s, R@ = 0.4790
+  nprobe =    4, ef =   64, nq = 10000, k =  100, elapse =  1.602s, R@ = 0.4802
+  nprobe =    4, ef =  128, nq = 10000, k =  100, elapse =  1.615s, R@ = 0.4803
+  nprobe =    4, ef =  256, nq = 10000, k =  100, elapse =  1.704s, R@ = 0.4803
+  nprobe =    4, ef =  512, nq = 10000, k =  100, elapse =  1.759s, R@ = 0.4803
+  nprobe =    8, ef =   16, nq = 10000, k =  100, elapse =  3.029s, R@ = 0.5799
+  nprobe =    8, ef =   32, nq = 10000, k =  100, elapse =  3.026s, R@ = 0.5868
+  nprobe =    8, ef =   64, nq = 10000, k =  100, elapse =  3.011s, R@ = 0.5882
+  nprobe =    8, ef =  128, nq = 10000, k =  100, elapse =  3.041s, R@ = 0.5884
+  nprobe =    8, ef =  256, nq = 10000, k =  100, elapse =  3.083s, R@ = 0.5884
+  nprobe =    8, ef =  512, nq = 10000, k =  100, elapse =  3.224s, R@ = 0.5884
+  nprobe =   16, ef =   16, nq = 10000, k =  100, elapse =  5.772s, R@ = 0.6725
+  nprobe =   16, ef =   32, nq = 10000, k =  100, elapse =  5.791s, R@ = 0.6819
+  nprobe =   16, ef =   64, nq = 10000, k =  100, elapse =  5.765s, R@ = 0.6835
+  nprobe =   16, ef =  128, nq = 10000, k =  100, elapse =  5.749s, R@ = 0.6835
+  nprobe =   16, ef =  256, nq = 10000, k =  100, elapse =  5.804s, R@ = 0.6835
+  nprobe =   16, ef =  512, nq = 10000, k =  100, elapse =  5.839s, R@ = 0.6835
+  nprobe =   32, ef =   16, nq = 10000, k =  100, elapse = 10.972s, R@ = 0.7670
+  nprobe =   32, ef =   32, nq = 10000, k =  100, elapse = 11.017s, R@ = 0.7670
+  nprobe =   32, ef =   64, nq = 10000, k =  100, elapse = 11.042s, R@ = 0.7701
+  nprobe =   32, ef =  128, nq = 10000, k =  100, elapse = 10.944s, R@ = 0.7701
+  nprobe =   32, ef =  256, nq = 10000, k =  100, elapse = 10.959s, R@ = 0.7701
+  nprobe =   32, ef =  512, nq = 10000, k =  100, elapse = 10.994s, R@ = 0.7701
+  nprobe =   64, ef =   16, nq = 10000, k =  100, elapse = 21.139s, R@ = 0.8441
+  nprobe =   64, ef =   32, nq = 10000, k =  100, elapse = 21.083s, R@ = 0.8441
+  nprobe =   64, ef =   64, nq = 10000, k =  100, elapse = 21.057s, R@ = 0.8441
+  nprobe =   64, ef =  128, nq = 10000, k =  100, elapse = 21.062s, R@ = 0.8447
+  nprobe =   64, ef =  256, nq = 10000, k =  100, elapse = 20.951s, R@ = 0.8447
+  nprobe =   64, ef =  512, nq = 10000, k =  100, elapse = 21.012s, R@ = 0.8447
+  nprobe =  128, ef =   16, nq = 10000, k =  100, elapse = 41.010s, R@ = 0.9090
+  nprobe =  128, ef =   32, nq = 10000, k =  100, elapse = 41.028s, R@ = 0.9090
+  nprobe =  128, ef =   64, nq = 10000, k =  100, elapse = 41.051s, R@ = 0.9090
+  nprobe =  128, ef =  128, nq = 10000, k =  100, elapse = 41.094s, R@ = 0.9090
+  nprobe =  128, ef =  256, nq = 10000, k =  100, elapse = 40.865s, R@ = 0.9091
+  nprobe =  128, ef =  512, nq = 10000, k =  100, elapse = 40.824s, R@ = 0.9091
+  nprobe =  256, ef =   16, nq = 10000, k =  100, elapse = 80.438s, R@ = 0.9596
+  nprobe =  256, ef =   32, nq = 10000, k =  100, elapse = 80.401s, R@ = 0.9596
+  nprobe =  256, ef =   64, nq = 10000, k =  100, elapse = 80.452s, R@ = 0.9596
+  nprobe =  256, ef =  128, nq = 10000, k =  100, elapse = 80.424s, R@ = 0.9596
+  nprobe =  256, ef =  256, nq = 10000, k =  100, elapse = 80.380s, R@ = 0.9596
+  nprobe =  256, ef =  512, nq = 10000, k =  100, elapse = 80.183s, R@ = 0.9597
+  nprobe =  512, ef =   16, nq = 10000, k =  100, elapse = 158.422s, R@ = 0.9909
+  nprobe =  512, ef =   32, nq = 10000, k =  100, elapse = 158.393s, R@ = 0.9909
+  nprobe =  512, ef =   64, nq = 10000, k =  100, elapse = 158.229s, R@ = 0.9909
+  nprobe =  512, ef =  128, nq = 10000, k =  100, elapse = 158.389s, R@ = 0.9909
+  nprobe =  512, ef =  256, nq = 10000, k =  100, elapse = 158.341s, R@ = 0.9909
+  nprobe =  512, ef =  512, nq = 10000, k =  100, elapse = 158.213s, R@ = 0.9909
+================================================================================
+[1951.439 s] Test 'glove-200-angular/IVF_HNSW' done
+
+[       OK ] Benchmark_knowhere_float.TEST_IVF_HNSW (1951484 ms)
+[----------] 1 test from Benchmark_knowhere_float (1951484 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test case ran. (1951484 ms total)
+[  PASSED  ] 1 test.

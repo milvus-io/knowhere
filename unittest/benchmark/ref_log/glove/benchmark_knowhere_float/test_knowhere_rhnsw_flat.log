@@ -1,0 +1,37 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_knowhere_float.TEST_RHNSW_FLAT
+[==========] Running 1 test from 1 test case.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_knowhere_float
+[ RUN      ] Benchmark_knowhere_float.TEST_RHNSW_FLAT
+[0.000 s] Loading HDF5 file: glove-200-angular.hdf5
+[0.000 s] Loading train data
+[0.289 s] Normalizing train dataset 
+[0.587 s] Loading test data
+[0.589 s] Normalizing test dataset 
+[0.592 s] Loading ground truth data
+2022-07-25 18:02:07,103 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-07-25 18:02:07,103 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.594 s] Creating CPU index "RHNSW_FLAT"
+[0.594 s] Reading index file: glove-200-angular_RHNSW_FLAT_16_200.index
+[0.594 s] Building all on 1183514 vectors
+[176.846 s] Writing index file: glove-200-angular_RHNSW_FLAT_16_200.index
+
+[177.389 s] glove-200-angular | RHNSW_FLAT | M=16 | efConstruction=200
+================================================================================
+  ef =   16, nq = 10000, k =  100, elapse =  0.893s, R@ = 0.5982
+  ef =   32, nq = 10000, k =  100, elapse =  0.910s, R@ = 0.5982
+  ef =   64, nq = 10000, k =  100, elapse =  0.945s, R@ = 0.5982
+  ef =  128, nq = 10000, k =  100, elapse =  1.077s, R@ = 0.6330
+  ef =  256, nq = 10000, k =  100, elapse =  1.909s, R@ = 0.7162
+  ef =  512, nq = 10000, k =  100, elapse =  3.614s, R@ = 0.7792
+================================================================================
+[187.135 s] Test 'glove-200-angular/RHNSW_FLAT' done
+
+[       OK ] Benchmark_knowhere_float.TEST_RHNSW_FLAT (187191 ms)
+[----------] 1 test from Benchmark_knowhere_float (187191 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test case ran. (187191 ms total)
+[  PASSED  ] 1 test.

@@ -1,0 +1,41 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_knowhere_float_range.TEST_IVF_FLAT_NM
+[==========] Running 1 test from 1 test case.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_knowhere_float_range
+[ RUN      ] Benchmark_knowhere_float_range.TEST_IVF_FLAT_NM
+[0.000 s] Loading HDF5 file: glove-200-angular-range.hdf5
+[0.000 s] Loading train data
+[0.293 s] Normalizing train dataset 
+[0.607 s] Loading test data
+[0.609 s] Normalizing test dataset 
+[0.612 s] Loading ground truth data
+2022-07-25 23:48:02,986 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-07-25 23:48:02,986 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.615 s] Creating CPU index "IVF_FLAT"
+[0.615 s] Reading index file: glove-200-angular-range_IVF_FLAT_1024.index
+[0.615 s] Building all on 1183514 vectors
+[26.846 s] Writing index file: glove-200-angular-range_IVF_FLAT_1024.index
+
+[27.302 s] glove-200-angular-range | IVF_FLAT | nlist=1024, radius=0.520
+================================================================================
+  nprobe =    1, nq = 10000, elapse =  0.417s, R@ = 0.3263, A@ = 1.0000
+  nprobe =    2, nq = 10000, elapse =  0.807s, R@ = 0.5004, A@ = 1.0000
+  nprobe =    4, nq = 10000, elapse =  1.532s, R@ = 0.6938, A@ = 1.0000
+  nprobe =    8, nq = 10000, elapse =  2.915s, R@ = 0.8403, A@ = 1.0000
+  nprobe =   16, nq = 10000, elapse =  5.560s, R@ = 0.9296, A@ = 1.0000
+  nprobe =   32, nq = 10000, elapse = 10.752s, R@ = 0.9664, A@ = 1.0000
+  nprobe =   64, nq = 10000, elapse = 20.581s, R@ = 0.9829, A@ = 1.0000
+  nprobe =  128, nq = 10000, elapse = 40.080s, R@ = 0.9914, A@ = 1.0000
+  nprobe =  256, nq = 10000, elapse = 79.027s, R@ = 0.9969, A@ = 1.0000
+  nprobe =  512, nq = 10000, elapse = 158.202s, R@ = 0.9995, A@ = 1.0000
+================================================================================
+[348.996 s] Test 'glove-200-angular-range/IVF_FLAT' done
+
+[       OK ] Benchmark_knowhere_float_range.TEST_IVF_FLAT_NM (349036 ms)
+[----------] 1 test from Benchmark_knowhere_float_range (349036 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test case ran. (349036 ms total)
+[  PASSED  ] 1 test.

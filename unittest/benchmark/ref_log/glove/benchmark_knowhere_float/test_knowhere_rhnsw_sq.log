@@ -1,0 +1,37 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_knowhere_float.TEST_RHNSW_SQ
+[==========] Running 1 test from 1 test case.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_knowhere_float
+[ RUN      ] Benchmark_knowhere_float.TEST_RHNSW_SQ
+[0.000 s] Loading HDF5 file: glove-200-angular.hdf5
+[0.000 s] Loading train data
+[0.291 s] Normalizing train dataset 
+[0.603 s] Loading test data
+[0.605 s] Normalizing test dataset 
+[0.608 s] Loading ground truth data
+2022-07-25 18:05:14,315 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-07-25 18:05:14,315 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.610 s] Creating CPU index "RHNSW_SQ"
+[0.610 s] Reading index file: glove-200-angular_RHNSW_SQ_16_200.index
+[0.610 s] Building all on 1183514 vectors
+[119.027 s] Writing index file: glove-200-angular_RHNSW_SQ_16_200.index
+
+[119.489 s] glove-200-angular | RHNSW_SQ | M=16 | efConstruction=200
+================================================================================
+  ef =   16, nq = 10000, k =  100, elapse =  0.553s, R@ = 0.5978
+  ef =   32, nq = 10000, k =  100, elapse =  0.592s, R@ = 0.5978
+  ef =   64, nq = 10000, k =  100, elapse =  0.544s, R@ = 0.5978
+  ef =  128, nq = 10000, k =  100, elapse =  0.695s, R@ = 0.6329
+  ef =  256, nq = 10000, k =  100, elapse =  1.191s, R@ = 0.7134
+  ef =  512, nq = 10000, k =  100, elapse =  2.234s, R@ = 0.7763
+================================================================================
+[125.698 s] Test 'glove-200-angular/RHNSW_SQ' done
+
+[       OK ] Benchmark_knowhere_float.TEST_RHNSW_SQ (125739 ms)
+[----------] 1 test from Benchmark_knowhere_float (125739 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test case ran. (125739 ms total)
+[  PASSED  ] 1 test.

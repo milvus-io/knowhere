@@ -1,0 +1,50 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_knowhere_float_range.TEST_IVF_PQ
+[==========] Running 1 test from 1 test case.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_knowhere_float_range
+[ RUN      ] Benchmark_knowhere_float_range.TEST_IVF_PQ
+[0.000 s] Loading HDF5 file: glove-200-angular-range.hdf5
+[0.000 s] Loading train data
+[0.291 s] Normalizing train dataset 
+[0.606 s] Loading test data
+[0.608 s] Normalizing test dataset 
+[0.611 s] Loading ground truth data
+2022-07-25 23:56:46,343 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-07-25 23:56:46,343 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.614 s] Creating CPU index "IVF_PQ"
+[0.614 s] Reading index file: glove-200-angular-range_IVF_PQ_1024_8.index
+[0.614 s] Building all on 1183514 vectors
+[59.116 s] Writing index file: glove-200-angular-range_IVF_PQ_1024_8.index
+
+[59.149 s] glove-200-angular-range | IVF_PQ | nlist=1024, radius=0.520
+================================================================================
+  nprobe =    1, nq = 10000, elapse =  0.137s, R@ = 0.2880, A@ = 0.3964
+  nprobe =    2, nq = 10000, elapse =  0.125s, R@ = 0.4277, A@ = 0.4041
+  nprobe =    4, nq = 10000, elapse =  0.154s, R@ = 0.5652, A@ = 0.4143
+  nprobe =    8, nq = 10000, elapse =  0.170s, R@ = 0.6417, A@ = 0.4181
+  nprobe =   16, nq = 10000, elapse =  0.243s, R@ = 0.6695, A@ = 0.4203
+  nprobe =   32, nq = 10000, elapse =  0.414s, R@ = 0.6749, A@ = 0.4212
+  nprobe =   64, nq = 10000, elapse =  0.684s, R@ = 0.6766, A@ = 0.4217
+  nprobe =  128, nq = 10000, elapse =  1.380s, R@ = 0.6770, A@ = 0.4218
+  nprobe =  256, nq = 10000, elapse =  2.608s, R@ = 0.6772, A@ = 0.4218
+  nprobe =  512, nq = 10000, elapse =  4.785s, R@ = 0.6772, A@ = 0.4218
+================================================================================
+[72.338 s] Test 'glove-200-angular-range/IVF_PQ' done
+
+[72.338 s] Creating CPU index "IVF_PQ"
+[72.339 s] Reading index file: glove-200-angular-range_IVF_PQ_1024_16.index
+[72.339 s] Building all on 1183514 vectors
+unknown file: Failure
+C++ exception with description "Error in void faiss::ProductQuantizer::set_derived_values() at /home/caiyd/vec/knowhere/thirdparty/faiss/faiss/impl/ProductQuantizer.cpp:187: Error: 'd % M == 0' failed: The dimension of the vector (d) should be a multiple of the number of subquantizers (M)" thrown in the test body.
+[  FAILED  ] Benchmark_knowhere_float_range.TEST_IVF_PQ (72360 ms)
+[----------] 1 test from Benchmark_knowhere_float_range (72360 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test case ran. (72361 ms total)
+[  PASSED  ] 0 tests.
+[  FAILED  ] 1 test, listed below:
+[  FAILED  ] Benchmark_knowhere_float_range.TEST_IVF_PQ
+
+ 1 FAILED TEST
