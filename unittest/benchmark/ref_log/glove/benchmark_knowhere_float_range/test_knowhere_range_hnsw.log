@@ -1,0 +1,37 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_knowhere_float_range.TEST_HNSW
+[==========] Running 1 test from 1 test case.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_knowhere_float_range
+[ RUN      ] Benchmark_knowhere_float_range.TEST_HNSW
+[0.000 s] Loading HDF5 file: glove-200-angular-range.hdf5
+[0.000 s] Loading train data
+[0.298 s] Normalizing train dataset 
+[0.613 s] Loading test data
+[0.616 s] Normalizing test dataset 
+[0.619 s] Loading ground truth data
+2022-07-25 23:57:58,721 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-07-25 23:57:58,721 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.621 s] Creating CPU index "HNSW"
+[0.621 s] Reading index file: glove-200-angular-range_HNSW_16_200_20.index
+[0.621 s] Building all on 1183514 vectors
+[218.648 s] Writing index file: glove-200-angular-range_HNSW_16_200_20.index
+
+[219.986 s] glove-200-angular-range | HNSW | M=16 | efConstruction=200, radius=0.520
+================================================================================
+  ef =   16, nq = 10000, elapse =  3.172s, R@ = 0.9814, A@ = 1.0000
+  ef =   32, nq = 10000, elapse =  3.704s, R@ = 0.9841, A@ = 1.0000
+  ef =   64, nq = 10000, elapse =  4.968s, R@ = 0.9866, A@ = 1.0000
+  ef =  128, nq = 10000, elapse =  7.293s, R@ = 0.9880, A@ = 1.0000
+  ef =  256, nq = 10000, elapse = 11.951s, R@ = 0.9887, A@ = 1.0000
+  ef =  512, nq = 10000, elapse = 20.394s, R@ = 0.9888, A@ = 1.0000
+================================================================================
+[272.611 s] Test 'glove-200-angular-range/HNSW' done
+
+[       OK ] Benchmark_knowhere_float_range.TEST_HNSW (272660 ms)
+[----------] 1 test from Benchmark_knowhere_float_range (272660 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test case ran. (272660 ms total)
+[  PASSED  ] 1 test.

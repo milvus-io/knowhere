@@ -1,0 +1,37 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_knowhere_float.TEST_HNSW
+[==========] Running 1 test from 1 test case.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_knowhere_float
+[ RUN      ] Benchmark_knowhere_float.TEST_HNSW
+[0.000 s] Loading HDF5 file: glove-200-angular.hdf5
+[0.000 s] Loading train data
+[0.295 s] Normalizing train dataset 
+[0.594 s] Loading test data
+[0.596 s] Normalizing test dataset 
+[0.599 s] Loading ground truth data
+2022-07-25 17:57:59,786 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-07-25 17:57:59,786 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.601 s] Creating CPU index "HNSW"
+[0.601 s] Reading index file: glove-200-angular_HNSW_16_200.index
+[0.601 s] Building all on 1183514 vectors
+[211.034 s] Writing index file: glove-200-angular_HNSW_16_200.index
+
+[212.299 s] glove-200-angular | HNSW | M=16 | efConstruction=200
+================================================================================
+  ef =   16, nq = 10000, k =  100, elapse =  1.027s, R@ = 0.6288
+  ef =   32, nq = 10000, k =  100, elapse =  1.024s, R@ = 0.6288
+  ef =   64, nq = 10000, k =  100, elapse =  1.026s, R@ = 0.6288
+  ef =  128, nq = 10000, k =  100, elapse =  1.251s, R@ = 0.6627
+  ef =  256, nq = 10000, k =  100, elapse =  2.241s, R@ = 0.7423
+  ef =  512, nq = 10000, k =  100, elapse =  4.114s, R@ = 0.8052
+================================================================================
+[223.381 s] Test 'glove-200-angular/HNSW' done
+
+[       OK ] Benchmark_knowhere_float.TEST_HNSW (223435 ms)
+[----------] 1 test from Benchmark_knowhere_float (223435 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test case ran. (223435 ms total)
+[  PASSED  ] 1 test.

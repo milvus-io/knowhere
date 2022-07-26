@@ -1,0 +1,32 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_knowhere_float.TEST_IDMAP
+[==========] Running 1 test from 1 test case.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_knowhere_float
+[ RUN      ] Benchmark_knowhere_float.TEST_IDMAP
+[0.000 s] Loading HDF5 file: glove-200-angular.hdf5
+[0.000 s] Loading train data
+[0.601 s] Normalizing train dataset 
+[0.915 s] Loading test data
+[0.926 s] Normalizing test dataset 
+[0.928 s] Loading ground truth data
+2022-07-25 17:14:41,095 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-07-25 17:14:41,095 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.936 s] Creating CPU index "FLAT"
+[0.936 s] Reading index file: glove-200-angular_FLAT.index
+[0.936 s] Building all on 1183514 vectors
+[1.287 s] Writing index file: glove-200-angular_FLAT.index
+
+[2.337 s] glove-200-angular | FLAT 
+================================================================================
+  nq = 10000, k =  100, elapse = 60.460s, R@ = 1.0000
+================================================================================
+[62.871 s] Test 'glove-200-angular/FLAT' done
+
+[       OK ] Benchmark_knowhere_float.TEST_IDMAP (62913 ms)
+[----------] 1 test from Benchmark_knowhere_float (62913 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test case ran. (62913 ms total)
+[  PASSED  ] 1 test.

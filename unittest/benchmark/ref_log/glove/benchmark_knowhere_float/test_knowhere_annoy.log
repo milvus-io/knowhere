@@ -1,0 +1,34 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_knowhere_float.TEST_ANNOY
+[==========] Running 1 test from 1 test case.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_knowhere_float
+[ RUN      ] Benchmark_knowhere_float.TEST_ANNOY
+[0.000 s] Loading HDF5 file: glove-200-angular.hdf5
+[0.000 s] Loading train data
+[0.289 s] Normalizing train dataset 
+[0.588 s] Loading test data
+[0.590 s] Normalizing test dataset 
+[0.593 s] Loading ground truth data
+2022-07-25 18:01:43,221 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-07-25 18:01:43,221 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.595 s] Creating CPU index "ANNOY"
+[0.595 s] Reading index file: glove-200-angular_ANNOY_8.index
+[0.595 s] Building all on 1183514 vectors
+[21.936 s] Writing index file: glove-200-angular_ANNOY_8.index
+
+[23.274 s] glove-200-angular | ANNOY | n_trees=8 
+================================================================================
+  search_k =   50, nq = 10000, k =  100, elapse =  0.053s, R@ = 0.0095
+  search_k =  100, nq = 10000, k =  100, elapse =  0.067s, R@ = 0.0148
+  search_k =  500, nq = 10000, k =  100, elapse =  0.245s, R@ = 0.0372
+================================================================================
+[23.827 s] Test 'glove-200-angular/ANNOY' done
+
+[       OK ] Benchmark_knowhere_float.TEST_ANNOY (23878 ms)
+[----------] 1 test from Benchmark_knowhere_float (23878 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test case ran. (23878 ms total)
+[  PASSED  ] 1 test.

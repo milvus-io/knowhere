@@ -1,0 +1,41 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_knowhere_float.TEST_IVF_SQ8
+[==========] Running 1 test from 1 test case.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_knowhere_float
+[ RUN      ] Benchmark_knowhere_float.TEST_IVF_SQ8
+[0.000 s] Loading HDF5 file: glove-200-angular.hdf5
+[0.000 s] Loading train data
+[0.286 s] Normalizing train dataset 
+[0.585 s] Loading test data
+[0.588 s] Normalizing test dataset 
+[0.590 s] Loading ground truth data
+2022-07-25 17:21:28,447 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-07-25 17:21:28,447 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.593 s] Creating CPU index "IVF_SQ8"
+[0.593 s] Reading index file: glove-200-angular_IVF_SQ8_1024.index
+[0.593 s] Building all on 1183514 vectors
+[27.960 s] Writing index file: glove-200-angular_IVF_SQ8_1024.index
+
+[28.391 s] glove-200-angular | IVF_SQ8 | nlist=1024
+================================================================================
+  nprobe =    1, nq = 10000, k =  100, elapse =  0.198s, R@ = 0.2936
+  nprobe =    2, nq = 10000, k =  100, elapse =  0.365s, R@ = 0.4112
+  nprobe =    4, nq = 10000, k =  100, elapse =  0.688s, R@ = 0.5247
+  nprobe =    8, nq = 10000, k =  100, elapse =  1.321s, R@ = 0.6241
+  nprobe =   16, nq = 10000, k =  100, elapse =  2.404s, R@ = 0.7118
+  nprobe =   32, nq = 10000, k =  100, elapse =  4.479s, R@ = 0.7899
+  nprobe =   64, nq = 10000, k =  100, elapse =  9.130s, R@ = 0.8579
+  nprobe =  128, nq = 10000, k =  100, elapse = 17.194s, R@ = 0.9145
+  nprobe =  256, nq = 10000, k =  100, elapse = 33.775s, R@ = 0.9577
+  nprobe =  512, nq = 10000, k =  100, elapse = 68.342s, R@ = 0.9807
+================================================================================
+[166.956 s] Test 'glove-200-angular/IVF_SQ8' done
+
+[       OK ] Benchmark_knowhere_float.TEST_IVF_SQ8 (166986 ms)
+[----------] 1 test from Benchmark_knowhere_float (166986 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test case ran. (166986 ms total)
+[  PASSED  ] 1 test.
