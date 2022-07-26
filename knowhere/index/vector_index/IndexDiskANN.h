@@ -57,9 +57,6 @@ class IndexDiskANN : public VecIndex {
     AddWithoutIds(const DatasetPtr& data_set, const Config& config) override;
 
     bool
-    BuildDiskIndex(const Config& config) override;
-
-    bool
     Prepare(const Config& config) override;
 
     DatasetPtr

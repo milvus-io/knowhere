@@ -33,7 +33,7 @@ class FileManager {
      * @return false if any error, or return true.
      */
     virtual bool
-    LoadFile(const std::string& filename) noexcept;
+    LoadFile(const std::string& filename) noexcept = 0;
 
     /**
      * @brief Add file to FileManager to manipulate it.
@@ -42,7 +42,7 @@ class FileManager {
      * @return false if any error, or return true.
      */
     virtual bool
-    AddFile(const std::string& filename) noexcept;
+    AddFile(const std::string& filename) noexcept = 0;
 
     /**
      * @brief Check if a file exists.
@@ -51,7 +51,7 @@ class FileManager {
      * @return std::nullopt if any error, or return if the file exists.
      */
     virtual std::optional<bool>
-    IsExisted(const std::string& filename) noexcept;
+    IsExisted(const std::string& filename) noexcept = 0;
 
     /**
      * @brief Delete a file from FileManager.
@@ -60,7 +60,7 @@ class FileManager {
      * @return false if any error, or return true.
      */
     virtual bool
-    RemoveFile(const std::string& filename) noexcept;
+    RemoveFile(const std::string& filename) noexcept = 0;
 };
 
 }  // namespace knowhere

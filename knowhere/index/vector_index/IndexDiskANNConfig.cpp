@@ -13,8 +13,10 @@
 
 #include <limits>
 #include <optional>
+#include <sstream>
 
-#include "index/vector_index/ConfAdapter.h"
+#include "knowhere/common/Exception.h"
+#include "knowhere/index/vector_index/helpers/IndexParameter.h"
 
 namespace knowhere {
 namespace {
@@ -56,12 +58,27 @@ CheckNumericParamAndSet(const Config& config, const std::string& key, std::optio
                         T& to_be_set) {
     static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "CheckAndSet only accept int and float type");
 
+    if (!config.contains(key)) {
+        KNOWHERE_THROW_FORMAT("Param '%s' not exist", key.data());
+    }
+
     T min = min_o.has_value() ? min_o.value() : std::numeric_limits<T>::min();
     T max = max_o.has_value() ? max_o.value() : std::numeric_limits<T>::max();
+
     if (std::is_same_v<T, float>) {
-        CheckFloatRange(config, key, min, max);
+        if (!config[key].is_number_float()) {
+            KNOWHERE_THROW_FORMAT("Param '%s' should be a float", key.data());
+        }
     } else {
-        CheckIntegerRange(config, key, min, max);
+        if (!config[key].is_number_integer()) {
+            KNOWHERE_THROW_FORMAT("Param '%s' should be an integer", key.data());
+        }
+    }
+    T value = GetValueFromConfig<T>(config, key);
+    if (value < min || value > max) {
+        std::stringstream error_msg;
+        error_msg << "Param '" << key << "'(" << value << ") is not in range [" << min << ", " << max << "]";
+        KNOWHERE_THROW_MSG(error_msg.str());
     }
     config.at(key).get_to(to_be_set);
 }
@@ -127,7 +144,7 @@ to_json(Config& config, const DiskANNPrepareConfig& prep_conf) {
 
 void
 from_json(const Config& config, DiskANNPrepareConfig& prep_conf) {
-    CheckNumericParamAndSet<uint32_t>(config, kNumThreads, 128, std::nullopt, prep_conf.num_threads);
+    CheckNumericParamAndSet<uint32_t>(config, kNumThreads, 1, 128, prep_conf.num_threads);
     CheckNumericParamAndSet<uint32_t>(config, kNumNodesToCache, 0, std::nullopt, prep_conf.num_nodes_to_cache);
     CheckBoolParamAndSet(config, kWarmUp, prep_conf.warm_up);
     CheckBoolParamAndSet(config, kUseBfsCache, prep_conf.use_bfs_cache);
@@ -135,9 +152,8 @@ from_json(const Config& config, DiskANNPrepareConfig& prep_conf) {
 
 void
 to_json(Config& config, const DiskANNQueryConfig& query_conf) {
-    config = Config{{kK, query_conf.k},
-                    {kSearchListSize, query_conf.search_list_size},
-                    {kBeamwidth, query_conf.beamwidth}};
+    config =
+        Config{{kK, query_conf.k}, {kSearchListSize, query_conf.search_list_size}, {kBeamwidth, query_conf.beamwidth}};
 }
 
 void
@@ -145,7 +161,7 @@ from_json(const Config& config, DiskANNQueryConfig& query_conf) {
     CheckNumericParamAndSet<uint64_t>(config, kK, 1, std::nullopt, query_conf.k);
     // The search_list_size should be no less than the k.
     CheckNumericParamAndSet<uint32_t>(config, kSearchListSize, query_conf.k, std::nullopt, query_conf.search_list_size);
-    CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, 1, std::nullopt, query_conf.beamwidth);
+    CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, 1, 128, query_conf.beamwidth);
 }
 
 void

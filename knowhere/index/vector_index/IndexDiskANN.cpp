@@ -177,7 +177,7 @@ IndexDiskANN<T>::AddWithoutIds(const DatasetPtr& data_set, const Config& config)
     stream << build_conf.max_degree << " " << build_conf.search_list_size << " " << build_conf.search_dram_budget_gb
            << " " << build_conf.build_dram_budget_gb << " " << build_conf.num_threads << " "
            << build_conf.pq_disk_bytes;
-    diskann::build_disk_index<T>(data_path, index_prefix_, stream.str(), metric_);
+    diskann::build_disk_index<T>(data_path.c_str(), index_prefix_.c_str(), stream.str().c_str(), metric_);
 
     // Add file to the file manager
     for (auto& filename : GetNecessaryFilenames(index_prefix_, metric_ == diskann::INNER_PRODUCT, true, true)) {
@@ -230,7 +230,7 @@ IndexDiskANN<T>::Prepare(const Config& config) {
     reader.reset(new LinuxAlignedFileReader());
 #endif
 
-    pq_flash_index_ = (new diskann::PQFlashIndex<T>(reader, metric_));
+    pq_flash_index_ = std::make_unique<diskann::PQFlashIndex<T>>(reader, metric_);
 
     if (pq_flash_index_->load(prep_conf.num_threads, index_prefix_.c_str()) != 0) {
         return false;
@@ -307,7 +307,7 @@ IndexDiskANN<T>::Query(const DatasetPtr& dataset_ptr, const Config& config, cons
     auto& k = query_conf.k;
 
     GET_TENSOR_DATA_DIM(dataset_ptr);
-    auto query = static_cast<T*>(p_data);
+    auto query = static_cast<const T*>(p_data);
     auto p_id_u64 = std::vector<uint64_t>(k * rows).data();
     auto p_id = static_cast<int64_t*>(malloc(sizeof(int64_t) * k * rows));
     auto p_dist = static_cast<float*>(malloc(sizeof(float) * k * rows));
@@ -333,7 +333,7 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
     auto& radius = query_conf.radius;
 
     GET_TENSOR_DATA_DIM(dataset_ptr);
-    auto query = static_cast<T*>(p_data);
+    auto query = static_cast<const T*>(p_data);
 
     std::vector<std::vector<uint64_t>> result_id_array(rows);
     std::vector<std::vector<float>> result_dist_array(rows);
@@ -402,4 +402,9 @@ IndexDiskANN<T>::AddFile(const std::string& filename) {
     }
     return true;
 }
+
+// Explicit template instantiation
+template class IndexDiskANN<float>;
+template class IndexDiskANN<uint8_t>;
+template class IndexDiskANN<int8_t>;
 }  // namespace knowhere
