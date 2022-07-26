@@ -52,6 +52,9 @@ IndexDiskANN<T>::IndexDiskANN(std::string index_prefix, MetricType metric_type,
 }
 
 namespace {
+static constexpr size_t kMinDim = 128;
+static constexpr size_t kMaxDim = 756;
+
 void
 CheckPreparation(bool is_prepared) {
     if (!is_prepared) {
@@ -112,12 +115,57 @@ GetOptionalFilenames(const std::string& prefix) {
     filenames.push_back(diskann::get_disk_index_medoids_filename(disk_index_filename));
     return filenames;
 }
+
+template <typename T>
+void
+CheckFileSize(const std::string& data_path, const size_t num, const size_t dim) {
+    std::ifstream file(data_path.c_str(), std::ios::binary | std::ios::ate);
+    uint64_t autual_file_size = static_cast<uint64_t>(file.tellg());
+    file.close();
+    uint64_t expected_file_size = num * dim * sizeof(T) + 2 * sizeof(uint32_t);
+    if (autual_file_size != expected_file_size) {
+        KNOWHERE_THROW_FORMAT("Actual file size (%ld bytes) not equal to expected size (%ld bytes)",
+                              autual_file_size, expected_file_size);
+    }
+}
+
+/**
+ * @brief Check the length of a node.
+ */
+template <typename T>
+void
+CheckNodeLength(const uint32_t degree, const size_t dim) {
+    uint64_t node_length = ((degree + 1) * sizeof(unsigned) + dim * sizeof(T));
+    if (node_length > SECTOR_LEN) {
+        KNOWHERE_THROW_FORMAT("Node length (%ld bytes) exceeds the sector length", node_length);
+    }
+}
+
+void
+CheckDimRange(const size_t dim) {
+    if (dim > kMaxDim || dim < kMinDim) {
+        KNOWHERE_THROW_FORMAT("Data dim %ld is not in range [%ld, %ld]", dim, kMinDim, kMinDim);
+    }
+}
+
+template <typename T>
+void
+CheckBuildParams(const DiskANNBuildConfig& build_conf) {
+    size_t num, dim;
+    diskann::get_bin_metadata(build_conf.data_path, num, dim);
+
+    CheckDimRange(dim);
+    CheckFileSize<T>(build_conf.data_path, num, dim);
+    CheckNodeLength<T>(build_conf.max_degree, dim);
+}
 }  // namespace
 
 template <typename T>
 void
 IndexDiskANN<T>::AddWithoutIds(const DatasetPtr& data_set, const Config& config) {
     auto build_conf = DiskANNBuildConfig::Get(config);
+
+    CheckBuildParams<T>(build_conf);
 
     auto& data_path = build_conf.data_path;
     // Load raw data
