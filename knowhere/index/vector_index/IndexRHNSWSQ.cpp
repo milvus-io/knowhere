@@ -25,8 +25,7 @@
 namespace knowhere {
 
 IndexRHNSWSQ::IndexRHNSWSQ(int d, faiss::QuantizerType qtype, int M, MetricType metric) {
-    faiss::MetricType mt =
-        metric == metric::L2 ? faiss::MetricType::METRIC_L2 : faiss::MetricType::METRIC_INNER_PRODUCT;
+    faiss::MetricType mt = GetFaissMetricType(metric);
     index_ = std::shared_ptr<faiss::Index>(new faiss::IndexRHNSWSQ(d, qtype, M, mt));
 }
 
@@ -84,9 +83,9 @@ IndexRHNSWSQ::Train(const DatasetPtr& dataset_ptr, const Config& config) {
         GET_TENSOR_DATA_DIM(dataset_ptr)
         faiss::MetricType metric_type = GetFaissMetricType(config);
         int32_t efConstruction = GetIndexParamEfConstruction(config);
+        int32_t hnsw_m = GetIndexParamHNSWM(config);
 
-        auto idx =
-            new faiss::IndexRHNSWSQ(int(dim), faiss::QuantizerType::QT_8bit, GetIndexParamHNSWM(config), metric_type);
+        auto idx = new faiss::IndexRHNSWSQ(int(dim), faiss::QuantizerType::QT_8bit, hnsw_m, metric_type);
         idx->hnsw.efConstruction = efConstruction;
         index_ = std::shared_ptr<faiss::Index>(idx);
         index_->train(rows, static_cast<const float*>(p_data));

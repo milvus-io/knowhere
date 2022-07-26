@@ -604,8 +604,8 @@ size_t IndexRHNSWFlat::cal_size() {
 
 IndexRHNSWPQ::IndexRHNSWPQ() {}
 
-IndexRHNSWPQ::IndexRHNSWPQ(int d, int pq_m, int M):
-    IndexRHNSW(new IndexPQ(d, pq_m, 8), M)
+IndexRHNSWPQ::IndexRHNSWPQ(int d, int pq_m, int M, MetricType metric):
+    IndexRHNSW(new IndexPQ(d, pq_m, 8, metric), M)
 {
     own_fields = true;
     is_trained = false;
