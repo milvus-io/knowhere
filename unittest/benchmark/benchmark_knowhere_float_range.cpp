@@ -20,8 +20,10 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere {
     void
     test_idmap(const knowhere::Config& cfg) {
         auto conf = cfg;
+        auto radius = knowhere::GetMetaRadius(conf);
 
-        printf("\n[%0.3f s] %s | %s \n", get_time_diff(), ann_test_name_.c_str(), std::string(index_type_).c_str());
+        printf("\n[%0.3f s] %s | %s, radius=%.3f \n", get_time_diff(), ann_test_name_.c_str(),
+               index_type_.c_str(), radius);
         printf("================================================================================\n");
         for (auto nq : NQs_) {
             knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
@@ -43,9 +45,10 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere {
     test_ivf(const knowhere::Config& cfg) {
         auto conf = cfg;
         auto nlist = knowhere::GetIndexParamNlist(conf);
+        auto radius = knowhere::GetMetaRadius(conf);
 
-        printf("\n[%0.3f s] %s | %s | nlist=%ld\n", get_time_diff(), ann_test_name_.c_str(),
-               std::string(index_type_).c_str(), nlist);
+        printf("\n[%0.3f s] %s | %s | nlist=%ld, radius=%.3f\n", get_time_diff(), ann_test_name_.c_str(),
+               index_type_.c_str(), nlist, radius);
         printf("================================================================================\n");
         for (auto nprobe : NPROBEs_) {
             knowhere::SetIndexParamNprobe(conf, nprobe);
@@ -70,9 +73,10 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere {
         auto conf = cfg;
         auto M = knowhere::GetIndexParamHNSWM(conf);
         auto efConstruction = knowhere::GetIndexParamEfConstruction(conf);
+        auto radius = knowhere::GetMetaRadius(conf);
 
-        printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld\n", get_time_diff(), ann_test_name_.c_str(),
-               std::string(index_type_).c_str(), M, efConstruction);
+        printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld, radius=%.3f\n", get_time_diff(),
+               ann_test_name_.c_str(), index_type_.c_str(), M, efConstruction, radius);
         printf("================================================================================\n");
         for (auto ef : EFs_) {
             knowhere::SetIndexParamEf(conf, ef);

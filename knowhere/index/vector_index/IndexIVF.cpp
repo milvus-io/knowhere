@@ -375,7 +375,7 @@ IVF::QueryByRangeImpl(int64_t n,
     labels = res.labels;
     lims = res.lims;
 
-    LOG_KNOWHERE_DEBUG_ << "Range search result num: " << lims[n];
+    LOG_KNOWHERE_DEBUG_ << "Range search radius: " << radius << ", result num: " << lims[n];
 
     res.distances = nullptr;
     res.labels = nullptr;

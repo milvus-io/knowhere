@@ -131,7 +131,7 @@ BruteForceRangeSearch(
     distances = res.distances;
     lims = res.lims;
 
-    LOG_KNOWHERE_DEBUG_ << "Range search result num: " << lims[nq];
+    LOG_KNOWHERE_DEBUG_ << "Range search radius: " << radius << ", result num: " << lims[nq];
 
     res.distances = nullptr;
     res.labels = nullptr;
