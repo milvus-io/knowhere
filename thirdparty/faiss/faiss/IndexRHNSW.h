@@ -126,7 +126,7 @@ struct IndexRHNSWFlat : IndexRHNSW {
  */
 struct IndexRHNSWPQ : IndexRHNSW {
     IndexRHNSWPQ();
-    IndexRHNSWPQ(int d, int pq_m, int M);
+    IndexRHNSWPQ(int d, int pq_m, int M, MetricType metric = METRIC_L2);
     void train(idx_t n, const float* x) override;
     size_t cal_size();
 };
