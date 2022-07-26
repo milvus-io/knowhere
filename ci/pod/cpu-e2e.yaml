@@ -26,5 +26,5 @@ spec:
   volumes:
     - name: db-data
       nfs:
-        server: 172.16.70.239
-        path: /qa
+        server: 172.16.70.248
+        path: /zilliz/milvus

@@ -1,4 +1,4 @@
-int total_timeout_minutes = 60
+int total_timeout_minutes = 60*12
 def knowhere_wheel=''
 pipeline {
     agent {
@@ -47,7 +47,7 @@ pipeline {
             }
             agent {
                 kubernetes {
-                    label 'knowhere-cpu-e2e' 
+                    label 'knowhere-cpu-e2e-nightly' 
                     inheritFrom 'default'
                     yamlFile 'ci/pod/cpu-e2e.yaml'
                     defaultContainer 'main'
@@ -71,7 +71,7 @@ pipeline {
                       unarchive mapping: ["dist/${knowhere_wheel}": "${knowhere_wheel}"]
                       sh "ls -lah"
                       sh "pip3 install ${knowhere_wheel} \
-                          && pip3 install -r requirements.txt --timeout 30 --retries 6 &&  pytest -v -m recall"
+                          && pip3 install -r requirements.txt --timeout 30 --retries 6 &&  pytest -v -m L2 --entities 200000000"
                     }
 
                 }
