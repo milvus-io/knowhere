@@ -119,12 +119,12 @@ GetOptionalFilenames(const std::string& prefix) {
 template <typename T>
 void
 CheckFileSize(const std::string& data_path, const size_t num, const size_t dim) {
+    std::ifstream file(data_path.c_str(), std::ios::binary | std::ios::ate);
+    uint64_t autual_file_size = static_cast<uint64_t>(file.tellg());
+    file.close();
     uint64_t expected_file_size = num * dim * sizeof(T) + 2 * sizeof(uint32_t);
-    struct stat st;
-    stat(data_path.c_str(), &st);
-    uint64_t autual_file_size = static_cast<uint64_t>(st.st_size);
     if (autual_file_size != expected_file_size) {
-        KNOWHERE_THROW_FORMAT("Actual data file size is %ld bytes, while expected size is %ld bytes",
+        KNOWHERE_THROW_FORMAT("Actual file size (%ld bytes) not equal to expected size (%ld bytes)",
                               autual_file_size, expected_file_size);
     }
 }
