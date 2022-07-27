@@ -1,7 +1,12 @@
 int total_timeout_minutes = 60
 def knowhere_wheel=''
 pipeline {
-    agent any
+     agent {
+        kubernetes {
+            inheritFrom 'default'
+            defaultContainer 'jnlp'
+        }
+     }
 
     options {
         timeout(time: total_timeout_minutes, unit: 'MINUTES')
@@ -14,7 +19,6 @@ pipeline {
         stage("Build"){
                  agent {
                     kubernetes {
-                        label 'knowhere-gpu-build' 
                         inheritFrom 'default'
                         yamlFile 'ci/pod/gpu-build.yaml'
                         defaultContainer 'main'
@@ -41,7 +45,6 @@ pipeline {
         stage("Test"){
             agent {
                 kubernetes {
-                    label 'knowhere-gpu-e2e' 
                     inheritFrom 'default'
                     yamlFile 'ci/pod/gpu-e2e.yaml'
                     defaultContainer 'main'
