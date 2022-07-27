@@ -42,10 +42,6 @@ get_build_type( TARGET  BUILD_TYPE
                         DEFAULT "Release" )
 message( STATUS "Build type = ${BUILD_TYPE}" )
 
-get_knowhere_version( TARGET KNOWHERE_VERSION
-                             DEFAULT "1.0.1" )
-message( STATUS "Build version = ${KNOWHERE_VERSION}" )
-
 get_last_commit_id( LAST_COMMIT_ID )
 message( STATUS "LAST_COMMIT_ID = ${LAST_COMMIT_ID}" )
 
