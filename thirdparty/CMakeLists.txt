@@ -156,7 +156,7 @@ macro(build_diskann)
             "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
             "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
             "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
-            "-DCMAKE_CXX_FLAGS= -fpermissive -I ${KNOWHERE_SOURCE_DIR}"
+            "-DCMAKE_CXX_FLAGS= -O3 -fPIC -DELPP_THREAD_SAFE -fopenmp -rdynamic -fpermissive -I ${KNOWHERE_SOURCE_DIR}"
             )
     message( STATUS "Building DISKANN with configure args -${DISKANN_CMAKE_ARGS}" )
     set( DISKANN_BUILD_DIR "${DISKANN_SOURCE_DIR}/build")
@@ -169,7 +169,9 @@ macro(build_diskann)
         BUILD_COMMAND cmake .. ${DISKANN_CMAKE_ARGS} COMMAND ${MAKE} ${MAKE_BUILD_ARGS}
         INSTALL_COMMAND
         ${MAKE} install
-        BUILD_ALWAYS 1 )
+        BUILD_BYPRODUCTS
+        ${DISKANN_STATIC_LIB}
+        BUILD_ALWAYS 1)
 
         add_library( diskann STATIC IMPORTED )
        
