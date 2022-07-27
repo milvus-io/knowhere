@@ -92,6 +92,12 @@ AssertAnns(const knowhere::DatasetPtr& result,
            const CheckMode check_mode = CheckMode::CHECK_EQUAL);
 
 void
+AssertDist(const knowhere::DatasetPtr& result,
+           const knowhere::MetricType& metric,
+           const int nq,
+           const int k);
+
+void
 AssertVec(const knowhere::DatasetPtr& result,
           const knowhere::DatasetPtr& base_dataset,
           const knowhere::DatasetPtr& id_dataset,
