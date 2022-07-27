@@ -3,10 +3,8 @@ def knowhere_wheel=''
 pipeline {
     agent {
         kubernetes {
-            label 'knowhere-cpu-build' 
             inheritFrom 'default'
-            yamlFile 'ci/pod/cpu-build.yaml'
-            defaultContainer 'main'
+            defaultContainer 'jnlp'
         }
     }
     options {
@@ -18,6 +16,13 @@ pipeline {
     }
     stages {
         stage("Build"){
+             agent {
+                kubernetes {
+                    inheritFrom 'default'
+                    yamlFile 'ci/pod/cpu-build.yaml'
+                    defaultContainer 'main'
+                }
+            }
             steps {
                 script{
                     def date = sh(returnStdout: true, script: 'date +%Y%m%d').trim()
@@ -47,7 +52,6 @@ pipeline {
             }
             agent {
                 kubernetes {
-                    label 'knowhere-cpu-e2e' 
                     inheritFrom 'default'
                     yamlFile 'ci/pod/cpu-e2e.yaml'
                     defaultContainer 'main'
