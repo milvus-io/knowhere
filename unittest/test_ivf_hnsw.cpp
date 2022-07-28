@@ -30,8 +30,8 @@ class IVFHNSWTest : public DataGen,
  protected:
     void
     SetUp() override {
+        Init_with_default();
         std::tie(index_type_, index_mode_) = GetParam();
-        Generate(dim, nb, nq);
         index_ = knowhere::VecIndexFactory::GetInstance().CreateVecIndex(index_type_, index_mode_);
         conf_ = ParamGenerator::GetInstance().Gen(index_type_);
     }
@@ -86,16 +86,14 @@ TEST_P(IVFHNSWTest, ivfhnsw_basic_cpu) {
 }
 
 TEST_P(IVFHNSWTest, ivfhnsw_slice) {
-    {
-        // serialize index
-        index_->Train(base_dataset, conf_);
-        index_->AddWithoutIds(base_dataset, conf_);
-        auto binaryset = index_->Serialize(conf_);
-        // load index
-        index_->Load(binaryset);
-        EXPECT_EQ(index_->Count(), nb);
-        EXPECT_EQ(index_->Dim(), dim);
-        auto result = index_->Query(query_dataset, conf_, nullptr);
-        AssertAnns(result, nq, k);
-    }
+    knowhere::SetMetaSliceSize(conf_, knowhere::index_file_slice_size);
+    // serialize index
+    index_->BuildAll(base_dataset, conf_);
+    auto binaryset = index_->Serialize(conf_);
+    // load index
+    index_->Load(binaryset);
+    EXPECT_EQ(index_->Count(), nb);
+    EXPECT_EQ(index_->Dim(), dim);
+    auto result = index_->Query(query_dataset, conf_, nullptr);
+    AssertAnns(result, nq, k);
 }

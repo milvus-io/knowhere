@@ -12,10 +12,11 @@
 #include <gtest/gtest.h>
 
 #include "knowhere/common/Exception.h"
+#include "knowhere/index/VecIndexFactory.h"
 #include "knowhere/index/vector_index/ConfAdapterMgr.h"
-#include "knowhere/index/vector_index/IndexAnnoy.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
+#include "unittest/Helper.h"
 #include "unittest/utils.h"
 
 using ::testing::Combine;
@@ -26,23 +27,16 @@ class AnnoyTest : public DataGen, public TestWithParam<std::string> {
  protected:
     void
     SetUp() override {
-        Generate(128, 10000, 10);
-        index_ = std::make_shared<knowhere::IndexAnnoy>();
-        conf = knowhere::Config{
-            {knowhere::meta::SLICE_SIZE, knowhere::index_file_slice_size},
-            {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
-            {knowhere::meta::DIM, dim},
-            {knowhere::meta::TOPK, 10},
-            {knowhere::indexparam::N_TREES, 4},
-            {knowhere::indexparam::SEARCH_K, 100},
-        };
+        Init_with_default();
+        index_ = knowhere::VecIndexFactory::GetInstance().CreateVecIndex(index_type_, index_mode_);
+        conf_ = ParamGenerator::GetInstance().Gen(index_type_);
     }
 
  protected:
-    knowhere::Config conf;
+    knowhere::Config conf_;
     knowhere::IndexMode index_mode_ = knowhere::IndexMode::MODE_CPU;
     knowhere::IndexType index_type_ = knowhere::IndexEnum::INDEX_ANNOY;
-    std::shared_ptr<knowhere::IndexAnnoy> index_ = nullptr;
+    knowhere::VecIndexPtr index_ = nullptr;
 };
 
 INSTANTIATE_TEST_CASE_P(AnnoyParameters, AnnoyTest, Values("Annoy"));
@@ -52,44 +46,44 @@ TEST_P(AnnoyTest, annoy_basic) {
 
     // null faiss index
     {
-        ASSERT_ANY_THROW(index_->Train(base_dataset, conf));
-        ASSERT_ANY_THROW(index_->Query(query_dataset, conf, nullptr));
-        ASSERT_ANY_THROW(index_->Serialize(conf));
-        ASSERT_ANY_THROW(index_->AddWithoutIds(base_dataset, conf));
+        ASSERT_ANY_THROW(index_->Train(base_dataset, conf_));
+        ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
+        ASSERT_ANY_THROW(index_->Serialize(conf_));
+        ASSERT_ANY_THROW(index_->AddWithoutIds(base_dataset, conf_));
         ASSERT_ANY_THROW(index_->Count());
         ASSERT_ANY_THROW(index_->Dim());
     }
 
-    index_->BuildAll(base_dataset, conf);  // Train + AddWithoutIds
+    index_->BuildAll(base_dataset, conf_);  // Train + AddWithoutIds
     ASSERT_EQ(index_->Count(), nb);
     ASSERT_EQ(index_->Dim(), dim);
     ASSERT_GT(index_->Size(), 0);
 
-    auto result = index_->GetVectorById(id_dataset, conf);
+    auto result = index_->GetVectorById(id_dataset, conf_);
     AssertVec(result, base_dataset, id_dataset, nq, dim);
 
     std::vector<int64_t> ids_invalid(nq, nb);
     auto id_dataset_invalid = knowhere::GenDatasetWithIds(nq, dim, ids_invalid.data());
-    ASSERT_ANY_THROW(index_->GetVectorById(id_dataset_invalid, conf));
+    ASSERT_ANY_THROW(index_->GetVectorById(id_dataset_invalid, conf_));
 
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
-    ASSERT_TRUE(adapter->CheckSearch(conf, index_type_, index_mode_));
+    ASSERT_TRUE(adapter->CheckSearch(conf_, index_type_, index_mode_));
 
-    auto result1 = index_->Query(query_dataset, conf, nullptr);
+    auto result1 = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result1, nq, k);
 }
 
 TEST_P(AnnoyTest, annoy_delete) {
     assert(!xb.empty());
 
-    index_->BuildAll(base_dataset, conf);  // Train + AddWithoutIds
+    index_->BuildAll(base_dataset, conf_);  // Train + AddWithoutIds
     ASSERT_EQ(index_->Count(), nb);
     ASSERT_EQ(index_->Dim(), dim);
 
-    auto result1 = index_->Query(query_dataset, conf, nullptr);
+    auto result1 = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result1, nq, k);
 
-    auto result2 = index_->Query(query_dataset, conf, *bitset);
+    auto result2 = index_->Query(query_dataset, conf_, *bitset);
     AssertAnns(result2, nq, k, CheckMode::CHECK_NOT_EQUAL);
 }
 
@@ -106,7 +100,7 @@ TEST_P(AnnoyTest, annoy_serialize) {
     };
 
     // serialize index
-    index_->BuildAll(base_dataset, conf);
+    index_->BuildAll(base_dataset, conf_);
     auto binaryset = index_->Serialize(knowhere::Config());
 
     auto bin_data = binaryset.GetByName("annoy_index_data");
@@ -137,17 +131,18 @@ TEST_P(AnnoyTest, annoy_serialize) {
     index_->Load(binaryset);
     ASSERT_EQ(index_->Count(), nb);
     ASSERT_EQ(index_->Dim(), dim);
-    auto result = index_->Query(query_dataset, conf, nullptr);
-    AssertAnns(result, nq, knowhere::GetMetaTopk(conf));
+    auto result = index_->Query(query_dataset, conf_, nullptr);
+    AssertAnns(result, nq, knowhere::GetMetaTopk(conf_));
 }
 
 TEST_P(AnnoyTest, annoy_slice) {
+    knowhere::SetMetaSliceSize(conf_, knowhere::index_file_slice_size);
     // serialize index
-    index_->BuildAll(base_dataset, conf);
+    index_->BuildAll(base_dataset, conf_);
     auto binaryset = index_->Serialize(knowhere::Config());
     index_->Load(binaryset);
     ASSERT_EQ(index_->Count(), nb);
     ASSERT_EQ(index_->Dim(), dim);
-    auto result = index_->Query(query_dataset, conf, nullptr);
-    AssertAnns(result, nq, knowhere::GetMetaTopk(conf));
+    auto result = index_->Query(query_dataset, conf_, nullptr);
+    AssertAnns(result, nq, knowhere::GetMetaTopk(conf_));
 }
