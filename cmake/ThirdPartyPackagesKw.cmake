@@ -20,6 +20,21 @@ if ( LINUX AND KNOWHERE_WITH_DISKANN)
         ${KNOWHERE_THIRDPARTY_DEPENDENCIES}
         DiskANN
         )
+
+    # For Ubuntu 18.04 (install MKL by script)
+    set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${MKL_DIR})
+    set(MKL_ROOT "/opt/intel/oneapi/mkl/latest")
+    set(OMP_PATH "/opt/intel/oneapi/compiler/2022.0.2/linux/compiler/lib/intel64_lin/")
+    find_package(MKL REQUIRED)
+
+    # For Ubuntu 20.04/22.04 (install MKL by apt)
+    link_directories(/usr/lib/x86_64-linux-gnu/mkl)
+    include_directories(/usr/include/mkl)
+
+    link_directories(${OMP_PATH} ${MKL_ROOT}/lib/intel64)
+    include_directories(${MKL_ROOT}/include)
+    set(MKL_LIBRARIES ${MKL_LIBRARIES} iomp5 pthread m dl)
+    message( STATUS "MKL RELATED LIBRARIES: ${MKL_LIBRARIES}")
 endif()
 
 message(STATUS "Using ${KNOWHERE_DEPENDENCY_SOURCE} approach to find dependencies")
@@ -228,6 +243,10 @@ endmacro()
 
 if (KNOWHERE_WITH_OPENBLAS)
     if (OpenBLAS_SOURCE STREQUAL "AUTO")
+        # Protect OpenBLAS for faiss build
+        if (LINUX)
+            set (BLA_VENDOR OpenBLAS)
+        endif()
         find_package(BLAS)
 
         message(STATUS "Knowhere openblas libraries: ${BLAS_LIBRARIES}")
