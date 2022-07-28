@@ -156,7 +156,11 @@ DumpRangeResultDis(const knowhere::DatasetPtr& result, float* dis, int len) {
 
 knowhere::Config
 CreateConfig(const std::string& str) {
-    return knowhere::Config::parse(str);
+    auto cfg = knowhere::Config::parse(str);
+    auto metric_type = cfg.at("metric_type").get<std::string>();
+    std::transform(metric_type.begin(), metric_type.end(), metric_type.begin(), toupper);
+    cfg["metric_type"] = metric_type;
+    return cfg;
 }
 
 void
