@@ -1337,8 +1337,13 @@ void IndexIVF::range_search_preassigned_without_codes(
                 return;
 
             try {
-                InvertedLists::ScopedCodes
-                    scodes(invlists, key, arranged_codes.data());
+#ifdef USE_GPU
+                auto rol = dynamic_cast<faiss::ReadOnlyArrayInvertedLists*>(invlists);
+                auto arranged_data = reinterpret_cast<uint8_t*>(rol->pin_readonly_codes->data);
+                InvertedLists::ScopedCodes scodes(invlists, key, arranged_data);
+#else
+                InvertedLists::ScopedCodes scodes(invlists, key, arranged_codes.data());
+#endif
                 InvertedLists::ScopedIds ids(invlists, key);
 
                 scanner->set_list(key, coarse_dis[i * nprobe + ik]);
