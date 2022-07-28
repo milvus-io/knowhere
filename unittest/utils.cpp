@@ -122,19 +122,43 @@ GenBase(const int64_t dim,
 }
 
 void
-AssertAnns(const knowhere::DatasetPtr& result, const int nq, const int k, const CheckMode check_mode) {
+AssertAnns(const knowhere::DatasetPtr& result,
+           const int nq,
+           const int k,
+           const CheckMode check_mode) {
     auto ids = knowhere::GetDatasetIDs(result);
     for (auto i = 0; i < nq; i++) {
+        auto id = ids[i * k];
         switch (check_mode) {
             case CheckMode::CHECK_EQUAL:
-                ASSERT_EQ(i, *((int64_t*)(ids) + i * k));
+                ASSERT_EQ(i, id);
                 break;
             case CheckMode::CHECK_NOT_EQUAL:
-                ASSERT_NE(i, *((int64_t*)(ids) + i * k));
+                ASSERT_NE(i, id);
                 break;
             default:
                 ASSERT_TRUE(false);
                 break;
+        }
+    }
+}
+
+void
+AssertDist(const knowhere::DatasetPtr& result,
+           const knowhere::MetricType& metric,
+           const int nq,
+           const int k) {
+    auto distance = knowhere::GetDatasetDistance(result);
+    bool is_ip = (metric == knowhere::metric::IP);
+    for (auto i = 0; i < nq; i++) {
+        for (auto j = 1; j < k; j++) {
+            auto va = distance[i * k + j - 1];
+            auto vb = distance[i * k + j];
+            if (is_ip) {
+                ASSERT_GE(va, vb);  // descending order
+            } else {
+                ASSERT_LE(va, vb);  // ascending order
+            }
         }
     }
 }

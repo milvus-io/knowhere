@@ -61,6 +61,7 @@ set(ALL_INDEXING_SRCS
         test_ivf_nm.cpp
         test_ivf_hnsw.cpp
         test_rhnsw.cpp
+        test_vecindex.cpp
         )
 
 if ( LINUX OR MSYS )

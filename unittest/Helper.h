@@ -48,7 +48,15 @@ class ParamGenerator {
 
     knowhere::Config
     Gen(const knowhere::IndexType& type) {
-        if (type == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
+        if (type == knowhere::IndexEnum::INDEX_FAISS_IDMAP) {
+            return knowhere::Config{
+                {knowhere::meta::SLICE_SIZE, knowhere::index_file_slice_size},
+                {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
+                {knowhere::meta::DIM, DIM},
+                {knowhere::meta::TOPK, K},
+                {knowhere::meta::DEVICE_ID, DEVICE_ID},
+            };
+        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
             return knowhere::Config{
                 {knowhere::meta::SLICE_SIZE, knowhere::index_file_slice_size},
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
@@ -103,6 +111,14 @@ class ParamGenerator {
                 {knowhere::indexparam::HNSW_M, 16},
                 {knowhere::indexparam::EFCONSTRUCTION, 200},
                 {knowhere::indexparam::EF, 200},
+            };
+        } else if (type == knowhere::IndexEnum::INDEX_ANNOY) {
+            return knowhere::Config {
+                {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
+                {knowhere::meta::DIM, DIM},
+                {knowhere::meta::TOPK, K},
+                {knowhere::indexparam::N_TREES, 4},
+                {knowhere::indexparam::SEARCH_K, 100},
             };
         } else if (type == knowhere::IndexEnum::INDEX_RHNSWFlat) {
             return knowhere::Config{
