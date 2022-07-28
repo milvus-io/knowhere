@@ -85,6 +85,7 @@ pipeline {
                     script{
                         sh 'cp /tmp/knowhere_ci.log knowhere_ci.log'
                         archiveArtifacts artifacts: 'knowhere_ci.log', followSymlinks: false
+                        sh "sleep 48h"
                     }
                 }
             }    
