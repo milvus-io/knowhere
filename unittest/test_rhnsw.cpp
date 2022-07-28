@@ -124,8 +124,8 @@ TEST_P(RHNSWTest, RHNSW_serialize) {
 }
 
 TEST_P(RHNSWTest, RHNSW_slice) {
-    index_->Train(base_dataset, conf_);
-    index_->AddWithoutIds(base_dataset, conf_);
+    knowhere::SetMetaSliceSize(conf_, knowhere::index_file_slice_size);
+    index_->BuildAll(base_dataset, conf_);
     auto binaryset = index_->Serialize(conf_);
 
     auto raw_data = knowhere::GetDatasetTensor(base_dataset);

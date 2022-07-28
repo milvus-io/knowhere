@@ -13,9 +13,11 @@
 #include <thread>
 
 #include "knowhere/common/Exception.h"
+#include "knowhere/index/VecIndexFactory.h"
 #include "knowhere/index/vector_index/ConfAdapterMgr.h"
 #include "knowhere/index/vector_index/IndexBinaryIVF.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
+#include "unittest/Helper.h"
 #include "unittest/range_utils.h"
 #include "unittest/utils.h"
 
@@ -29,19 +31,10 @@ class BinaryIVFTest : public DataGen,
     void
     SetUp() override {
         Init_with_default(true);
-
-        conf_ = knowhere::Config{
-            {knowhere::meta::METRIC_TYPE, knowhere::metric::HAMMING},
-            {knowhere::meta::DIM, dim},
-            {knowhere::meta::TOPK, k},
-            {knowhere::meta::RADIUS, radius},
-            {knowhere::indexparam::NLIST, 16},
-            {knowhere::indexparam::NPROBE, 8},
-        };
-
         index_mode_ = GetParam();
         index_type_ = knowhere::IndexEnum::INDEX_FAISS_BIN_IVFFLAT;
-        index_ = std::make_shared<knowhere::BinaryIVF>();
+        index_ = knowhere::VecIndexFactory::GetInstance().CreateVecIndex(index_type_, index_mode_);
+        conf_ = ParamGenerator::GetInstance().Gen(index_type_);
     }
 
     void
@@ -52,7 +45,7 @@ class BinaryIVFTest : public DataGen,
     knowhere::Config conf_;
     knowhere::IndexMode index_mode_;
     knowhere::IndexType index_type_;
-    knowhere::BinaryIVFIndexPtr index_ = nullptr;
+    knowhere::VecIndexPtr index_ = nullptr;
 };
 
 INSTANTIATE_TEST_CASE_P(
@@ -125,6 +118,7 @@ TEST_P(BinaryIVFTest, binaryivf_serialize) {
 }
 
 TEST_P(BinaryIVFTest, binaryivf_slice) {
+    knowhere::SetMetaSliceSize(conf_, knowhere::index_file_slice_size);
     // serialize index
     index_->BuildAll(base_dataset, conf_);
     auto binaryset = index_->Serialize(conf_);

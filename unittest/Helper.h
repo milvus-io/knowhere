@@ -48,9 +48,22 @@ class ParamGenerator {
 
     knowhere::Config
     Gen(const knowhere::IndexType& type) {
-        if (type == knowhere::IndexEnum::INDEX_FAISS_IDMAP) {
+        if (type == knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP) {
             return knowhere::Config{
-                {knowhere::meta::SLICE_SIZE, knowhere::index_file_slice_size},
+                {knowhere::meta::METRIC_TYPE, knowhere::metric::HAMMING},
+                {knowhere::meta::DIM, DIM},
+                {knowhere::meta::TOPK, K},
+            };
+        } else if (type == knowhere::IndexEnum::INDEX_FAISS_BIN_IVFFLAT) {
+            return knowhere::Config{
+                {knowhere::meta::METRIC_TYPE, knowhere::metric::HAMMING},
+                {knowhere::meta::DIM, DIM},
+                {knowhere::meta::TOPK, K},
+                {knowhere::indexparam::NLIST, 16},
+                {knowhere::indexparam::NPROBE, 8},
+        };
+        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IDMAP) {
+            return knowhere::Config{
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
@@ -58,7 +71,6 @@ class ParamGenerator {
             };
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
             return knowhere::Config{
-                {knowhere::meta::SLICE_SIZE, knowhere::index_file_slice_size},
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
@@ -68,7 +80,6 @@ class ParamGenerator {
             };
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFPQ) {
             return knowhere::Config{
-                {knowhere::meta::SLICE_SIZE, knowhere::index_file_slice_size},
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
@@ -81,7 +92,6 @@ class ParamGenerator {
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8 ||
                    type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
             return knowhere::Config{
-                {knowhere::meta::SLICE_SIZE, knowhere::index_file_slice_size},
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
@@ -92,7 +102,6 @@ class ParamGenerator {
             };
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFHNSW) {
             return knowhere::Config{
-                {knowhere::meta::SLICE_SIZE, knowhere::index_file_slice_size},
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
@@ -122,7 +131,6 @@ class ParamGenerator {
             };
         } else if (type == knowhere::IndexEnum::INDEX_RHNSWFlat) {
             return knowhere::Config{
-                {knowhere::meta::SLICE_SIZE, knowhere::index_file_slice_size},
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
@@ -132,7 +140,6 @@ class ParamGenerator {
             };
         } else if (type == knowhere::IndexEnum::INDEX_RHNSWPQ) {
             return knowhere::Config{
-                {knowhere::meta::SLICE_SIZE, knowhere::index_file_slice_size},
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
@@ -143,7 +150,6 @@ class ParamGenerator {
             };
         } else if (type == knowhere::IndexEnum::INDEX_RHNSWSQ) {
             return knowhere::Config{
-                {knowhere::meta::SLICE_SIZE, knowhere::index_file_slice_size},
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
