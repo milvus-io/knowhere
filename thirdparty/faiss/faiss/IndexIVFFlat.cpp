@@ -252,7 +252,13 @@ void IndexIVFFlat::reconstruct_from_offset_without_codes(
         int64_t offset,
         float* recons) const {
     auto idx = prefix_sum[list_no] + offset;
+#ifdef USE_GPU
+    auto rol = dynamic_cast<faiss::ReadOnlyArrayInvertedLists*>(invlists);
+    auto arranged_data = reinterpret_cast<uint8_t*>(rol->pin_readonly_codes->data);
+    memcpy(recons, arranged_data + idx * code_size, code_size);
+#else
     memcpy(recons, arranged_codes.data() + idx * code_size, code_size);
+#endif
 }
 
 /*****************************************

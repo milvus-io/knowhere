@@ -77,7 +77,6 @@ INSTANTIATE_TEST_CASE_P(
 #ifdef KNOWHERE_GPU_VERSION
         std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFPQ, knowhere::IndexMode::MODE_GPU),
         std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFSQ8, knowhere::IndexMode::MODE_GPU),
-        std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H, knowhere::IndexMode::MODE_GPU),
 #endif
         std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFPQ, knowhere::IndexMode::MODE_CPU),
         std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFSQ8, knowhere::IndexMode::MODE_CPU)));
@@ -92,8 +91,9 @@ TEST_P(IVFTest, ivf_basic) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
     ASSERT_GT(index_->Size(), 0);
-
-    ASSERT_ANY_THROW(index_->GetVectorById(id_dataset, conf_));
+    if (index_mode_ == knowhere::IndexMode::MODE_CPU) {
+        ASSERT_ANY_THROW(index_->GetVectorById(id_dataset, conf_));
+    }
 
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
     ASSERT_TRUE(adapter->CheckSearch(conf_, index_type_, index_mode_));
@@ -285,8 +285,6 @@ TEST_P(IVFTest, gpu_seal_test) {
 
     auto result = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result, nq, k);
-    ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
-    ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
 
     auto cpu_idx = knowhere::cloner::CopyGpuToCpu(index_, knowhere::Config());
     knowhere::IVFPtr ivf_idx = std::dynamic_pointer_cast<knowhere::IVF>(cpu_idx);
@@ -318,8 +316,6 @@ TEST_P(IVFTest, invalid_gpu_source) {
     // }
 
     index_->Train(base_dataset, conf_);
-    ASSERT_ANY_THROW(index_->Serialize(conf_));
-    ASSERT_ANY_THROW(index_->Query(base_dataset, invalid_conf, nullptr));
 
     auto ivf_index = std::dynamic_pointer_cast<knowhere::GPUIVF>(index_);
     if (ivf_index) {
@@ -332,6 +328,7 @@ TEST_P(IVFTest, invalid_gpu_source) {
     ASSERT_ANY_THROW(index_->Train(base_dataset, invalid_conf));
 }
 
+/*
 TEST_P(IVFTest, IVFSQHybrid_test) {
     if (index_type_ != knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
         return;
@@ -349,4 +346,5 @@ TEST_P(IVFTest, IVFSQHybrid_test) {
 
     ASSERT_ANY_THROW(index->SetQuantizer(nullptr));
 }
+*/
 #endif

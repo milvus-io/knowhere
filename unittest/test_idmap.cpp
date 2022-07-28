@@ -276,7 +276,6 @@ TEST_P(IDMAPTest, idmap_copy) {
     AssertAnns(clone_result, nq, k);
     ASSERT_THROW({ std::static_pointer_cast<knowhere::GPUIDMAP>(clone_index)->GetRawVectors(); },
                  knowhere::KnowhereException);
-    ASSERT_ANY_THROW(clone_index->Serialize(conf_));
 
     auto binary = clone_index->Serialize(conf_);
     clone_index->Load(binary);
