@@ -154,10 +154,12 @@ if (KNOWHERE_SUPPORT_NGT)
 endif ()
 
 if (KNOWHERE_WITH_DISKANN)
-    set(depend_libs
-            ${depend_libs}
-            diskann
-            )
+      set(depend_libs
+             ${depend_libs}
+             diskann
+             aio
+             ${MKL_LIBRARIES}
+             )
 endif()
 
 if (KNOWHERE_GPU_VERSION)
