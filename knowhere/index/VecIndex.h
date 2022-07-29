@@ -50,7 +50,7 @@ class VecIndex : public Index {
      * @return false if any error.
      */
     virtual bool
-    Prepare() {
+    Prepare(const Config& /* unused */) {
         KNOWHERE_THROW_MSG("Prepare not supported yet");
     }
 

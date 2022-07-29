@@ -88,6 +88,7 @@ set(vector_index_srcs
 if ( KNOWHERE_WITH_DISKANN )
     set(vector_index_srcs
             index/vector_index/IndexDiskANN.cpp
+            index/vector_index/IndexDiskANNConfig.cpp
             ${vector_index_srcs}
             )
 endif()
