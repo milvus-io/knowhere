@@ -21,7 +21,6 @@
 #include "windows_customizations.h"
 
 #define MAX_GRAPH_DEGREE 512
-#define MAX_N_CMPS 16384
 #define SECTOR_LEN (_u64) 4096
 #define MAX_N_SECTOR_READS 128
 #define MAX_PQ_CHUNKS 256
@@ -31,8 +30,7 @@
 namespace diskann {
   template<typename T>
   struct QueryScratch {
-    T *  coord_scratch = nullptr;  // MUST BE AT LEAST [MAX_N_CMPS * data_dim]
-    _u64 coord_idx = 0;            // index of next [data_dim] scratch to use
+    T *  coord_scratch = nullptr;  // MUST BE AT LEAST [sizeof(T) * data_dim]
 
     char *sector_scratch =
         nullptr;          // MUST BE AT LEAST [MAX_N_SECTOR_READS * SECTOR_LEN]
@@ -50,7 +48,6 @@ namespace diskann {
     tsl::robin_set<_u64> *visited = nullptr;
 
     void reset() {
-      coord_idx = 0;
       sector_idx = 0;
       visited->clear();  // does not deallocate memory.
     }
