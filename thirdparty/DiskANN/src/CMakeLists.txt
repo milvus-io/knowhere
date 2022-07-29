@@ -14,10 +14,7 @@ else()
 	set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 	# add_library(${PROJECT_NAME}_s STATIC ${CPP_SOURCES})
 endif()
-find_package(MKL)
-if(MKL_FOUND)
-   target_link_libraries(${PROJECT_NAME} ${MKL_LIBRARIES})
-endif()
+
 install()
 install( TARGETS  ${PROJECT_NAME} ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
