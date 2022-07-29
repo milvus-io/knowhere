@@ -20,20 +20,17 @@ if ( LINUX AND KNOWHERE_WITH_DISKANN)
         ${KNOWHERE_THIRDPARTY_DEPENDENCIES}
         DiskANN
         )
-
     # For Ubuntu 18.04 (install MKL by script)
-    set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${MKL_DIR})
     set(MKL_ROOT "/opt/intel/oneapi/mkl/latest")
     set(OMP_PATH "/opt/intel/oneapi/compiler/2022.0.2/linux/compiler/lib/intel64_lin/")
-    find_package(MKL REQUIRED)
+    include_directories(${MKL_ROOT}/include)
+    link_directories(${OMP_PATH} ${MKL_ROOT}/lib/intel64)
 
     # For Ubuntu 20.04/22.04 (install MKL by apt)
     link_directories(/usr/lib/x86_64-linux-gnu/mkl)
     include_directories(/usr/include/mkl)
 
-    link_directories(${OMP_PATH} ${MKL_ROOT}/lib/intel64)
-    include_directories(${MKL_ROOT}/include)
-    set(MKL_LIBRARIES ${MKL_LIBRARIES} iomp5 pthread m dl)
+    set(MKL_LIBRARIES mkl_intel_ilp64 mkl_intel_thread mkl_core iomp5 pthread m dl )
     message( STATUS "MKL RELATED LIBRARIES: ${MKL_LIBRARIES}")
 endif()
 
