@@ -96,6 +96,7 @@ DOWNCAST ( IndexAnnoy )
 }
 
 %apply (float* IN_ARRAY2, int DIM1, int DIM2) {(float* xb, int nb, int dim)}
+%apply (int* IN_ARRAY2, int DIM1, int DIM2) {(int* xb, int nb, int dim)}
 %apply (uint8_t *IN_ARRAY1, int DIM1) {(uint8_t *block, int size)}
 %apply (int *IN_ARRAY1, int DIM1) {(int *lims, int len)}
 %apply (int *IN_ARRAY1, int DIM1) {(int *ids, int len)}
@@ -108,10 +109,19 @@ DOWNCAST ( IndexAnnoy )
 
 
 knowhere::DatasetPtr
-ArrayToDataSet(float* xb, int nb, int dim) {
+ArrayToDataSetFloat(float* xb, int nb, int dim) {
     auto ret_ds = std::make_shared<Dataset>();
     ret_ds->Set<int64_t>("rows", nb);
     ret_ds->Set<int64_t>("dim", dim);
+    ret_ds->Set<const void*>("tensor", xb);
+    return ret_ds;
+};
+
+knowhere::DatasetPtr
+ArrayToDataSetInt(int *xb, int nb, int dim){
+    auto ret_ds = std::make_shared<Dataset>();
+    ret_ds->Set<int64_t>("rows", nb);
+    ret_ds->Set<int64_t>("dim", dim * 32);
     ret_ds->Set<const void*>("tensor", xb);
     return ret_ds;
 };

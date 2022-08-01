@@ -50,6 +50,18 @@ class GpuContext:
         ReleaseGpuResource()
 
 
+def ArrayToDataSet(arr):
+    if arr.dtype == np.int32:
+        return ArrayToDataSetInt(arr)
+    if arr.dtype == np.float32:
+        return ArrayToDataSetFloat(arr)
+    raise ValueError(
+        """
+        ArrayToDataSet only support numpy array dtype float32 and int32.
+        """
+    )
+
+
 def UnpackRangeResults(results, nq):
     lims = np.zeros(
         [
