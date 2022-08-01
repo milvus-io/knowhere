@@ -52,9 +52,6 @@ IndexDiskANN<T>::IndexDiskANN(std::string index_prefix, MetricType metric_type,
 }
 
 namespace {
-static constexpr size_t kMinDim = 128;
-static constexpr size_t kMaxDim = 756;
-
 void
 CheckPreparation(bool is_prepared) {
     if (!is_prepared) {
@@ -141,20 +138,12 @@ CheckNodeLength(const uint32_t degree, const size_t dim) {
     }
 }
 
-void
-CheckDimRange(const size_t dim) {
-    if (dim > kMaxDim || dim < kMinDim) {
-        KNOWHERE_THROW_FORMAT("Data dim %ld is not in range [%ld, %ld]", dim, kMinDim, kMinDim);
-    }
-}
-
 template <typename T>
 void
 CheckBuildParams(const DiskANNBuildConfig& build_conf) {
     size_t num, dim;
     diskann::get_bin_metadata(build_conf.data_path, num, dim);
 
-    CheckDimRange(dim);
     CheckFileSize<T>(build_conf.data_path, num, dim);
     CheckNodeLength<T>(build_conf.max_degree, dim);
 }
