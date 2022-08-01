@@ -1,0 +1,43 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_knowhere_float.TEST_IVF_FLAT_NM
+[==========] Running 1 test from 1 test case.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_knowhere_float
+[ RUN      ] Benchmark_knowhere_float.TEST_IVF_FLAT_NM
+[0.000 s] Loading HDF5 file: sift-128-euclidean.hdf5
+[0.000 s] Loading train data
+[0.184 s] Loading test data
+[0.186 s] Loading ground truth data
+2022-08-01 17:19:20,380 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-08-01 17:19:20,380 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+2022-08-01 17:19:20,380 INFO [default] [KNOWHERE][InitGPUResource][benchmark_knowh] init GPU resource for gpu id: 0
+2022-08-01 17:19:20,380 DEBUG [default] [caiyd@unknown-host] [void knowhere::FaissGpuResourceMgr::InitDevice(int64_t, int64_t, int64_t, int64_t)] [/home/caiyd/vec/knowhere/knowhere/index/vector_index/helpers/FaissGpuResourceMgr.cpp:48] [KNOWHERE][InitDevice][benchmark_knowh] DEVICEID 0, pin_mem_size 256MB, temp_mem_size 256MB, resource count 2
+[0.188 s] Creating GPU index "IVF_FLAT"
+[0.188 s] Reading index file: sift-128-euclidean_IVF_FLAT_1024.index
+[0.188 s] Building all on 1000000 vectors
+2022-08-01 17:19:20,380 DEBUG [default] [caiyd@unknown-host] [void knowhere::FaissGpuResourceMgr::InitResource()] [/home/caiyd/vec/knowhere/knowhere/index/vector_index/helpers/FaissGpuResourceMgr.cpp:75] [KNOWHERE][InitResource][benchmark_knowh] DEVICEID 0, resource count 2
+[1.983 s] Writing index file: sift-128-euclidean_IVF_FLAT_1024.index
+
+[3.595 s] sift-128-euclidean | IVF_FLAT | nlist=1024
+================================================================================
+  nprobe =    1, nq = 10000, k =  100, elapse =  0.041s, R@ = 0.2915
+  nprobe =    2, nq = 10000, k =  100, elapse =  0.074s, R@ = 0.4403
+  nprobe =    4, nq = 10000, k =  100, elapse =  0.143s, R@ = 0.6041
+  nprobe =    8, nq = 10000, k =  100, elapse =  0.278s, R@ = 0.7587
+  nprobe =   16, nq = 10000, k =  100, elapse =  0.536s, R@ = 0.8809
+  nprobe =   32, nq = 10000, k =  100, elapse =  1.047s, R@ = 0.9564
+  nprobe =   64, nq = 10000, k =  100, elapse =  2.038s, R@ = 0.9898
+  nprobe =  128, nq = 10000, k =  100, elapse =  3.981s, R@ = 0.9988
+  nprobe =  256, nq = 10000, k =  100, elapse =  7.791s, R@ = 0.9999
+  nprobe =  512, nq = 10000, k =  100, elapse = 15.263s, R@ = 0.9999
+================================================================================
+[35.501 s] Test 'sift-128-euclidean/IVF_FLAT' done
+
+2022-08-01 17:19:55,704 INFO [default] [KNOWHERE][FreeGPUResource][benchmark_knowh] free GPU resource
+[       OK ] Benchmark_knowhere_float.TEST_IVF_FLAT_NM (35591 ms)
+[----------] 1 test from Benchmark_knowhere_float (35591 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test case ran. (35591 ms total)
+[  PASSED  ] 1 test.

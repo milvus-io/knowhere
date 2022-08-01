@@ -19,6 +19,8 @@
 #include "unittest/benchmark/benchmark_sift.h"
 #include "unittest/utils.h"
 
+const int32_t GPU_DEVICE_ID = 0;
+
 class Benchmark_knowhere : public Benchmark_sift {
  public:
     void
@@ -79,14 +81,17 @@ class Benchmark_knowhere : public Benchmark_sift {
         for (size_t i = 0; i < params.size(); i++) {
             params_str += "_" + std::to_string(params[i]);
         }
-        return ann_test_name_ + "_" + std::string(index_type_) + params_str + ".index";
+        return ann_test_name_ + "_" + index_type_ + params_str + ".index";
     }
 
     void
-    create_cpu_index(const std::string& index_file_name, const knowhere::Config& conf) {
-        printf("[%.3f s] Creating CPU index \"%s\"\n", get_time_diff(), std::string(index_type_).c_str());
+    create_index(const std::string& index_file_name,
+                 const knowhere::Config& conf,
+                 const knowhere::IndexMode mode = knowhere::IndexMode::MODE_CPU) {
+        printf("[%.3f s] Creating %s index \"%s\"\n", get_time_diff(),
+               (mode == knowhere::IndexMode::MODE_CPU ? "CPU" : "GPU"), index_type_.c_str());
         auto& factory = knowhere::VecIndexFactory::GetInstance();
-        index_ = factory.CreateVecIndex(index_type_);
+        index_ = factory.CreateVecIndex(index_type_, mode);
 
         try {
             printf("[%.3f s] Reading index file: %s\n", get_time_diff(), index_file_name.c_str());

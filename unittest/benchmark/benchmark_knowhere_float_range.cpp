@@ -185,7 +185,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IDMAP) {
 
     knowhere::Config conf = cfg_;
     std::string index_file_name = get_index_name({});
-    create_cpu_index(index_file_name, conf);
+    create_index(index_file_name, conf);
     index_->Load(binary_set_);
     binary_set_.clear();
     test_idmap(conf);
@@ -198,7 +198,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IVF_FLAT_NM) {
     for (auto nlist : NLISTs_) {
         std::string index_file_name = get_index_name({nlist});
         knowhere::SetIndexParamNlist(conf, nlist);
-        create_cpu_index(index_file_name, conf);
+        create_index(index_file_name, conf);
 
         // IVFFLAT_NM should load raw data
         knowhere::BinaryPtr bin = std::make_shared<knowhere::Binary>();
@@ -219,7 +219,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IVF_SQ8) {
     for (auto nlist : NLISTs_) {
         std::string index_file_name = get_index_name({nlist});
         knowhere::SetIndexParamNlist(conf, nlist);
-        create_cpu_index(index_file_name, conf);
+        create_index(index_file_name, conf);
         index_->Load(binary_set_);
         binary_set_.clear();
         test_ivf(conf);
@@ -236,7 +236,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IVF_PQ) {
         for (auto nlist : NLISTs_) {
             std::string index_file_name = get_index_name({nlist, m});
             knowhere::SetIndexParamNlist(conf, nlist);
-            create_cpu_index(index_file_name, conf);
+            create_index(index_file_name, conf);
             index_->Load(binary_set_);
             binary_set_.clear();
             test_ivf(conf);
@@ -255,7 +255,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_HNSW) {
             for (auto k : HNSW_Ks_) {
                 knowhere::SetIndexParamHNSWK(conf, k);
                 std::string index_file_name = get_index_name({M, efc, k});
-                create_cpu_index(index_file_name, conf);
+                create_index(index_file_name, conf);
                 index_->Load(binary_set_);
                 binary_set_.clear();
                 test_hnsw(conf);

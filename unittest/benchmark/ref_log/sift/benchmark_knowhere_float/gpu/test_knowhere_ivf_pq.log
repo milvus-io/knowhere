@@ -1,0 +1,83 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_knowhere_float.TEST_IVF_PQ
+[==========] Running 1 test from 1 test case.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_knowhere_float
+[ RUN      ] Benchmark_knowhere_float.TEST_IVF_PQ
+[0.000 s] Loading HDF5 file: sift-128-euclidean.hdf5
+[0.000 s] Loading train data
+[0.177 s] Loading test data
+[0.179 s] Loading ground truth data
+2022-08-01 17:20:12,690 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-08-01 17:20:12,690 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+2022-08-01 17:20:12,691 INFO [default] [KNOWHERE][InitGPUResource][benchmark_knowh] init GPU resource for gpu id: 0
+2022-08-01 17:20:12,691 DEBUG [default] [caiyd@unknown-host] [void knowhere::FaissGpuResourceMgr::InitDevice(int64_t, int64_t, int64_t, int64_t)] [/home/caiyd/vec/knowhere/knowhere/index/vector_index/helpers/FaissGpuResourceMgr.cpp:48] [KNOWHERE][InitDevice][benchmark_knowh] DEVICEID 0, pin_mem_size 256MB, temp_mem_size 256MB, resource count 2
+[0.181 s] Creating GPU index "IVF_PQ"
+[0.181 s] Reading index file: sift-128-euclidean_IVF_PQ_1024_8.index
+[0.181 s] Building all on 1000000 vectors
+2022-08-01 17:20:12,691 DEBUG [default] [caiyd@unknown-host] [void knowhere::FaissGpuResourceMgr::InitResource()] [/home/caiyd/vec/knowhere/knowhere/index/vector_index/helpers/FaissGpuResourceMgr.cpp:75] [KNOWHERE][InitResource][benchmark_knowh] DEVICEID 0, resource count 2
+[4.840 s] Writing index file: sift-128-euclidean_IVF_PQ_1024_8.index
+
+[4.979 s] sift-128-euclidean | IVF_PQ | nlist=1024
+================================================================================
+  nprobe =    1, nq = 10000, k =  100, elapse =  0.012s, R@ = 0.2475
+  nprobe =    2, nq = 10000, k =  100, elapse =  0.017s, R@ = 0.3342
+  nprobe =    4, nq = 10000, k =  100, elapse =  0.025s, R@ = 0.4021
+  nprobe =    8, nq = 10000, k =  100, elapse =  0.042s, R@ = 0.4442
+  nprobe =   16, nq = 10000, k =  100, elapse =  0.065s, R@ = 0.4655
+  nprobe =   32, nq = 10000, k =  100, elapse =  0.105s, R@ = 0.4733
+  nprobe =   64, nq = 10000, k =  100, elapse =  0.180s, R@ = 0.4751
+  nprobe =  128, nq = 10000, k =  100, elapse =  0.329s, R@ = 0.4754
+  nprobe =  256, nq = 10000, k =  100, elapse =  0.654s, R@ = 0.4754
+  nprobe =  512, nq = 10000, k =  100, elapse =  1.685s, R@ = 0.4754
+================================================================================
+[8.816 s] Test 'sift-128-euclidean/IVF_PQ' done
+
+[8.816 s] Creating GPU index "IVF_PQ"
+[8.823 s] Reading index file: sift-128-euclidean_IVF_PQ_1024_16.index
+[8.823 s] Building all on 1000000 vectors
+[14.391 s] Writing index file: sift-128-euclidean_IVF_PQ_1024_16.index
+
+[14.477 s] sift-128-euclidean | IVF_PQ | nlist=1024
+================================================================================
+  nprobe =    1, nq = 10000, k =  100, elapse =  0.015s, R@ = 0.2751
+  nprobe =    2, nq = 10000, k =  100, elapse =  0.021s, R@ = 0.3946
+  nprobe =    4, nq = 10000, k =  100, elapse =  0.032s, R@ = 0.5021
+  nprobe =    8, nq = 10000, k =  100, elapse =  0.055s, R@ = 0.5776
+  nprobe =   16, nq = 10000, k =  100, elapse =  0.096s, R@ = 0.6201
+  nprobe =   32, nq = 10000, k =  100, elapse =  0.162s, R@ = 0.6387
+  nprobe =   64, nq = 10000, k =  100, elapse =  0.293s, R@ = 0.6443
+  nprobe =  128, nq = 10000, k =  100, elapse =  0.549s, R@ = 0.6454
+  nprobe =  256, nq = 10000, k =  100, elapse =  1.087s, R@ = 0.6455
+  nprobe =  512, nq = 10000, k =  100, elapse =  2.660s, R@ = 0.6455
+================================================================================
+[20.186 s] Test 'sift-128-euclidean/IVF_PQ' done
+
+[20.186 s] Creating GPU index "IVF_PQ"
+[20.194 s] Reading index file: sift-128-euclidean_IVF_PQ_1024_32.index
+[20.194 s] Building all on 1000000 vectors
+[26.221 s] Writing index file: sift-128-euclidean_IVF_PQ_1024_32.index
+
+[26.365 s] sift-128-euclidean | IVF_PQ | nlist=1024
+================================================================================
+  nprobe =    1, nq = 10000, k =  100, elapse =  0.019s, R@ = 0.2863
+  nprobe =    2, nq = 10000, k =  100, elapse =  0.027s, R@ = 0.4246
+  nprobe =    4, nq = 10000, k =  100, elapse =  0.047s, R@ = 0.5629
+  nprobe =    8, nq = 10000, k =  100, elapse =  0.082s, R@ = 0.6723
+  nprobe =   16, nq = 10000, k =  100, elapse =  0.145s, R@ = 0.7394
+  nprobe =   32, nq = 10000, k =  100, elapse =  0.270s, R@ = 0.7707
+  nprobe =   64, nq = 10000, k =  100, elapse =  0.508s, R@ = 0.7814
+  nprobe =  128, nq = 10000, k =  100, elapse =  0.977s, R@ = 0.7837
+  nprobe =  256, nq = 10000, k =  100, elapse =  2.157s, R@ = 0.7839
+  nprobe =  512, nq = 10000, k =  100, elapse =  4.938s, R@ = 0.7839
+================================================================================
+[36.278 s] Test 'sift-128-euclidean/IVF_PQ' done
+
+2022-08-01 17:20:48,798 INFO [default] [KNOWHERE][FreeGPUResource][benchmark_knowh] free GPU resource
+[       OK ] Benchmark_knowhere_float.TEST_IVF_PQ (36349 ms)
+[----------] 1 test from Benchmark_knowhere_float (36349 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test case ran. (36349 ms total)
+[  PASSED  ] 1 test.
