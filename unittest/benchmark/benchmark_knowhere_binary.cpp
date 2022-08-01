@@ -113,7 +113,7 @@ TEST_F(Benchmark_knowhere_binary, TEST_CREATE_BINARY_HDF5) {
     metric_type_ = knowhere::metric::HAMMING;
     knowhere::SetMetaMetricType(conf, metric_type_);
 
-    create_cpu_index(index_file_name, conf);
+    create_index(index_file_name, conf);
     index_->Load(binary_set_);
 
     knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq_, dim_, xq_);
@@ -142,7 +142,7 @@ TEST_F(Benchmark_knowhere_binary, TEST_BINARY_IDMAP) {
 
     knowhere::Config conf = cfg_;
     std::string index_file_name = get_index_name({});
-    create_cpu_index(index_file_name, conf);
+    create_index(index_file_name, conf);
     index_->Load(binary_set_);
     binary_set_.clear();
     test_binary_idmap(conf);
@@ -155,7 +155,7 @@ TEST_F(Benchmark_knowhere_binary, TEST_BINARY_IVF_FLAT) {
     for (auto nlist : NLISTs_) {
         std::string index_file_name = get_index_name({nlist});
         knowhere::SetIndexParamNlist(conf, nlist);
-        create_cpu_index(index_file_name, conf);
+        create_index(index_file_name, conf);
         index_->Load(binary_set_);
         binary_set_.clear();
         test_binary_ivf(conf);

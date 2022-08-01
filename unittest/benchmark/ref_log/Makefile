@@ -16,6 +16,7 @@ test_faiss_hnsw:
 ###################################################################################################
 # Test Knowhere index
 test_knowhere_all: test_knowhere_idmap test_knowhere_ivf_flat_nm test_knowhere_ivf_sq8 test_knowhere_ivf_pq test_knowhere_ivf_hnsw test_knowhere_hnsw test_knowhere_annoy test_knowhere_rhnsw_flat test_knowhere_rhnsw_sq test_knowhere_rhnsw_pq
+test_knowhere_gpu: test_knowhere_idmap test_knowhere_ivf_flat_nm test_knowhere_ivf_sq8 test_knowhere_ivf_pq
 
 test_knowhere_idmap:
 	./benchmark_knowhere_float --gtest_filter="Benchmark_knowhere_float.TEST_IDMAP" | tee test_knowhere_idmap.log

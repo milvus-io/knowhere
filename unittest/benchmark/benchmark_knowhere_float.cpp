@@ -158,11 +158,18 @@ class Benchmark_knowhere_float : public Benchmark_knowhere {
         knowhere::SetMetaMetricType(cfg_, metric_type_);
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX2);
         printf("faiss::distance_compute_blas_threshold: %ld\n", knowhere::KnowhereConfig::GetBlasThreshold());
+#ifdef KNOWHERE_GPU_VERSION
+        knowhere::KnowhereConfig::InitGPUResource({GPU_DEVICE_ID});
+        knowhere::SetMetaDeviceID(cfg_, GPU_DEVICE_ID);
+#endif
     }
 
     void
     TearDown() override {
         free_all();
+#ifdef KNOWHERE_GPU_VERSION
+        knowhere::KnowhereConfig::FreeGPUResource();
+#endif
     }
 
  protected:
@@ -192,7 +199,11 @@ TEST_F(Benchmark_knowhere_float, TEST_IDMAP) {
 
     knowhere::Config conf = cfg_;
     std::string index_file_name = get_index_name({});
-    create_cpu_index(index_file_name, conf);
+#ifdef KNOWHERE_GPU_VERSION
+    create_index(index_file_name, conf, knowhere::IndexMode::MODE_GPU);
+#else
+    create_index(index_file_name, conf);
+#endif
     index_->Load(binary_set_);
     binary_set_.clear();
     test_idmap(conf);
@@ -206,7 +217,11 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_FLAT_NM) {
         knowhere::SetIndexParamNlist(conf, nlist);
 
         std::string index_file_name = get_index_name({nlist});
-        create_cpu_index(index_file_name, conf);
+#ifdef KNOWHERE_GPU_VERSION
+        create_index(index_file_name, conf, knowhere::IndexMode::MODE_GPU);
+#else
+        create_index(index_file_name, conf);
+#endif
 
         // IVFFLAT_NM should load raw data
         knowhere::BinaryPtr bin = std::make_shared<knowhere::Binary>();
@@ -228,7 +243,11 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_SQ8) {
         knowhere::SetIndexParamNlist(conf, nlist);
 
         std::string index_file_name = get_index_name({nlist});
-        create_cpu_index(index_file_name, conf);
+#ifdef KNOWHERE_GPU_VERSION
+        create_index(index_file_name, conf, knowhere::IndexMode::MODE_GPU);
+#else
+        create_index(index_file_name, conf);
+#endif
         index_->Load(binary_set_);
         binary_set_.clear();
         test_ivf(conf);
@@ -246,7 +265,11 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_PQ) {
             knowhere::SetIndexParamNlist(conf, nlist);
 
             std::string index_file_name = get_index_name({nlist, m});
-            create_cpu_index(index_file_name, conf);
+#ifdef KNOWHERE_GPU_VERSION
+            create_index(index_file_name, conf, knowhere::IndexMode::MODE_GPU);
+#else
+            create_index(index_file_name, conf);
+#endif
             index_->Load(binary_set_);
             binary_set_.clear();
             test_ivf(conf);
@@ -266,7 +289,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_HNSW) {
                 knowhere::SetIndexParamEfConstruction(conf, efc);
 
                 std::string index_file_name = get_index_name({nlist, M, efc});
-                create_cpu_index(index_file_name, conf);
+                create_index(index_file_name, conf);
                 index_->Load(binary_set_);
                 binary_set_.clear();
                 test_ivf_hnsw(conf);
@@ -285,7 +308,7 @@ TEST_F(Benchmark_knowhere_float, TEST_HNSW) {
             knowhere::SetIndexParamEfConstruction(conf, efc);
 
             std::string index_file_name = get_index_name({M, efc});
-            create_cpu_index(index_file_name, conf);
+            create_index(index_file_name, conf);
             index_->Load(binary_set_);
             binary_set_.clear();
             test_hnsw(conf);
@@ -301,7 +324,7 @@ TEST_F(Benchmark_knowhere_float, TEST_ANNOY) {
         knowhere::SetIndexParamNtrees(conf, n);
 
         std::string index_file_name = get_index_name({n});
-        create_cpu_index(index_file_name, conf);
+        create_index(index_file_name, conf);
         index_->Load(binary_set_);
         binary_set_.clear();
         test_annoy(conf);
@@ -318,7 +341,7 @@ TEST_F(Benchmark_knowhere_float, TEST_RHNSW_FLAT) {
             knowhere::SetIndexParamEfConstruction(conf, efc);
 
             std::string index_file_name = get_index_name({M, efc});
-            create_cpu_index(index_file_name, conf);
+            create_index(index_file_name, conf);
 
             // RHNSW index should load raw data
             knowhere::BinaryPtr bin = std::make_shared<knowhere::Binary>();
@@ -343,7 +366,7 @@ TEST_F(Benchmark_knowhere_float, TEST_RHNSW_SQ) {
             knowhere::SetIndexParamEfConstruction(conf, efc);
 
             std::string index_file_name = get_index_name({M, efc});
-            create_cpu_index(index_file_name, conf);
+            create_index(index_file_name, conf);
             index_->Load(binary_set_);
             binary_set_.clear();
             test_hnsw(conf);
@@ -363,7 +386,7 @@ TEST_F(Benchmark_knowhere_float, TEST_RHNSW_PQ) {
                 knowhere::SetIndexParamPQM(conf, m);
 
                 std::string index_file_name = get_index_name({M, efc, m});
-                create_cpu_index(index_file_name, conf);
+                create_index(index_file_name, conf);
                 index_->Load(binary_set_);
                 binary_set_.clear();
                 test_hnsw(conf);

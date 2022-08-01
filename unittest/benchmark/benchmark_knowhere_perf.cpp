@@ -168,7 +168,7 @@ TEST_F(Benchmark_knowhere_perf, TEST_IDMAP) {
     knowhere::Config conf = cfg_;
     std::string index_file_name = get_index_name({});
 
-    create_cpu_index(index_file_name, conf);
+    create_index(index_file_name, conf);
     index_->Load(binary_set_);
     binary_set_.clear();
     test_idmap(conf);
@@ -181,7 +181,7 @@ TEST_F(Benchmark_knowhere_perf, TEST_IVFFLAT_NM) {
     knowhere::SetIndexParamNlist(conf, NLIST_);
     std::string index_file_name = get_index_name({NLIST_});
 
-    create_cpu_index(index_file_name, conf);
+    create_index(index_file_name, conf);
 
     // IVFFLAT_NM should load raw data
     knowhere::BinaryPtr bin = std::make_shared<knowhere::Binary>();
@@ -201,7 +201,7 @@ TEST_F(Benchmark_knowhere_perf, TEST_IVFSQ8) {
     knowhere::SetIndexParamNlist(conf, NLIST_);
     std::string index_file_name = get_index_name({NLIST_});
 
-    create_cpu_index(index_file_name, conf);
+    create_index(index_file_name, conf);
     index_->Load(binary_set_);
     binary_set_.clear();
     test_ivf(conf);
@@ -215,7 +215,7 @@ TEST_F(Benchmark_knowhere_perf, TEST_HNSW) {
     knowhere::SetIndexParamEfConstruction(conf, EFCON_);
     std::string index_file_name = get_index_name({M_, EFCON_});
 
-    create_cpu_index(index_file_name, conf);
+    create_index(index_file_name, conf);
     index_->Load(binary_set_);
     binary_set_.clear();
     test_hnsw(conf);
@@ -228,7 +228,7 @@ TEST_F(Benchmark_knowhere_perf, TEST_ANNOY) {
     knowhere::SetIndexParamNtrees(conf, N_TREE_);
     std::string index_file_name = get_index_name({N_TREE_});
 
-    create_cpu_index(index_file_name, conf);
+    create_index(index_file_name, conf);
     index_->Load(binary_set_);
     binary_set_.clear();
     test_annoy(conf);
