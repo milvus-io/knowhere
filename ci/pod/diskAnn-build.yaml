@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: diskAnn-build
+  namespace: knowhere-ci
+spec:
+  enableServiceLinks: false
+  containers:
+  - name: main
+    image: harbor.milvus.io/dockerhub/milvusdb/knowhere-cpu-build:amd64-ubuntu20.04-20220802-c691c3b
+    tty: true
+    args: ["cat"]
+    resources:
+      limits:
+        memory: "4Gi"
+        cpu: "8"
+      requests:
+        memory: "1Gi"
+        cpu: "3"
