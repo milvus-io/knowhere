@@ -63,7 +63,7 @@ namespace diskann {
   class PQFlashIndex {
    public:
     DISKANN_DLLEXPORT PQFlashIndex(
-        std::shared_ptr<AlignedFileReader> &fileReader,
+        std::shared_ptr<AlignedFileReader> fileReader,
         diskann::Metric                     metric = diskann::Metric::L2);
     DISKANN_DLLEXPORT ~PQFlashIndex();
 
@@ -93,7 +93,7 @@ namespace diskann {
                                             std::vector<uint32_t> &node_list);
 
     DISKANN_DLLEXPORT void cached_beam_search(
-        const T *query, const _u64 k_search, const _u64 l_search, _u64 *res_ids,
+        const T *query, const _u64 k_search, const _u64 l_search, _s64 *res_ids,
         float *res_dists, const _u64 beam_width,
         const bool use_reorder_data = false, QueryStats *stats = nullptr,
         faiss::BitsetView bitset_view = nullptr);
@@ -102,13 +102,13 @@ namespace diskann {
     DISKANN_DLLEXPORT _u32 range_search(const T *query1, const double range,
                                         const _u64          min_l_search,
                                         const _u64          max_l_search,
-                                        std::vector<_u64> & indices,
+                                        std::vector<_s64> & indices,
                                         std::vector<float> &distances,
                                         const _u64          beam_width,
                                         faiss::BitsetView   bitset_view = nullptr,
                                         QueryStats *        stats = nullptr);
 
-    std::shared_ptr<AlignedFileReader> &reader;
+    std::shared_ptr<AlignedFileReader> reader;
 
     DISKANN_DLLEXPORT _u64 get_num_points() const noexcept;
 
