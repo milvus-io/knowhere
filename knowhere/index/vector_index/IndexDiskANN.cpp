@@ -59,29 +59,6 @@ CheckPreparation(bool is_prepared) {
     }
 }
 
-/**
- * @brief Convert id from uint64 to int64. We can avoid this by either supporting int64 id in DiskANN or accepting
- * uint64 id in Milvus.
- *
- * @return false if any error.
- */
-bool
-ConvertId(const uint64_t* src, int64_t* des, size_t num) {
-    int64_t max_musk = 1;
-    max_musk = max_musk << 63;
-    bool successful = true;
-#pragma omp parallel for schedule(static, 65536)
-    for (size_t n = 0; n < num; ++n) {
-        if (src[n] & max_musk) {
-            LOG_KNOWHERE_ERROR_ << "Id " << src[n] << " exceeds the limit of int64_t.";
-            successful = false;
-        } else {
-            des[n] = static_cast<int64_t>(src[n]);
-        }
-    }
-    return successful;
-}
-
 std::vector<std::string>
 GetNecessaryFilenames(const std::string& prefix, const bool is_inner_product, const bool use_sample_cache,
                       const bool use_sample_warmup) {
@@ -268,7 +245,7 @@ IndexDiskANN<T>::Prepare(const Config& config) {
                 }
             }
         }
-        std::vector<uint64_t> warmup_result_ids_64(warmup_num, 0);
+        std::vector<int64_t> warmup_result_ids_64(warmup_num, 0);
         std::vector<float> warmup_result_dists(warmup_num, 0);
 
 #pragma omp parallel for schedule(dynamic, 1)
@@ -297,19 +274,15 @@ IndexDiskANN<T>::Query(const DatasetPtr& dataset_ptr, const Config& config, cons
 
     GET_TENSOR_DATA_DIM(dataset_ptr);
     auto query = static_cast<const T*>(p_data);
-    auto p_id_u64 = std::vector<uint64_t>(k * rows).data();
     auto p_id = static_cast<int64_t*>(malloc(sizeof(int64_t) * k * rows));
     auto p_dist = static_cast<float*>(malloc(sizeof(float) * k * rows));
 
 #pragma omp parallel for schedule(dynamic, 1)
     for (int64_t row = 0; row < rows; ++row) {
-        pq_flash_index_->cached_beam_search(query + (row * dim), k, query_conf.search_list_size, p_id_u64 + (row * k),
+        pq_flash_index_->cached_beam_search(query + (row * dim), k, query_conf.search_list_size, p_id + (row * k),
                                             p_dist + (row * k), query_conf.beamwidth, false, nullptr, bitset);
     }
 
-    if (!ConvertId(p_id_u64, p_id, k * rows)) {
-        KNOWHERE_THROW_MSG("Failed to convert id from uint64 to int64.");
-    }
     return GenResultDataset(p_id, p_dist);
 }
 
@@ -324,12 +297,14 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
     GET_TENSOR_DATA_DIM(dataset_ptr);
     auto query = static_cast<const T*>(p_data);
 
-    std::vector<std::vector<uint64_t>> result_id_array(rows);
+    std::vector<std::vector<int64_t>> result_id_array(rows);
     std::vector<std::vector<float>> result_dist_array(rows);
     auto p_lims = static_cast<size_t*>(malloc((rows + 1) * sizeof(size_t)));
+    *p_lims = 0;
+
 #pragma omp parallel for schedule(dynamic, 1)
     for (int64_t row = 0; row < rows; ++row) {
-        std::vector<_u64> indices;
+        std::vector<int64_t> indices;
         std::vector<float> distances;
 
         auto res_count = pq_flash_index_->range_search(query + (row * dim), radius, query_conf.min_k, query_conf.max_k,
@@ -341,17 +316,20 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
             result_id_array[row][res_num] = indices[res_num];
             result_dist_array[row][res_num] = distances[res_num];
         }
-        *(p_lims + row + 1) = *(p_lims + row) + res_count;
+        *(p_lims + row + 1) = res_count;
     }
+
+    for (int64_t row = 0; row < rows; ++row) {
+        *(p_lims + row + 1) += *(p_lims + row);
+    }
+
     auto ans_size = *(p_lims + rows);
     auto p_id = static_cast<int64_t*>(malloc(ans_size * sizeof(int64_t)));
     auto p_dist = static_cast<float*>(malloc(ans_size * sizeof(float)));
 
     for (int64_t row = 0; row < rows; ++row) {
         auto start = *(p_lims + row);
-        if (!ConvertId(result_id_array[row].data(), p_id + start, result_id_array[row].size())) {
-            KNOWHERE_THROW_MSG("Failed to convert id from uint64 to int64.");
-        }
+        memcpy(p_id + start, result_id_array[row].data(), result_id_array[row].size() * sizeof(int64_t));
         memcpy(p_dist + start, result_dist_array[row].data(), result_dist_array[row].size() * sizeof(float));
     }
 

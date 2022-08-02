@@ -657,7 +657,7 @@ namespace diskann {
     bool     stop_flag = false;
 
     while (!stop_flag) {
-      std::vector<uint64_t> tuning_sample_result_ids_64(tuning_sample_num, 0);
+      std::vector<int64_t> tuning_sample_result_ids_64(tuning_sample_num, 0);
       std::vector<float>    tuning_sample_result_dists(tuning_sample_num, 0);
       diskann::QueryStats * stats = new diskann::QueryStats[tuning_sample_num];
 

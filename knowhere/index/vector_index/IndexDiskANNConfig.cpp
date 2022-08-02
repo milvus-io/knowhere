@@ -62,7 +62,7 @@ CheckNumericParamAndSet(const Config& config, const std::string& key, std::optio
         KNOWHERE_THROW_FORMAT("Param '%s' not exist", key.data());
     }
 
-    T min = min_o.has_value() ? min_o.value() : std::numeric_limits<T>::min();
+    T min = min_o.has_value() ? min_o.value() : std::numeric_limits<T>::lowest();
     T max = max_o.has_value() ? max_o.value() : std::numeric_limits<T>::max();
 
     if (std::is_same_v<T, float>) {
@@ -174,10 +174,10 @@ to_json(Config& config, const DiskANNQueryByRangeConfig& query_conf) {
 
 void
 from_json(const Config& config, DiskANNQueryByRangeConfig& query_conf) {
-    CheckNumericParamAndSet<float>(config, kRadius, 0, std::nullopt, query_conf.radius);
+    CheckNumericParamAndSet<float>(config, kRadius, std::nullopt, std::nullopt, query_conf.radius);
     CheckNumericParamAndSet<uint64_t>(config, kMinK, 1, std::nullopt, query_conf.min_k);
     CheckNumericParamAndSet<uint64_t>(config, kMaxK, query_conf.min_k, std::nullopt, query_conf.max_k);
-    CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, 1, std::nullopt, query_conf.beamwidth);
+    CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, 1, 128, query_conf.beamwidth);
 }
 
 DiskANNBuildConfig

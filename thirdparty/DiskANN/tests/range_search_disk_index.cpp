@@ -146,7 +146,7 @@ int search_disk_index(diskann::Metric&   metric,
       }
     }
     diskann::cout << "Warming up index... " << std::flush;
-    std::vector<uint64_t> warmup_result_ids_64(warmup_num, 0);
+    std::vector<int64_t> warmup_result_ids_64(warmup_num, 0);
     std::vector<float>    warmup_result_dists(warmup_num, 0);
 
 #pragma omp parallel for schedule(dynamic, 1)
@@ -199,7 +199,7 @@ int search_disk_index(diskann::Metric&   metric,
     auto s = std::chrono::high_resolution_clock::now();
 #pragma omp parallel for schedule(dynamic, 1)
     for (_s64 i = 0; i < (int64_t) query_num; i++) {
-      std::vector<_u64>  indices;
+      std::vector<_s64>  indices;
       std::vector<float> distances;
       _u32               res_count = _pFlashIndex->range_search(
                         query + (i * query_aligned_dim), search_range, L, max_list_size,

@@ -70,6 +70,17 @@ if ( LINUX OR MSYS )
             )
 endif()
 
+if ( KNOWHERE_WITH_DISKANN ) 
+    set(ALL_INDEXING_SRCS
+            ${ALL_INDEXING_SRCS}
+            test_diskann.cpp
+            )
+    set( DEPEND_LIBS
+            ${DEPEND_LIBS}
+            stdc++fs
+            )
+endif ()
+
 if ( KNOWHERE_GPU_VERSION )
     set(ALL_INDEXING_SRCS
             ${ALL_INDEXING_SRCS}
