@@ -145,7 +145,7 @@ int search_disk_index(
       }
     }
     diskann::cout << "Warming up index... " << std::flush;
-    std::vector<uint64_t> warmup_result_ids_64(warmup_num, 0);
+    std::vector<int64_t> warmup_result_ids_64(warmup_num, 0);
     std::vector<float>    warmup_result_dists(warmup_num, 0);
 
 #pragma omp parallel for schedule(dynamic, 1)
@@ -202,7 +202,7 @@ int search_disk_index(
 
     auto stats = new diskann::QueryStats[query_num];
 
-    std::vector<uint64_t> query_result_ids_64(recall_at * query_num);
+    std::vector<int64_t> query_result_ids_64(recall_at * query_num);
     auto                  s = std::chrono::high_resolution_clock::now();
 
 #pragma omp parallel for schedule(dynamic, 1)
@@ -217,7 +217,7 @@ int search_disk_index(
     std::chrono::duration<double> diff = e - s;
     float qps = (1.0 * query_num) / (1.0 * diff.count());
 
-    diskann::convert_types<uint64_t, uint32_t>(query_result_ids_64.data(),
+    diskann::convert_types<int64_t, uint32_t>(query_result_ids_64.data(),
                                                query_result_ids[test_id].data(),
                                                query_num, recall_at);
 

@@ -85,7 +85,7 @@ namespace {
 namespace diskann {
   template<typename T>
   PQFlashIndex<T>::PQFlashIndex(
-      std::shared_ptr<AlignedFileReader> &fileReader, diskann::Metric m)
+      std::shared_ptr<AlignedFileReader> fileReader, diskann::Metric m)
       : reader(fileReader), metric(m) {
     if (m == diskann::Metric::COSINE || m == diskann::Metric::INNER_PRODUCT) {
       if (std::is_floating_point<T>::value) {
@@ -318,7 +318,7 @@ namespace diskann {
       return;
     }
 
-    std::vector<uint64_t> tmp_result_ids_64(sample_num, 0);
+    std::vector<int64_t> tmp_result_ids_64(sample_num, 0);
     std::vector<float>    tmp_result_dists(sample_num, 0);
 
 #pragma omp parallel for schedule(dynamic, 1) num_threads(nthreads)
@@ -820,7 +820,7 @@ namespace diskann {
 
   template<typename T>
   void PQFlashIndex<T>::cached_beam_search(const T *query1, const _u64 k_search,
-                                           const _u64 l_search, _u64 *indices,
+                                           const _u64 l_search, _s64 *indices,
                                            float *     distances,
                                            const _u64  beam_width,
                                            const bool  use_reorder_data,
@@ -1244,7 +1244,7 @@ namespace diskann {
   _u32 PQFlashIndex<T>::range_search(const T *query1, const double range,
                                      const _u64          min_l_search,
                                      const _u64          max_l_search,
-                                     std::vector<_u64> & indices,
+                                     std::vector<_s64> & indices,
                                      std::vector<float> &distances,
                                      const _u64          beam_width,
                                      faiss::BitsetView   bitset_view,
