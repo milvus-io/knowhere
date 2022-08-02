@@ -574,7 +574,7 @@ namespace diskann {
               compareMetric, base_dim, base_num, false, false));
       _pvamanaIndex->build(base_file.c_str(), base_num, paras);
 
-      _pvamanaIndex->save(mem_index_path.c_str());
+      _pvamanaIndex->save(mem_index_path.c_str(), true);
       std::remove(medoids_file.c_str());
       std::remove(centroids_file.c_str());
       return 0;
@@ -1127,6 +1127,9 @@ namespace diskann {
     gen_random_slice<T>(data_file_to_use.c_str(), sample_data_file,
                         sample_sampling_rate);
 
+    if (compareMetric == diskann::Metric::INNER_PRODUCT) {
+      std::remove(data_file_to_use.c_str());
+    }
     std::remove(mem_index_path.c_str());
     if (use_disk_pq)
       std::remove(disk_pq_compressed_vectors_path.c_str());
