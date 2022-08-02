@@ -29,6 +29,7 @@ typedef uint64_t size_t;
 #include <common/Config.h>
 #include <common/Dataset.h>
 #include <common/Typedef.h>
+#include <common/FileManager.h>
 #include <index/vector_index/IndexAnnoy.h>
 #include <index/vector_index/IndexBinaryIDMAP.h>
 #include <index/vector_index/IndexHNSW.h>
@@ -37,6 +38,8 @@ typedef uint64_t size_t;
 #include <index/vector_index/IndexIVFSQ.h>
 #include <index/vector_index/IndexIVFPQ.h>
 #include <index/vector_index/IndexBinaryIVF.h>
+#include <index/vector_index/IndexDiskANN.h>
+#include <index/vector_index/IndexDiskANNConfig.h>
 #ifdef KNOWHERE_GPU_VERSION
 #include <index/vector_index/gpu/IndexGPUIVF.h>
 #include <index/vector_index/gpu/IndexGPUIVFPQ.h>
@@ -56,6 +59,8 @@ using namespace knowhere;
 import_array();
 %}
 
+%ignore knowhere::IndexDiskANN::IndexDiskANN(std::string, MetricType, std::unique_ptr<FileManager>);
+
 %include <std_string.i>
 %include <std_pair.i>
 %include <std_map.i>
@@ -63,6 +68,9 @@ import_array();
 
 %shared_ptr(knowhere::Dataset)
 %template(DatasetPtr) std::shared_ptr<Dataset>;
+%shared_ptr(knowhere::IndexDiskANN<float>)
+%shared_ptr(knowhere::IndexDiskANN<int8_t>)
+%shared_ptr(knowhere::IndexDiskANN<uint8_t>)
 %include <common/Dataset.h>
 %include <utils/BitsetView.h>
 %include <common/BinarySet.h>
@@ -74,6 +82,7 @@ import_array();
 %include <index/vector_index/FaissBaseBinaryIndex.h>
 %include <index/vector_offset_index/OffsetBaseIndex.h>
 %include <index/vector_index/FaissBaseIndex.h>
+%include <common/FileManager.h>
 %include <index/vector_index/IndexAnnoy.h>
 %include <index/vector_index/IndexHNSW.h>
 %include <index/vector_index/IndexIVF.h>
@@ -82,6 +91,8 @@ import_array();
 %include <index/vector_index/IndexIDMAP.h>
 %include <index/vector_index/IndexBinaryIDMAP.h>
 %include <index/vector_index/IndexBinaryIVF.h>
+%include <index/vector_index/IndexDiskANN.h>
+%include <index/vector_index/IndexDiskANNConfig.h>
 #ifdef KNOWHERE_GPU_VERSION
 %include <index/vector_index/gpu/GPUIndex.h>
 %include <index/vector_index/gpu/IndexGPUIVF.h>
@@ -91,6 +102,50 @@ import_array();
 #endif
 %include <index/vector_offset_index/IndexIVF_NM.h>
 
+
+// Support for DiskANN
+%template(IndexDiskANNf) knowhere::IndexDiskANN<float>;
+%template(IndexDiskANNi8) knowhere::IndexDiskANN<int8_t>;
+%template(IndexDiskANNui8) knowhere::IndexDiskANN<uint8_t>;
+
+%inline %{
+
+std::shared_ptr<knowhere::IndexDiskANN<float>>
+buildDiskANNf(std::string index_prefix, std::string metric_type, std::shared_ptr<knowhere::FileManager> file_manager) {
+    return std::make_shared<knowhere::IndexDiskANN<float>>(index_prefix, metric_type, 
+            std::unique_ptr<FileManager>(file_manager.get()));
+}
+
+std::shared_ptr<knowhere::IndexDiskANN<int8_t>>
+buildDiskANNi8(std::string index_prefix, std::string metric_type, std::shared_ptr<knowhere::FileManager> file_manager) {
+    return std::make_shared<knowhere::IndexDiskANN<int8_t>>(index_prefix, metric_type, 
+            std::unique_ptr<FileManager>(file_manager.get()));
+}
+
+std::shared_ptr<knowhere::IndexDiskANN<uint8_t>>
+buildDiskANNui8(std::string index_prefix, std::string metric_type, std::shared_ptr<knowhere::FileManager> file_manager) {
+    return std::make_shared<knowhere::IndexDiskANN<uint8_t>>(index_prefix, metric_type, 
+            std::unique_ptr<FileManager>(file_manager.get()));
+}
+
+class FileManagerImpl: public knowhere::FileManager {
+ public:
+    bool
+    LoadFile(const std::string& filename) noexcept { return true; }
+    bool
+    AddFile(const std::string& filename) noexcept { return true; }
+    std::optional<bool>
+    IsExisted(const std::string& filename) noexcept { return true; }
+    bool
+    RemoveFile(const std::string& filename) noexcept { return true; }
+};
+
+std::shared_ptr<knowhere::FileManager>
+EmptyFileManager() {
+    return std::make_shared<FileManagerImpl>();
+}
+
+%}
 
 #ifdef SWIGPYTHON
 %define DOWNCAST(subclass)
