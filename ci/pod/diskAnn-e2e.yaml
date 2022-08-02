@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: knowhere-cpu-e2e
+  namespace: knowhere-ci
+spec:
+  enableServiceLinks: false
+  nodeSelector:
+    app: knowhere
+  containers:
+  - name: main
+    image: milvusdb/knowhere-cpu-e2e:amd64-ubuntu20.04-20220720-b37ee93
+    tty: true
+    args: ["cat"]
+    resources:
+      limits:
+        memory: "32Gi"
+        cpu: "8"
+      requests:
+        memory: "32Gi"
+        cpu: "8"
+    volumeMounts:
+    - mountPath: /home/data
+      name: db-data
+  volumes:
+    - name: db-data
+      nfs:
+        server: 172.16.70.239
+        path: /qa
