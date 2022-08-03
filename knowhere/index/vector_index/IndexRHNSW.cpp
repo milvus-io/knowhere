@@ -106,8 +106,8 @@ IndexRHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fai
     auto k = GetMetaTopk(config);
     auto result_count = rows * k;
 
-    auto p_id = static_cast<int64_t*>(malloc(result_count * sizeof(int64_t)));
-    auto p_dist = static_cast<float*>(malloc(result_count * sizeof(float)));
+    auto p_id = new int64_t[k * rows];
+    auto p_dist = new float[k * rows];
     for (int64_t i = 0; i < result_count; ++i) {
         p_id[i] = -1;
         p_dist[i] = -1;

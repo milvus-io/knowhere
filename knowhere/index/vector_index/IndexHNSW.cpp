@@ -127,7 +127,7 @@ IndexHNSW::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
 
     GET_DATA_WITH_IDS(dataset_ptr)
 
-    float* p_x = (float*)malloc(sizeof(float) * dim * rows);
+    float* p_x = new float[dim * rows];
     for (int64_t i = 0; i < rows; i++) {
         int64_t id = p_ids[i];
         KNOWHERE_THROW_IF_NOT_FMT(id >= 0 && id < index_->cur_element_count, "invalid id %ld", id);
@@ -144,10 +144,8 @@ IndexHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fais
     GET_TENSOR_DATA_DIM(dataset_ptr)
 
     auto k = GetMetaTopk(config);
-    size_t id_size = sizeof(int64_t) * k;
-    size_t dist_size = sizeof(float) * k;
-    auto p_id = static_cast<int64_t*>(malloc(id_size * rows));
-    auto p_dist = static_cast<float*>(malloc(dist_size * rows));
+    auto p_id = new int64_t[k * rows];
+    auto p_dist = new float[k * rows];
     std::vector<hnswlib::StatisticsInfo> query_stats;
     auto hnsw_stats = std::dynamic_pointer_cast<LibHNSWStatistics>(stats);
     if (STATISTICS_LEVEL >= 3) {
@@ -262,9 +260,9 @@ IndexHNSW::QueryByRange(const DatasetPtr& dataset,
 
     LOG_KNOWHERE_DEBUG_ << "Range search radius: " << radius << ", result num: " << result_lims.back();
 
-    auto p_id = static_cast<int64_t*>(malloc(result_lims.back() * sizeof(int64_t)));
-    auto p_dist = static_cast<float*>(malloc(result_lims.back() * sizeof(float)));
-    auto p_lims = static_cast<size_t*>(malloc((rows + 1) * sizeof(size_t)));
+    auto p_id = new int64_t[result_lims.back()];
+    auto p_dist = new float[result_lims.back()];
+    auto p_lims = new size_t[rows + 1];
 
     for (int64_t i = 0; i < rows; i++) {
         size_t start = result_lims[i];

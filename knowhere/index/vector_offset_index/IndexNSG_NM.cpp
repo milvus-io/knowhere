@@ -78,17 +78,14 @@ NSG_NM::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::
     GET_TENSOR_DATA_DIM(dataset_ptr)
 
     try {
-        auto topK = GetMetaTopk(config);
-        auto elems = rows * topK;
-        size_t p_id_size = sizeof(int64_t) * elems;
-        size_t p_dist_size = sizeof(float) * elems;
-        auto p_id = static_cast<int64_t*>(malloc(p_id_size));
-        auto p_dist = static_cast<float*>(malloc(p_dist_size));
+        auto k = GetMetaTopk(config);
+        auto p_id = new int64_t[k * rows];
+        auto p_dist = new float[k * rows];
 
         impl::SearchParams s_params;
         s_params.search_length = config[IndexParams::search_length];
         s_params.k = GetMetaTopk(config);
-        index_->Search(reinterpret_cast<const float*>(p_data), reinterpret_cast<float*>(data_.get()), rows, dim, topK,
+        index_->Search(reinterpret_cast<const float*>(p_data), reinterpret_cast<float*>(data_.get()), rows, dim, k,
                        p_dist, p_id, s_params, bitset);
         return GenResultDataset(p_id, p_dist);
     } catch (std::exception& e) {

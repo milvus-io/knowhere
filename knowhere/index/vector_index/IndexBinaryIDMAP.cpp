@@ -47,12 +47,12 @@ BinaryIDMAP::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) 
     uint8_t* p_x = nullptr;
     auto release_when_exception = [&]() {
         if (p_x != nullptr) {
-            free(p_x);
+            delete[] p_x;
         }
     };
 
     try {
-        p_x = (uint8_t*)malloc(sizeof(uint8_t) * (dim / 8) * rows);
+        p_x = new uint8_t[(dim / 8) * rows];
         auto bin_idmap_index = dynamic_cast<faiss::IndexBinaryFlat*>(index_.get());
         for (int64_t i = 0; i < rows; i++) {
             int64_t id = p_ids[i];
@@ -80,20 +80,17 @@ BinaryIDMAP::Query(const DatasetPtr& dataset_ptr, const Config& config, const fa
     float* p_dist = nullptr;
     auto release_when_exception = [&]() {
         if (p_id != nullptr) {
-            free(p_id);
+            delete[] p_id;
         }
         if (p_dist != nullptr) {
-            free(p_dist);
+            delete[] p_dist;
         }
     };
 
     try {
         auto k = GetMetaTopk(config);
-        auto elems = rows * k;
-        size_t p_id_size = sizeof(int64_t) * elems;
-        size_t p_dist_size = sizeof(float) * elems;
-        p_id = static_cast<int64_t*>(malloc(p_id_size));
-        p_dist = static_cast<float*>(malloc(p_dist_size));
+        p_id = new int64_t[k * rows];
+        p_dist = new float[k * rows];
 
         QueryImpl(rows, reinterpret_cast<const uint8_t*>(p_data), k, p_dist, p_id, config, bitset);
 
@@ -124,13 +121,13 @@ BinaryIDMAP::QueryByRange(const DatasetPtr& dataset,
 
     auto release_when_exception = [&]() {
         if (p_id != nullptr) {
-            free(p_id);
+            delete[] p_id;
         }
         if (p_dist != nullptr) {
-            free(p_dist);
+            delete[] p_dist;
         }
         if (p_lims != nullptr) {
-            free(p_lims);
+            delete[] p_lims;
         }
     };
 
