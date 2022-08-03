@@ -439,7 +439,7 @@ namespace diskann {
   }
 
   template<typename T, typename TagT>
-  void Index<T, TagT>::save(const char *filename) {
+  void Index<T, TagT>::save(const char *filename, const bool disk_index) {
     // first check if no thread is inserting
     auto start = std::chrono::high_resolution_clock::now();
     std::unique_lock<std::shared_timed_mutex> lock(_update_lock);
@@ -449,22 +449,25 @@ namespace diskann {
     compact_frozen_point();
     if (!_save_as_one_file) {
       std::string graph_file = std::string(filename);
-      std::string tags_file = std::string(filename) + ".tags";
-      std::string data_file = std::string(filename) + ".data";
-      std::string delete_list_file = std::string(filename) + ".del";
-
-      // Because the save_* functions use append mode, ensure that
-      // the files are deleted before save. Ideally, we should check
-      // the error code for delete_file, but will ignore now because
-      // delete should succeed if save will succeed.
       delete_file(graph_file);
       save_graph(graph_file);
-      delete_file(data_file);
-      save_data(data_file);
-      delete_file(tags_file);
-      save_tags(tags_file);
-      delete_file(delete_list_file);
-      save_delete_list(delete_list_file);
+      if (!disk_index) {
+        std::string tags_file = std::string(filename) + ".tags";
+        std::string data_file = std::string(filename) + ".data";
+        std::string delete_list_file = std::string(filename) + ".del";
+
+        // Because the save_* functions use append mode, ensure that
+        // the files are deleted before save. Ideally, we should check
+        // the error code for delete_file, but will ignore now because
+        // delete should succeed if save will succeed.
+
+        delete_file(data_file);
+        save_data(data_file);
+        delete_file(tags_file);
+        save_tags(tags_file);
+        delete_file(delete_list_file);
+        save_delete_list(delete_list_file);
+      }
     } else {
         diskann::cout<<"Save index in a single file currently not supported. Not saving the index." << std::endl;
     }

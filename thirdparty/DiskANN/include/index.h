@@ -112,7 +112,8 @@ namespace diskann {
 
     // checks if data is consolidated, saves graph, metadata and associated
     // tags.
-    DISKANN_DLLEXPORT void save(const char *filename);
+    DISKANN_DLLEXPORT void save(const char *filename,
+                                const bool  disk_index = false);
     DISKANN_DLLEXPORT _u64 save_graph(std::string filename);
     DISKANN_DLLEXPORT _u64 save_data(std::string filename);
     DISKANN_DLLEXPORT _u64 save_tags(std::string filename);
