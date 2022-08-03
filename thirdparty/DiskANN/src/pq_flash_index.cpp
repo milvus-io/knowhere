@@ -11,6 +11,7 @@
 #include <chrono>
 #include <cmath>
 #include <iterator>
+#include <random>
 #include <thread>
 #include "distance.h"
 #include "exceptions.h"
@@ -842,7 +843,12 @@ namespace diskann {
     const T *    query = data.scratch.aligned_query_T;
     const float *query_float = data.scratch.aligned_query_float;
 
-    for (uint32_t i = 0; i < this->data_dim; i++) {
+    auto q_dim = this->data_dim;
+    if(metric== diskann::Metric::INNER_PRODUCT ){
+      // query_dim need to be specially treated when using IP
+      q_dim--;
+    }
+    for (uint32_t i = 0; i < q_dim; i++) {
       data.scratch.aligned_query_float[i] = query1[i];
       data.scratch.aligned_query_T[i] = query1[i];
       query_norm += query1[i] * query1[i];
@@ -851,6 +857,12 @@ namespace diskann {
     // if inner product, we laso normalize the query and set the last coordinate
     // to 0 (this is the extra coordindate used to convert MIPS to L2 search)
     if (metric == diskann::Metric::INNER_PRODUCT) {
+      if(query_norm == 0){
+        // return an empty answer when calcu a zero point 
+        this->thread_data.push(data);
+        this->thread_data.push_notify_all();
+        return;
+      }
       query_norm = std::sqrt(query_norm);
       data.scratch.aligned_query_T[this->data_dim - 1] = 0;
       data.scratch.aligned_query_float[this->data_dim - 1] = 0;

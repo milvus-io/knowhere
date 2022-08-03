@@ -1124,7 +1124,7 @@ namespace diskann {
                                    ? MAX_SAMPLE_POINTS_FOR_WARMUP
                                    : ten_percent_points;
     double sample_sampling_rate = num_sample_points / points_num;
-    gen_random_slice<T>(data_file_to_use.c_str(), sample_data_file,
+    gen_random_slice<T>(base_file.c_str(), sample_data_file,
                         sample_sampling_rate);
 
     if (compareMetric == diskann::Metric::INNER_PRODUCT) {
