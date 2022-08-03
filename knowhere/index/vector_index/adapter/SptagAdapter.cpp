@@ -58,11 +58,8 @@ DatasetPtr
 ConvertToDataset(std::vector<SPTAG::QueryResult> query_results, std::shared_ptr<std::vector<int64_t>> uid) {
     auto k = query_results[0].GetResultNum();
     auto elems = query_results.size() * k;
-
-    size_t p_id_size = sizeof(int64_t) * elems;
-    size_t p_dist_size = sizeof(float) * elems;
-    auto p_id = (int64_t*)malloc(p_id_size);
-    auto p_dist = (float*)malloc(p_dist_size);
+    auto p_id = new int64_t[elems];
+    auto p_dist = new float[elems];
 
 #pragma omp parallel for
     for (size_t i = 0; i < query_results.size(); ++i) {

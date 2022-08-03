@@ -130,10 +130,8 @@ IndexNGT::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss
     if (edge_size == -1) {  // pass -1
         edge_size--;
     }
-    size_t id_size = sizeof(int64_t) * k;
-    size_t dist_size = sizeof(float) * k;
-    auto p_id = static_cast<int64_t*>(malloc(id_size * rows));
-    auto p_dist = static_cast<float*>(malloc(dist_size * rows));
+    auto p_id = new int64_t[k * rows];
+    auto p_dist = new float[k * rows];
 
     NGT::Command::SearchParameter sp;
     sp.size = k;

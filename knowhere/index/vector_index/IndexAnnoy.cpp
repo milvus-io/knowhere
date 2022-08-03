@@ -113,7 +113,7 @@ IndexAnnoy::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
 
     GET_DATA_WITH_IDS(dataset_ptr)
 
-    float* p_x = (float*)malloc(sizeof(float) * dim * rows);
+    float* p_x = new float[dim * rows];
     for (int64_t i = 0; i < rows; i++) {
         int64_t id = p_ids[i];
         KNOWHERE_THROW_IF_NOT_FMT(id >= 0 && id < index_->get_n_items(), "invalid id %ld", id);
@@ -131,9 +131,8 @@ IndexAnnoy::Query(const DatasetPtr& dataset_ptr, const Config& config, const fai
     GET_TENSOR_DATA_DIM(dataset_ptr)
     auto k = GetMetaTopk(config);
     auto search_k = GetIndexParamSearchK(config);
-    auto all_num = rows * k;
-    auto p_id = static_cast<int64_t*>(malloc(all_num * sizeof(int64_t)));
-    auto p_dist = static_cast<float*>(malloc(all_num * sizeof(float)));
+    auto p_id = new int64_t[k * rows];
+    auto p_dist = new float[k * rows];
 
 #pragma omp parallel for
     for (unsigned int i = 0; i < rows; ++i) {
