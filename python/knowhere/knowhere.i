@@ -138,6 +138,8 @@ DumpResultDataSet(const knowhere::DatasetPtr& result, float* dis, int nq_1, int 
             *(dis + i * k_1 + j) = *((float*)(dist_) + i * k_1 + j);
         }
     }
+    delete[] ids_;
+    delete[] dist_;
 }
 
 void
@@ -146,6 +148,7 @@ DumpRangeResultIds(const knowhere::DatasetPtr& result, int* ids, int len) {
     for (int i = 0; i < len; ++i) {
         *(ids + i) = *((int64_t*)(ids_) + i);
     }
+    delete[] ids_;
 }
 
 void
@@ -154,6 +157,7 @@ DumpRangeResultLimits(const knowhere::DatasetPtr& result, int* lims, int len) {
     for (int i = 0; i < len; ++i) {
         *(lims + i) = *((int64_t*)(lims_) + i);
     }
+    delete[] lims_;
 }
 
 void
@@ -162,6 +166,7 @@ DumpRangeResultDis(const knowhere::DatasetPtr& result, float* dis, int len) {
     for (int i = 0; i < len; ++i) {
         *(dis + i) = *((float*)(dist_) + i);
     }
+    delete[] dist_;
 }
 
 knowhere::Config
