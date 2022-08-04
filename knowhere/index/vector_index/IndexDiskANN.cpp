@@ -292,30 +292,13 @@ IndexDiskANN<T>::Prepare(const Config& config) {
         uint64_t warmup_dim = 0;
         uint64_t warmup_aligned_dim = 0;
         T* warmup = nullptr;
-        if (file_exists(warmup_query_file)) {
-            auto load_successful = TryDiskANNCall<bool>([&]() -> bool {
-                diskann::load_aligned_bin<T>(warmup_query_file, warmup, warmup_num, warmup_dim, warmup_aligned_dim);
-                return true;
-            });
-            if (!load_successful.has_value()) {
-                LOG_KNOWHERE_ERROR_ << "Failed to load warmup file for DiskANN.";
-                return false;
-            }
-
-        } else {
-            warmup_num = (std::min)((_u32)150000, (_u32)15000 * prep_conf.num_threads);
-            warmup_dim = pq_flash_index_->get_data_dim();
-            warmup_aligned_dim = ROUND_UP(warmup_dim, 8);
-            diskann::alloc_aligned(((void**)&warmup), warmup_num * warmup_aligned_dim * sizeof(T), 8 * sizeof(T));
-            std::memset(warmup, 0, warmup_num * warmup_aligned_dim * sizeof(T));
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            std::uniform_int_distribution<> dis(-128, 127);
-            for (uint32_t i = 0; i < warmup_num; ++i) {
-                for (uint32_t d = 0; d < warmup_dim; ++d) {
-                    warmup[i * warmup_aligned_dim + d] = (T)dis(gen);
-                }
-            }
+        auto load_successful = TryDiskANNCall<bool>([&]() -> bool {
+            diskann::load_aligned_bin<T>(warmup_query_file, warmup, warmup_num, warmup_dim, warmup_aligned_dim);
+            return true;
+        });
+        if (!load_successful.has_value()) {
+            LOG_KNOWHERE_ERROR_ << "Failed to load warmup file for DiskANN.";
+            return false;
         }
         std::vector<int64_t> warmup_result_ids_64(warmup_num, 0);
         std::vector<float> warmup_result_dists(warmup_num, 0);
