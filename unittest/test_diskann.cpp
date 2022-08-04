@@ -207,10 +207,7 @@ class DiskANNTest : public TestWithParam<std::string> {
  public:
     DiskANNTest() {
         metric_ = GetParam();
-
-        auto index_dir = metric_ == knowhere::metric::L2 ? kL2IndexDir : kIpIndexDir;
-        diskann = std::make_unique<knowhere::IndexDiskANN<float>>(index_dir + "/diskann", metric_,
-                                                                  std::make_unique<knowhere::LocalFileManager>());
+        InitDiskANN();
     }
 
     ~DiskANNTest() {
@@ -271,6 +268,12 @@ class DiskANNTest : public TestWithParam<std::string> {
     }
 
  protected:
+    void
+    InitDiskANN() {
+        auto index_dir = metric_ == knowhere::metric::L2 ? kL2IndexDir : kIpIndexDir;
+        diskann = std::make_unique<knowhere::IndexDiskANN<float>>(index_dir + "/diskann", metric_,
+                                                                  std::make_unique<knowhere::LocalFileManager>());
+    }
     static float* raw_data_;
     static float* query_data_;
     static GroundTruthPtr ip_ground_truth_;
@@ -362,6 +365,57 @@ TEST_P(DiskANNTest, range_search_test) {
     auto result = diskann->QueryByRange(data_set_ptr, cfg, nullptr);
 
     auto ids = knowhere::GetDatasetIDs(result);
+    auto lims = knowhere::GetDatasetLims(result);
+
+    if (metric_ == knowhere::metric::IP) {
+        auto ip_recall = CheckRangeSearchRecall(ip_range_search_ground_truth_, ids, lims);
+        EXPECT_GT(ip_recall, 0.5);
+    } else {
+        auto l2_recall = CheckRangeSearchRecall(l2_range_search_ground_truth_, ids, lims);
+        EXPECT_GT(l2_recall, 0.8);
+    }
+}
+
+TEST_P(DiskANNTest, cached_warmup_test) {
+    knowhere::Config cfg;
+
+    // search cache + warmup preparation
+    knowhere::DiskANNPrepareConfig prep_conf_to_test = prep_conf;
+    prep_conf_to_test.warm_up = true;
+    prep_conf_to_test.num_nodes_to_cache = 1000;
+    knowhere::DiskANNPrepareConfig::Set(cfg, prep_conf_to_test);
+    EXPECT_TRUE(diskann->Prepare(cfg));
+
+    // test query
+    cfg.clear();
+    knowhere::DiskANNQueryConfig::Set(cfg, query_conf);
+    knowhere::DatasetPtr data_set_ptr = knowhere::GenDataset(kNumQueries, kDim, (void*)query_data_);
+    auto result = diskann->Query(data_set_ptr, cfg, nullptr);
+    auto ids = knowhere::GetDatasetIDs(result);
+
+    if (metric_ == knowhere::metric::IP) {
+        auto ip_recall = CheckTopKRecall(ip_ground_truth_, ids, kK);
+        EXPECT_GT(ip_recall, 0.8);
+    } else {
+        auto l2_recall = CheckTopKRecall(l2_ground_truth_, ids, kK);
+        EXPECT_GT(l2_recall, 0.8);
+    }
+
+    // bfs cache + warmup preparation
+    InitDiskANN();
+    cfg.clear();
+    prep_conf_to_test.use_bfs_cache = true;
+    knowhere::DiskANNPrepareConfig::Set(cfg, prep_conf_to_test);
+    EXPECT_TRUE(diskann->Prepare(cfg));
+
+    // test query by range
+    cfg.clear();
+    auto range_search_conf = metric_ == knowhere::metric::IP ? ip_range_search_conf : l2_range_search_conf;
+    knowhere::DiskANNQueryByRangeConfig::Set(cfg, range_search_conf);
+    data_set_ptr = knowhere::GenDataset(kNumQueries, kDim, (void*)query_data_);
+    result = diskann->QueryByRange(data_set_ptr, cfg, nullptr);
+
+    ids = knowhere::GetDatasetIDs(result);
     auto lims = knowhere::GetDatasetLims(result);
     // p(ids, lims[1], ip_range_search_ground_truth_);
 
