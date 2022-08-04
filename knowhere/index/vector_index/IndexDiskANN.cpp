@@ -98,8 +98,8 @@ CheckFileSize(const std::string& data_path, const size_t num, const size_t dim) 
     file.close();
     uint64_t expected_file_size = num * dim * sizeof(T) + 2 * sizeof(uint32_t);
     if (autual_file_size != expected_file_size) {
-        KNOWHERE_THROW_FORMAT("Actual file size (%ld bytes) not equal to expected size (%ld bytes)",
-                              autual_file_size, expected_file_size);
+        KNOWHERE_THROW_FORMAT("Actual file size (%ld bytes) not equal to expected size (%ld bytes)", autual_file_size,
+                              expected_file_size);
     }
 }
 
@@ -124,6 +124,35 @@ CheckBuildParams(const DiskANNBuildConfig& build_conf) {
     CheckFileSize<T>(build_conf.data_path, num, dim);
     CheckNodeLength<T>(build_conf.max_degree, dim);
 }
+
+template <typename T>
+std::optional<T>
+TryDiskANNCall(std::function<T()>&& diskann_call) {
+    try {
+        return std::make_optional<T>(diskann_call());
+    } catch (const diskann::FileException& e) {
+        LOG_KNOWHERE_ERROR_ << "DiskANN File Exception: " << e.what();
+    } catch (const diskann::ANNException& e) {
+        LOG_KNOWHERE_ERROR_ << "DiskANN Exception: " << e.what();
+    } catch (const std::exception& e) {
+        LOG_KNOWHERE_ERROR_ << "DiskANN Other Exception: " << e.what();
+    }
+    return std::nullopt;
+}
+
+template <typename T>
+T
+TryDiskANNCallAndThrow(std::function<T()>&& diskann_call) {
+    try {
+        return diskann_call();
+    } catch (const diskann::FileException& e) {
+        KNOWHERE_THROW_MSG("DiskANN File Exception: " + std::string(e.what()));
+    } catch (const diskann::ANNException& e) {
+        KNOWHERE_THROW_MSG("DiskANN Exception: " + std::string(e.what()));
+    } catch (const std::exception& e) {
+        KNOWHERE_THROW_MSG("DiskANN Other Exception: " + std::string(e.what()));
+    }
+}
 }  // namespace
 
 template <typename T>
@@ -143,7 +172,14 @@ IndexDiskANN<T>::AddWithoutIds(const DatasetPtr& data_set, const Config& config)
     stream << build_conf.max_degree << " " << build_conf.search_list_size << " " << build_conf.search_dram_budget_gb
            << " " << build_conf.build_dram_budget_gb << " " << build_conf.num_threads << " "
            << build_conf.pq_disk_bytes;
-    diskann::build_disk_index<T>(data_path.c_str(), index_prefix_.c_str(), stream.str().c_str(), metric_);
+
+    auto build_successful = TryDiskANNCallAndThrow<int>([&]() -> int {
+        return diskann::build_disk_index<T>(data_path.c_str(), index_prefix_.c_str(), stream.str().c_str(), metric_);
+    });
+
+    if (build_successful != 0) {
+        KNOWHERE_THROW_MSG("Failed to build DiskANN.");
+    }
 
     // Add file to the file manager
     for (auto& filename : GetNecessaryFilenames(index_prefix_, metric_ == diskann::INNER_PRODUCT, true, true)) {
@@ -198,7 +234,11 @@ IndexDiskANN<T>::Prepare(const Config& config) {
 
     pq_flash_index_ = std::make_unique<diskann::PQFlashIndex<T>>(reader, metric_);
 
-    if (pq_flash_index_->load(prep_conf.num_threads, index_prefix_.c_str()) != 0) {
+    auto load_successful = TryDiskANNCall<int>(
+        [&]() -> int { return pq_flash_index_->load(prep_conf.num_threads, index_prefix_.c_str()); });
+
+    if (!load_successful.has_value() || load_successful.value() != 0) {
+        LOG_KNOWHERE_ERROR_ << "Failed to load DiskANN.";
         return false;
     }
 
@@ -209,12 +249,36 @@ IndexDiskANN<T>::Prepare(const Config& config) {
         LOG_KNOWHERE_INFO_ << "Caching " << prep_conf.num_nodes_to_cache << " sample nodes around medoid(s).";
 
         if (prep_conf.use_bfs_cache) {
-            pq_flash_index_->cache_bfs_levels(prep_conf.num_nodes_to_cache, node_list);
+            auto gen_cache_successful = TryDiskANNCall<bool>([&]() -> bool {
+                pq_flash_index_->cache_bfs_levels(prep_conf.num_nodes_to_cache, node_list);
+                return true;
+            });
+
+            if (!gen_cache_successful.has_value()) {
+                LOG_KNOWHERE_ERROR_ << "Failed to generate bfs cache for DiskANN.";
+                return false;
+            }
         } else {
-            pq_flash_index_->generate_cache_list_from_sample_queries(
-                warmup_query_file, 15, 6, prep_conf.num_nodes_to_cache, prep_conf.num_threads, node_list);
+            auto gen_cache_successful = TryDiskANNCall<bool>([&]() -> bool {
+                pq_flash_index_->generate_cache_list_from_sample_queries(
+                    warmup_query_file, 15, 6, prep_conf.num_nodes_to_cache, prep_conf.num_threads, node_list);
+                return true;
+            });
+
+            if (!gen_cache_successful.has_value()) {
+                LOG_KNOWHERE_ERROR_ << "Failed to generate cache from sample queries for DiskANN.";
+                return false;
+            }
         }
-        pq_flash_index_->load_cache_list(node_list);
+        auto load_cache_successful = TryDiskANNCall<bool>([&]() -> bool {
+            pq_flash_index_->load_cache_list(node_list);
+            return true;
+        });
+
+        if (!load_cache_successful.has_value()) {
+            LOG_KNOWHERE_ERROR_ << "Failed to load cache for DiskANN.";
+            return false;
+        }
     }
 
     // set thread number
@@ -229,7 +293,15 @@ IndexDiskANN<T>::Prepare(const Config& config) {
         uint64_t warmup_aligned_dim = 0;
         T* warmup = nullptr;
         if (file_exists(warmup_query_file)) {
-            diskann::load_aligned_bin<T>(warmup_query_file, warmup, warmup_num, warmup_dim, warmup_aligned_dim);
+            auto load_successful = TryDiskANNCall<bool>([&]() -> bool {
+                diskann::load_aligned_bin<T>(warmup_query_file, warmup, warmup_num, warmup_dim, warmup_aligned_dim);
+                return true;
+            });
+            if (!load_successful.has_value()) {
+                LOG_KNOWHERE_ERROR_ << "Failed to load warmup file for DiskANN.";
+                return false;
+            }
+
         } else {
             warmup_num = (std::min)((_u32)150000, (_u32)15000 * prep_conf.num_threads);
             warmup_dim = pq_flash_index_->get_data_dim();
@@ -248,14 +320,27 @@ IndexDiskANN<T>::Prepare(const Config& config) {
         std::vector<int64_t> warmup_result_ids_64(warmup_num, 0);
         std::vector<float> warmup_result_dists(warmup_num, 0);
 
+        bool all_searches_are_good = true;
 #pragma omp parallel for schedule(dynamic, 1)
         for (_s64 i = 0; i < (int64_t)warmup_num; ++i) {
-            pq_flash_index_->cached_beam_search(warmup + (i * warmup_aligned_dim), 1, warmup_L,
-                                                warmup_result_ids_64.data() + (i * 1),
-                                                warmup_result_dists.data() + (i * 1), 4);
+            auto search_successful = TryDiskANNCall<bool>([&]() -> bool {
+                pq_flash_index_->cached_beam_search(warmup + (i * warmup_aligned_dim), 1, warmup_L,
+                                                    warmup_result_ids_64.data() + (i * 1),
+                                                    warmup_result_dists.data() + (i * 1), 4);
+                return true;
+            });
+            if (!search_successful.has_value()) {
+                all_searches_are_good = false;
+            }
         }
+
         if (warmup != nullptr) {
             diskann::aligned_free(warmup);
+        }
+
+        if (!all_searches_are_good) {
+            LOG_KNOWHERE_ERROR_ << "Failed to do search on warmup file for DiskANN.";
+            return false;
         }
     }
 
@@ -277,10 +362,28 @@ IndexDiskANN<T>::Query(const DatasetPtr& dataset_ptr, const Config& config, cons
     auto p_id = static_cast<int64_t*>(malloc(sizeof(int64_t) * k * rows));
     auto p_dist = static_cast<float*>(malloc(sizeof(float) * k * rows));
 
+    std::optional<KnowhereException> ex = std::nullopt;
 #pragma omp parallel for schedule(dynamic, 1)
     for (int64_t row = 0; row < rows; ++row) {
-        pq_flash_index_->cached_beam_search(query + (row * dim), k, query_conf.search_list_size, p_id + (row * k),
-                                            p_dist + (row * k), query_conf.beamwidth, false, nullptr, bitset);
+        // Openmp can not throw exception out.
+        try {
+            TryDiskANNCallAndThrow<void>([&]() -> void {
+                pq_flash_index_->cached_beam_search(query + (row * dim), k, query_conf.search_list_size,
+                                                    p_id + (row * k), p_dist + (row * k), query_conf.beamwidth, false,
+                                                    nullptr, bitset);
+            });
+        } catch (const KnowhereException& e) {
+#pragma omp critical
+            {
+                if (ex == std::nullopt) {
+                    ex = std::make_optional<KnowhereException>(e);
+                }
+            }
+        }
+    }
+
+    if (ex.has_value()) {
+        throw ex.value();
     }
 
     return GenResultDataset(p_id, p_dist);
@@ -302,13 +405,26 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
     auto p_lims = static_cast<size_t*>(malloc((rows + 1) * sizeof(size_t)));
     *p_lims = 0;
 
+    std::optional<KnowhereException> ex = std::nullopt;
 #pragma omp parallel for schedule(dynamic, 1)
     for (int64_t row = 0; row < rows; ++row) {
         std::vector<int64_t> indices;
         std::vector<float> distances;
 
-        auto res_count = pq_flash_index_->range_search(query + (row * dim), radius, query_conf.min_k, query_conf.max_k,
-                                                       indices, distances, query_conf.beamwidth, bitset);
+        auto res_count = 0;
+        try {
+            res_count = TryDiskANNCallAndThrow<uint32_t>([&]() -> uint32_t {
+                return pq_flash_index_->range_search(query + (row * dim), radius, query_conf.min_k, query_conf.max_k,
+                                                     indices, distances, query_conf.beamwidth, bitset);
+            });
+        } catch (const KnowhereException& e) {
+#pragma omp critical
+            {
+                if (ex == std::nullopt) {
+                    ex = std::make_optional<KnowhereException>(e);
+                }
+            }
+        }
 
         result_id_array[row].resize(res_count);
         result_dist_array[row].resize(res_count);
@@ -317,6 +433,10 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
             result_dist_array[row][res_num] = distances[res_num];
         }
         *(p_lims + row + 1) = res_count;
+    }
+
+    if (ex.has_value()) {
+        throw ex.value();
     }
 
     for (int64_t row = 0; row < rows; ++row) {
