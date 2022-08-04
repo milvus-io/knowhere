@@ -6,6 +6,7 @@
 #include <cassert>
 #include <cstdio>
 #include <iostream>
+#include <sstream>
 #include "tsl/robin_map.h"
 #include "utils.h"
 #define MAX_EVENTS 1024
@@ -54,21 +55,25 @@ namespace {
         int64_t ret = io_submit(ctx, (int64_t) n_ops, cbs.data());
         // if requests didn't get accepted
         if (ret != (int64_t) n_ops) {
-          std::cerr << "io_submit() failed; returned " << ret
-                    << ", expected=" << n_ops << ", ernno=" << errno << "="
-                    << ::strerror(-ret) << ", try #" << n_tries + 1;
-          std::cout << "ctx: " << ctx << "\n";
-          exit(-1);
+          std::stringstream err;
+          err << "io_submit() failed; returned " << ret
+              << ", expected=" << n_ops << ", ernno=" << errno << "="
+              << ::strerror(-ret) << ", try #" << n_tries + 1
+              << ", ctx: " << ctx;
+          throw diskann::ANNException(err.str(), -1, __FUNCSIG__, __FILE__,
+                                      __LINE__);
         } else {
           // wait on io_getevents
           ret = io_getevents(ctx, (int64_t) n_ops, (int64_t) n_ops, evts.data(),
                              nullptr);
           // if requests didn't complete
           if (ret != (int64_t) n_ops) {
-            std::cerr << "io_getevents() failed; returned " << ret
-                      << ", expected=" << n_ops << ", ernno=" << errno << "="
-                      << ::strerror(-ret) << ", try #" << n_tries + 1;
-            exit(-1);
+            std::stringstream err;
+            err << "io_getevents() failed; returned " << ret
+                << ", expected=" << n_ops << ", ernno=" << errno << "="
+                << ::strerror(-ret) << ", try #" << n_tries + 1;
+            throw diskann::ANNException(err.str(), -1, __FUNCSIG__, __FILE__,
+                                        __LINE__);
           } else {
             break;
           }
