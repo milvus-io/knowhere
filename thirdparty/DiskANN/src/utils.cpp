@@ -68,27 +68,23 @@ namespace diskann {
   diskann::Distance<float>* get_distance_function(diskann::Metric m) {
     if (m == diskann::Metric::L2) {
       if (Avx2SupportedCPU) {
-        diskann::cout << "L2: Using AVX2 distance computation DistanceL2Float" << std::endl;
+        LOG(INFO) << "L2: Using AVX2 distance computation DistanceL2Float";
         return new diskann::DistanceL2Float();
       } else if (AvxSupportedCPU) {
-        diskann::cout
-            << "L2: AVX2 not supported. Using AVX distance computation"
-            << std::endl;
+        LOG(WARNING) << "L2: AVX2 not supported. Using AVX distance computation";
         return new diskann::AVXDistanceL2Float();
       } else {
-        diskann::cout << "L2: Older CPU. Using slow distance computation"
-                      << std::endl;
+        LOG(WARNING) << "L2: Older CPU. Using slow distance computation";
         return new diskann::SlowDistanceL2Float();
       }
     } else if (m == diskann::Metric::COSINE) {   
-      diskann::cout << "Cosine: Using either AVX or AVX2 implementation"
-                    << std::endl;
+      LOG(INFO) << "Cosine: Using either AVX or AVX2 implementation";
       return new diskann::DistanceCosineFloat();
     } else if (m == diskann::Metric::INNER_PRODUCT) {
-      diskann::cout << "Inner product: Using AVX2 implementation AVXDistanceInnerProductFloat" << std::endl;
+      LOG(INFO) << "Inner product: Using AVX2 implementation AVXDistanceInnerProductFloat";
       return new diskann::AVXDistanceInnerProductFloat();
     } else if (m == diskann::Metric::FAST_L2) {
-      diskann::cout << "Fast_L2: Using AVX2 implementation with norm memoization DistanceFastL2<float>" << std::endl;
+      LOG(INFO) << "Fast_L2: Using AVX2 implementation with norm memoization DistanceFastL2<float>";
       return new diskann::DistanceFastL2<float>();
     } else {
       std::stringstream stream;
@@ -97,7 +93,7 @@ namespace diskann {
                 "{gopalsr, harshasi, rakri}@microsoft.com if you need support "
                 "for any other metric."
              << std::endl;
-      diskann::cerr << stream.str() << std::endl;
+      LOG(ERROR) << stream.str();
       throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                   __LINE__);
     }
@@ -107,20 +103,17 @@ namespace diskann {
   diskann::Distance<int8_t>* get_distance_function(diskann::Metric m) {
     if (m == diskann::Metric::L2) {
       if (Avx2SupportedCPU) {
-        diskann::cout << "Using AVX2 distance computation DistanceL2Int8." << std::endl;
+        LOG(INFO) << "Using AVX2 distance computation DistanceL2Int8.";
         return new diskann::DistanceL2Int8();
       } else if (AvxSupportedCPU) {
-        diskann::cout << "AVX2 not supported. Using AVX distance computation"
-                      << std::endl;
+        LOG(WARNING) << "AVX2 not supported. Using AVX distance computation";
         return new diskann::AVXDistanceL2Int8();
       } else {
-        diskann::cout << "Older CPU. Using slow distance computation SlowDistanceL2Int<int8_t>."
-                      << std::endl;
+        LOG(WARNING) << "Older CPU. Using slow distance computation SlowDistanceL2Int<int8_t>.";
         return new diskann::SlowDistanceL2Int<int8_t>();
       }
     } else if (m == diskann::Metric::COSINE) {
-      diskann::cout << "Using either AVX or AVX2 for Cosine similarity DistanceCosineInt8."
-                    << std::endl;
+      LOG(INFO) << "Using either AVX or AVX2 for Cosine similarity DistanceCosineInt8.";
       return new diskann::DistanceCosineInt8();
     } else {
       std::stringstream stream;
@@ -129,7 +122,7 @@ namespace diskann {
                 "{gopalsr, harshasi, rakri}@microsoft.com if you need support "
                 "for any other metric."
              << std::endl;
-      diskann::cerr << stream.str() << std::endl;
+      LOG(ERROR) << stream.str();
       throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                   __LINE__);
     }
@@ -139,7 +132,7 @@ namespace diskann {
   diskann::Distance<uint8_t>* get_distance_function(diskann::Metric m) {
     if (m == diskann::Metric::L2) {
 #ifdef _WINDOWS
-      diskann::cout
+      LOG(WARNING)
           << "WARNING: AVX/AVX2 distance function not defined for Uint8. Using "
              "slow version. "
              "Contact gopalsr@microsoft.com if you need AVX/AVX2 support."
@@ -147,11 +140,9 @@ namespace diskann {
 #endif
       return new diskann::DistanceL2UInt8();
     } else if (m == diskann::Metric::COSINE) {
-      diskann::cout
-          << "AVX/AVX2 distance function not defined for Uint8. Using "
-             "slow version SlowDistanceCosineUint8() "
-             "Contact gopalsr@microsoft.com if you need AVX/AVX2 support."
-          << std::endl;
+      LOG(WARNING) << "AVX/AVX2 distance function not defined for Uint8. Using "
+                      "slow version SlowDistanceCosineUint8() "
+                      "Contact gopalsr@microsoft.com if you need AVX/AVX2 support.";
       return new diskann::SlowDistanceCosineUInt8();
     } else {
       std::stringstream stream;
@@ -160,7 +151,7 @@ namespace diskann {
                 "{gopalsr, harshasi, rakri}@microsoft.com if you need support "
                 "for any other metric."
              << std::endl;
-      diskann::cerr << stream.str() << std::endl;
+      LOG(ERROR) << stream.str();
       throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                   __LINE__);
     }
@@ -198,14 +189,12 @@ namespace diskann {
     writr.write((char*) &ndims_s32, sizeof(_s32));
 
     _u64 npts = (_u64) npts_s32, ndims = (_u64) ndims_s32;
-    diskann::cout << "Normalizing FLOAT vectors in file: " << inFileName
-                  << std::endl;
-    diskann::cout << "Dataset: #pts = " << npts << ", # dims = " << ndims
-                  << std::endl;
+    LOG(DEBUG) << "Normalizing FLOAT vectors in file: " << inFileName
+               << "Dataset: #pts = " << npts << ", # dims = " << ndims;
 
     _u64 blk_size = 131072;
     _u64 nblks = ROUND_UP(npts, blk_size) / blk_size;
-    diskann::cout << "# blks: " << nblks << std::endl;
+    LOG(DEBUG) << "# blks: " << nblks;
 
     float* read_buf = new float[npts * ndims];
     for (_u64 i = 0; i < nblks; i++) {
@@ -214,8 +203,7 @@ namespace diskann {
     }
     delete[] read_buf;
 
-    diskann::cout << "Wrote normalized points to file: " << outFileName
-                  << std::endl;
+    LOG(DEBUG) << "Wrote normalized points to file: " << outFileName;
   }
 
 }  // namespace diskann

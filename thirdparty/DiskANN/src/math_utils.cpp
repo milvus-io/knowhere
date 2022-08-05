@@ -335,13 +335,13 @@ namespace kmeans {
       residual = lloyds_iter(data, num_points, dim, centers, num_centers,
                              docs_l2sq, closest_docs, closest_center);
 
-      diskann::cout << "Lloyd's iter " << i
-                    << "  dist_sq residual: " << residual << std::endl;
+      LOG(DEBUG) << "Lloyd's iter " << i
+                 << "  dist_sq residual: " << residual;
 
       if (((i != 0) && ((old_residual - residual) / residual) < 0.00001) ||
           (residual < std::numeric_limits<float>::epsilon())) {
-        diskann::cout << "Residuals unchanged: " << old_residual << " becomes "
-                      << residual << ". Early termination." << std::endl;
+        LOG(DEBUG) << "Residuals unchanged: " << old_residual << " becomes "
+                   << residual << ". Early termination.";
         break;
       }
     }
@@ -361,11 +361,11 @@ namespace kmeans {
     //	pivot_data = new float[num_centers * dim];
 
     std::vector<size_t> picked;
-    diskann::cout << "Selecting " << num_centers << " pivots from "
-                  << num_points << " points using ";
     std::random_device rd;
     auto               x = rd();
-    diskann::cout << "random seed " << x << std::endl;
+    LOG(DEBUG) << "Selecting " << num_centers << " pivots from "
+               << num_points << " points using " << "random seed "
+               << x;
     std::mt19937                          generator(x);
     std::uniform_int_distribution<size_t> distribution(0, num_points - 1);
 
@@ -392,12 +392,15 @@ namespace kmeans {
       return;
     }
 
+    std::stringstream stream;
     std::vector<size_t> picked;
-    diskann::cout << "Selecting " << num_centers << " pivots from "
-                  << num_points << " points using ";
     std::random_device rd;
     auto               x = rd();
-    diskann::cout << "random seed " << x << ": " << std::flush;
+
+    stream << "Selecting " << num_centers << " pivots from "
+           << num_points << " points using " << "random seed "
+           << x;
+
     std::mt19937                          generator(x);
     std::uniform_real_distribution<>      distribution(0, 1);
     std::uniform_int_distribution<size_t> int_dist(0, num_points - 1);
@@ -456,9 +459,10 @@ namespace kmeans {
       }
       num_picked++;
       if (num_picked % 32 == 0)
-        diskann::cout << "." << std::flush;
+        stream << "." << std::flush;
     }
-    diskann::cout << "done." << std::endl;
+    stream << "done.";
+    LOG(DEBUG) << stream.str();
     delete[] dist;
   }
 

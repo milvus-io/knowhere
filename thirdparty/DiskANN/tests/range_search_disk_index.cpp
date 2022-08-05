@@ -109,8 +109,8 @@ int search_disk_index(diskann::Metric&   metric,
   }
   // cache bfs levels
   std::vector<uint32_t> node_list;
-  diskann::cout << "Caching " << num_nodes_to_cache
-                << " BFS nodes around medoid(s)" << std::endl;
+  LOG(INFO) << "Caching " << num_nodes_to_cache
+            << " BFS nodes around medoid(s)";
   _pFlashIndex->cache_bfs_levels(num_nodes_to_cache, node_list);
   //  _pFlashIndex->generate_cache_list_from_sample_queries(
   //      warmup_query_file, 15, 6, num_nodes_to_cache, num_threads, node_list);

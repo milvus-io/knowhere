@@ -276,7 +276,7 @@ namespace diskann {
     npts = (unsigned) npts_i32;
     dim = (unsigned) dim_i32;
 
-    diskann::cout << "Metadata: #pts = " << npts << ", #dims = " << dim << "..."
+    LOG(DEBUG) << "Metadata: #pts = " << npts << ", #dims = " << dim << "..."
                   << std::endl;
 
     size_t expected_actual_file_size =
@@ -287,7 +287,7 @@ namespace diskann {
              << " while expected size is  " << expected_actual_file_size
              << " npts = " << npts << " dim = " << dim
              << " size of <T>= " << sizeof(T) << std::endl;
-      diskann::cout << stream.str();
+      LOG(ERROR) << stream.str();
       throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                   __LINE__);
     }
@@ -348,8 +348,7 @@ namespace diskann {
     reader.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
     try {
-      diskann::cout << "Opening bin file " << bin_file.c_str() << "... "
-                    << std::endl;
+      LOG(DEBUG) << "Opening bin file " << bin_file.c_str() << "... ";
       reader.open(bin_file, std::ios::binary | std::ios::ate);
       uint64_t fsize = reader.tellg();
       reader.seekg(0);
@@ -357,7 +356,7 @@ namespace diskann {
     } catch (std::system_error& e) {
       throw FileException(bin_file, e, __FUNCSIG__, __FILE__, __LINE__);
     }
-    diskann::cout << "done." << std::endl;
+    LOG(DEBUG) << "done.";
   }
   // load_bin functions END
 
@@ -365,8 +364,7 @@ namespace diskann {
                             float*& dists, size_t& npts, size_t& dim) {
     _u64            read_blk_size = 64 * 1024 * 1024;
     cached_ifstream reader(bin_file, read_blk_size);
-    diskann::cout << "Reading truthset file " << bin_file.c_str() << " ..."
-                  << std::endl;
+    LOG(DEBUG) << "Reading truthset file " << bin_file.c_str() << " ...";
     size_t actual_file_size = reader.get_file_size();
 
     int npts_i32, dim_i32;
@@ -375,8 +373,7 @@ namespace diskann {
     npts = (unsigned) npts_i32;
     dim = (unsigned) dim_i32;
 
-    diskann::cout << "Metadata: #pts = " << npts << ", #dims = " << dim
-                  << "... " << std::endl;
+    LOG(DEBUG) << "Metadata: #pts = " << npts << ", #dims = " << dim << "... ";
 
     int truthset_type = -1;  // 1 means truthset has ids and distances, 2 means
                              // only ids, -1 is error
@@ -419,8 +416,7 @@ namespace diskann {
       std::vector<std::vector<_u32>>& groundtruth, size_t& npts) {
     _u64            read_blk_size = 64 * 1024 * 1024;
     cached_ifstream reader(bin_file, read_blk_size);
-    diskann::cout << "Reading truthset file " << bin_file.c_str() << "... "
-                  << std::endl;
+    LOG(DEBUG) << "Reading truthset file " << bin_file.c_str() << "... ";
     size_t actual_file_size = reader.get_file_size();
 
     int npts_i32, dim_i32;
@@ -431,8 +427,7 @@ namespace diskann {
     _u32*  ids;
     float* dists;
 
-    diskann::cout << "Metadata: #pts = " << npts << ", #dims = " << dim
-                  << "... " << std::endl;
+    LOG(DEBUG) << "Metadata: #pts = " << npts << ", #dims = " << dim << "... ";
 
     int truthset_type = -1;  // 1 means truthset has ids and distances, 2 means
                              // only ids, -1 is error
@@ -488,8 +483,7 @@ namespace diskann {
                                   _u64&                           gt_num) {
     _u64            read_blk_size = 64 * 1024 * 1024;
     cached_ifstream reader(bin_file, read_blk_size);
-    diskann::cout << "Reading truthset file " << bin_file.c_str() << "... "
-                  << std::flush;
+    LOG(DEBUG) << "Reading truthset file " << bin_file.c_str() << "... ";
     size_t actual_file_size = reader.get_file_size();
 
     int npts_u32, total_u32;
@@ -499,8 +493,8 @@ namespace diskann {
     gt_num = (_u64) npts_u32;
     _u64 total_res = (_u64) total_u32;
 
-    diskann::cout << "Metadata: #pts = " << gt_num
-                  << ", #total_results = " << total_res << "..." << std::endl;
+    LOG(DEBUG) << "Metadata: #pts = " << gt_num << ", #total_results = " 
+               << total_res << "...";
 
     size_t expected_file_size =
         2 * sizeof(_u32) + gt_num * sizeof(_u32) + total_res * sizeof(_u32);
@@ -559,19 +553,19 @@ namespace diskann {
   inline uint64_t save_bin(const std::string& filename, T* data, size_t npts,
                            size_t ndims) {
     std::ofstream writer(filename, std::ios::binary | std::ios::out);
-    diskann::cout << "Writing bin: " << filename.c_str() << std::endl;
+    LOG(DEBUG) << "Writing bin: " << filename.c_str();
     int npts_i32 = (int) npts, ndims_i32 = (int) ndims;
     writer.write((char*) &npts_i32, sizeof(int));
     writer.write((char*) &ndims_i32, sizeof(int));
-    diskann::cout << "bin: #pts = " << npts << ", #dims = " << ndims
+    LOG(DEBUG) << "bin: #pts = " << npts << ", #dims = " << ndims
                   << ", size = " << npts * ndims * sizeof(T) + 2 * sizeof(int)
-                  << "B" << std::endl;
+                  << "B";
 
     //    data = new T[npts_u64 * ndims_u64];
     writer.write((char*) data, npts * ndims * sizeof(T));
     writer.close();
     size_t bytes_written = npts * ndims * sizeof(T) + 2 * sizeof(uint32_t);
-    diskann::cout << "Finished writing bin." << std::endl;
+    LOG(DEBUG) << "Finished writing bin.";
     return bytes_written;
   }
 
@@ -596,25 +590,24 @@ namespace diskann {
              << " while expected size is  " << expected_actual_file_size
              << " npts = " << npts << " dim = " << dim
              << " size of <T>= " << sizeof(T) << std::endl;
-      diskann::cout << stream.str() << std::endl;
+      LOG(ERROR) << stream.str();
       throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                   __LINE__);
     }
     rounded_dim = ROUND_UP(dim, 8);
-    diskann::cout << "Metadata: #pts = " << npts << ", #dims = " << dim
-                  << ", aligned_dim = " << rounded_dim << "... " << std::flush;
+    std::stringstream stream;
+    LOG(DEBUG) << "Metadata: #pts = " << npts << ", #dims = " << dim 
+           << ", aligned_dim = " << rounded_dim << "... ";
     size_t allocSize = npts * rounded_dim * sizeof(T);
-    diskann::cout << "allocating aligned memory of " << allocSize
-                  << " bytes... " << std::flush;
+    LOG(DEBUG) << "allocating aligned memory of " << allocSize << " bytes... ";
     alloc_aligned(((void**) &data), allocSize, 8 * sizeof(T));
-    diskann::cout << "done. Copying data to mem_aligned buffer..."
-                  << std::flush;
-
+    LOG(DEBUG) << "done. Copying data to mem_aligned buffer...";
+    
     for (size_t i = 0; i < npts; i++) {
       reader.read((char*) (data + i * rounded_dim), dim * sizeof(T));
       memset(data + i * rounded_dim + dim, 0, (rounded_dim - dim) * sizeof(T));
     }
-    diskann::cout << " done." << std::endl;
+    LOG(DEBUG) << " done." << std::endl;
   }
 
 #ifdef EXEC_ENV_OLS
@@ -644,8 +637,8 @@ namespace diskann {
     reader.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
     try {
-      diskann::cout << "Reading (with alignment) bin file " << bin_file
-                    << " ..." << std::flush;
+      LOG(DEBUG) << "Reading (with alignment) bin file " << bin_file
+                 << " ...";
       reader.open(bin_file, std::ios::binary | std::ios::ate);
 
       uint64_t fsize = reader.tellg();
@@ -678,8 +671,7 @@ namespace diskann {
   template<typename T>
   float prepare_base_for_inner_products(const std::string in_file,
                                         const std::string out_file) {
-    std::cout << "Pre-processing base file by adding extra coordinate"
-              << std::endl;
+    LOG(DEBUG) << "Pre-processing base file by adding extra coordinate";
     std::ifstream in_reader(in_file.c_str(), std::ios::binary);
     std::ofstream out_writer(out_file.c_str(), std::ios::binary);
     _u64          npts, in_dims, out_dims;

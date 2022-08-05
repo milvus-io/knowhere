@@ -10,6 +10,7 @@ else()
 	set(CPP_SOURCES ann_exception.cpp aux_utils.cpp distance.cpp index.cpp
         linux_aligned_file_reader.cpp math_utils.cpp memory_mapper.cpp
         partition_and_pq.cpp  pq_flash_index.cpp logger.cpp utils.cpp)
+	set(CPP_SOURCES ${CPP_SOURCES} ${KNOWHERE_SOURCE_DIR}/thirdparty/easyloggingpp/easylogging++.cc)
 	add_library(${PROJECT_NAME} STATIC ${CPP_SOURCES})
 	set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 	# add_library(${PROJECT_NAME}_s STATIC ${CPP_SOURCES})
