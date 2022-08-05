@@ -38,8 +38,8 @@ class cached_ifstream {
       this->cache_size = cacheSize;
       cache_buf = new char[cacheSize];
       reader.read(cache_buf, cacheSize);
-      diskann::cout << "Opened: " << filename.c_str() << ", size: " << fsize
-                    << ", cache_size: " << cacheSize << std::endl;
+      LOG(DEBUG) << "Opened: " << filename.c_str() << ", size: " << fsize
+                    << ", cache_size: " << cacheSize;
     } catch (std::system_error& e) {
       throw diskann::FileException(filename, e, __FUNCSIG__, __FILE__,
                                    __LINE__);
@@ -113,8 +113,8 @@ class cached_ofstream {
       assert(writer.is_open());
       assert(cache_size > 0);
       cache_buf = new char[cache_size];
-      diskann::cout << "Opened: " << filename.c_str()
-                    << ", cache_size: " << cache_size << std::endl;
+      LOG(DEBUG) << "Opened: " << filename.c_str()
+                 << ", cache_size: " << cache_size;
     } catch (std::system_error& e) {
       throw diskann::FileException(filename, e, __FUNCSIG__, __FILE__,
                                    __LINE__);
@@ -129,7 +129,7 @@ class cached_ofstream {
 
     delete[] cache_buf;
     writer.close();
-    diskann::cout << "Finished writing " << fsize << "B" << std::endl;
+    LOG(DEBUG) << "Finished writing " << fsize << "B";
   }
 
   size_t get_file_size() {

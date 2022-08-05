@@ -65,8 +65,8 @@ void gen_random_slice(const std::string base_file,
 
   base_reader.read((char *) &npts_u32, sizeof(uint32_t));
   base_reader.read((char *) &nd_u32, sizeof(uint32_t));
-  diskann::cout << "Loading base " << base_file << ". #points: " << npts_u32
-                << ". #dim: " << nd_u32 << "." << std::endl;
+  LOG(DEBUG) << "Loading base " << base_file << ". #points: " << npts_u32
+                << ". #dim: " << nd_u32 << ".";
   sample_writer.write((char *) &num_sampled_pts_u32, sizeof(uint32_t));
   sample_writer.write((char *) &nd_u32, sizeof(uint32_t));
 
@@ -85,8 +85,8 @@ void gen_random_slice(const std::string base_file,
   sample_writer.seekp(0, std::ios::beg);
   sample_writer.write((char *) &num_sampled_pts_u32, sizeof(uint32_t));
   sample_writer.close();
-  diskann::cout << "Wrote " << num_sampled_pts_u32
-                << " points to sample file: " << output_file << std::endl;
+  LOG(DEBUG) << "Wrote " << num_sampled_pts_u32
+             << " points to sample file: " << output_file;
 }
 
 // streams data from the file, and samples each vector with probability p_val
@@ -188,8 +188,7 @@ int generate_pq_pivots(const float *passed_train_data, size_t num_train,
                        unsigned num_pq_chunks, unsigned max_k_means_reps,
                        std::string pq_pivots_path, bool make_zero_mean) {
   if (num_pq_chunks > dim) {
-    diskann::cout << " Error: number of chunks more than dimension"
-                  << std::endl;
+    LOG(ERROR) << " Error: number of chunks more than dimension";
     return -1;
   }
 
@@ -201,7 +200,7 @@ int generate_pq_pivots(const float *passed_train_data, size_t num_train,
   for (uint64_t i = 0; i < num_train; i++) {
     for (uint64_t j = 0; j < dim; j++) {
       if (passed_train_data[i * dim + j] != train_data[i * dim + j])
-        diskann::cout << "error in copy" << std::endl;
+        LOG(ERROR) << "error in copy";
     }
   }
 
@@ -212,8 +211,7 @@ int generate_pq_pivots(const float *passed_train_data, size_t num_train,
     diskann::load_bin<float>(pq_pivots_path, full_pivot_data, file_num_centers,
                              file_dim);
     if (file_dim == dim && file_num_centers == num_centers) {
-      diskann::cout << "PQ pivot file exists. Not generating again"
-                    << std::endl;
+      LOG(ERROR)<< "PQ pivot file exists. Not generating again";
       return -1;
     }
   }
@@ -268,8 +266,7 @@ int generate_pq_pivots(const float *passed_train_data, size_t num_train,
         cur_best_load = bin_loads[b];
       }
     }
-    diskann::cout << " Pushing " << d << " into bin #: " << cur_best
-                  << std::endl;
+    LOG(DEBUG) << " Pushing " << d << " into bin #: " << cur_best;
     bin_to_dims[cur_best].push_back(d);
     if (bin_to_dims[cur_best].size() == high_val) {
       cur_num_high++;
@@ -283,23 +280,27 @@ int generate_pq_pivots(const float *passed_train_data, size_t num_train,
   chunk_offsets.push_back(0);
 
   for (uint32_t b = 0; b < num_pq_chunks; b++) {
-    diskann::cout << "[ ";
+    std::stringstream stream;
+    stream << "[ ";
     for (auto p : bin_to_dims[b]) {
       rearrangement.push_back(p);
-      diskann::cout << p << ",";
+      stream << p << ",";
     }
-    diskann::cout << "] " << std::endl;
+    stream << "] ";
+    LOG(DEBUG) << stream.str();
     if (b > 0)
       chunk_offsets.push_back(chunk_offsets[b - 1] +
                               (unsigned) bin_to_dims[b - 1].size());
   }
   chunk_offsets.push_back(dim);
-
-  diskann::cout << "\nCross-checking rearranged order of coordinates:"
+  
+  std::stringstream rearrange_stream;
+  rearrange_stream << "\nCross-checking rearranged order of coordinates:"
                 << std::endl;
   for (auto p : rearrangement)
-    diskann::cout << p << " ";
-  diskann::cout << std::endl;
+    rearrange_stream << p << " ";
+  
+  LOG(DEBUG) << rearrange_stream.str();
 
   full_pivot_data.reset(new float[num_centers * dim]);
 
@@ -315,9 +316,8 @@ int generate_pq_pivots(const float *passed_train_data, size_t num_train,
     std::unique_ptr<uint32_t[]> closest_center =
         std::make_unique<uint32_t[]>(num_train);
 
-    diskann::cout << "Processing chunk " << i << " with dimensions ["
-                  << chunk_offsets[i] << ", " << chunk_offsets[i + 1] << ")"
-                  << std::endl;
+    LOG(DEBUG) << "Processing chunk " << i << " with dimensions ["
+                  << chunk_offsets[i] << ", " << chunk_offsets[i + 1] << ")";
 
 #pragma omp parallel for schedule(static, 65536)
     for (int64_t j = 0; j < (_s64) num_train; j++) {
@@ -384,7 +384,7 @@ int generate_pq_data_from_pivots(const std::string data_file,
   std::string inflated_pq_file = pq_compressed_vectors_path + "_inflated.bin";
 
   if (!file_exists(pq_pivots_path)) {
-    diskann::cout << "ERROR: PQ k-means pivot file not found" << std::endl;
+    LOG(ERROR) << "ERROR: PQ k-means pivot file not found";
     throw diskann::ANNException("PQ k-means pivot file not found", -1);
   } else {
     uint64_t numr, numc;
@@ -394,7 +394,7 @@ int generate_pq_data_from_pivots(const std::string data_file,
     diskann::load_bin<float>(centroids_path.c_str(), centroid, numr, numc);
 
     if (numr != dim || numc != 1) {
-      diskann::cout << "Error reading centroid file." << std::endl;
+      LOG(ERROR) << "Error reading centroid file.";
       throw diskann::ANNException("Error reading centroid file.", -1,
                                   __FUNCSIG__, __FILE__, __LINE__);
     }
@@ -403,7 +403,7 @@ int generate_pq_data_from_pivots(const std::string data_file,
     diskann::load_bin<uint32_t>(rearrangement_path.c_str(), rearrangement, numr,
                                 numc);
     if (numr != dim || numc != 1) {
-      diskann::cout << "Error reading rearrangement file." << std::endl;
+      LOG(ERROR)  << "Error reading rearrangement file.";
       throw diskann::ANNException("Error reading rearrangement file.", -1,
                                   __FUNCSIG__, __FILE__, __LINE__);
     }
@@ -412,7 +412,7 @@ int generate_pq_data_from_pivots(const std::string data_file,
     diskann::load_bin<uint32_t>(chunk_offsets_path.c_str(), chunk_offsets, numr,
                                 numc);
     if (numr != (uint64_t) num_pq_chunks + 1 || numc != 1) {
-      diskann::cout << "Error reading chunk offsets file." << std::endl;
+      LOG(ERROR) << "Error reading chunk offsets file.";
       throw diskann::ANNException("Error reading chunk offsets file.", -1,
                                   __FUNCSIG__, __FILE__, __LINE__);
     }
@@ -428,7 +428,7 @@ int generate_pq_data_from_pivots(const std::string data_file,
              << " does "
                 "not match input argument "
              << num_centers << std::endl;
-      diskann::cout << stream.str() << std::endl;
+      LOG(ERROR) << stream.str();
       throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                   __LINE__);
     }
@@ -437,11 +437,11 @@ int generate_pq_data_from_pivots(const std::string data_file,
       stream << "ERROR: PQ pivot dimension does "
                 "not match base file dimension"
              << std::endl;
-      diskann::cout << stream.str() << std::endl;
+      LOG(ERROR) << stream.str();
       throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                   __LINE__);
     }
-    diskann::cout << "Loaded PQ pivot information" << std::endl;
+    LOG(DEBUG) << "Loaded PQ pivot information";
   }
 
   std::ofstream compressed_file_writer(pq_compressed_vectors_path,
@@ -486,8 +486,8 @@ int generate_pq_data_from_pivots(const std::string data_file,
     diskann::convert_types<T, float>(block_data_T.get(), block_data_tmp.get(),
                                      cur_blk_size, dim);
 
-    diskann::cout << "Processing points  [" << start_id << ", " << end_id
-                  << ").." << std::flush;
+    LOG(DEBUG) << "Processing points  [" << start_id << ", " << end_id
+                  << ")..";
 
     for (uint64_t p = 0; p < cur_blk_size; p++) {
       for (uint64_t d = 0; d < dim; d++) {
@@ -561,7 +561,7 @@ int generate_pq_data_from_pivots(const std::string data_file,
     inflated_file_writer.write((char *) (block_inflated_base.get()),
                                cur_blk_size * dim * sizeof(float));
 #endif
-    diskann::cout << ".done." << std::endl;
+    // diskann::cout << ".done." << std::endl;
   }
 // Gopal. Splitting diskann_dll into separate DLLs for search and build.
 // This code should only be available in the "build" DLL.
@@ -611,14 +611,14 @@ int estimate_cluster_sizes(float *test_data_float, size_t num_test,
       }
     }
   }
-
-  diskann::cout << "Estimated cluster sizes: ";
+  std::stringstream cluster_size_stream;
+  cluster_size_stream << "Estimated cluster sizes: ";
   for (size_t i = 0; i < num_centers; i++) {
     _u32 cur_shard_count = (_u32) shard_counts[i];
     cluster_sizes.push_back((size_t) cur_shard_count);
-    diskann::cout << cur_shard_count << " ";
+    cluster_size_stream << cur_shard_count << " ";
   }
-  diskann::cout << std::endl;
+  LOG(DEBUG) << cluster_size_stream.str();
   delete[] shard_counts;
   delete[] block_closest_centers;
   return 0;
@@ -703,11 +703,12 @@ int shard_data_into_clusters(const std::string data_file, float *pivots,
   }
 
   size_t total_count = 0;
-  diskann::cout << "Actual shard sizes: " << std::flush;
+  std::stringstream shard_size_stream;
+  shard_size_stream << "Actual shard sizes: ";
   for (size_t i = 0; i < num_centers; i++) {
     _u32 cur_shard_count = (_u32) shard_counts[i];
     total_count += cur_shard_count;
-    diskann::cout << cur_shard_count << " ";
+    shard_size_stream << cur_shard_count << " ";
     shard_data_writer[i].seekp(0);
     shard_data_writer[i].write((char *) &cur_shard_count, sizeof(uint32_t));
     shard_data_writer[i].close();
@@ -715,11 +716,11 @@ int shard_data_into_clusters(const std::string data_file, float *pivots,
     shard_idmap_writer[i].write((char *) &cur_shard_count, sizeof(uint32_t));
     shard_idmap_writer[i].close();
   }
-
-  diskann::cout << "\n Partitioned " << num_points
-                << " with replication factor " << k_base << " to get "
-                << total_count << " points across " << num_centers << " shards "
-                << std::endl;
+  LOG(INFO) << shard_size_stream.str();
+  LOG(INFO) << "Partitioned " << num_points
+            << " with replication factor " << k_base << " to get "
+            << total_count << " points across " << num_centers 
+            << " shards ";
   return 0;
 }
 
@@ -797,20 +798,20 @@ int shard_data_into_clusters_only_ids(const std::string data_file,
   }
 
   size_t total_count = 0;
-  diskann::cout << "Actual shard sizes: " << std::flush;
+  std::stringstream shard_size_stream;
+  shard_size_stream << "Actual shard sizes: ";
   for (size_t i = 0; i < num_centers; i++) {
     _u32 cur_shard_count = (_u32) shard_counts[i];
     total_count += cur_shard_count;
-    diskann::cout << cur_shard_count << " ";
+    shard_size_stream << cur_shard_count << " ";
     shard_idmap_writer[i].seekp(0);
     shard_idmap_writer[i].write((char *) &cur_shard_count, sizeof(uint32_t));
     shard_idmap_writer[i].close();
   }
-
-  diskann::cout << "\n Partitioned " << num_points
-                << " with replication factor " << k_base << " to get "
-                << total_count << " points across " << num_centers << " shards "
-                << std::endl;
+  LOG(INFO) << shard_size_stream.str();
+  LOG(INFO) << "Partitioned " << num_points
+            << " with replication factor " << k_base << " to get "
+            << total_count << " points across " << num_centers << " shards ";
   return 0;
 }
 
@@ -841,7 +842,7 @@ int retrieve_shard_data_from_ids(const std::string data_file,
 
   _u32 cur_pos = 0;
   _u32 num_written = 0;
-  std::cout << "Shard has " << shard_size << " points" << std::endl;
+  LOG(DEBUG) << "Shard has " << shard_size << " points";
 
   size_t block_size = num_points <= BLOCK_SIZE ? num_points : BLOCK_SIZE;
   std::unique_ptr<T[]> block_data_T = std::make_unique<T[]>(block_size * dim);
@@ -871,8 +872,7 @@ int retrieve_shard_data_from_ids(const std::string data_file,
       break;
   }
 
-  diskann::cout << "Written file with " << num_written << " points"
-                << std::endl;
+  LOG(DEBUG) << "Written file with " << num_written << " points";
 
   shard_data_writer.seekp(0);
   shard_data_writer.write((char *) &num_written, sizeof(uint32_t));
@@ -911,15 +911,14 @@ int partition(const std::string data_file, const float sampling_rate,
   pivot_data = new float[num_parts * train_dim];
 
   // Process Global k-means for kmeans_partitioning Step
-  diskann::cout << "Processing global k-means (kmeans_partitioning Step)"
-                << std::endl;
+  LOG(DEBUG) << "Processing global k-means (kmeans_partitioning Step)";
   kmeans::kmeanspp_selecting_pivots(train_data_float, num_train, train_dim,
                                     pivot_data, num_parts);
 
   kmeans::run_lloyds(train_data_float, num_train, train_dim, pivot_data,
                      num_parts, max_k_means_reps, NULL, NULL);
 
-  diskann::cout << "Saving global k-center pivots" << std::endl;
+  LOG(DEBUG) << "Saving global k-center pivots";
   diskann::save_bin<float>(output_file.c_str(), pivot_data, (size_t) num_parts,
                            train_dim);
 
@@ -974,8 +973,7 @@ int partition_with_ram_budget(const std::string data_file,
 
     pivot_data = new float[num_parts * train_dim];
     // Process Global k-means for kmeans_partitioning Step
-    diskann::cout << "Processing global k-means (kmeans_partitioning Step)"
-                  << std::endl;
+    LOG(INFO) << "Processing global k-means (kmeans_partitioning Step)";
     kmeans::kmeanspp_selecting_pivots(train_data_float, num_train, train_dim,
                                       pivot_data, num_parts);
 
@@ -999,16 +997,16 @@ int partition_with_ram_budget(const std::string data_file,
       if (cur_shard_ram_estimate > max_ram_usage)
         max_ram_usage = cur_shard_ram_estimate;
     }
-    diskann::cout << "With " << num_parts << " parts, max estimated RAM usage: "
+    LOG(DEBUG) << "With " << num_parts << " parts, max estimated RAM usage: "
                   << max_ram_usage / (1024 * 1024 * 1024)
-                  << "GB, budget given is " << ram_budget << std::endl;
+                  << "GB, budget given is " << ram_budget;
     if (max_ram_usage > 1024 * 1024 * 1024 * ram_budget) {
       fit_in_ram = false;
       num_parts += 2;
     }
   }
 
-  diskann::cout << "Saving global k-center pivots" << std::endl;
+  LOG(DEBUG)<< "Saving global k-center pivots";
   diskann::save_bin<float>(output_file.c_str(), pivot_data, (size_t) num_parts,
                            train_dim);
 
