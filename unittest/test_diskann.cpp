@@ -150,11 +150,11 @@ GenRangeSearchGrounTruth(const float* data_p, const float* query_p, const std::s
 }
 
 void
-WriteRawDataToDisk(const std::string data_path, const float* raw_data) {
+WriteRawDataToDisk(const std::string data_path, const float* raw_data, const uint32_t num, const uint32_t dim) {
     std::ofstream writer(data_path.c_str(), std::ios::binary);
-    writer.write((char*)&kNumRows, sizeof(uint32_t));
-    writer.write((char*)&kDim, sizeof(uint32_t));
-    writer.write((char*)raw_data, sizeof(float) * kNumRows * kDim);
+    writer.write((char*)&num, sizeof(uint32_t));
+    writer.write((char*)&dim, sizeof(uint32_t));
+    writer.write((char*)raw_data, sizeof(float) * num * dim);
     writer.close();
 }
 
@@ -243,7 +243,7 @@ class DiskANNTest : public TestWithParam<std::string> {
         ASSERT_TRUE(fs::create_directory(kIpIndexDir));
         ASSERT_TRUE(fs::create_directory(kL2IndexDir));
 
-        WriteRawDataToDisk(kRawDataPath, raw_data_);
+        WriteRawDataToDisk(kRawDataPath, raw_data_, kNumRows, kDim);
 
         knowhere::Config cfg;
         knowhere::DiskANNBuildConfig::Set(cfg, build_conf);
@@ -477,4 +477,63 @@ TEST_P(DiskANNTest, config_test) {
 
     range_search_conf_to_test.beamwidth = 129;
     check_config_error<knowhere::DiskANNQueryByRangeConfig>(range_search_conf_to_test);
+}
+
+TEST_P(DiskANNTest, build_config_test) {
+    std::string test_dir = kDir + "/build_config_test";
+    std::string test_data_path = test_dir + "/test_raw_data";
+    std::string test_index_dir = test_dir + "/test_index";
+    ASSERT_TRUE(fs::create_directory(test_dir));
+
+    // node size > diskann sector 
+    std::vector<std::tuple<uint32_t, uint32_t>> illegal_dim_and_R_set {
+        std::make_tuple(1024, 32),
+        std::make_tuple(400, 640),
+        std::make_tuple(960, 128)
+    };
+    knowhere::Config illegal_cfg;
+    knowhere::DiskANNBuildConfig illegal_build_config;
+
+    for (auto& dim_and_R : illegal_dim_and_R_set) {
+        fs::remove(test_data_path);
+        fs::remove(test_index_dir);
+
+        uint32_t data_dim = std::get<0>(dim_and_R);
+        uint32_t data_n = 1000;
+        std::vector<float> raw_data(data_dim * data_n);
+        WriteRawDataToDisk(test_data_path, raw_data.data(), data_n, data_dim);
+
+        illegal_build_config = build_conf; // init
+        illegal_build_config.data_path = test_data_path;
+        illegal_build_config.max_degree = std::get<1>(dim_and_R);
+        illegal_cfg.clear();
+        knowhere::DiskANNBuildConfig::Set(illegal_cfg, illegal_build_config);
+        knowhere::IndexDiskANN<float> test_diskann(test_index_dir, metric_,
+                                                   std::make_unique<knowhere::LocalFileManager>());
+        EXPECT_THROW(test_diskann.BuildAll(nullptr, illegal_cfg), knowhere::KnowhereException);
+
+        fs::remove(test_data_path);
+        fs::remove(test_index_dir);
+    }
+    // data size != file size
+    {
+        fs::remove(test_data_path);
+        fs::remove(test_index_dir);
+        fs::copy_file(kRawDataPath, test_data_path);
+        std::ofstream writer(test_data_path, std::ios::binary);
+        writer.seekp(0, std::ios::end); 
+        writer << "end of the file";
+        writer.flush();
+        writer.close();
+
+        illegal_build_config = build_conf; // init
+        illegal_build_config.data_path = test_data_path;
+        illegal_cfg.clear();
+        knowhere::DiskANNBuildConfig::Set(illegal_cfg, illegal_build_config);
+        knowhere::IndexDiskANN<float> test_diskann(test_index_dir, metric_,
+                                                   std::make_unique<knowhere::LocalFileManager>());
+        EXPECT_THROW(test_diskann.BuildAll(nullptr, illegal_cfg), knowhere::KnowhereException);
+    }
+    fs::remove_all(test_dir);
+    fs::remove(test_dir);
 }
