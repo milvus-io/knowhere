@@ -50,7 +50,7 @@ jobs:
           then
             diskann_opt=-d
           fi
-          ./build.sh $diskann_opt -t Release -u
+          ./build.sh $diskann_opt -u
           if [[ -f "output/unittest/faiss_test" ]]; then
             ./output/unittest/faiss_test
           fi

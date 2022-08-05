@@ -124,6 +124,9 @@ else ()
     append_flags( CUDA_NVCC_FLAGS FLAGS "-O0" "-g" )
 endif ()
 
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DELPP_DISABLE_DEBUG_LOGS")
+
 append_flags( CMAKE_CXX_FLAGS
               FLAGS
                     "-fPIC"

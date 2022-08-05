@@ -82,14 +82,13 @@ namespace diskann {
         diskann::load_bin<_u32>(chunk_offset_file, chunk_offsets, numr, numc);
 #endif
       if (numc != 1 || (numr != num_chunks + 1 && num_chunks != 0)) {
-        diskann::cerr << "Error loading chunk offsets file. numc: " << numc
+        LOG(ERROR) << "Error loading chunk offsets file. numc: " << numc
                       << " (should be 1). numr: " << numr << " (should be "
-                      << num_chunks + 1 << ")" << std::endl;
+                      << num_chunks + 1 << ")";
         throw diskann::ANNException("Error loading chunk offsets file", -1,
                                     __FUNCSIG__, __FILE__, __LINE__);
       }
-      std::cout << "PQ data has " << numr - 1 << " bytes per point."
-                << std::endl;
+      LOG(DEBUG) << "PQ data has " << numr - 1 << " bytes per point.";
       this->n_chunks = numr - 1;
 
 #ifdef EXEC_ENV_OLS
@@ -98,7 +97,7 @@ namespace diskann {
         diskann::load_bin<float>(centroid_file, centroid, numr, numc);
 #endif
       if (numc != 1 || numr != ndims_u64) {
-        diskann::cerr << "Error loading centroid file" << std::endl;
+        LOG(ERROR) << "Error loading centroid file";
         throw diskann::ANNException("Error loading centroid file", -1,
                                     __FUNCSIG__, __FILE__, __LINE__);
       }
@@ -116,9 +115,9 @@ namespace diskann {
       std::memset(centroid, 0, ndims * sizeof(float));
     }
 
-    diskann::cout << "PQ Pivots: #ctrs: " << npts_u64
-                  << ", #dims: " << ndims_u64 << ", #chunks: " << n_chunks
-                  << std::endl;
+    LOG(INFO) << "PQ Pivots: #ctrs: " << npts_u64
+              << ", #dims: " << ndims_u64 
+              << ", #chunks: " << n_chunks;
     //      assert((_u64) ndims_u32 == n_chunks * chunk_size);
     // alloc and compute transpose
     tables_T = new float[256 * ndims_u64];

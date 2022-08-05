@@ -140,8 +140,7 @@ void LinuxAlignedFileReader::register_thread() {
     std::cerr << "io_setup() failed; returned " << ret << ", errno=" << -ret
               << ":" << ::strerror(-ret) << std::endl;
   } else {
-    diskann::cout << "allocating ctx: " << ctx << " to thread-id:" << my_id
-                  << std::endl;
+    LOG(DEBUG) << "allocating ctx: " << ctx << " to thread-id:" << my_id;
     ctx_map[my_id] = ctx;
   }
   lk.unlock();
@@ -182,7 +181,7 @@ void LinuxAlignedFileReader::open(const std::string &fname) {
   this->file_desc = ::open(fname.c_str(), flags);
   // error checks
   assert(this->file_desc != -1);
-  std::cerr << "Opened file : " << fname << std::endl;
+  LOG(DEBUG) << "Opened file : " << fname;
 }
 
 void LinuxAlignedFileReader::close() {

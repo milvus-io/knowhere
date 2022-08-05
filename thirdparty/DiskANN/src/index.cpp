@@ -359,7 +359,7 @@ namespace diskann {
   template<typename T, typename TagT>
   _u64 Index<T, TagT>::save_tags(std::string tags_file) {
     if (!_enable_tags) {
-      diskann::cout << "Not saving tags as they are not enabled." << std::endl;
+      LOG(DEBUG) << "Not saving tags as they are not enabled.";
       return 0;
     }
     size_t tag_bytes_written;
@@ -478,7 +478,7 @@ namespace diskann {
     auto stop = std::chrono::high_resolution_clock::now();
     auto timespan =
         std::chrono::duration_cast<std::chrono::duration<double>>(stop - start);
-    diskann::cout << "Time taken for save: " << timespan.count() << "s."
+    LOG(DEBUG) << "Time taken for save: " << timespan.count() << "s."
                   << std::endl;
   }
 
@@ -512,7 +512,7 @@ namespace diskann {
       std::stringstream stream;
       stream << "ERROR: Found " << file_dim << " dimensions for tags,"
              << "but tag file must have 1 dimension." << std::endl;
-      diskann::cerr << stream.str() << std::endl;
+      LOG(ERROR) << stream.str();
       delete[] tag_data;
       throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                   __LINE__);
@@ -546,7 +546,7 @@ namespace diskann {
       std::stringstream stream;
       stream << "ERROR: data file " << filename << " does not exist."
              << std::endl;
-      diskann::cerr << stream.str() << std::endl;
+      LOG(ERROR) << stream.str();
       aligned_free(_data);
       throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                   __LINE__);
@@ -561,7 +561,7 @@ namespace diskann {
       std::stringstream stream;
       stream << "ERROR: Driver requests loading " << _dim << " dimension,"
              << "but file has " << file_dim << " dimension." << std::endl;
-      diskann::cerr << stream.str() << std::endl;
+      LOG(ERROR) << stream.str();
       aligned_free(_data);
       throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                   __LINE__);
@@ -651,7 +651,7 @@ namespace diskann {
              << " from graph, and " << tags_file_num_pts
              << " tags, with num_frozen_pts being set to " << _num_frozen_pts
              << " in constructor." << std::endl;
-      diskann::cerr << stream.str() << std::endl;
+      LOG(ERROR) << stream.str();
       aligned_free(_data);
       throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                   __LINE__);
@@ -736,7 +736,7 @@ namespace diskann {
                   "constructor asks for dynamic index. Exitting."
                << std::endl;
       }
-      diskann::cerr << stream.str() << std::endl;
+      LOG(ERROR) << stream.str();
       aligned_free(_data);
       throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                   __LINE__);
@@ -1398,7 +1398,7 @@ namespace diskann {
         (unsigned) DIV_ROUND_UP(_nd + _num_frozen_pts, (64 * 64));
     if (num_syncs < 40)
       num_syncs = 40;
-    diskann::cout << "Number of syncs: " << num_syncs << std::endl;
+    LOG(DEBUG) << "Number of syncs: " << num_syncs;
 
     _saturate_graph = parameters.Get<bool>("saturate_graph");
 
@@ -1587,13 +1587,14 @@ namespace diskann {
         inter_time += diff.count();
 
         if ((sync_num * 100) / num_syncs > progress_counter) {
-          diskann::cout.precision(4);
-          diskann::cout << "Completed  (round: " << rnd_no
-                        << ", sync: " << sync_num << "/" << num_syncs
-                        << " with L " << L << ")"
-                        << " sync_time: " << sync_time << "s"
-                        << "; inter_time: " << inter_time << "s" << std::endl;
-
+          std::stringstream stream;
+          stream.precision(4);
+          stream << "Completed  (round: " << rnd_no
+                 << ", sync: " << sync_num << "/" << num_syncs
+                 << " with L " << L << ")"
+                 << " sync_time: " << sync_time << "s"
+                 << "; inter_time: " << inter_time << "s" << std::endl;
+          LOG(DEBUG) << stream.str();
           total_sync_time += sync_time;
           total_inter_time += inter_time;
           total_inter_count += inter_count;
@@ -1609,17 +1610,16 @@ namespace diskann {
       MallocExtension::instance()->ReleaseFreeMemory();
 #endif
       if (_nd > 0) {
-        diskann::cout << "Completed Pass " << rnd_no << " of data using L=" << L
-                      << " and alpha=" << parameters.Get<float>("alpha")
-                      << ". Stats: ";
-        diskann::cout << "search+prune_time=" << total_sync_time
+        LOG(INFO) << "Completed Pass " << rnd_no << " of data using L=" << L
+                      << " and alpha=" << _indexingAlpha
+                      << ". Stats: "   << "search+prune_time=" << total_sync_time
                       << "s, inter_time=" << total_inter_time
-                      << "s, inter_count=" << total_inter_count << std::endl;
+                      << "s, inter_count=" << total_inter_count;
       }
     }
 
     if (_nd > 0) {
-      diskann::cout << "Starting final cleanup.." << std::flush;
+      LOG(DEBUG) << "Starting final cleanup..";
     }
 #pragma omp parallel for schedule(dynamic, 65536)
     for (_s64 node_ctr = 0; node_ctr < (_s64)(visit_order.size()); node_ctr++) {
@@ -1648,9 +1648,8 @@ namespace diskann {
       }
     }
     if (_nd > 0) {
-      diskann::cout << "done. Link time: "
-                    << ((double) link_timer.elapsed() / (double) 1000000) << "s"
-                    << std::endl;
+      LOG(DEBUG) << "final cleanup done. Link time: "
+                    << ((double) link_timer.elapsed() / (double) 1000000) << "s";
     }
   }
 
@@ -1702,9 +1701,9 @@ namespace diskann {
     if (min > max)
       min = max;
     if (_nd > 0) {
-      diskann::cout << "Index built with degree: max:" << max << "  avg:"
+      LOG(INFO) << "Index built with degree: max:" << max << "  avg:"
                     << (float) total / (float) (_nd + _num_frozen_pts)
-                    << "  min:" << min << "  count(deg<2):" << cnt << std::endl;
+                    << "  min:" << min << "  count(deg<2):" << cnt;
     }
   }
 
@@ -1714,11 +1713,11 @@ namespace diskann {
                              Parameters &             parameters,
                              const std::vector<TagT> &tags) {
     if (!file_exists(filename)) {
-      diskann::cerr << "Data file " << filename
-                    << " does not exist!!! Exiting...." << std::endl;
+      // diskann::cerr << "Data file " << filename
+                    // << " does not exist!!! Exiting...." << std::endl;
       std::stringstream stream;
       stream << "Data file " << filename << " does not exist." << std::endl;
-      diskann::cerr << stream.str() << std::endl;
+      LOG(ERROR) << stream.str();
       throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                   __LINE__);
     }
@@ -1736,7 +1735,7 @@ namespace diskann {
                << " points and file has " << file_num_points << " points, but "
                << "index can support only " << _max_points
                << " points as specified in constructor." << std::endl;
-        diskann::cerr << stream.str() << std::endl;
+        LOG(ERROR) << stream.str();
         aligned_free(_data);
         throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                     __LINE__);
@@ -1745,7 +1744,7 @@ namespace diskann {
         std::stringstream stream;
         stream << "ERROR: Driver requests loading " << _dim << " dimension,"
                << "but file has " << file_dim << " dimension." << std::endl;
-        diskann::cerr << stream.str() << std::endl;
+        LOG(ERROR) << stream.str();
         aligned_free(_data);
         throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                     __LINE__);
@@ -1759,8 +1758,8 @@ namespace diskann {
         }
       }
 
-      diskann::cout << "Loading only first " << num_points_to_load
-                    << " from file.. " << std::endl;
+      LOG(INFO) << "Building start. Loading only first " << num_points_to_load
+                << " from file.. ";
       _nd = num_points_to_load;
 
       if (_enable_tags && tags.size() != num_points_to_load) {
@@ -1769,7 +1768,7 @@ namespace diskann {
                << " points from file,"
                << "but tags vector is of size " << tags.size() << "."
                << std::endl;
-        diskann::cerr << stream.str() << std::endl;
+        LOG(ERROR) << stream.str();
         aligned_free(_data);
         throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                     __LINE__);
@@ -1801,9 +1800,9 @@ namespace diskann {
     if (min > max)
       min = max;
     if (_nd > 0) {
-      diskann::cout << "Index built with degree: max:" << max << "  avg:"
+      LOG(INFO) << "Index built with degree: max:" << max << "  avg:"
                     << (float) total / (float) (_nd + _num_frozen_pts)
-                    << "  min:" << min << "  count(deg<2):" << cnt << std::endl;
+                    << "  min:" << min << "  count(deg<2):" << cnt;
     }
     _width = (std::max)((unsigned) max, _width);
     _has_built = true;
@@ -1814,19 +1813,19 @@ namespace diskann {
                              const size_t num_points_to_load,
                              Parameters &parameters, const char *tag_filename) {
     if (!file_exists(filename)) {
-      diskann::cerr << "Data file provided " << filename << " does not exist."
-                    << std::endl;
+      // diskann::cerr << "Data file provided " << filename << " does not exist."
+      //               << std::endl;
       std::stringstream stream;
       stream << "Data file provided " << filename << " does not exist."
              << std::endl;
-      diskann::cerr << stream.str() << std::endl;
+      LOG(ERROR) << stream.str() << std::endl;
       throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                   __LINE__);
     }
 
     size_t file_num_points, file_dim;
     if (filename == nullptr) {
-      diskann::cout << "Starting with an empty index." << std::endl;
+      LOG(INFO) << "Starting with an empty index.";
       _nd = 0;
     } else {
       diskann::get_bin_metadata(filename, file_num_points, file_dim);
@@ -1837,7 +1836,7 @@ namespace diskann {
                << " points and file has " << file_num_points << " points, but "
                << "index can support only " << _max_points
                << " points as specified in constructor." << std::endl;
-        diskann::cerr << stream.str() << std::endl;
+        LOG(ERROR) << stream.str();
         aligned_free(_data);
         throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                     __LINE__);
@@ -1846,7 +1845,7 @@ namespace diskann {
         std::stringstream stream;
         stream << "ERROR: Driver requests loading " << _dim << " dimension,"
                << "but file has " << file_dim << " dimension." << std::endl;
-        diskann::cerr << stream.str() << std::endl;
+        LOG(ERROR) << stream.str();
         aligned_free(_data);
         throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                     __LINE__);
@@ -1915,9 +1914,9 @@ namespace diskann {
     if (min > max)
       min = max;
     if (_nd > 0) {
-      diskann::cout << "Index built with degree: max:" << max << "  avg:"
+      LOG(INFO) << "Index built with degree: max:" << max << "  avg:"
                     << (float) total / (float) (_nd + _num_frozen_pts)
-                    << "  min:" << min << "  count(deg<2):" << cnt << std::endl;
+                    << "  min:" << min << "  count(deg<2):" << cnt;
     }
     _width = (std::max)((unsigned) max, _width);
     _has_built = true;
@@ -2473,9 +2472,9 @@ namespace diskann {
     if (min > max)
       min = max;
     if (_nd > 0) {
-      diskann::cout << "Index built with degree: max:" << max << "  avg:"
+      LOG(INFO) << "Index built with degree: max:" << max << "  avg:"
                     << (float) total / (float) (_nd + _num_frozen_pts)
-                    << "  min:" << min << "  count(deg<2):" << cnt << std::endl;
+                    << "  min:" << min << "  count(deg<2):" << cnt;
     }
   }
 

@@ -90,15 +90,13 @@ namespace diskann {
       : reader(fileReader), metric(m) {
     if (m == diskann::Metric::COSINE || m == diskann::Metric::INNER_PRODUCT) {
       if (std::is_floating_point<T>::value) {
-        diskann::cout << "Cosine metric chosen for (normalized) float data."
-                         "Changing distance to L2 to boost accuracy."
-                      << std::endl;
+        LOG(INFO) << "Cosine metric chosen for (normalized) float data."
+                         "Changing distance to L2 to boost accuracy.";
         m = diskann::Metric::L2;
       } else {
-        diskann::cerr << "WARNING: Cannot normalize integral data types."
+        LOG(WARNING) << "Cannot normalize integral data types."
                       << " This may result in erroneous results or poor recall."
-                      << " Consider using L2 distance with integral data types."
-                      << std::endl;
+                      << " Consider using L2 distance with integral data types.";
       }
     }
 
@@ -132,8 +130,8 @@ namespace diskann {
 
   template<typename T>
   void PQFlashIndex<T>::setup_thread_data(_u64 nthreads) {
-    diskann::cout << "Setting up thread-specific contexts for nthreads: "
-                  << nthreads << std::endl;
+    LOG(INFO) << "Setting up thread-specific contexts for nthreads: "
+              << nthreads;
 // omp parallel for to generate unique thread IDs
 #pragma omp parallel for num_threads((int) nthreads)
     for (_s64 thread = 0; thread < (_s64) nthreads; thread++) {
@@ -178,7 +176,7 @@ namespace diskann {
 
   template<typename T>
   void PQFlashIndex<T>::destroy_thread_data() {
-    diskann::cout << "Clearing scratch" << std::endl;
+    LOG(DEBUG) << "Clearing scratch";
     assert(this->thread_data.size() == this->max_nthreads);
     while (this->thread_data.size() > 0) {
       ThreadData<T> data = this->thread_data.pop();
@@ -203,7 +201,7 @@ namespace diskann {
 
   template<typename T>
   void PQFlashIndex<T>::load_cache_list(std::vector<uint32_t> &node_list) {
-    diskann::cout << "Loading the cache list into memory.." << std::flush;
+    LOG(DEBUG) << "Loading the cache list into memory...";
     _u64 num_cached_nodes = node_list.size();
 
     // borrow thread data
@@ -275,7 +273,7 @@ namespace diskann {
     // return thread data
     this->thread_data.push(this_thread_data);
     this->thread_data.push_notify_all();
-    diskann::cout << "..done." << std::endl;
+    LOG(DEBUG) << "done.";
   }
 
 #ifdef EXEC_ENV_OLS
@@ -355,13 +353,12 @@ namespace diskann {
     // Do not cache more than 10% of the nodes in the index
     _u64 tenp_nodes = (_u64)(std::round(this->num_points * 0.1));
     if (num_nodes_to_cache > tenp_nodes) {
-      diskann::cout << "Reducing nodes to cache from: " << num_nodes_to_cache
+      LOG(INFO) << "Reducing nodes to cache from: " << num_nodes_to_cache
                     << " to: " << tenp_nodes
-                    << "(10 percent of total nodes:" << this->num_points << ")"
-                    << std::endl;
+                    << "(10 percent of total nodes:" << this->num_points << ")";
       num_nodes_to_cache = tenp_nodes == 0 ? 1 : tenp_nodes;
     }
-    diskann::cout << "Caching " << num_nodes_to_cache << "..." << std::endl;
+    LOG(INFO) << "Caching " << num_nodes_to_cache << "...";
 
     // borrow thread data
     ThreadData<T> this_thread_data = this->thread_data.pop();
@@ -402,13 +399,12 @@ namespace diskann {
 
       std::shuffle(nodes_to_expand.begin(), nodes_to_expand.end(), urng);
 
-      diskann::cout << "Level: " << lvl << std::flush;
+      LOG(DEBUG) << "Level: " << lvl;
       bool finish_flag = false;
 
       uint64_t BLOCK_SIZE = 1024;
       uint64_t nblocks = DIV_ROUND_UP(nodes_to_expand.size(), BLOCK_SIZE);
       for (size_t block = 0; block < nblocks && !finish_flag; block++) {
-        diskann::cout << "." << std::flush;
         size_t start = block * BLOCK_SIZE;
         size_t end =
             (std::min)((block + 1) * BLOCK_SIZE, nodes_to_expand.size());
@@ -456,8 +452,8 @@ namespace diskann {
         }
       }
 
-      diskann::cout << ". #nodes: " << node_list.size() - prev_node_list_size
-                    << ", #nodes thus far: " << node_list.size() << std::endl;
+      LOG(DEBUG) << ". #nodes: " << node_list.size() - prev_node_list_size
+                 << ", #nodes thus far: " << node_list.size();
       prev_node_list_size = node_list.size();
       lvl++;
     }
@@ -473,15 +469,15 @@ namespace diskann {
          i++)
       node_list.push_back(cur_level_node_list[i]);
 
-    diskann::cout << "Level: " << lvl << std::flush;
-    diskann::cout << ". #nodes: " << node_list.size() - prev_node_list_size
-                  << ", #nodes thus far: " << node_list.size() << std::endl;
+    LOG(DEBUG) << "Level: " << lvl 
+               << ". #nodes: " << node_list.size() - prev_node_list_size
+               << ", #nodes thus far: " << node_list.size();
 
     // return thread data
     this->thread_data.push(this_thread_data);
     this->thread_data.push_notify_all();
 
-    diskann::cout << "done" << std::endl;
+    LOG(INFO) << "done";
   }
 
   template<typename T>
@@ -499,8 +495,8 @@ namespace diskann {
       data = this->thread_data.pop();
     }
     IOContext &ctx = data.ctx;
-    diskann::cout << "Loading centroid data from medoids vector data of "
-                  << num_medoids << " medoid(s)" << std::endl;
+    LOG(INFO) << "Loading centroid data from medoids vector data of "
+              << num_medoids << " medoid(s)";
     for (uint64_t cur_m = 0; cur_m < num_medoids; cur_m++) {
       auto medoid = medoids[cur_m];
       // read medoid nhood
@@ -597,11 +593,10 @@ namespace diskann {
     pq_table.load_pq_centroid_bin(pq_table_bin.c_str(), nchunks_u64);
 #endif
 
-    diskann::cout
+    LOG(INFO)
         << "Loaded PQ centroids and in-memory compressed vectors. #points: "
         << num_points << " #dim: " << data_dim
-        << " #aligned_dim: " << aligned_dim << " #chunks: " << n_chunks
-        << std::endl;
+        << " #aligned_dim: " << aligned_dim << " #chunks: " << n_chunks;
 
     if (n_chunks > MAX_PQ_CHUNKS) {
       std::stringstream stream;
@@ -706,11 +701,10 @@ namespace diskann {
       READ_U64(index_metadata, this->ndims_reorder_vecs);
       READ_U64(index_metadata, this->nvecs_per_sector);
     }
-
-    diskann::cout << "Disk-Index File Meta-data: ";
-    diskann::cout << "# nodes per sector: " << nnodes_per_sector;
-    diskann::cout << ", max node len (bytes): " << max_node_len;
-    diskann::cout << ", max node degree: " << max_degree << std::endl;
+    LOG(INFO) << "Disk-Index File Meta-data: " << "# nodes per sector: " 
+              << nnodes_per_sector << ", max node len (bytes): " 
+              << max_node_len << ", max node degree: "
+              << max_degree;
 
 #ifdef EXEC_ENV_OLS
     delete[] bytes;
@@ -751,10 +745,8 @@ namespace diskann {
 #else
       if (!file_exists(centroids_file)) {
 #endif
-        diskann::cout
-            << "Centroid data file not found. Using corresponding vectors "
-               "for the medoids "
-            << std::endl;
+        LOG(INFO) << "Centroid data file not found. Using corresponding vectors "
+                      "for the medoids ";
         use_medoids_data_as_centroids();
       } else {
         size_t num_centroids, aligned_tmp_dim;
@@ -773,7 +765,7 @@ namespace diskann {
                     "m times data_dim vector of float, where m is number of "
                     "medoids "
                     "in medoids file.";
-          diskann::cerr << stream.str() << std::endl;
+          LOG(ERROR) << stream.str();
           throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                       __LINE__);
         }
@@ -793,11 +785,10 @@ namespace diskann {
       float *norm_val;
       diskann::load_bin<float>(norm_file, norm_val, dumr, dumc);
       this->max_base_norm = norm_val[0];
-      std::cout << "Setting re-scaling factor of base vectors to "
-                << this->max_base_norm << std::endl;
+      LOG(DEBUG) << "Setting re-scaling factor of base vectors to "
+                << this->max_base_norm;
       delete[] norm_val;
     }
-    diskann::cout << "done.." << std::endl;
     return 0;
   }
 
