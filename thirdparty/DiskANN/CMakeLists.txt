@@ -229,10 +229,15 @@ else()
 	set(ENV{TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD} 500000000000)
     #	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -DDEBUG -O0 -fsanitize=address -fsanitize=leak -fsanitize=undefined")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -DDEBUG -Wall -Wextra")
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -DNDEBUG -march=native -mtune=native -ftree-vectorize")
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -DELPP_DISABLE_DEBUG_LOGS -DNDEBUG -march=native -mtune=native -ftree-vectorize")
 	add_compile_options(-march=native -Wall -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free -fopenmp -fopenmp-simd -funroll-loops -Wfatal-errors -DUSE_AVX2)
 endif()
 
+include_directories( ${KNOWHERE_SOURCE_DIR} )
+include_directories( ${KNOWHERE_SOURCE_DIR}/thirdparty/ )
+add_definitions( -DAUTO_INITIALIZE_EASYLOGGINGPP )
+
 add_subdirectory(src)
-add_subdirectory(tests)
-add_subdirectory(tests/utils)
+# Don't need executable files
+# add_subdirectory(tests)
+# add_subdirectory(tests/utils)

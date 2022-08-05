@@ -102,26 +102,24 @@ namespace diskann {
                                  const std::vector<std::string> &param_list) {
     size_t num_pq_chunks =
         (size_t)(std::floor)(_u64(final_index_ram_limit / (double) points_num));
-    diskann::cout << "Calculated num_pq_chunks :" << num_pq_chunks << std::endl;
+    LOG(DEBUG) << "Calculated num_pq_chunks :" << num_pq_chunks;
     if (param_list.size() >= 6) {
       float compress_ratio = (float) atof(param_list[5].c_str());
       if (compress_ratio > 0 && compress_ratio <= 1) {
         size_t chunks_by_cr = (size_t)(std::floor)(compress_ratio * dim);
 
         if (chunks_by_cr > 0 && chunks_by_cr < num_pq_chunks) {
-          diskann::cout << "Compress ratio:" << compress_ratio
-                        << " new #pq_chunks:" << chunks_by_cr << std::endl;
+          LOG(DEBUG) << "Compress ratio:" << compress_ratio
+                        << " new #pq_chunks:" << chunks_by_cr;
           num_pq_chunks = chunks_by_cr;
         } else {
-          diskann::cout << "Compress ratio: " << compress_ratio
+          LOG(DEBUG) << "Compress ratio: " << compress_ratio
                         << " #new pq_chunks: " << chunks_by_cr
                         << " is either zero or greater than num_pq_chunks: "
-                        << num_pq_chunks << ". num_pq_chunks is unchanged. "
-                        << std::endl;
+                        << num_pq_chunks << ". num_pq_chunks is unchanged. ";
         }
       } else {
-        diskann::cerr << "Compression ratio: " << compress_ratio
-                      << " should be in (0,1]" << std::endl;
+        LOG(ERROR) << "Compression ratio: " << compress_ratio << " should be in (0,1]";
       }
     }
 
@@ -130,8 +128,8 @@ namespace diskann {
     num_pq_chunks =
         num_pq_chunks > MAX_PQ_CHUNKS ? MAX_PQ_CHUNKS : num_pq_chunks;
 
-    diskann::cout << "Compressing " << dim << "-dimensional data into "
-                  << num_pq_chunks << " bytes per vector." << std::endl;
+    LOG(DEBUG) << "Compressing " << dim << "-dimensional data into "
+                  << num_pq_chunks << " bytes per vector.";
     return num_pq_chunks;
   }
 
@@ -389,14 +387,13 @@ namespace diskann {
       nelems += idmap.size();
     }
     nnodes++;
-    diskann::cout << "# nodes: " << nnodes << ", max. degree: " << max_degree
-                  << std::endl;
+    LOG(DEBUG) << "# nodes: " << nnodes << ", max. degree: " << max_degree;
 
     // compute inverse map: node -> shards
     std::vector<std::pair<unsigned, unsigned>> node_shard;
     node_shard.reserve(nelems);
     for (_u64 shard = 0; shard < nshards; shard++) {
-      diskann::cout << "Creating inverse map -- shard #" << shard << std::endl;
+      LOG(INFO) << "Creating inverse map -- shard #" << shard;
       for (_u64 idx = 0; idx < idmaps[shard].size(); idx++) {
         _u64 node_id = idmaps[shard][idx];
         node_shard.push_back(std::make_pair((_u32) node_id, (_u32) shard));
@@ -407,7 +404,7 @@ namespace diskann {
                 return left.first < right.first || (left.first == right.first &&
                                                     left.second < right.second);
               });
-    diskann::cout << "Finished computing node -> shards map" << std::endl;
+    LOG(INFO) << "Finished computing node -> shards map";
 
     // create cached vamana readers
     std::vector<cached_ifstream> vamana_readers(nshards);
@@ -444,8 +441,8 @@ namespace diskann {
           input_width > max_input_width ? input_width : max_input_width;
     }
 
-    diskann::cout << "Max input width: " << max_input_width
-                  << ", output width: " << output_width << std::endl;
+    LOG(INFO) << "Max input width: " << max_input_width
+                  << ", output width: " << output_width;
 
     merged_vamana_writer.write((char *) &output_width, sizeof(unsigned));
     std::ofstream medoid_writer(medoids_file.c_str(), std::ios::binary);
@@ -475,7 +472,7 @@ namespace diskann {
     merged_vamana_writer.write((char *) &merged_index_frozen, sizeof(_u64));
     medoid_writer.close();
 
-    diskann::cout << "Starting merge" << std::endl;
+    LOG(INFO) << "Starting merge";
 
     // Gopal. random_shuffle() is deprecated.
     std::random_device rng;
@@ -500,7 +497,7 @@ namespace diskann {
                                    nnbrs * sizeof(unsigned));
         merged_index_size += (sizeof(unsigned) + nnbrs * sizeof(unsigned));
         if (cur_id % 499999 == 1) {
-          diskann::cout << "." << std::flush;
+          LOG(DEBUG) << ".";
         }
         cur_id = node_id;
         nnbrs = 0;
@@ -535,12 +532,12 @@ namespace diskann {
       nhood_set[p] = 0;
     final_nhood.clear();
 
-    diskann::cout << "Expected size: " << merged_index_size << std::endl;
+    LOG(DEBUG) << "Expected size: " << merged_index_size;
 
     merged_vamana_writer.reset();
     merged_vamana_writer.write((char *) &merged_index_size, sizeof(uint64_t));
 
-    diskann::cout << "Finished merge" << std::endl;
+    LOG(INFO) << "Finished merge";
     return 0;
   }
 
@@ -557,9 +554,9 @@ namespace diskann {
     double full_index_ram =
         estimate_ram_usage(base_num, base_dim, sizeof(T), R);
     if (full_index_ram < ram_budget * 1024 * 1024 * 1024) {
-      diskann::cout << "Full index fits in RAM budget, should consume at most "
+      LOG(INFO) << "Full index fits in RAM budget, should consume at most "
                     << full_index_ram / (1024 * 1024 * 1024)
-                    << "GiBs, so building in one shot" << std::endl;
+                    << "GiBs, so building in one shot";
       diskann::Parameters paras;
       paras.Set<unsigned>("L", (unsigned) L);
       paras.Set<unsigned>("R", (unsigned) R);
@@ -639,6 +636,8 @@ namespace diskann {
       std::remove(shard_index_file.c_str());
       std::remove(shard_index_file_data.c_str());
     }
+    std::remove(medoids_file.c_str());
+    std::remove(centroids_file.c_str());
     return 0;
   }
 
@@ -749,7 +748,7 @@ namespace diskann {
 
     // create cached reader + writer
     size_t actual_file_size = get_file_size(mem_index_file);
-    diskann::cout << "Vamana index file size=" << actual_file_size << std::endl;
+    LOG(INFO) << "Vamana index file size: " << actual_file_size;
     std::ifstream   vamana_reader(mem_index_file, std::ios::binary);
     cached_ofstream diskann_writer(output_file, write_blk_size);
 
@@ -783,10 +782,9 @@ namespace diskann {
         (((_u64) width_u32 + 1) * sizeof(unsigned)) + (ndims_64 * sizeof(T));
     nnodes_per_sector = SECTOR_LEN / max_node_len;
 
-    diskann::cout << "medoid: " << medoid << "B" << std::endl;
-    diskann::cout << "max_node_len: " << max_node_len << "B" << std::endl;
-    diskann::cout << "nnodes_per_sector: " << nnodes_per_sector << "B"
-                  << std::endl;
+    LOG(DEBUG) << "medoid: " << medoid << "B" << "max_node_len: " 
+               << max_node_len << "B" << "nnodes_per_sector: "
+              << nnodes_per_sector << "B";
 
     // SECTOR_LEN buffer for each sector
     std::unique_ptr<char[]> sector_buf = std::make_unique<char[]>(SECTOR_LEN);
@@ -829,11 +827,11 @@ namespace diskann {
     diskann_writer.write(sector_buf.get(), SECTOR_LEN);
 
     std::unique_ptr<T[]> cur_node_coords = std::make_unique<T[]>(ndims_64);
-    diskann::cout << "# sectors: " << n_sectors << std::endl;
+    LOG(DEBUG) << "# sectors: " << n_sectors;
     _u64 cur_node_id = 0;
     for (_u64 sector = 0; sector < n_sectors; sector++) {
       if (sector % 100000 == 0) {
-        diskann::cout << "Sector #" << sector << "written" << std::endl;
+        LOG(DEBUG) << "Sector #" << sector << "written";
       }
       memset(sector_buf.get(), 0, SECTOR_LEN);
       for (_u64 sector_node_id = 0;
@@ -908,7 +906,7 @@ namespace diskann {
         diskann_writer.write(sector_buf.get(), SECTOR_LEN);
       }
     }
-    diskann::cout << "Output file written." << std::endl;
+    LOG(DEBUG) << "Output file written.";
   }
 
   template<typename T>
@@ -924,7 +922,7 @@ namespace diskann {
     }
     if (param_list.size() != 5 && param_list.size() != 6 &&
         param_list.size() != 7) {
-      diskann::cout
+      LOG(ERROR)
           << "Correct usage of parameters is R (max degree) "
              "L (indexing list size, better if >= R)"
              "B (RAM limit of final index in GB)"
@@ -933,8 +931,7 @@ namespace diskann {
              "B' (PQ bytes for disk index: optional parameter for "
              "very large dimensional data)"
              "reorder (set true to include full precision in data file"
-             ": optional paramter, use only when using disk PQ"
-          << std::endl;
+             ": optional paramter, use only when using disk PQ";
       return -1;
     }
 
@@ -991,11 +988,10 @@ namespace diskann {
     // ||x||^2/M^2) for every x, M is max norm of all points. Extra space on
     // disk needed!
     if (compareMetric == diskann::Metric::INNER_PRODUCT) {
-      std::cout << "Using Inner Product search, so need to pre-process base "
+      LOG(INFO) << "Using Inner Product search, so need to pre-process base "
                    "data into temp file. Please ensure there is additional "
                    "(n*(d+1)*4) bytes for storing pre-processed base vectors, "
-                   "apart from the intermin indices and final index."
-                << std::endl;
+                   "apart from the intermin indices and final index.";
       std::string prepped_base = index_prefix_path + "_prepped_base.bin";
       data_file_to_use = prepped_base;
       float max_norm_of_base =
@@ -1010,15 +1006,13 @@ namespace diskann {
 
     double final_index_ram_limit = get_memory_budget(param_list[2]);
     if (final_index_ram_limit <= 0) {
-      std::cerr << "Insufficient memory budget (or string was not in right "
-                   "format). Should be > 0."
-                << std::endl;
+      LOG(ERROR) << "Insufficient memory budget (or string was not in right "
+                   "format). Should be > 0.";
       return -1;
     }
     double indexing_ram_budget = (float) atof(param_list[3].c_str());
     if (indexing_ram_budget <= 0) {
-      std::cerr << "Not building index. Please provide more RAM budget"
-                << std::endl;
+      LOG(ERROR) << "Not building index. Please provide more RAM budget";
       return -1;
     }
     _u32 num_threads = (_u32) atoi(param_list[4].c_str());
@@ -1028,10 +1022,10 @@ namespace diskann {
       mkl_set_num_threads(num_threads);
     }
 
-    diskann::cout << "Starting index build: R=" << R << " L=" << L
-                  << " Query RAM budget: " << final_index_ram_limit
-                  << " Indexing ram budget: " << indexing_ram_budget
-                  << " T: " << num_threads << std::endl;
+    LOG(INFO) << "Starting index build: R=" << R << " L=" << L
+                  << " Query RAM budget: " << final_index_ram_limit / (1024 * 1024 * 1024) << "(GiB)"
+                  << " Indexing ram budget: " << indexing_ram_budget << "(GiB)"
+                  << " T: " << num_threads;
 
     auto s = std::chrono::high_resolution_clock::now();
 
@@ -1047,8 +1041,8 @@ namespace diskann {
     num_pq_chunks =
         num_pq_chunks > MAX_PQ_CHUNKS ? MAX_PQ_CHUNKS : num_pq_chunks;
 
-    diskann::cout << "Compressing " << dim << "-dimensional data into "
-                  << num_pq_chunks << " bytes per vector." << std::endl;
+    LOG(DEBUG) << "Compressing " << dim << "-dimensional data into "
+                  << num_pq_chunks << " bytes per vector.";
 
     size_t train_size, train_dim;
     float *train_data;
@@ -1063,8 +1057,8 @@ namespace diskann {
       if (disk_pq_dims > dim)
         disk_pq_dims = dim;
 
-      std::cout << "Compressing base for disk-PQ into " << disk_pq_dims
-                << " chunks " << std::endl;
+      LOG(DEBUG) << "Compressing base for disk-PQ into " << disk_pq_dims
+                << " chunks ";
       generate_pq_pivots(train_data, train_size, (uint32_t) dim, 256,
                          (uint32_t) disk_pq_dims, NUM_KMEANS_REPS,
                          disk_pq_pivots_path, false);
@@ -1077,7 +1071,7 @@ namespace diskann {
             data_file_to_use.c_str(), 256, (uint32_t) disk_pq_dims,
             disk_pq_pivots_path, disk_pq_compressed_vectors_path);
     }
-    diskann::cout << "Training data loaded of size " << train_size << std::endl;
+    LOG(DEBUG) << "Training data loaded of size " << train_size;
 
     // don't translate data to make zero mean for PQ compression. We must not
     // translate for inner product search.
@@ -1136,7 +1130,7 @@ namespace diskann {
 
     auto                          e = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> diff = e - s;
-    diskann::cout << "Indexing time: " << diff.count() << std::endl;
+    LOG(INFO) << "Indexing time: " << diff.count();
 
     return 0;
   }
