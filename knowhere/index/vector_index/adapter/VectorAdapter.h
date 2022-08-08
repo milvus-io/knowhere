@@ -51,6 +51,9 @@ DEFINE_DATASET_SETTER(SetDatasetLims, meta::LIMS, const size_t*);
 DEFINE_DATASET_GETTER(GetDatasetInputIDs, meta::INPUT_IDS, const int64_t*);
 DEFINE_DATASET_SETTER(SetDatasetInputIDs, meta::INPUT_IDS, const int64_t*);
 
+DEFINE_DATASET_GETTER(GetDatasetOutputTensor, meta::OUTPUT_TENSOR, const void*);
+DEFINE_DATASET_SETTER(SetDatasetOutputTensor, meta::OUTPUT_TENSOR, const void*);
+
 ///////////////////////////////////////////////////////////////////////////////
 
 #define GET_DATA_WITH_IDS(ds_ptr)                     \

@@ -45,6 +45,11 @@ class Dataset {
                 // the space of lims must be allocated with new
                 delete[] lims;
             }
+            if (d.first == meta::OUTPUT_TENSOR) {
+                auto tensor = Get<const void*>(meta::OUTPUT_TENSOR);
+                // the space of tensor must be allocated with new
+                delete[] (uint8_t*)tensor;
+            }
         }
     }
     template <typename T>

@@ -33,6 +33,7 @@ constexpr const char* LIMS = "lims";
 constexpr const char* TOPK = "k";
 constexpr const char* RADIUS = "radius";
 constexpr const char* INPUT_IDS = "input_ids";
+constexpr const char* OUTPUT_TENSOR = "output_tensor";
 constexpr const char* DEVICE_ID = "gpu_id";
 };  // namespace meta
 

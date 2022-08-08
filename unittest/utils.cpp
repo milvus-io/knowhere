@@ -171,7 +171,7 @@ AssertVec(const knowhere::DatasetPtr& result,
           const int dim) {
     float* base = (float*)knowhere::GetDatasetTensor(base_dataset);
     auto ids = knowhere::GetDatasetInputIDs(id_dataset);
-    auto x = (float*)knowhere::GetDatasetTensor(result);
+    auto x = (float*)knowhere::GetDatasetOutputTensor(result);
     for (auto i = 0; i < n; i++) {
         auto id = ids[i];
         for (auto j = 0; j < dim; j++) {
@@ -190,7 +190,7 @@ AssertBinVec(const knowhere::DatasetPtr& result,
              const int dim) {
     auto base = (uint8_t*)knowhere::GetDatasetTensor(base_dataset);
     auto ids = knowhere::GetDatasetInputIDs(id_dataset);
-    auto x = (uint8_t*)knowhere::GetDatasetTensor(result);
+    auto x = (uint8_t*)knowhere::GetDatasetOutputTensor(result);
     int dim_uint8 = dim / 8;
     for (auto i = 0; i < n; i++) {
         auto id = ids[i];
