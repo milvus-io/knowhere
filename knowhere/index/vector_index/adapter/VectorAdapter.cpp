@@ -38,7 +38,7 @@ GenDatasetWithIds(const int64_t n, const int64_t dim, const int64_t* ids) {
 DatasetPtr
 GenResultDataset(const void* tensor) {
     auto ret_ds = std::make_shared<Dataset>();
-    SetDatasetTensor(ret_ds, tensor);
+    SetDatasetOutputTensor(ret_ds, tensor);
     return ret_ds;
 }
 
