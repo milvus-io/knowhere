@@ -60,11 +60,20 @@ import_array();
 %include <std_pair.i>
 %include <std_map.i>
 %include <std_shared_ptr.i>
+
+%shared_ptr(knowhere::Dataset)
+%template(DatasetPtr) std::shared_ptr<Dataset>;
 %include <common/Dataset.h>
 %include <utils/BitsetView.h>
 %include <common/BinarySet.h>
 %include <common/Config.h>
 %include <common/Typedef.h>
+%include <cache/DataObj.h>
+%include <index/Index.h>
+%include <index/VecIndex.h>
+%include <index/vector_index/FaissBaseBinaryIndex.h>
+%include <index/vector_offset_index/OffsetBaseIndex.h>
+%include <index/vector_index/FaissBaseIndex.h>
 %include <index/vector_index/IndexAnnoy.h>
 %include <index/vector_index/IndexHNSW.h>
 %include <index/vector_index/IndexIVF.h>
@@ -74,6 +83,7 @@ import_array();
 %include <index/vector_index/IndexBinaryIDMAP.h>
 %include <index/vector_index/IndexBinaryIVF.h>
 #ifdef KNOWHERE_GPU_VERSION
+%include <index/vector_index/gpu/GPUIndex.h>
 %include <index/vector_index/gpu/IndexGPUIVF.h>
 %include <index/vector_index/gpu/IndexGPUIVFPQ.h>
 %include <index/vector_index/gpu/IndexGPUIVFSQ.h>
@@ -81,7 +91,6 @@ import_array();
 #endif
 %include <index/vector_offset_index/IndexIVF_NM.h>
 
-%shared_ptr(knowhere::Dataset)
 
 #ifdef SWIGPYTHON
 %define DOWNCAST(subclass)
@@ -127,9 +136,9 @@ ArrayToDataSetInt(int *xb, int nb, int dim){
 };
 
 void
-DumpResultDataSet(knowhere::DatasetPtr& result, float* dis, int nq_1, int k_1, int* ids, int nq_2, int k_2) {
-    auto ids_ = result->Get<const int64_t*>("ids");
-    auto dist_ = result->Get<const float*>("distance");
+DumpResultDataSet(knowhere::Dataset& result, float* dis, int nq_1, int k_1, int* ids, int nq_2, int k_2) {
+    auto ids_ = result.Get<const int64_t*>("ids");
+    auto dist_ = result.Get<const float*>("distance");
     assert(nq_1 == nq_2);
     assert(k_1 == k_2);
     for (int i = 0; i < nq_1; i++) {
@@ -138,32 +147,27 @@ DumpResultDataSet(knowhere::DatasetPtr& result, float* dis, int nq_1, int k_1, i
             *(dis + i * k_1 + j) = *((float*)(dist_) + i * k_1 + j);
         }
     }
-    result.reset<knowhere::Dataset>(nullptr);
-}
-
-void ClearDataSet(knowhere::DatasetPtr& result){
-    result.reset<knowhere::Dataset>(nullptr);
 }
 
 void
-DumpRangeResultIds(const knowhere::DatasetPtr& result, int* ids, int len) {
-    auto ids_ = result->Get<const int64_t*>("ids");
+DumpRangeResultIds(knowhere::Dataset& result, int* ids, int len) {
+    auto ids_ = result.Get<const int64_t*>("ids");
     for (int i = 0; i < len; ++i) {
         *(ids + i) = *((int64_t*)(ids_) + i);
     }
 }
 
 void
-DumpRangeResultLimits(const knowhere::DatasetPtr& result, int* lims, int len) {
-    auto lims_ = result->Get<const size_t*>("lims");
+DumpRangeResultLimits(knowhere::Dataset& result, int* lims, int len) {
+    auto lims_ = result.Get<const size_t*>("lims");
     for (int i = 0; i < len; ++i) {
         *(lims + i) = *((int64_t*)(lims_) + i);
     }
 }
 
 void
-DumpRangeResultDis(const knowhere::DatasetPtr& result, float* dis, int len) {
-    auto dist_ = result->Get<const float*>("distance");
+DumpRangeResultDis(knowhere::Dataset& result, float* dis, int len) {
+    auto dist_ = result.Get<const float*>("distance");
     for (int i = 0; i < len; ++i) {
         *(dis + i) = *((float*)(dist_) + i);
     }

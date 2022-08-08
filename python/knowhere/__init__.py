@@ -84,9 +84,7 @@ def UnpackRangeResults(results, nq):
         dtype=np.int32,
     )
     DumpRangeResultIds(results, ids)
-
-    ClearDataSet(results)
-    
+ 
     dis_list = []
     ids_list = []
 
