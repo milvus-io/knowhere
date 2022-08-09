@@ -156,7 +156,7 @@ macro(build_diskann)
             "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
             "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
             "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
-            "-DKNOWHERE_SOURCE_DIR=${KNOWHERE_SOURCE_DIR}"
+            "-DCMAKE_CXX_FLAGS=-O3 -DELPP_THREAD_SAFE -fpermissive -I ${KNOWHERE_SOURCE_DIR} -I ${KNOWHERE_SOURCE_DIR}/thirdparty"
             )
     message( STATUS "Building DISKANN with configure args -${DISKANN_CMAKE_ARGS}" )
     set( DISKANN_BUILD_DIR "${DISKANN_SOURCE_DIR}/build")
@@ -170,7 +170,8 @@ macro(build_diskann)
         INSTALL_COMMAND
         ${MAKE} install
         BUILD_BYPRODUCTS
-        ${DISKANN_STATIC_LIB} )
+        ${DISKANN_STATIC_LIB} 
+        BUILD_ALWAYS 1)
 
         add_library( diskann STATIC IMPORTED )
        
@@ -184,7 +185,7 @@ macro(build_diskann)
         add_dependencies( diskann diskann_ep )
 endmacro()
 
-if ( KNOWHERE_WITH_DISKANN AND NOT TARGET diskann_ep)
+if ( KNOWHERE_WITH_DISKANN AND NOT TARGET diskann_ep )
     if ( DiskANN_SOURCE STREQUAL "AUTO")
         if (NOT DiskANN_FOUND)
             build_diskann()
