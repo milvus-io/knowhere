@@ -233,8 +233,6 @@ else()
 	add_compile_options(-march=native -Wall -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free -fopenmp -fopenmp-simd -funroll-loops -Wfatal-errors -DUSE_AVX2)
 endif()
 
-include_directories( ${KNOWHERE_SOURCE_DIR} )
-include_directories( ${KNOWHERE_SOURCE_DIR}/thirdparty/ )
 add_definitions( -DAUTO_INITIALIZE_EASYLOGGINGPP )
 
 add_subdirectory(src)
