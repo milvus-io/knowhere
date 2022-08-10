@@ -40,7 +40,7 @@ def CreateIndex(index_name, simd_type="auto"):
     )
 
 
-def CreateIndexDiskANN(index_name, index_prefix, metric_type, file_manager, simd_type="auto"):
+def CreateIndexDiskANN(index_name, index_prefix, metric_type, simd_type="auto"):
 
     if simd_type not in ["auto", "avx512", "avx2", "avx", "sse4_2"]:
         raise ValueError("simd type only support auto avx512 avx2 avx sse4_2")
@@ -48,11 +48,11 @@ def CreateIndexDiskANN(index_name, index_prefix, metric_type, file_manager, simd
     SetSimdType(simd_type)
 
     if index_name == "diskann_f":
-        return buildDiskANNf(index_prefix, metric_type, file_manager)
+        return buildDiskANNf(index_prefix, metric_type)
     if index_name == "diskann_i8":
-        return buildDiskANNi8(index_prefix, metric_type, file_manager)
+        return buildDiskANNi8(index_prefix, metric_type)
     if index_name == "diskann_ui8":
-        return buildDiskANNui8(index_prefix, metric_type, file_manager)
+        return buildDiskANNui8(index_prefix, metric_type)
     raise ValueError(
         """ index name only support 
             'diskann_f' 'diskann_i8' 'diskann_ui8'."""

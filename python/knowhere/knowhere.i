@@ -25,6 +25,7 @@ typedef uint64_t size_t;
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 #endif
+#include <unittest/LocalFileManager.h>
 #include <common/BinarySet.h>
 #include <common/Config.h>
 #include <common/Dataset.h>
@@ -111,38 +112,21 @@ import_array();
 %inline %{
 
 std::shared_ptr<knowhere::IndexDiskANN<float>>
-buildDiskANNf(std::string index_prefix, std::string metric_type, std::shared_ptr<knowhere::FileManager> file_manager) {
+buildDiskANNf(std::string index_prefix, std::string metric_type) {
     return std::make_shared<knowhere::IndexDiskANN<float>>(index_prefix, metric_type, 
-            std::unique_ptr<FileManager>(file_manager.get()));
+            std::unique_ptr<knowhere::FileManager>(new knowhere::LocalFileManager));
 }
 
 std::shared_ptr<knowhere::IndexDiskANN<int8_t>>
-buildDiskANNi8(std::string index_prefix, std::string metric_type, std::shared_ptr<knowhere::FileManager> file_manager) {
+buildDiskANNi8(std::string index_prefix, std::string metric_type) {
     return std::make_shared<knowhere::IndexDiskANN<int8_t>>(index_prefix, metric_type, 
-            std::unique_ptr<FileManager>(file_manager.get()));
+            std::unique_ptr<knowhere::FileManager>(new knowhere::LocalFileManager));
 }
 
 std::shared_ptr<knowhere::IndexDiskANN<uint8_t>>
-buildDiskANNui8(std::string index_prefix, std::string metric_type, std::shared_ptr<knowhere::FileManager> file_manager) {
+buildDiskANNui8(std::string index_prefix, std::string metric_type) {
     return std::make_shared<knowhere::IndexDiskANN<uint8_t>>(index_prefix, metric_type, 
-            std::unique_ptr<FileManager>(file_manager.get()));
-}
-
-class FileManagerImpl: public knowhere::FileManager {
- public:
-    bool
-    LoadFile(const std::string& filename) noexcept { return true; }
-    bool
-    AddFile(const std::string& filename) noexcept { return true; }
-    std::optional<bool>
-    IsExisted(const std::string& filename) noexcept { return true; }
-    bool
-    RemoveFile(const std::string& filename) noexcept { return true; }
-};
-
-std::shared_ptr<knowhere::FileManager>
-EmptyFileManager() {
-    return std::make_shared<FileManagerImpl>();
+            std::unique_ptr<knowhere::FileManager>(new knowhere::LocalFileManager));
 }
 
 %}
@@ -231,9 +215,11 @@ DumpRangeResultDis(knowhere::Dataset& result, float* dis, int len) {
 knowhere::Config
 CreateConfig(const std::string& str) {
     auto cfg = knowhere::Config::parse(str);
-    auto metric_type = cfg.at("metric_type").get<std::string>();
-    std::transform(metric_type.begin(), metric_type.end(), metric_type.begin(), toupper);
-    cfg["metric_type"] = metric_type;
+    if (cfg.count("metric_type")) {
+        auto metric_type = cfg.at("metric_type").get<std::string>();
+        std::transform(metric_type.begin(), metric_type.end(), metric_type.begin(), toupper);
+        cfg["metric_type"] = metric_type;
+    }
     return cfg;
 }
 

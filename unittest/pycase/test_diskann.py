@@ -12,7 +12,7 @@ def test_diskann():
     except:
         pass 
     os.mkdir(tmp_path)
-    idx = knowhere.CreateIndexDiskANN("diskann_f", os.path.join(tmp_path, "index"), "L2", knowhere.EmptyFileManager())
+    idx = knowhere.CreateIndexDiskANN("diskann_f", os.path.join(tmp_path, "index"), "L2")
     shape = np.array([10000, 128]).astype(np.int32)
     arr = np.random.uniform(1, 5, [10000, 128]).astype(np.float32)
     data_path = os.path.join(tmp_path, "diskann_data")
