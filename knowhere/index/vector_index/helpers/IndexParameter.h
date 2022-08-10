@@ -35,6 +35,8 @@ constexpr const char* RADIUS = "radius";
 constexpr const char* INPUT_IDS = "input_ids";
 constexpr const char* OUTPUT_TENSOR = "output_tensor";
 constexpr const char* DEVICE_ID = "gpu_id";
+constexpr const char* BUILD_THREAD_NUM = "build_thread_num";
+constexpr const char* QUERY_THREAD_NUM = "query_thread_num";
 };  // namespace meta
 
 namespace indexparam {
@@ -136,6 +138,12 @@ DEFINE_CONFIG_SETTER(SetMetaRadius, meta::RADIUS, float)
 
 DEFINE_CONFIG_GETTER(GetMetaDeviceID, meta::DEVICE_ID, int64_t)
 DEFINE_CONFIG_SETTER(SetMetaDeviceID, meta::DEVICE_ID, int64_t)
+
+DEFINE_CONFIG_GETTER(GetMetaBuildThreadNum, meta::BUILD_THREAD_NUM, int64_t)
+DEFINE_CONFIG_SETTER(SetMetaBuildThreadNum, meta::BUILD_THREAD_NUM, int64_t)
+
+DEFINE_CONFIG_GETTER(GetMetaQueryThreadNum, meta::QUERY_THREAD_NUM, int64_t)
+DEFINE_CONFIG_SETTER(SetMetaQueryThreadNum, meta::QUERY_THREAD_NUM, int64_t)
 
 ///////////////////////////////////////////////////////////////////////////////
 // APIs to access indexparam

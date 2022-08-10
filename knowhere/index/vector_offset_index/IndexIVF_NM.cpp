@@ -17,6 +17,7 @@
 #include <faiss/IndexIVFPQ.h>
 #include <faiss/clone_index.h>
 #include <faiss/index_io.h>
+#include <omp.h>
 #ifdef KNOWHERE_GPU_VERSION
 #include <faiss/gpu/GpuAutoTune.h>
 #include <faiss/gpu/GpuCloner.h>
@@ -118,6 +119,8 @@ IVF_NM::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     auto coarse_quantizer = new faiss::IndexFlat(dim, metric_type);
     auto index = std::make_shared<faiss::IndexIVFFlat>(coarse_quantizer, dim, nlist, metric_type);
     index->own_fields = true;
+    if (CheckKeyInConfig(config, meta::BUILD_THREAD_NUM))
+        omp_set_num_threads(GetMetaBuildThreadNum(config));
     index->train(rows, reinterpret_cast<const float*>(p_data));
     index_ = index;
 }
@@ -189,7 +192,8 @@ IVF_NM::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::
         auto k = GetMetaTopk(config);
         p_id = new int64_t[k * rows];
         p_dist = new float[k * rows];
-
+        if (CheckKeyInConfig(config, meta::QUERY_THREAD_NUM))
+            omp_set_num_threads(GetMetaQueryThreadNum(config));
         QueryImpl(rows, reinterpret_cast<const float*>(p_data), k, p_dist, p_id, config, bitset);
 
         return GenResultDataset(p_id, p_dist);
@@ -227,6 +231,8 @@ IVF_NM::QueryByRange(const DatasetPtr& dataset_ptr, const Config& config, const 
     };
 
     try {
+        if (CheckKeyInConfig (config, meta::QUERY_THREAD_NUM))
+            omp_set_num_threads(GetMetaQueryThreadNum(config));
         QueryByRangeImpl(rows, reinterpret_cast<const float*>(p_data), radius, p_dist, p_id, p_lims, config, bitset);
         return GenResultDataset(p_id, p_dist, p_lims);
     } catch (faiss::FaissException& e) {
