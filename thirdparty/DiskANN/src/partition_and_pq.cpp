@@ -15,6 +15,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #if defined(RELEASE_UNUSED_TCMALLOC_MEMORY_AT_CHECKPOINTS) && defined(DISKANN_BUILD)
 #include "gperftools/malloc_extension.h"
@@ -41,7 +42,7 @@
 #endif
 
 // block size for reading/ processing large files and matrices in blocks
-#define BLOCK_SIZE 5000000
+#define BLOCK_SIZE 1000000
 
 //#define SAVE_INFLATED_PQ true
 
@@ -471,8 +472,7 @@ int generate_pq_data_from_pivots(const std::string data_file,
   std::unique_ptr<T[]> block_data_T = std::make_unique<T[]>(block_size * dim);
   std::unique_ptr<float[]> block_data_float =
       std::make_unique<float[]>(block_size * dim);
-  std::unique_ptr<float[]> block_data_tmp =
-      std::make_unique<float[]>(block_size * dim);
+  std::vector<float> block_data_tmp(dim);
 
   size_t num_blocks = DIV_ROUND_UP(num_points, block_size);
 
@@ -483,22 +483,23 @@ int generate_pq_data_from_pivots(const std::string data_file,
 
     base_reader.read((char *) (block_data_T.get()),
                      sizeof(T) * (cur_blk_size * dim));
-    diskann::convert_types<T, float>(block_data_T.get(), block_data_tmp.get(),
+    diskann::convert_types<T, float>(block_data_T.get(), block_data_float.get(),
                                      cur_blk_size, dim);
 
     LOG(DEBUG) << "Processing points  [" << start_id << ", " << end_id
                   << ")..";
 
+#pragma omp parallel for firstprivate(block_data_tmp) schedule(static, 8192)
     for (uint64_t p = 0; p < cur_blk_size; p++) {
       for (uint64_t d = 0; d < dim; d++) {
-        block_data_tmp[p * dim + d] -= centroid[d];
+        block_data_float[p * dim + d] -= centroid[d];
       }
-    }
-
-    for (uint64_t p = 0; p < cur_blk_size; p++) {
       for (uint64_t d = 0; d < dim; d++) {
-        block_data_float[p * dim + d] =
-            block_data_tmp[p * dim + rearrangement[d]];
+        block_data_tmp[d] =
+            block_data_float[p * dim + rearrangement[d]];
+      }
+      for (uint64_t d = 0; d < dim; d++) {
+        block_data_float[d] = block_data_tmp[d];
       }
     }
 
