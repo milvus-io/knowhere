@@ -596,18 +596,19 @@ namespace diskann {
     }
     rounded_dim = ROUND_UP(dim, 8);
     std::stringstream stream;
-    LOG(DEBUG) << "Metadata: #pts = " << npts << ", #dims = " << dim 
+    stream << "Metadata: #pts = " << npts << ", #dims = " << dim 
            << ", aligned_dim = " << rounded_dim << "... ";
     size_t allocSize = npts * rounded_dim * sizeof(T);
-    LOG(DEBUG) << "allocating aligned memory of " << allocSize << " bytes... ";
+    stream << "allocating aligned memory of " << allocSize << " bytes... ";
     alloc_aligned(((void**) &data), allocSize, 8 * sizeof(T));
-    LOG(DEBUG) << "done. Copying data to mem_aligned buffer...";
+    stream << "done. Copying data to mem_aligned buffer...";
     
     for (size_t i = 0; i < npts; i++) {
       reader.read((char*) (data + i * rounded_dim), dim * sizeof(T));
       memset(data + i * rounded_dim + dim, 0, (rounded_dim - dim) * sizeof(T));
     }
-    LOG(DEBUG) << " done." << std::endl;
+    stream << " done." << std::endl;
+    LOG(DEBUG) << stream.str();
   }
 
 #ifdef EXEC_ENV_OLS
