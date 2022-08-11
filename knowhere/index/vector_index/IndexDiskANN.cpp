@@ -283,6 +283,7 @@ IndexDiskANN<T>::Prepare(const Config& config) {
 
     // set thread number
     omp_set_num_threads(prep_conf.num_threads);
+    num_threads_ = prep_conf.num_threads;
 
     // warmup
     if (prep_conf.warm_up) {
@@ -337,6 +338,9 @@ DatasetPtr
 IndexDiskANN<T>::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::BitsetView bitset) {
     CheckPreparation(is_prepared_);
 
+    // set thread number
+    omp_set_num_threads(num_threads_);
+
     auto query_conf = DiskANNQueryConfig::Get(config);
     auto& k = query_conf.k;
 
@@ -376,6 +380,9 @@ template <typename T>
 DatasetPtr
 IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& config, const faiss::BitsetView bitset) {
     CheckPreparation(is_prepared_);
+
+    // set thread number
+    omp_set_num_threads(num_threads_);
 
     auto query_conf = DiskANNQueryByRangeConfig::Get(config);
     auto& radius = query_conf.radius;
