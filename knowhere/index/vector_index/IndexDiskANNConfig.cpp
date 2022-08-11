@@ -38,6 +38,7 @@ static constexpr const char* kBeamwidth = "beamwidth";
 static constexpr const char* kRadius = "radius";
 static constexpr const char* kMinK = "min_k";
 static constexpr const char* kMaxK = "max_k";
+static constexpr const char* kSearchListAndKRatio = "search_list_and_k_ratio";
 
 static constexpr const char* kDiskANNBuildConfig = "diskANN_build_config";
 static constexpr const char* kDiskANNPrepareConfig = "diskANN_prepare_config";
@@ -169,7 +170,8 @@ to_json(Config& config, const DiskANNQueryByRangeConfig& query_conf) {
     config = Config{{kRadius, query_conf.radius},
                     {kMinK, query_conf.min_k},
                     {kMaxK, query_conf.max_k},
-                    {kBeamwidth, query_conf.beamwidth}};
+                    {kBeamwidth, query_conf.beamwidth},
+                    {kSearchListAndKRatio, query_conf.search_list_and_k_ratio}};
 }
 
 void
@@ -178,6 +180,7 @@ from_json(const Config& config, DiskANNQueryByRangeConfig& query_conf) {
     CheckNumericParamAndSet<uint64_t>(config, kMinK, 1, std::nullopt, query_conf.min_k);
     CheckNumericParamAndSet<uint64_t>(config, kMaxK, query_conf.min_k, std::nullopt, query_conf.max_k);
     CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, 1, 128, query_conf.beamwidth);
+    CheckNumericParamAndSet<float>(config, kSearchListAndKRatio, 1.0, 5.0, query_conf.search_list_and_k_ratio);
 }
 
 DiskANNBuildConfig

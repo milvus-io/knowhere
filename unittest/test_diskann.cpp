@@ -24,6 +24,7 @@ error "Missing the <filesystem> header."
 #include <fstream>
 #include <queue>
 #include <random>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -31,6 +32,7 @@ error "Missing the <filesystem> header."
 #include "knowhere/index/vector_index/IndexDiskANNConfig.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #include "unittest/LocalFileManager.h"
+#include "unittest/utils.h"
 
 using ::testing::Combine;
 using ::testing::TestWithParam;
@@ -42,13 +44,13 @@ using GroundTruthPtr = std::shared_ptr<GroundTruth>;
 namespace {
 
 constexpr uint32_t kNumRows = 10000;
-constexpr uint32_t kNumQueries = 1;
+constexpr uint32_t kNumQueries = 10;
 constexpr uint32_t kDim = 56;
 constexpr float kMax = 100;
 constexpr uint32_t kK = 10;
 constexpr uint32_t kBigK = kNumRows * 2;
 constexpr float kIpRadius = 0;
-constexpr float kL2Radius = 330000;
+constexpr float kL2Radius = 300000;
 
 std::string kDir = fs::current_path().string() + "/diskann_test";
 std::string kRawDataPath = kDir + "/raw_data";
@@ -86,7 +88,8 @@ struct DisPairLess {
 };
 
 GroundTruthPtr
-GenGroundTruth(const float* data_p, const float* query_p, const std::string metric) {
+GenGroundTruth(const float* data_p, const float* query_p, const std::string metric,
+               const faiss::BitsetView bitset = nullptr) {
     GroundTruthPtr ground_truth = std::make_shared<GroundTruth>();
     ground_truth->resize(kNumQueries);
 
@@ -94,6 +97,9 @@ GenGroundTruth(const float* data_p, const float* query_p, const std::string metr
         // use priority_queue to keep the topK;
         std::priority_queue<IdDisPair, std::vector<IdDisPair>, DisPairLess> pq;
         for (int64_t row = 0; row < kNumRows; ++row) {  // for each row
+            if (!bitset.empty() && bitset.test(row)) {
+                continue;
+            }
             float dis = 0;
             for (uint32_t dim = 0; dim < kDim; ++dim) {  // for every dim
                 if (metric == knowhere::metric::IP) {
@@ -125,13 +131,17 @@ GenGroundTruth(const float* data_p, const float* query_p, const std::string metr
 }
 
 GroundTruthPtr
-GenRangeSearchGrounTruth(const float* data_p, const float* query_p, const std::string metric) {
+GenRangeSearchGrounTruth(const float* data_p, const float* query_p, const std::string metric,
+                         const faiss::BitsetView bitset = nullptr) {
     GroundTruthPtr ground_truth = std::make_shared<GroundTruth>();
     ground_truth->resize(kNumQueries);
     float radius = metric == knowhere::metric::L2 ? kL2Radius : kIpRadius;
     for (uint32_t query_index = 0; query_index < kNumQueries; ++query_index) {
         std::vector<IdDisPair> paris;
         for (int64_t row = 0; row < kNumRows; ++row) {  // for each row
+            if (!bitset.empty() && bitset.test(row)) {
+                continue;
+            }
             float dis = 0;
             for (uint32_t dim = 0; dim < kDim; ++dim) {  // for every dim
                 if (metric == knowhere::metric::IP) {
@@ -227,17 +237,6 @@ class DiskANNTest : public TestWithParam<std::string> {
         ip_range_search_ground_truth_ = GenRangeSearchGrounTruth(raw_data_, query_data_, knowhere::metric::IP);
         l2_range_search_ground_truth_ = GenRangeSearchGrounTruth(raw_data_, query_data_, knowhere::metric::L2);
 
-        big_query_ground_truth_ = std::make_shared<GroundTruth>();
-        big_query_ground_truth_->resize(kNumQueries);
-        for (uint32_t query_index = 0; query_index < kNumQueries; ++query_index) {
-            for (uint32_t row = 0; row < kNumRows; ++row) {
-                (big_query_ground_truth_->at(query_index)).emplace_back(row);
-            }
-            for (uint32_t row = kNumRows; row < kBigK; ++row) {
-                (big_query_ground_truth_->at(query_index)).emplace_back(-1);
-            }
-        }
-
         // prepare the dir
         ASSERT_TRUE(fs::create_directory(kDir));
         ASSERT_TRUE(fs::create_directory(kIpIndexDir));
@@ -280,7 +279,6 @@ class DiskANNTest : public TestWithParam<std::string> {
     static GroundTruthPtr l2_ground_truth_;
     static GroundTruthPtr ip_range_search_ground_truth_;
     static GroundTruthPtr l2_range_search_ground_truth_;
-    static GroundTruthPtr big_query_ground_truth_;
     std::string metric_;
     std::unique_ptr<knowhere::VecIndex> diskann;
 };
@@ -291,9 +289,79 @@ GroundTruthPtr DiskANNTest::ip_ground_truth_ = nullptr;
 GroundTruthPtr DiskANNTest::l2_ground_truth_ = nullptr;
 GroundTruthPtr DiskANNTest::ip_range_search_ground_truth_ = nullptr;
 GroundTruthPtr DiskANNTest::l2_range_search_ground_truth_ = nullptr;
-GroundTruthPtr DiskANNTest::big_query_ground_truth_ = nullptr;
 
 INSTANTIATE_TEST_CASE_P(DiskANNParameters, DiskANNTest, Values(knowhere::metric::L2, knowhere::metric::IP));
+
+TEST_P(DiskANNTest, bitset_view_test) {
+    knowhere::Config cfg;
+    knowhere::DiskANNPrepareConfig::Set(cfg, prep_conf);
+    EXPECT_TRUE(diskann->Prepare(cfg));
+
+    // test for knn search
+    cfg.clear();
+    knowhere::DiskANNQueryConfig::Set(cfg, query_conf);
+    knowhere::DatasetPtr data_set_ptr = knowhere::GenDataset(kNumQueries, kDim, (void*)query_data_);
+    auto result = diskann->Query(data_set_ptr, cfg, nullptr);
+
+    // pick ids to mask
+    auto ids = knowhere::GetDatasetIDs(result);
+    std::unordered_set<int64_t> ids_to_mask;
+    for (int32_t q = 0; q < kNumQueries; ++q) {
+        for (int32_t k = 0; k < kK; k += 2) {
+            ids_to_mask.insert(ids[q * kK + k]);
+        }
+    }
+
+    // create bitset view
+    std::vector<uint8_t> knn_bitset_data;
+    knn_bitset_data.resize(kNumRows / 8);
+    for (auto& id_to_mask : ids_to_mask) {
+        set_bit(knn_bitset_data.data(), id_to_mask);
+    }
+    faiss::BitsetView knn_bitset(knn_bitset_data.data(), kNumRows);
+    auto ground_truth = GenGroundTruth(raw_data_, query_data_, metric_, knn_bitset);
+
+    // query with bitset view
+    result = diskann->Query(data_set_ptr, cfg, knn_bitset);
+    ids = knowhere::GetDatasetIDs(result);
+
+    auto recall = CheckTopKRecall(ground_truth, ids, kK);
+    EXPECT_GT(recall, 0.8);
+
+    // test for range search
+    cfg.clear();
+    auto range_search_conf = metric_ == knowhere::metric::IP ? ip_range_search_conf : l2_range_search_conf;
+    knowhere::DiskANNQueryByRangeConfig::Set(cfg, range_search_conf);
+    result = diskann->QueryByRange(data_set_ptr, cfg, nullptr);
+
+    // pick ids to mask
+    ids = knowhere::GetDatasetIDs(result);
+    auto lims = knowhere::GetDatasetLims(result);
+    ids_to_mask.clear();
+    for (int32_t q = 0; q < kNumQueries; ++q) {
+        for (int32_t i = 0; i < lims[q + 1] - lims[q]; i += 5) {
+            ids_to_mask.insert(ids[lims[q] + i]);
+        }
+    }
+
+    // create bitset view
+    std::vector<uint8_t> range_search_bitset_data;
+    range_search_bitset_data.resize(kNumRows / 8);
+    for (auto& id_to_mask : ids_to_mask) {
+        set_bit(range_search_bitset_data.data(), id_to_mask);
+    }
+    faiss::BitsetView range_search_bitset(range_search_bitset_data.data(), kNumRows);
+    ground_truth = GenRangeSearchGrounTruth(raw_data_, query_data_, metric_, range_search_bitset);
+
+    // query with bitset view
+    result = diskann->QueryByRange(data_set_ptr, cfg, range_search_bitset);
+
+    ids = knowhere::GetDatasetIDs(result);
+    lims = knowhere::GetDatasetLims(result);
+
+    recall = CheckRangeSearchRecall(ground_truth, ids, lims);
+    EXPECT_GT(recall, 0.5);
+}
 
 TEST_P(DiskANNTest, knn_search_test) {
     knowhere::Config cfg;
@@ -324,6 +392,18 @@ TEST_P(DiskANNTest, knn_search_test) {
 }
 
 TEST_P(DiskANNTest, knn_search_big_k_test) {
+    // gen new ground truth
+    auto ground_truth = std::make_shared<GroundTruth>();
+    ground_truth->resize(kNumQueries);
+    for (uint32_t query_index = 0; query_index < kNumQueries; ++query_index) {
+        for (uint32_t row = 0; row < kNumRows; ++row) {
+            (ground_truth->at(query_index)).emplace_back(row);
+        }
+        for (uint32_t row = kNumRows; row < kBigK; ++row) {
+            (ground_truth->at(query_index)).emplace_back(-1);
+        }
+    }
+
     knowhere::Config cfg;
 
     // test preparation
@@ -342,7 +422,7 @@ TEST_P(DiskANNTest, knn_search_big_k_test) {
 
     auto ids = knowhere::GetDatasetIDs(result);
 
-    auto recall = CheckTopKRecall(big_query_ground_truth_, ids, kBigK);
+    auto recall = CheckTopKRecall(ground_truth, ids, kBigK);
     EXPECT_GT(recall, 0.8);
 }
 
@@ -485,12 +565,9 @@ TEST_P(DiskANNTest, build_config_test) {
     std::string test_index_dir = test_dir + "/test_index";
     ASSERT_TRUE(fs::create_directory(test_dir));
 
-    // node size > diskann sector 
-    std::vector<std::tuple<uint32_t, uint32_t>> illegal_dim_and_R_set {
-        std::make_tuple(1024, 32),
-        std::make_tuple(400, 640),
-        std::make_tuple(960, 128)
-    };
+    // node size > diskann sector
+    std::vector<std::tuple<uint32_t, uint32_t>> illegal_dim_and_R_set{
+        std::make_tuple(1024, 32), std::make_tuple(400, 640), std::make_tuple(960, 128)};
     knowhere::Config illegal_cfg;
     knowhere::DiskANNBuildConfig illegal_build_config;
 
@@ -503,7 +580,7 @@ TEST_P(DiskANNTest, build_config_test) {
         std::vector<float> raw_data(data_dim * data_n);
         WriteRawDataToDisk(test_data_path, raw_data.data(), data_n, data_dim);
 
-        illegal_build_config = build_conf; // init
+        illegal_build_config = build_conf;  // init
         illegal_build_config.data_path = test_data_path;
         illegal_build_config.max_degree = std::get<1>(dim_and_R);
         illegal_cfg.clear();
@@ -521,12 +598,12 @@ TEST_P(DiskANNTest, build_config_test) {
         fs::remove(test_index_dir);
         fs::copy_file(kRawDataPath, test_data_path);
         std::ofstream writer(test_data_path, std::ios::binary);
-        writer.seekp(0, std::ios::end); 
+        writer.seekp(0, std::ios::end);
         writer << "end of the file";
         writer.flush();
         writer.close();
 
-        illegal_build_config = build_conf; // init
+        illegal_build_config = build_conf;  // init
         illegal_build_config.data_path = test_data_path;
         illegal_cfg.clear();
         knowhere::DiskANNBuildConfig::Set(illegal_cfg, illegal_build_config);

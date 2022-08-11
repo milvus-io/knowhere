@@ -398,7 +398,8 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
         try {
             res_count = TryDiskANNCallAndThrow<uint32_t>([&]() -> uint32_t {
                 return pq_flash_index_->range_search(query + (row * dim), radius, query_conf.min_k, query_conf.max_k,
-                                                     indices, distances, query_conf.beamwidth, bitset);
+                                                     indices, distances, query_conf.beamwidth,
+                                                     query_conf.search_list_and_k_ratio, bitset);
             });
         } catch (const KnowhereException& e) {
 #pragma omp critical
