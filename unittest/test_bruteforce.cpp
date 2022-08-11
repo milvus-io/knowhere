@@ -42,8 +42,6 @@ INSTANTIATE_TEST_CASE_P(
 
 TEST_P(BruteForceTest, float_basic) {
     Init_with_default();
-    std::vector<int64_t> labels(nq * k);
-    std::vector<float> distances(nq * k);
     std::vector<std::string> array = {"l2", "ip"};
     for (std::string& metric_type : array) {
         auto faiss_metric_type = knowhere::GetFaissMetricType(metric_type);
@@ -51,38 +49,50 @@ TEST_P(BruteForceTest, float_basic) {
             normalize(xb.data(), nb, dim);
             normalize(xq.data(), nq, dim);
         }
-        knowhere::BruteForceSearch(metric_type, xb.data(), xq.data(), dim, nb, nq, k, labels.data(), distances.data(),
-                                   nullptr);
+        auto base_dataset = knowhere::GenDataset(nb, dim, xb.data());
+        auto query_dataset = knowhere::GenDataset(nq, dim, xq.data());
+        auto config = knowhere::Config{
+            {knowhere::meta::METRIC_TYPE, metric_type},
+            {knowhere::meta::DIM, dim},
+            {knowhere::meta::TOPK, k},
+        };
+        auto result1 = knowhere::BruteForce::Search(base_dataset, query_dataset, config, nullptr);
+        auto labels1 = knowhere::GetDatasetIDs(result1);
         for (int i = 0; i < nq; i++) {
-            ASSERT_TRUE(labels[i * k] == i);
+            ASSERT_TRUE(labels1[i * k] == i);
         }
 
         // query with bitset
-        knowhere::BruteForceSearch(metric_type, xb.data(), xq.data(), dim, nb, nq, k, labels.data(), distances.data(),
-                                   *bitset);
+        auto result2 = knowhere::BruteForce::Search(base_dataset, query_dataset, config, *bitset);
+        auto labels2 = knowhere::GetDatasetIDs(result2);
         for (int i = 0; i < nq; i++) {
-            ASSERT_FALSE(labels[i * k] == i);
+            ASSERT_FALSE(labels2[i * k] == i);
         }
     }
 }
 
 TEST_P(BruteForceTest, binary_basic) {
     Init_with_default(true);
-    std::vector<int64_t> labels(nq * k);
-    std::vector<float> distances(nq * k);
     std::vector<std::string> array = {"hamming", "jaccard", "tanimoto", "superstructure", "substructure"};
     for (std::string& metric_type : array) {
-        knowhere::BruteForceSearch(metric_type, xb_bin.data(), xq_bin.data(), dim, nb, nq, k, labels.data(),
-                                   distances.data(), nullptr);
+        auto base_dataset = knowhere::GenDataset(nb, dim, xb_bin.data());
+        auto query_dataset = knowhere::GenDataset(nq, dim, xq_bin.data());
+        auto config = knowhere::Config{
+            {knowhere::meta::METRIC_TYPE, metric_type},
+            {knowhere::meta::DIM, dim},
+            {knowhere::meta::TOPK, k},
+        };
+        auto result1 = knowhere::BruteForce::Search(base_dataset, query_dataset, config, nullptr);
+        auto labels1 = knowhere::GetDatasetIDs(result1);
         for (int i = 0; i < nq; i++) {
-            ASSERT_TRUE(labels[i * k] == i);
+            ASSERT_TRUE(labels1[i * k] == i);
         }
 
         // query with bitset
-        knowhere::BruteForceSearch(metric_type, xb_bin.data(), xq_bin.data(), dim, nb, nq, k, labels.data(),
-                                   distances.data(), *bitset);
+        auto result2 = knowhere::BruteForce::Search(base_dataset, query_dataset, config, *bitset);
+        auto labels2 = knowhere::GetDatasetIDs(result2);
         for (int i = 0; i < nq; i++) {
-            ASSERT_FALSE(labels[i * k] == i);
+            ASSERT_FALSE(labels2[i * k] == i);
         }
     }
 }
@@ -97,16 +107,21 @@ TEST_P(BruteForceTest, float_range_search_l2) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        int64_t* labels = nullptr;
-        float* distances = nullptr;
-        size_t* lims = nullptr;
+
+        auto base_dataset = knowhere::GenDataset(nb, dim, xb.data());
+        auto query_dataset = knowhere::GenDataset(nq, dim, xq.data());
+        auto config = knowhere::Config{
+            {knowhere::meta::METRIC_TYPE, metric_type},
+            {knowhere::meta::DIM, dim},
+            {knowhere::meta::RADIUS, radius},
+        };
+
         RunFloatRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, metric_type,
                                            xb.data(), nb, xq.data(), nq, dim, radius, bitset);
 
-        knowhere::BruteForceRangeSearch(metric_type, xb.data(), xq.data(), dim, nb, nq, radius, labels, distances,
-                                        lims, bitset);
-        auto result = knowhere::GenResultDataset(labels, distances, lims);
-        CheckRangeSearchResult<CMin<float>>(result, nq, radius * radius, golden_labels.data(), golden_lims.data(), true);
+        auto result = knowhere::BruteForce::RangeSearch(base_dataset, query_dataset, config, bitset);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius * radius, golden_labels.data(), golden_lims.data(),
+                                            true);
     };
 
     auto old_blas_threshold = knowhere::KnowhereConfig::GetBlasThreshold();
@@ -131,15 +146,19 @@ TEST_P(BruteForceTest, float_range_search_ip) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        int64_t* labels = nullptr;
-        float* distances = nullptr;
-        size_t* lims = nullptr;
+
+        auto base_dataset = knowhere::GenDataset(nb, dim, xb.data());
+        auto query_dataset = knowhere::GenDataset(nq, dim, xq.data());
+        auto config = knowhere::Config{
+            {knowhere::meta::METRIC_TYPE, metric_type},
+            {knowhere::meta::DIM, dim},
+            {knowhere::meta::RADIUS, radius},
+        };
+
         RunFloatRangeSearchBF<CMax<float>>(golden_labels, golden_distances, golden_lims, metric_type,
                                            xb.data(), nb, xq.data(), nq, dim, radius, bitset);
 
-        knowhere::BruteForceRangeSearch(metric_type, xb.data(), xq.data(), dim, nb, nq, radius, labels, distances,
-                                        lims, bitset);
-        auto result = knowhere::GenResultDataset(labels, distances, lims);
+        auto result = knowhere::BruteForce::RangeSearch(base_dataset, query_dataset, config, bitset);
         CheckRangeSearchResult<CMax<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), true);
     };
 
@@ -164,15 +183,19 @@ TEST_P(BruteForceTest, binary_range_search_hamming) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        int64_t* labels = nullptr;
-        float* distances = nullptr;
-        size_t* lims = nullptr;
+
+        auto base_dataset = knowhere::GenDataset(nb, dim, xb_bin.data());
+        auto query_dataset = knowhere::GenDataset(nq, dim, xq_bin.data());
+        auto config = knowhere::Config{
+            {knowhere::meta::METRIC_TYPE, metric_type},
+            {knowhere::meta::DIM, dim},
+            {knowhere::meta::RADIUS, radius},
+        };
+
         RunBinaryRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, metric_type,
                                             xb_bin.data(), nb, xq_bin.data(), nq, dim, radius, bitset);
 
-        knowhere::BruteForceRangeSearch(metric_type, xb_bin.data(), xq_bin.data(), dim, nb, nq, radius, labels,
-                                        distances, lims, bitset);
-        auto result = knowhere::GenResultDataset(labels, distances, lims);
+        auto result = knowhere::BruteForce::RangeSearch(base_dataset, query_dataset, config, bitset);
         CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), true);
     };
 
@@ -189,15 +212,18 @@ TEST_P(BruteForceTest, binary_range_search_jaccard) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        int64_t* labels = nullptr;
-        float* distances = nullptr;
-        size_t* lims = nullptr;
+
+        auto base_dataset = knowhere::GenDataset(nb, dim, xb_bin.data());
+        auto query_dataset = knowhere::GenDataset(nq, dim, xq_bin.data());
+        auto config = knowhere::Config{
+            {knowhere::meta::METRIC_TYPE, metric_type},
+            {knowhere::meta::DIM, dim},
+            {knowhere::meta::RADIUS, radius},
+        };
         RunBinaryRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, knowhere::metric::JACCARD,
                                             xb_bin.data(), nb, xq_bin.data(), nq, dim, radius, bitset);
 
-        knowhere::BruteForceRangeSearch(metric_type, xb_bin.data(), xq_bin.data(), dim, nb, nq, radius, labels,
-                                        distances, lims, bitset);
-        auto result = knowhere::GenResultDataset(labels, distances, lims);
+        auto result = knowhere::BruteForce::RangeSearch(base_dataset, query_dataset, config, bitset);
         CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), true);
     };
 
@@ -214,15 +240,18 @@ TEST_P(BruteForceTest, binary_range_search_tanimoto) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        int64_t* labels = nullptr;
-        float* distances = nullptr;
-        size_t* lims = nullptr;
+
+        auto base_dataset = knowhere::GenDataset(nb, dim, xb_bin.data());
+        auto query_dataset = knowhere::GenDataset(nq, dim, xq_bin.data());
+        auto config = knowhere::Config{
+            {knowhere::meta::METRIC_TYPE, metric_type},
+            {knowhere::meta::DIM, dim},
+            {knowhere::meta::RADIUS, radius},
+        };
         RunBinaryRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, metric_type,
                                             xb_bin.data(), nb, xq_bin.data(), nq, dim, radius, bitset);
 
-        knowhere::BruteForceRangeSearch(metric_type, xb_bin.data(), xq_bin.data(), dim, nb, nq, radius, labels,
-                                        distances, lims, bitset);
-        auto result = knowhere::GenResultDataset(labels, distances, lims);
+        auto result = knowhere::BruteForce::RangeSearch(base_dataset, query_dataset, config, bitset);
         CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), true);
     };
 

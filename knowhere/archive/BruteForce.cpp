@@ -21,26 +21,31 @@
 #include "knowhere/archive/BruteForce.h"
 #include "knowhere/common/Exception.h"
 #include "knowhere/common/Log.h"
+#include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 
 namespace knowhere {
 
-// copy from faiss/IndexBinaryFlat.cpp::IndexBinaryFlat::search()
-// disable lint to make further migration easier
-void
-BruteForceSearch(
-    const knowhere::MetricType& metric_type,
-    const void* xb,
-    const void* xq,
-    const int64_t dim,
-    const int64_t nb,
-    const int64_t nq,
-    const int64_t topk,
-    int64_t* labels,
-    float* distances,
-    const faiss::BitsetView bitset) {
+/** knowhere wrapper API to call faiss brute force search for all metric types
+ */
+DatasetPtr
+BruteForce::Search(const DatasetPtr base_dataset,
+                   const DatasetPtr query_dataset,
+                   const Config& config,
+                   const faiss::BitsetView bitset) {
+    auto xb = GetDatasetTensor(base_dataset);
+    auto nb = GetDatasetRows(base_dataset);
+    auto dim = GetDatasetDim(base_dataset);
+
+    auto xq = GetDatasetTensor(query_dataset);
+    auto nq = GetDatasetRows(query_dataset);
+
+    auto metric_type = GetMetaMetricType(config);
+    auto topk = GetMetaTopk(config);
+
+    auto labels = new int64_t[nq * topk];
+    auto distances = new float[nq * topk];
 
     auto faiss_metric_type = GetFaissMetricType(metric_type);
-
     switch (faiss_metric_type) {
         case faiss::METRIC_L2: {
             faiss::float_maxheap_array_t buf{(size_t)nq, (size_t)topk, labels, distances};
@@ -85,25 +90,28 @@ BruteForceSearch(
         default:
             KNOWHERE_THROW_MSG("BruteForce search not support metric type: " + metric_type);
     }
+    return GenResultDataset(labels, distances);
 }
 
-void
-BruteForceRangeSearch(
-    const knowhere::MetricType& metric_type,
-    const void* xb,
-    const void* xq,
-    const int64_t dim,
-    const int64_t nb,
-    const int64_t nq,
-    const float radius,
-    int64_t*& labels,
-    float*& distances,
-    size_t*& lims,
-    const faiss::BitsetView bitset) {
+/** knowhere wrapper API to call faiss brute force range search for all metric types
+ */
+DatasetPtr
+BruteForce::RangeSearch(const DatasetPtr base_dataset,
+                        const DatasetPtr query_dataset,
+                        const Config& config,
+                        const faiss::BitsetView bitset) {
+    auto xb = GetDatasetTensor(base_dataset);
+    auto nb = GetDatasetRows(base_dataset);
+    auto dim = GetDatasetDim(base_dataset);
 
-    auto faiss_metric_type = GetFaissMetricType(metric_type);
+    auto xq = GetDatasetTensor(query_dataset);
+    auto nq = GetDatasetRows(query_dataset);
+
+    auto metric_type = GetMetaMetricType(config);
+    auto radius = GetMetaRadius(config);
 
     faiss::RangeSearchResult res(nq);
+    auto faiss_metric_type = GetFaissMetricType(metric_type);
     switch (faiss_metric_type) {
         case faiss::METRIC_L2:
             faiss::range_search_L2sqr((const float*)xq, (const float*)xb, dim, nq, nb, radius * radius, &res, bitset);
@@ -127,15 +135,15 @@ BruteForceRangeSearch(
             KNOWHERE_THROW_MSG("BruteForce range search not support metric type: " + metric_type);
     }
 
-    labels = res.labels;
-    distances = res.distances;
-    lims = res.lims;
+    auto result = GenResultDataset(res.labels, res.distances, res.lims);
 
-    LOG_KNOWHERE_DEBUG_ << "Range search radius: " << radius << ", result num: " << lims[nq];
+    LOG_KNOWHERE_DEBUG_ << "Range search radius: " << radius << ", result num: " << res.lims[nq];
 
-    res.distances = nullptr;
     res.labels = nullptr;
+    res.distances = nullptr;
     res.lims = nullptr;
+
+    return result;
 }
 
 }  // namespace knowhere
