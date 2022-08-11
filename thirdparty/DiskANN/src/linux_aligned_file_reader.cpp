@@ -9,13 +9,13 @@
 #include <sstream>
 #include "tsl/robin_map.h"
 #include "utils.h"
-#define MAX_EVENTS 1024
 
 namespace {
   typedef struct io_event io_event_t;
   typedef struct iocb     iocb_t;
 
-  void execute_io(io_context_t ctx, int fd, std::vector<AlignedRead> &read_reqs,
+  void execute_io(io_context_t ctx, uint64_t maxnr, int fd,
+                  const std::vector<AlignedRead> &read_reqs,
                   uint64_t n_retries = 0) {
 #ifdef DEBUG
     for (auto &req : read_reqs) {
@@ -27,19 +27,19 @@ namespace {
     }
 #endif
 
-    // break-up requests into chunks of size MAX_EVENTS each
-    uint64_t n_iters = ROUND_UP(read_reqs.size(), MAX_EVENTS) / MAX_EVENTS;
+    // break-up requests into chunks of size maxnr each
+    uint64_t n_iters = ROUND_UP(read_reqs.size(), maxnr) / maxnr;
     for (uint64_t iter = 0; iter < n_iters; iter++) {
       uint64_t n_ops =
-          std::min((uint64_t) read_reqs.size() - (iter * MAX_EVENTS),
-                   (uint64_t) MAX_EVENTS);
+          std::min((uint64_t) read_reqs.size() - (iter * maxnr),
+                   (uint64_t) maxnr);
       std::vector<iocb_t *>    cbs(n_ops, nullptr);
       std::vector<io_event_t>  evts(n_ops);
       std::vector<struct iocb> cb(n_ops);
       for (uint64_t j = 0; j < n_ops; j++) {
-        io_prep_pread(cb.data() + j, fd, read_reqs[j + iter * MAX_EVENTS].buf,
-                      read_reqs[j + iter * MAX_EVENTS].len,
-                      read_reqs[j + iter * MAX_EVENTS].offset);
+        io_prep_pread(cb.data() + j, fd, read_reqs[j + iter * maxnr].buf,
+                      read_reqs[j + iter * maxnr].len,
+                      read_reqs[j + iter * maxnr].offset);
       }
 
       // initialize `cbs` using `cb` array
@@ -90,7 +90,8 @@ namespace {
   }
 }  // namespace
 
-LinuxAlignedFileReader::LinuxAlignedFileReader() {
+LinuxAlignedFileReader::LinuxAlignedFileReader(uint64_t maxnr) {
+  this->maxnr = maxnr;
   this->file_desc = -1;
 }
 
@@ -132,9 +133,8 @@ void LinuxAlignedFileReader::register_thread() {
     return;
   }
   io_context_t ctx = 0;
-  int          ret = io_setup(MAX_EVENTS, &ctx);
+  int          ret = io_setup(this->maxnr, &ctx);
   if (ret != 0) {
-    lk.unlock();
     assert(-ret != EAGAIN);
     assert(-ret != ENOMEM);
     std::cerr << "io_setup() failed; returned " << ret << ", errno=" << -ret
@@ -143,7 +143,6 @@ void LinuxAlignedFileReader::register_thread() {
     LOG(DEBUG) << "allocating ctx: " << ctx << " to thread-id:" << my_id;
     ctx_map[my_id] = ctx;
   }
-  lk.unlock();
 }
 
 void LinuxAlignedFileReader::deregister_thread() {
@@ -158,7 +157,6 @@ void LinuxAlignedFileReader::deregister_thread() {
   lk.lock();
   ctx_map.erase(my_id);
   std::cerr << "returned ctx from thread-id:" << my_id << std::endl;
-  lk.unlock();
 }
 
 void LinuxAlignedFileReader::deregister_all_threads() {
@@ -205,5 +203,5 @@ void LinuxAlignedFileReader::read(std::vector<AlignedRead> &read_reqs,
   //	std::cout << "thread: " << std::this_thread::get_id() << ", crtx: " <<
   // ctx
   //<< "\n";
-  execute_io(ctx, this->file_desc, read_reqs);
+  execute_io(ctx, this->maxnr, this->file_desc, read_reqs);
 }
