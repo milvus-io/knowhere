@@ -469,7 +469,7 @@ namespace diskann {
         save_delete_list(delete_list_file);
       }
     } else {
-        diskann::cout<<"Save index in a single file currently not supported. Not saving the index." << std::endl;
+        LOG(WARNING) << "Save index in a single file currently not supported. Not saving the index.";
     }
 
     reposition_frozen_point_to_end();
@@ -1713,8 +1713,6 @@ namespace diskann {
                              Parameters &             parameters,
                              const std::vector<TagT> &tags) {
     if (!file_exists(filename)) {
-      // diskann::cerr << "Data file " << filename
-                    // << " does not exist!!! Exiting...." << std::endl;
       std::stringstream stream;
       stream << "Data file " << filename << " does not exist." << std::endl;
       LOG(ERROR) << stream.str();
@@ -1724,7 +1722,7 @@ namespace diskann {
 
     size_t file_num_points, file_dim;
     if (filename == nullptr) {
-      diskann::cout << "Starting with an empty index." << std::endl;
+      LOG(WARNING) << "Starting with an empty index.";
       _nd = 0;
     } else {
       diskann::get_bin_metadata(filename, file_num_points, file_dim);
@@ -1813,8 +1811,6 @@ namespace diskann {
                              const size_t num_points_to_load,
                              Parameters &parameters, const char *tag_filename) {
     if (!file_exists(filename)) {
-      // diskann::cerr << "Data file provided " << filename << " does not exist."
-      //               << std::endl;
       std::stringstream stream;
       stream << "Data file provided " << filename << " does not exist."
              << std::endl;
@@ -1854,8 +1850,8 @@ namespace diskann {
       copy_aligned_data_from_file<T>(std::string(filename), _data,
                                      file_num_points, file_dim, _aligned_dim);
 
-      diskann::cout << "Loading only first " << num_points_to_load
-                    << " from file.. " << std::endl;
+      LOG(DEBUG) << "Loading only first " << num_points_to_load
+                    << " from file.. ";
       _nd = num_points_to_load;
       if (_enable_tags) {
         if (tag_filename == nullptr) {
@@ -1865,8 +1861,8 @@ namespace diskann {
           }
         } else {
           if (file_exists(tag_filename)) {
-            diskann::cout << "Loading tags from " << tag_filename
-                          << " for vamana index build" << std::endl;
+            LOG(DEBUG) << "Loading tags from " << tag_filename
+                          << " for vamana index build";
             TagT * tag_data = nullptr;
             size_t npts, ndim;
             diskann::load_bin(tag_filename, tag_data, npts, ndim);
@@ -1875,7 +1871,7 @@ namespace diskann {
               sstream << "Loaded " << npts
                       << " tags instead of expected number: "
                       << num_points_to_load;
-              diskann::cerr << sstream.str() << std::endl;
+              LOG(ERROR) << sstream.str();
               throw diskann::ANNException(sstream.str(), -1, __FUNCSIG__,
                                           __FILE__, __LINE__);
             }
@@ -1885,8 +1881,8 @@ namespace diskann {
             }
             delete[] tag_data;
           } else {
-            diskann::cerr << "Tag file " << tag_filename
-                          << " does not exist. Exiting..." << std::endl;
+            LOG(ERROR) << "Tag file " << tag_filename
+                          << " does not exist. Exiting...";
             throw diskann::ANNException(
                 std::string("Tag file") + tag_filename + " does not exist", -1,
                 __FUNCSIG__, __FILE__, __LINE__);
@@ -2001,9 +1997,8 @@ namespace diskann {
 
     if (L > scratch.search_l) {
       scratch.resize_for_query(L);
-      diskann::cout << "Expanding query scratch_space. Was created with Lsize: "
-                    << scratch.search_l << " but search L is: " << L
-                    << std::endl;
+      LOG(DEBUG) << "Expanding query scratch_space. Was created with Lsize: "
+                    << scratch.search_l << " but search L is: " << L;
     }
     _u32 * indices = scratch.indices;             // new unsigned[L];
     float *dist_interim = scratch.interim_dists;  // new float[L];
@@ -2123,9 +2118,8 @@ namespace diskann {
   int Index<T, TagT>::eager_delete(const TagT tag, const Parameters &parameters,
                                    int delete_mode) {
     if (_lazy_done && (!_data_compacted)) {
-      diskann::cout << "Lazy delete requests issued but data not consolidated, "
-                       "cannot proceed with eager deletes."
-                    << std::endl;
+      LOG(ERROR) << "Lazy delete requests issued but data not consolidated, "
+                       "cannot proceed with eager deletes.";
       return -1;
     }
 
