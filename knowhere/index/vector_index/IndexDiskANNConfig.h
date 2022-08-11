@@ -106,6 +106,9 @@ struct DiskANNQueryByRangeConfig {
     uint64_t max_k;
     // Beamwidth used for TopK search.
     uint32_t beamwidth;
+    // DiskANN uses TopK search to simulate range search, this is the ratio of search list size and k. With larger
+    // ratio, the accuracy will get higher but throughput will get affected.
+    float search_list_and_k_ratio = 2;
 
     static DiskANNQueryByRangeConfig
     Get(const Config& config);

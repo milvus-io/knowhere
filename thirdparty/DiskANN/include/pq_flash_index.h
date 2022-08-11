@@ -105,6 +105,7 @@ namespace diskann {
                                         std::vector<_s64> & indices,
                                         std::vector<float> &distances,
                                         const _u64          beam_width,
+                                        const float         l_k_ratio,
                                         faiss::BitsetView   bitset_view = nullptr,
                                         QueryStats *        stats = nullptr);
 
