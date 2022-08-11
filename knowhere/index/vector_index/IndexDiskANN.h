@@ -101,6 +101,7 @@ class IndexDiskANN : public VecIndex {
     std::unique_ptr<diskann::PQFlashIndex<T>> pq_flash_index_;
 
     bool is_prepared_ = false;
+    int32_t num_threads_  = 0;
     std::mutex preparation_lock_;
 };
 
