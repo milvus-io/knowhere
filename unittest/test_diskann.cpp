@@ -57,7 +57,7 @@ std::string kRawDataPath = kDir + "/raw_data";
 std::string kIpIndexDir = kDir + "/ip_index";
 std::string kL2IndexDir = kDir + "/l2_index";
 
-const knowhere::DiskANNBuildConfig build_conf{kRawDataPath, 100, 150, 0.2, 0.2, 4, 0};
+const knowhere::DiskANNBuildConfig build_conf{kRawDataPath, 50, 90, 0.2, 0.2, 4, 0};
 const knowhere::DiskANNPrepareConfig prep_conf{4, 0, false, false};
 const knowhere::DiskANNQueryConfig query_conf{kK, kK * 10, 3};
 const knowhere::DiskANNQueryByRangeConfig l2_range_search_conf{kL2Radius, 10, 10000, 3};
@@ -241,7 +241,7 @@ class DiskANNTest : public TestWithParam<std::string> {
         ASSERT_TRUE(fs::create_directory(kDir));
         ASSERT_TRUE(fs::create_directory(kIpIndexDir));
         ASSERT_TRUE(fs::create_directory(kL2IndexDir));
-
+        
         WriteRawDataToDisk(kRawDataPath, raw_data_, kNumRows, kDim);
 
         knowhere::Config cfg;
@@ -379,6 +379,58 @@ TEST_P(DiskANNTest, knn_search_test) {
     cfg.clear();
     knowhere::DiskANNQueryConfig::Set(cfg, query_conf);
     auto result = diskann->Query(data_set_ptr, cfg, nullptr);
+
+    auto ids = knowhere::GetDatasetIDs(result);
+
+    if (metric_ == knowhere::metric::IP) {
+        auto ip_recall = CheckTopKRecall(ip_ground_truth_, ids, kK);
+        EXPECT_GT(ip_recall, 0.8);
+    } else {
+        auto l2_recall = CheckTopKRecall(l2_ground_truth_, ids, kK);
+        EXPECT_GT(l2_recall, 0.8);
+    }
+}
+
+TEST_P(DiskANNTest, merged_vamana_knn_search_test) {
+    std::string kMergedL2IndexDir = kDir + "/merged_l2_index";
+    std::string kMergedIpIndexDir = kDir + "/merged_ip_index";
+
+    float merged_build_ram_limit = static_cast<float>(kNumRows * kDim) * sizeof(float) / static_cast<float>(1024 * 1024 * 1024)
+                                    + std::numeric_limits<float>::epsilon();
+    knowhere::DiskANNBuildConfig merged_vamana_build_conf{kRawDataPath, 50, 90, 0.2, merged_build_ram_limit, 4, 0};
+
+    knowhere::Config merged_cfg;
+    knowhere::DiskANNBuildConfig::Set(merged_cfg, merged_vamana_build_conf);
+
+    if (metric_ == knowhere::metric::IP) {
+        ASSERT_TRUE(fs::create_directory(kMergedIpIndexDir));
+        auto merged_diskann_ip = std::make_unique<knowhere::IndexDiskANN<float>>(
+            kMergedIpIndexDir + "/diskann", knowhere::metric::IP, std::make_unique<knowhere::LocalFileManager>());
+        merged_diskann_ip->BuildAll(nullptr, merged_cfg);
+    } else {
+        ASSERT_TRUE(fs::create_directory(kMergedL2IndexDir));
+        auto merged_diskann_l2 = std::make_unique<knowhere::IndexDiskANN<float>>(
+            kMergedL2IndexDir + "/diskann", knowhere::metric::L2, std::make_unique<knowhere::LocalFileManager>());
+        merged_diskann_l2->BuildAll(nullptr, merged_cfg);
+    }
+    std::string index_dir = metric_ == knowhere::metric::L2 ? kMergedL2IndexDir : kMergedIpIndexDir;
+    std::unique_ptr<knowhere::VecIndex> merged_diskann = std::make_unique<knowhere::IndexDiskANN<float>>(index_dir + "/diskann", metric_,
+                                                                                                        std::make_unique<knowhere::LocalFileManager>());
+    knowhere::Config cfg;
+    knowhere::DiskANNQueryConfig::Set(cfg, query_conf);
+    knowhere::DatasetPtr data_set_ptr = knowhere::GenDataset(kNumQueries, kDim, (void*)query_data_);
+    // test query before preparation
+    EXPECT_THROW(merged_diskann->Query(data_set_ptr, cfg, nullptr), knowhere::KnowhereException);
+
+    // test preparation
+    cfg.clear();
+    knowhere::DiskANNPrepareConfig::Set(cfg, prep_conf);
+    EXPECT_TRUE(merged_diskann->Prepare(cfg));
+
+    // test query
+    cfg.clear();
+    knowhere::DiskANNQueryConfig::Set(cfg, query_conf);
+    auto result = merged_diskann->Query(data_set_ptr, cfg, nullptr);
 
     auto ids = knowhere::GetDatasetIDs(result);
 
