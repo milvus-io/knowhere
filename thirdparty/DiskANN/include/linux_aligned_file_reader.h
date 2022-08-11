@@ -11,9 +11,10 @@ class LinuxAlignedFileReader : public AlignedFileReader {
   uint64_t     file_sz;
   FileHandle   file_desc;
   io_context_t bad_ctx = (io_context_t) -1;
+  uint64_t     maxnr;
 
  public:
-  LinuxAlignedFileReader();
+  LinuxAlignedFileReader(uint64_t maxnr);
   ~LinuxAlignedFileReader();
 
   IOContext &get_ctx();
