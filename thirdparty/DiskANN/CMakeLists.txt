@@ -236,6 +236,3 @@ endif()
 add_definitions( -DAUTO_INITIALIZE_EASYLOGGINGPP )
 
 add_subdirectory(src)
-# Don't need executable files
-# add_subdirectory(tests)
-# add_subdirectory(tests/utils)
