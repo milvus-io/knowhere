@@ -134,6 +134,8 @@ append_flags( CMAKE_CXX_FLAGS
 # option "-rdynamic" is to print out detailed backtrace info for debug-ease
 if ( LINUX )
     append_flags( CMAKE_CXX_FLAGS FLAGS "-Werror" "-rdynamic" )
+    # To debug memory issues, comment out this line
+    # append_flags( CMAKE_CXX_FLAGS FLAGS "-g" "-fsanitize=address" "-fno-omit-frame-pointer" "-fno-stack-protector" "-fno-var-tracking" "-lasan")
 elseif ( MSYS )
     append_flags( CMAKE_CXX_FLAGS FLAGS "-Werror" )
 endif ()
