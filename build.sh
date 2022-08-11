@@ -24,8 +24,9 @@ SUPPORT_PROFILING="OFF"
 RUN_CPPLINT="OFF"
 CUDA_COMPILER=/usr/local/cuda/bin/nvcc
 SUPPORT_GPU="OFF" #defaults to CPU version
+ENABLE_SANITIZER="OFF"
 
-while getopts "p:t:cglruzh" arg; do
+while getopts "p:t:cglrsuzh" arg; do
     case $arg in
         c)
             BUILD_COVERAGE="ON" ;;
@@ -37,6 +38,8 @@ while getopts "p:t:cglruzh" arg; do
             INSTALL_PREFIX=$OPTARG ;;
         r)
             MAKE_CLEAN="ON" ;;
+        s)
+            ENABLE_SANITIZER="ON";;
         t)
             BUILD_TYPE=$OPTARG ;;
         u)
@@ -53,13 +56,14 @@ parameter:
 -l: run cpplint, clang-format and clang-tidy(default: OFF)
 -p: install prefix(default: $(pwd)/knowhere)
 -r: remove previous build directory(default: OFF)
+-s: run sanitizer check (default: OFF)
 -t: build type(default: Debug)
 -u: building unit test options(default: OFF)
 -z: support CPU profiling(default: OFF)
 -h: help
 
 usage:
-./build.sh -t \${BUILD_TYPE} [-c] [-g] [-l] [-r] [-u] [-z]
+./build.sh -t \${BUILD_TYPE} [-c] [-g] [-l] [-r] [-s] [-u] [-z]
             "
             exit 0 ;;
         ?)
@@ -90,6 +94,7 @@ CMAKE_CMD="cmake -DBUILD_UNIT_TEST=${BUILD_UNITTEST} \
 -DCMAKE_CUDA_COMPILER=${CUDA_COMPILER} \
 -DENABLE_PROFILING=${SUPPORT_PROFILING} \
 -DKNOWHERE_GPU_VERSION=${SUPPORT_GPU} \
+-DENABLE_SANITIZER=${ENABLE_SANITIZER} \
 ../"
 
 echo ${CMAKE_CMD}
