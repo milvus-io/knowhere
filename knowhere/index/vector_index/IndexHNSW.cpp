@@ -15,6 +15,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <omp.h>
 
 #include "common/Exception.h"
 #include "common/Log.h"
@@ -104,6 +105,8 @@ IndexHNSW::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA(dataset_ptr)
 
     index_->addPoint(p_data, 0);
+if (CheckKeyInConfig(config, meta::BUILD_THREAD_NUM))
+    omp_set_num_threads(GetMetaBuildThreadNum(config));
 #pragma omp parallel for
     for (int i = 1; i < rows; ++i) {
         index_->addPoint((reinterpret_cast<const float*>(p_data) + Dim() * i), i);
@@ -169,6 +172,8 @@ IndexHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fais
     std::chrono::high_resolution_clock::time_point query_start, query_end;
     query_start = std::chrono::high_resolution_clock::now();
 
+if (CheckKeyInConfig(config, meta::QUERY_THREAD_NUM))
+    omp_set_num_threads(GetMetaQueryThreadNum(config));
 #pragma omp parallel for
     for (unsigned int i = 0; i < rows; ++i) {
         auto single_query = (float*)p_data + i * dim;
