@@ -158,6 +158,7 @@ TryDiskANNCallAndThrow(std::function<T()>&& diskann_call) {
 template <typename T>
 void
 IndexDiskANN<T>::AddWithoutIds(const DatasetPtr& data_set, const Config& config) {
+    std::lock_guard<std::mutex> lock(preparation_lock_);
     auto build_conf = DiskANNBuildConfig::Get(config);
 
     CheckBuildParams<T>(build_conf);
@@ -176,6 +177,8 @@ IndexDiskANN<T>::AddWithoutIds(const DatasetPtr& data_set, const Config& config)
     auto build_successful = TryDiskANNCallAndThrow<int>([&]() -> int {
         return diskann::build_disk_index<T>(data_path.c_str(), index_prefix_.c_str(), stream.str().c_str(), metric_);
     });
+
+    is_prepared_ = false;
 
     if (build_successful != 0) {
         KNOWHERE_THROW_MSG("Failed to build DiskANN.");
