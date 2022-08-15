@@ -76,7 +76,7 @@ pipeline {
                       sh "ls -lah"
                       sh "nvidia-smi"
                       sh "pip3 install ${knowhere_wheel} \
-                          && pip3 install -r requirements.txt --timeout 30 --retries 6  &&  pytest -v -m gpu --forked"
+                          && pip3 install -r requirements.txt --timeout 30 --retries 6  &&  pytest -v -m pytest -v -m 'L0 and gpu' --forked"
                     }
                 }
             }
