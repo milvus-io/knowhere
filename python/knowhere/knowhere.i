@@ -66,6 +66,7 @@ import_array();
 %include <std_pair.i>
 %include <std_map.i>
 %include <std_shared_ptr.i>
+%include <exception.i>
 
 %shared_ptr(knowhere::Dataset)
 %template(DatasetPtr) std::shared_ptr<Dataset>;
@@ -103,6 +104,17 @@ import_array();
 #endif
 %include <index/vector_offset_index/IndexIVF_NM.h>
 
+// Support for Exception
+%exception {
+    try {
+        $action
+    } catch (knowhere::KnowhereException &e) {
+        std::string msg = std::string("KnowhereException: ") + std::string(e.what());
+        SWIG_exception(SWIG_RuntimeError, msg.c_str());
+    } catch (...) {
+        SWIG_exception(SWIG_RuntimeError, "Unknown Error");
+    }
+}
 
 // Support for DiskANN
 %template(IndexDiskANNf) knowhere::IndexDiskANN<float>;
