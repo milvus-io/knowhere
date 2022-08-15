@@ -195,7 +195,7 @@ macro(build_openblas)
 
     externalproject_add(openblas_ep
             URL             ${OPENBLAS_SOURCE_URL}
-            URL_MD5         "4727a1333a380b67c8d7c7787a3d9c9a"
+            URL_MD5         "28cc19a6acbf636f5aab5f10b9a0dfe1"
             CMAKE_ARGS      ${OPENBLAS_CMAKE_ARGS}
             BUILD_COMMAND   ${MAKE} ${MAKE_BUILD_ARGS}
             PREFIX          ${CMAKE_BINARY_DIR}/3rdparty_download/openblas-subbuild
