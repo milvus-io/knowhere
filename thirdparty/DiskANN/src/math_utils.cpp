@@ -176,19 +176,19 @@ namespace math_utils {
           pts_norms_blk, pivs_norms_squared, closest_centers, distance_matrix,
           k);
 
+      int64_t blk_st = cur_blk * PAR_BLOCK_SIZE;
+      int64_t blk_ed = std::min((_s64)num_points, (_s64)((cur_blk + 1) * PAR_BLOCK_SIZE));
 #pragma omp parallel for schedule(static, 1)
-      for (int64_t j = cur_blk * PAR_BLOCK_SIZE;
-           j <
-           std::min((_s64) num_points, (_s64)((cur_blk + 1) * PAR_BLOCK_SIZE));
-           j++) {
+      for (int64_t j = blk_st; j < blk_ed; j++) {
         for (size_t l = 0; l < k; l++) {
           size_t this_center_id =
               closest_centers[(j - cur_blk * PAR_BLOCK_SIZE) * k + l];
           closest_centers_ivf[j * k + l] = (uint32_t) this_center_id;
-          if (inverted_index != NULL) {
-#pragma omp critical
-            inverted_index[this_center_id].push_back(j);
-          }
+        }
+      }
+      if (inverted_index != NULL) {
+        for (int64_t j = 0; j < num_pts_blk * k; ++j) {
+          inverted_index[closest_centers[j]].push_back(blk_st + j / k);
         }
       }
     }
