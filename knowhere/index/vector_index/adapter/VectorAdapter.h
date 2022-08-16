@@ -54,6 +54,12 @@ DEFINE_DATASET_SETTER(SetDatasetInputIDs, meta::INPUT_IDS, const int64_t*);
 DEFINE_DATASET_GETTER(GetDatasetOutputTensor, meta::OUTPUT_TENSOR, const void*);
 DEFINE_DATASET_SETTER(SetDatasetOutputTensor, meta::OUTPUT_TENSOR, const void*);
 
+DEFINE_DATASET_GETTER(GetDatasetJsonInfo, meta::JSON_INFO, const std::string);
+DEFINE_DATASET_SETTER(SetDatasetJsonInfo, meta::JSON_INFO, const std::string);
+
+DEFINE_DATASET_GETTER(GetDatasetJsonIdSet, meta::JSON_ID_SET, const std::string);
+DEFINE_DATASET_SETTER(SetDatasetJsonIdSet, meta::JSON_ID_SET, const std::string);
+
 ///////////////////////////////////////////////////////////////////////////////
 
 #define GET_DATA_WITH_IDS(ds_ptr)                     \
@@ -83,5 +89,14 @@ GenResultDataset(const int64_t* ids, const float* distance);
 
 extern DatasetPtr
 GenResultDataset(const int64_t* ids, const float* distance, const size_t* lims);
+
+extern DatasetPtr
+GenResultDataset(const std::string& json_info, const std::string& json_id_set);
+
+extern DatasetPtr
+GenResultDataset(const int64_t* ids,
+                 const float* distance,
+                 const std::string& json_info,
+                 const std::string& json_id_set);
 
 }  // namespace knowhere

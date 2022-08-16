@@ -19,6 +19,7 @@
 #endif
 
 #include "knowhere/common/Exception.h"
+#include "knowhere/feder/IVFFlat.h"
 #include "knowhere/index/IndexType.h"
 #include "knowhere/index/VecIndexFactory.h"
 #include "knowhere/index/vector_index/ConfAdapterMgr.h"
@@ -205,4 +206,50 @@ TEST_P(IVFNMTest, ivfnm_range_search_ip) {
         test_range_search_ip(radius, nullptr);
         test_range_search_ip(radius, *bitset);
     }
+}
+
+TEST_P(IVFNMTest, ivfnm_get_meta) {
+    assert(!xb.empty());
+
+    index_->BuildAll(base_dataset, conf_);
+    LoadRawData(index_, base_dataset, conf_);
+
+    auto qd = knowhere::GenDataset(1, dim, xq.data());
+    index_->Query(qd, conf_, nullptr);
+
+    auto result = index_->GetIndexMeta(conf_);
+
+    auto json_info = knowhere::GetDatasetJsonInfo(result);
+    auto json_id_set = knowhere::GetDatasetJsonIdSet(result);
+    //std::cout << json_info << std::endl;
+    std::cout << "json_info size = " << json_info.size() << std::endl;
+    std::cout << "json_id_set size = " << json_id_set.size() << std::endl;
+
+    // check IVFFlatMeta
+    knowhere::feder::ivfflat::IVFFlatMeta meta;
+    knowhere::Config j1 = nlohmann::json::parse(json_info);
+    ASSERT_NO_THROW(nlohmann::from_json(j1, meta));
+
+    ASSERT_EQ(meta.GetNlist(), knowhere::GetIndexParamNlist(conf_));
+    ASSERT_EQ(meta.GetDim(), knowhere::GetMetaDim(conf_));
+    ASSERT_EQ(meta.GetNtotal(), nb);
+
+    // sum of all cluster nodes should be equal to nb
+    auto& clusters = meta.GetClusters();
+    std::unordered_set<int64_t> all_id_set;
+    ASSERT_EQ(clusters.size(), knowhere::GetIndexParamNlist(conf_));
+    for (auto& cluster : clusters) {
+        for (auto id : cluster.node_ids_) {
+            ASSERT_GE(id, 0);
+            ASSERT_LT(id, nb);
+            all_id_set.insert(id);
+        }
+    }
+    ASSERT_EQ(all_id_set.size(), nb);
+
+    // check IDSet
+    std::unordered_set<int64_t> id_set;
+    knowhere::Config j2 = nlohmann::json::parse(json_id_set);
+    ASSERT_NO_THROW(nlohmann::from_json(j2, id_set));
+    std::cout << "id_set num = " << id_set.size() << std::endl;
 }

@@ -57,6 +57,9 @@ class IVF_NM : public VecIndex, public OffsetBaseIndex {
     DatasetPtr
     QueryByRange(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
 
+    DatasetPtr
+    GetIndexMeta(const Config&) override;
+
     int64_t
     Count() override;
 

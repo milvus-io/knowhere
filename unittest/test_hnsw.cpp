@@ -13,6 +13,7 @@
 #include <random>
 
 #include "knowhere/common/Config.h"
+#include "knowhere/feder/HNSW.h"
 #include "knowhere/index/vector_index/ConfAdapterMgr.h"
 #include "knowhere/index/vector_index/IndexHNSW.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
@@ -192,5 +193,99 @@ TEST_P(HNSWTest, hnsw_range_search_ip) {
         knowhere::SetMetaRadius(conf_, radius);
         test_range_search_ip(radius, nullptr);
         test_range_search_ip(radius, *bitset);
+    }
+}
+
+TEST_P(HNSWTest, HNSW_get_meta) {
+    assert(!xb.empty());
+
+    index_->BuildAll(base_dataset, conf_);
+
+    knowhere::SetIndexParamOverviewLevels(conf_, 2);
+    auto result = index_->GetIndexMeta(conf_);
+
+    auto json_info = knowhere::GetDatasetJsonInfo(result);
+    auto json_id_set = knowhere::GetDatasetJsonIdSet(result);
+    //std::cout << json_info << std::endl;
+    std::cout << "json_info size = " << json_info.size() << std::endl;
+    std::cout << "json_id_set size = " << json_id_set.size() << std::endl;
+
+    // check HNSWMeta
+    knowhere::feder::hnsw::HNSWMeta meta;
+    knowhere::Config j1 = nlohmann::json::parse(json_info);
+    ASSERT_NO_THROW(nlohmann::from_json(j1, meta));
+
+    ASSERT_EQ(meta.GetEfConstruction(), knowhere::GetIndexParamEfConstruction(conf_));
+    ASSERT_EQ(meta.GetM(), knowhere::GetIndexParamHNSWM(conf_));
+    ASSERT_EQ(meta.GetNumElem(), nb);
+
+    auto& hier_graph = meta.GetOverviewHierGraph();
+    for (auto& graph : hier_graph) {
+        auto& nodes = graph.GetNodes();
+        for (auto& node : nodes) {
+            ASSERT_GE(node.id_, 0);
+            ASSERT_LT(node.id_, nb);
+            for (auto n : node.neighbors_) {
+                ASSERT_GE(n, 0);
+                ASSERT_LT(n, nb);
+            }
+        }
+    }
+
+    // check IDSet
+    std::unordered_set<int64_t> id_set;
+    knowhere::Config j2 = nlohmann::json::parse(json_id_set);
+    ASSERT_NO_THROW(nlohmann::from_json(j2, id_set));
+    std::cout << "id_set num = " << id_set.size() << std::endl;
+    for (auto id : id_set) {
+        ASSERT_GE(id, 0);
+        ASSERT_LT(id, nb);
+    }
+}
+
+TEST_P(HNSWTest, HNSW_trace_visit) {
+    assert(!xb.empty());
+
+    index_->BuildAll(base_dataset, conf_);
+
+    knowhere::SetMetaTraceVisit(conf_, true);
+    ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
+
+    auto qd = knowhere::GenDataset(1, dim, xq.data());
+    auto result = index_->Query(qd, conf_, nullptr);
+
+    auto json_info = knowhere::GetDatasetJsonInfo(result);
+    auto json_id_set = knowhere::GetDatasetJsonIdSet(result);
+    //std::cout << json_info << std::endl;
+    std::cout << "json_info size = " << json_info.size() << std::endl;
+    std::cout << "json_id_set size = " << json_id_set.size() << std::endl;
+
+    // check HNSWVisitInfo
+    knowhere::feder::hnsw::HNSWVisitInfo visit_info;
+    knowhere::Config j1 = nlohmann::json::parse(json_info);
+    ASSERT_NO_THROW(nlohmann::from_json(j1, visit_info));
+
+    for (auto& level_visit_record : visit_info.GetInfos()) {
+        auto& records = level_visit_record.GetRecords();
+        for (auto& record : records) {
+            auto id_from = std::get<0>(record);
+            auto id_to = std::get<1>(record);
+            auto dist = std::get<2>(record);
+            ASSERT_GE(id_from, 0);
+            ASSERT_GE(id_to, 0);
+            ASSERT_LT(id_from, nb);
+            ASSERT_LT(id_to, nb);
+            ASSERT_TRUE(dist >= 0.0 || dist == -1.0);
+        }
+    }
+
+    // check IDSet
+    std::unordered_set<int64_t> id_set;
+    knowhere::Config j2 = nlohmann::json::parse(json_id_set);
+    ASSERT_NO_THROW(nlohmann::from_json(j2, id_set));
+    std::cout << "id_set num = " << id_set.size() << std::endl;
+    for (auto id : id_set) {
+        ASSERT_GE(id, 0);
+        ASSERT_LT(id, nb);
     }
 }
