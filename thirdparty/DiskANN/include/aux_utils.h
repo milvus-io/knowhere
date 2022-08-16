@@ -99,7 +99,7 @@ namespace diskann {
   template<typename T>
   DISKANN_DLLEXPORT int build_merged_vamana_index(
       std::string base_file, diskann::Metric _compareMetric, unsigned L,
-      unsigned R, double sampling_rate, double ram_budget,
+      unsigned R, bool accelerate_build, double sampling_rate, double ram_budget,
       std::string mem_index_path, std::string medoids_file,
       std::string centroids_file);
 
