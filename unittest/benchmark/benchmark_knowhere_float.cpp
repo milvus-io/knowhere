@@ -63,6 +63,34 @@ class Benchmark_knowhere_float : public Benchmark_knowhere {
     }
 
     void
+    test_ivf_parallel(const knowhere::Config& cfg) {
+        auto conf = cfg;
+        auto nlist = knowhere::GetIndexParamNlist(conf);
+
+        int32_t nq = NQs_[0];
+        int32_t k = TOPKs_[0];
+        knowhere::SetMetaTopk(conf, k);
+        knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
+
+        printf("\n[%0.3f s] %s | %s | nlist=%ld\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(),
+               nlist);
+        printf("================================================================================\n");
+#pragma omp parallel for
+        for (size_t i = 0; i < NPROBEs_.size(); i++) {
+            int32_t nprobe = NPROBEs_[i];
+            auto conf1 = conf;
+            knowhere::SetIndexParamNprobe(conf1, nprobe);
+            CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf1, nullptr));
+            auto ids = knowhere::GetDatasetIDs(result);
+            float recall = CalcRecall(ids, nq, k);
+            printf("  nprobe = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", nprobe, nq, k, t_diff,
+                   recall);
+        }
+        printf("================================================================================\n");
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+    }
+
+    void
     test_ivf_hnsw(const knowhere::Config& cfg) {
         auto conf = cfg;
         auto nlist = knowhere::GetIndexParamNlist(conf);
@@ -120,6 +148,34 @@ class Benchmark_knowhere_float : public Benchmark_knowhere {
     }
 
     void
+    test_hnsw_parallel(const knowhere::Config& cfg) {
+        auto conf = cfg;
+        auto M = knowhere::GetIndexParamHNSWM(conf);
+        auto efConstruction = knowhere::GetIndexParamEfConstruction(conf);
+
+        int32_t nq = NQs_[0];
+        int32_t k = TOPKs_[0];
+        knowhere::SetMetaTopk(conf, k);
+        knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
+
+        printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld\n", get_time_diff(), ann_test_name_.c_str(),
+               index_type_.c_str(), M, efConstruction);
+        printf("================================================================================\n");
+#pragma omp parallel for
+        for (size_t i = 0; i < EFs_.size(); i++) {
+            int32_t ef = EFs_[i];
+            auto conf1 = conf;
+            knowhere::SetIndexParamEf(conf1, ef);
+            CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf1, nullptr));
+            auto ids = knowhere::GetDatasetIDs(result);
+            float recall = CalcRecall(ids, nq, k);
+            printf("  ef = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", ef, nq, k, t_diff, recall);
+        }
+        printf("================================================================================\n");
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+    }
+
+    void
     test_annoy(const knowhere::Config& cfg) {
         auto conf = cfg;
         auto n_trees = knowhere::GetIndexParamNtrees(conf);
@@ -140,6 +196,34 @@ class Benchmark_knowhere_float : public Benchmark_knowhere {
                            recall);
                 }
             }
+        }
+        printf("================================================================================\n");
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+    }
+
+    void
+    test_annoy_parallel(const knowhere::Config& cfg) {
+        auto conf = cfg;
+        auto n_trees = knowhere::GetIndexParamNtrees(conf);
+
+        int32_t nq = NQs_[0];
+        int32_t k = TOPKs_[0];
+        knowhere::SetMetaTopk(conf, k);
+        knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
+
+        printf("\n[%0.3f s] %s | %s | n_trees=%ld \n", get_time_diff(), ann_test_name_.c_str(),
+               index_type_.c_str(), n_trees);
+        printf("================================================================================\n");
+#pragma omp parallel for
+        for (size_t i = 0; i < SEARCH_Ks_.size(); i++) {
+            int32_t sk = SEARCH_Ks_[i];
+            auto conf1 = conf;
+            knowhere::SetIndexParamSearchK(conf1, sk);
+            CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf1, nullptr));
+            auto ids = knowhere::GetDatasetIDs(result);
+            float recall = CalcRecall(ids, nq, k);
+            printf("  search_k = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", sk, nq, k, t_diff,
+                   recall);
         }
         printf("================================================================================\n");
         printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
