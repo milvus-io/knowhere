@@ -9,11 +9,12 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License
 
-#include <string>
-
 #include <faiss/IndexFlat.h>
 #include <faiss/IndexIVFPQ.h>
 #include <faiss/clone_index.h>
+#include <omp.h>
+
+#include <string>
 #ifdef KNOWHERE_GPU_VERSION
 #include <faiss/gpu/GpuCloner.h>
 #endif
@@ -40,6 +41,11 @@ IVFPQ::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     auto index = std::make_shared<faiss::IndexIVFPQ>(coarse_quantizer, dim, GetIndexParamNlist(config),
                                                      GetIndexParamM(config), GetIndexParamNbits(config), metric_type);
     index->own_fields = true;
+    if (CheckKeyInConfig(config, meta::BUILD_THREAD_NUM)) {
+        omp_set_num_threads(GetMetaBuildThreadNum(config));
+    } else {
+        omp_set_num_threads(knowhere::DEFAULT_BUILD_THREAD_NUM);
+    }
     index->train(rows, reinterpret_cast<const float*>(p_data));
     index_ = index;
 }

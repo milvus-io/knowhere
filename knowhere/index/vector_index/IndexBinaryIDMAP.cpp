@@ -9,9 +9,10 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
-#include <string>
 #include <faiss/IndexBinaryFlat.h>
 #include <faiss/MetaIndexes.h>
+#include <omp.h>
+#include <string>
 
 #include "common/Exception.h"
 #include "index/vector_index/IndexBinaryIDMAP.h"
@@ -92,6 +93,11 @@ BinaryIDMAP::Query(const DatasetPtr& dataset_ptr, const Config& config, const fa
         p_id = new int64_t[k * rows];
         p_dist = new float[k * rows];
 
+        if (CheckKeyInConfig(config, meta::QUERY_THREAD_NUM)) {
+            omp_set_num_threads(GetMetaQueryThreadNum(config));
+        } else {
+            omp_set_num_threads(knowhere::DEFAULT_QUERY_THREAD_NUM);
+        }
         QueryImpl(rows, reinterpret_cast<const uint8_t*>(p_data), k, p_dist, p_id, config, bitset);
 
         return GenResultDataset(p_id, p_dist);
@@ -132,6 +138,11 @@ BinaryIDMAP::QueryByRange(const DatasetPtr& dataset,
     };
 
     try {
+        if (CheckKeyInConfig(config, meta::QUERY_THREAD_NUM)) {
+            omp_set_num_threads(GetMetaQueryThreadNum(config));
+        } else {
+            omp_set_num_threads(knowhere::DEFAULT_QUERY_THREAD_NUM);
+        }
         QueryByRangeImpl(rows, reinterpret_cast<const uint8_t*>(p_data), radius, p_dist, p_id, p_lims, config, bitset);
         return GenResultDataset(p_id, p_dist, p_lims);
     } catch (faiss::FaissException& e) {

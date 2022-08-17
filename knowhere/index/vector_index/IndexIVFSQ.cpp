@@ -19,6 +19,7 @@
 #include <faiss/IndexFlat.h>
 #include <faiss/IndexScalarQuantizer.h>
 #include <faiss/clone_index.h>
+#include <omp.h>
 
 #include "common/Exception.h"
 #include "index/vector_index/IndexIVFSQ.h"
@@ -40,6 +41,11 @@ IVFSQ::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     auto index = std::make_shared<faiss::IndexIVFScalarQuantizer>(
         coarse_quantizer, dim, GetIndexParamNlist(config), faiss::QuantizerType::QT_8bit, metric_type);
     index->own_fields = true;
+    if (CheckKeyInConfig(config, meta::BUILD_THREAD_NUM)) {
+        omp_set_num_threads(GetMetaBuildThreadNum(config));
+    } else {
+        omp_set_num_threads(knowhere::DEFAULT_BUILD_THREAD_NUM);
+    }
     index->train(rows, reinterpret_cast<const float*>(p_data));
     index_ = index;
 }

@@ -39,6 +39,9 @@ constexpr const char* BUILD_THREAD_NUM = "build_thread_num";
 constexpr const char* QUERY_THREAD_NUM = "query_thread_num";
 };  // namespace meta
 
+const int64_t DEFAULT_BUILD_THREAD_NUM = 5;
+const int64_t DEFAULT_QUERY_THREAD_NUM = 6;
+
 namespace indexparam {
 // IVF Params
 constexpr const char* NPROBE = "nprobe";

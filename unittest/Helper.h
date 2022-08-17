@@ -55,12 +55,15 @@ class ParamGenerator {
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::HAMMING},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
+                {knowhere::meta::QUERY_THREAD_NUM, QUERY_THREAD_NUM},
             };
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_BIN_IVFFLAT) {
             return knowhere::Config{
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::HAMMING},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
+                {knowhere::meta::BUILD_THREAD_NUM, BUILD_THREAD_NUM},
+                {knowhere::meta::QUERY_THREAD_NUM, QUERY_THREAD_NUM},
                 {knowhere::indexparam::NLIST, 16},
                 {knowhere::indexparam::NPROBE, 8},
         };
@@ -70,6 +73,7 @@ class ParamGenerator {
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
                 {knowhere::meta::DEVICE_ID, DEVICE_ID},
+                {knowhere::meta::QUERY_THREAD_NUM, QUERY_THREAD_NUM},
             };
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
             return knowhere::Config{
@@ -88,6 +92,8 @@ class ParamGenerator {
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
                 {knowhere::meta::DEVICE_ID, DEVICE_ID},
+                {knowhere::meta::BUILD_THREAD_NUM, BUILD_THREAD_NUM},
+                {knowhere::meta::QUERY_THREAD_NUM, QUERY_THREAD_NUM},
                 {knowhere::indexparam::NLIST, 16},
                 {knowhere::indexparam::NPROBE, 8},
                 {knowhere::indexparam::M, 4},
@@ -100,6 +106,8 @@ class ParamGenerator {
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
                 {knowhere::meta::DEVICE_ID, DEVICE_ID},
+                {knowhere::meta::BUILD_THREAD_NUM, BUILD_THREAD_NUM},
+                {knowhere::meta::QUERY_THREAD_NUM, QUERY_THREAD_NUM},
                 {knowhere::indexparam::NLIST, 16},
                 {knowhere::indexparam::NPROBE, 8},
                 {knowhere::indexparam::NBITS, 8},
@@ -132,6 +140,7 @@ class ParamGenerator {
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
+                {knowhere::meta::QUERY_THREAD_NUM, QUERY_THREAD_NUM},
                 {knowhere::indexparam::N_TREES, 4},
                 {knowhere::indexparam::SEARCH_K, 100},
             };

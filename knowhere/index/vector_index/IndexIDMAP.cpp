@@ -14,6 +14,7 @@
 #include <faiss/MetaIndexes.h>
 #include <faiss/clone_index.h>
 #include <faiss/index_io.h>
+#include <omp.h>
 #ifdef KNOWHERE_GPU_VERSION
 #include <faiss/gpu/GpuCloner.h>
 #endif
@@ -125,6 +126,11 @@ IDMAP::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::B
         p_id = new int64_t[k * rows];
         p_dist = new float[k * rows];
 
+        if (CheckKeyInConfig(config, meta::QUERY_THREAD_NUM)) {
+            omp_set_num_threads(GetMetaQueryThreadNum(config));
+        } else {
+            omp_set_num_threads(knowhere::DEFAULT_QUERY_THREAD_NUM);
+        }
         QueryImpl(rows, reinterpret_cast<const float*>(p_data), k, p_dist, p_id, config, bitset);
 
         return GenResultDataset(p_id, p_dist);

@@ -17,6 +17,7 @@
 #include <faiss/IndexIVFPQ.h>
 #include <faiss/clone_index.h>
 #include <faiss/index_io.h>
+#include <omp.h>
 #ifdef KNOWHERE_GPU_VERSION
 #include <faiss/gpu/GpuAutoTune.h>
 #include <faiss/gpu/GpuCloner.h>
@@ -148,6 +149,11 @@ IVF::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::Bit
         p_id = new int64_t[k * rows];
         p_dist = new float[k * rows];
 
+        if (CheckKeyInConfig(config, meta::QUERY_THREAD_NUM)) {
+            omp_set_num_threads(GetMetaQueryThreadNum(config));
+        } else {
+            omp_set_num_threads(knowhere::DEFAULT_QUERY_THREAD_NUM);
+        }
         QueryImpl(rows, reinterpret_cast<const float*>(p_data), k, p_dist, p_id, config, bitset);
 
         return GenResultDataset(p_id, p_dist);
@@ -188,6 +194,11 @@ IVF::QueryByRange(const DatasetPtr& dataset,
     };
 
     try {
+        if (CheckKeyInConfig(config, meta::QUERY_THREAD_NUM)) {
+            omp_set_num_threads(GetMetaQueryThreadNum(config));
+        } else {
+            omp_set_num_threads(knowhere::DEFAULT_QUERY_THREAD_NUM);
+        }
         QueryByRangeImpl(rows, reinterpret_cast<const float*>(p_data), radius, p_dist, p_id, p_lims, config, bitset);
         return GenResultDataset(p_id, p_dist, p_lims);
     } catch (faiss::FaissException& e) {

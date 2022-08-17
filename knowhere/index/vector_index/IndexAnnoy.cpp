@@ -11,6 +11,8 @@
 
 #include "IndexAnnoy.h"
 
+#include <omp.h>
+
 #include <algorithm>
 #include <cassert>
 #include <iterator>
@@ -141,7 +143,11 @@ IndexAnnoy::Query(const DatasetPtr& dataset_ptr, const Config& config, const fai
     auto search_k = GetIndexParamSearchK(config);
     auto p_id = new int64_t[k * rows];
     auto p_dist = new float[k * rows];
-
+    if (CheckKeyInConfig(config, meta::QUERY_THREAD_NUM)) {
+        omp_set_num_threads(GetMetaQueryThreadNum(config));
+    } else {
+        omp_set_num_threads(knowhere::DEFAULT_QUERY_THREAD_NUM);
+    }
 #pragma omp parallel for
     for (unsigned int i = 0; i < rows; ++i) {
         std::vector<int64_t> result;
