@@ -166,7 +166,8 @@ IndexHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fais
         }
     }
 
-    index_->setEf(GetIndexParamEf(config));
+    size_t ef = GetIndexParamEf(config);
+    hnswlib::SearchParam param{ef};
     bool transform = (index_->metric_type_ == 1);  // InnerProduct: 1
 
     std::chrono::high_resolution_clock::time_point query_start, query_end;
@@ -179,10 +180,10 @@ if (CheckKeyInConfig(config, meta::QUERY_THREAD_NUM))
         auto single_query = (float*)p_data + i * dim;
         std::priority_queue<std::pair<float, hnswlib::labeltype>> rst;
         if (STATISTICS_LEVEL >= 3) {
-            rst = index_->searchKnn(single_query, k, bitset, query_stats[i]);
+            rst = index_->searchKnn(single_query, k, bitset, query_stats[i], &param);
         } else {
             auto dummy_stat = hnswlib::StatisticsInfo();
-            rst = index_->searchKnn(single_query, k, bitset, dummy_stat);
+            rst = index_->searchKnn(single_query, k, bitset, dummy_stat, &param);
         }
         size_t rst_size = rst.size();
 
@@ -246,7 +247,8 @@ IndexHNSW::QueryByRange(const DatasetPtr& dataset,
 
     auto range_k = GetIndexParamHNSWK(config);
     auto radius = GetMetaRadius(config);
-    index_->setEf(GetIndexParamEf(config));
+    size_t ef = GetIndexParamEf(config);
+    hnswlib::SearchParam param{ef};
     bool is_IP = (index_->metric_type_ == 1);  // InnerProduct: 1
 
     if (!is_IP) {
@@ -262,7 +264,8 @@ IndexHNSW::QueryByRange(const DatasetPtr& dataset,
         auto single_query = (float*)p_data + i * dim;
 
         auto dummy_stat = hnswlib::StatisticsInfo();
-        auto rst = index_->searchRange(single_query, range_k, (is_IP ? 1.0f - radius : radius), bitset, dummy_stat);
+        auto rst =
+            index_->searchRange(single_query, range_k, (is_IP ? 1.0f - radius : radius), bitset, dummy_stat, &param);
 
         for (auto& p : rst) {
             result_dist_array[i].push_back(is_IP ? (1 - p.first) : p.first);
