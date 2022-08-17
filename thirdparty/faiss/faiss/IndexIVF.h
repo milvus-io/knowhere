@@ -67,7 +67,9 @@ struct Level1Quantizer {
 struct IVFSearchParameters {
     size_t nprobe;    ///< number of probes at query time
     size_t max_codes; ///< max nb of codes to visit to do a query
-    IVFSearchParameters() : nprobe(1), max_codes(0) {}
+    int parallel_mode; // default value if -1, and we will use
+                       // this->parallel_mode in this case
+    IVFSearchParameters() : nprobe(1), max_codes(0), parallel_mode(-1) {}
     virtual ~IVFSearchParameters() {}
 };
 
@@ -258,13 +260,27 @@ struct IndexIVF : Index, Level1Quantizer {
             idx_t* labels,
             const BitsetView bitset = nullptr) const override;
 
-    /** Similar to search, but does not store codes **/
-    void search_without_codes(
+    void search_thread_safe(
             idx_t n,
             const float* x,
             idx_t k,
             float* distances,
             idx_t* labels,
+            const size_t nprobe,
+            const int parallel_mode,
+            const size_t max_codes,
+            const BitsetView bitset = nullptr) const;
+
+    /** Similar to search, but does not store codes **/
+    void search_without_codes_thread_safe(
+            idx_t n,
+            const float* x,
+            idx_t k,
+            float* distances,
+            idx_t* labels,
+            const size_t nprobe,
+            const int parallel_mode,
+            const size_t max_codes,
             const BitsetView bitset = nullptr) const;
 
     void range_search(
@@ -274,11 +290,24 @@ struct IndexIVF : Index, Level1Quantizer {
             RangeSearchResult* result,
             const BitsetView bitset = nullptr) const override;
 
-    void range_search_without_codes(
+    void range_search_thread_safe(
             idx_t n,
             const float* x,
             float radius,
             RangeSearchResult* result,
+            const size_t nprobe,
+            const int parallel_mode,
+            const size_t max_codes,
+            const BitsetView bitset = nullptr) const;
+
+    void range_search_without_codes_thread_safe(
+            idx_t n,
+            const float* x,
+            float radius,
+            RangeSearchResult* result,
+            const size_t nprobe,
+            const int parallel_mode,
+            const size_t max_codes,
             const BitsetView bitset = nullptr) const;
 
     void range_search_preassigned(
