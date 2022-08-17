@@ -123,22 +123,3 @@ TEST_P(RHNSWTest, RHNSW_serialize) {
     }
 }
 
-TEST_P(RHNSWTest, RHNSW_slice) {
-    knowhere::SetMetaSliceSize(conf_, knowhere::index_file_slice_size);
-    index_->BuildAll(base_dataset, conf_);
-    auto binaryset = index_->Serialize(conf_);
-
-    auto raw_data = knowhere::GetDatasetTensor(base_dataset);
-    knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
-    bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)raw_data, [&](uint8_t*) {});
-    bptr->size = dim * nb * sizeof(float);
-    binaryset.Append(RAW_DATA, bptr);
-
-    index_->Load(binaryset);
-    EXPECT_EQ(index_->Count(), nb);
-    EXPECT_EQ(index_->Dim(), dim);
-    auto result = index_->Query(query_dataset, conf_, nullptr);
-    if (index_type_ != knowhere::IndexEnum::INDEX_RHNSWPQ) {
-        AssertAnns(result, nq, k);
-    }
-}

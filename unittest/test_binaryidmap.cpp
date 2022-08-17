@@ -11,11 +11,9 @@
 
 #include <gtest/gtest.h>
 
-#include "knowhere/index/VecIndexFactory.h"
 #include "knowhere/index/vector_index/ConfAdapterMgr.h"
 #include "knowhere/index/vector_index/IndexBinaryIDMAP.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
-#include "unittest/Helper.h"
 #include "unittest/range_utils.h"
 #include "unittest/utils.h"
 
@@ -31,10 +29,16 @@ class BinaryIDMAPTest : public DataGen,
     void
     SetUp() override {
         Init_with_default(true);
+
+        conf_ = knowhere::Config{
+            {knowhere::meta::METRIC_TYPE, knowhere::metric::HAMMING},
+            {knowhere::meta::DIM, dim},
+            {knowhere::meta::TOPK, k},
+            {knowhere::meta::RADIUS, radius},
+        };
         index_mode_ = GetParam();
         index_type_ = knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP;
-        index_ = knowhere::VecIndexFactory::GetInstance().CreateVecIndex(index_type_, index_mode_);
-        conf_ = ParamGenerator::GetInstance().Gen(index_type_);
+        index_ = std::make_shared<knowhere::BinaryIDMAP>();
     }
 
     void
@@ -42,9 +46,9 @@ class BinaryIDMAPTest : public DataGen,
 
  protected:
     knowhere::Config conf_;
+    knowhere::BinaryIDMAPPtr index_ = nullptr;
     knowhere::IndexMode index_mode_;
     knowhere::IndexType index_type_;
-    knowhere::VecIndexPtr index_ = nullptr;
 };
 
 INSTANTIATE_TEST_CASE_P(
@@ -69,15 +73,11 @@ TEST_P(BinaryIDMAPTest, binaryidmap_basic) {
     index_->BuildAll(base_dataset, conf_);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
+    ASSERT_TRUE(index_->GetRawVectors() != nullptr);
     ASSERT_GT(index_->Size(), 0);
-    ASSERT_TRUE(std::static_pointer_cast<knowhere::BinaryIDMAP>(index_)->GetRawVectors() != nullptr);
 
     auto result = index_->GetVectorById(id_dataset, conf_);
     AssertBinVec(result, base_dataset, id_dataset, nq, dim);
-
-    std::vector<int64_t> ids_invalid(nq, nb);
-    auto id_dataset_invalid = knowhere::GenDatasetWithIds(nq, dim, ids_invalid.data());
-    ASSERT_ANY_THROW(index_->GetVectorById(id_dataset_invalid, conf_));
 
     auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
     ASSERT_TRUE(adapter->CheckSearch(conf_, index_type_, index_mode_));
@@ -141,7 +141,6 @@ TEST_P(BinaryIDMAPTest, binaryidmap_serialize) {
 }
 
 TEST_P(BinaryIDMAPTest, binaryidmap_slice) {
-    knowhere::SetMetaSliceSize(conf_, knowhere::index_file_slice_size);
     // serialize index
     index_->BuildAll(base_dataset, conf_);
     auto result1 = index_->Query(query_dataset, conf_, nullptr);

@@ -50,13 +50,11 @@ IVF::Serialize(const Config& config) {
     }
 
     auto ret = SerializeImpl(index_type_);
-    Disassemble(ret, config);
     return ret;
 }
 
 void
 IVF::Load(const BinarySet& binary_set) {
-    Assemble(const_cast<BinarySet&>(binary_set));
     LoadImpl(binary_set, index_type_);
 
 #if 0

@@ -48,7 +48,6 @@ IVFHNSW::Serialize(const Config& config) {
         std::shared_ptr<uint8_t[]> data(writer.data_);
         res_set.Append("HNSW_STORAGE", data, writer.rp);
 
-        Disassemble(res_set, config);
         return res_set;
     } catch (std::exception& e) {
         KNOWHERE_THROW_MSG(e.what());
@@ -59,7 +58,6 @@ void
 IVFHNSW::Load(const BinarySet& binary_set) {
     try {
         // Load IVF index and HNSW data
-        Assemble(const_cast<BinarySet&>(binary_set));
         LoadImpl(binary_set, index_type_);
 
         auto index = dynamic_cast<faiss::IndexIVFFlat*>(index_.get());

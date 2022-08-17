@@ -31,13 +31,11 @@ BinaryIVF::Serialize(const Config& config) {
     }
 
     auto ret = SerializeImpl(index_type_);
-    Disassemble(ret, config);
     return ret;
 }
 
 void
 BinaryIVF::Load(const BinarySet& index_binary) {
-    Assemble(const_cast<BinarySet&>(index_binary));
     LoadImpl(index_binary, index_type_);
 #if 0
     if (STATISTICS_LEVEL >= 3) {

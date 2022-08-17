@@ -48,7 +48,6 @@ IndexRHNSWFlat::Serialize(const Config& config) {
         std::shared_ptr<uint8_t[]> space_sp(meta_space, std::default_delete<uint8_t[]>());
         res_set.Append("META", space_sp, sizeof(meta_info));
 
-        Disassemble(res_set, config);
         return res_set;
     } catch (std::exception& e) {
         KNOWHERE_THROW_MSG(e.what());
@@ -58,7 +57,6 @@ IndexRHNSWFlat::Serialize(const Config& config) {
 void
 IndexRHNSWFlat::Load(const BinarySet& index_binary) {
     try {
-        Assemble(const_cast<BinarySet&>(index_binary));
         IndexRHNSW::Load(index_binary);
 
         int64_t meta_info[3];  // = {metric_type, dim, ntotal}

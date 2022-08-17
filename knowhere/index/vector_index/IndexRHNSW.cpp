@@ -45,7 +45,6 @@ IndexRHNSW::Serialize(const Config& config) {
 void
 IndexRHNSW::Load(const BinarySet& index_binary) {
     try {
-        Assemble(const_cast<BinarySet&>(index_binary));
         MemoryIOReader reader;
         reader.name = std::string(this->index_type()) + "_Index";
         auto binary = index_binary.GetByName(reader.name);

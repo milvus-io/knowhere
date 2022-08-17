@@ -47,7 +47,6 @@ IndexRHNSWSQ::Serialize(const Config& config) {
         std::shared_ptr<uint8_t[]> data(writer.data_);
 
         res_set.Append(writer.name, data, writer.rp);
-        Disassemble(res_set, config);
         return res_set;
     } catch (std::exception& e) {
         KNOWHERE_THROW_MSG(e.what());
@@ -57,7 +56,6 @@ IndexRHNSWSQ::Serialize(const Config& config) {
 void
 IndexRHNSWSQ::Load(const BinarySet& index_binary) {
     try {
-        Assemble(const_cast<BinarySet&>(index_binary));
         IndexRHNSW::Load(index_binary);
         MemoryIOReader reader;
         reader.name = QUANTIZATION_DATA;

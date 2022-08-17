@@ -85,15 +85,3 @@ TEST_P(IVFHNSWTest, ivfhnsw_basic_cpu) {
     AssertAnns(result1, nq, k);
 }
 
-TEST_P(IVFHNSWTest, ivfhnsw_slice) {
-    knowhere::SetMetaSliceSize(conf_, knowhere::index_file_slice_size);
-    // serialize index
-    index_->BuildAll(base_dataset, conf_);
-    auto binaryset = index_->Serialize(conf_);
-    // load index
-    index_->Load(binaryset);
-    EXPECT_EQ(index_->Count(), nb);
-    EXPECT_EQ(index_->Dim(), dim);
-    auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, k);
-}

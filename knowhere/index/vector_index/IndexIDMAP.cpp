@@ -40,13 +40,11 @@ IDMAP::Serialize(const Config& config) {
     }
 
     auto ret = SerializeImpl(index_type_);
-    Disassemble(ret, config);
     return ret;
 }
 
 void
 IDMAP::Load(const BinarySet& binary_set) {
-    Assemble(const_cast<BinarySet&>(binary_set));
     LoadImpl(binary_set, index_type_);
 }
 

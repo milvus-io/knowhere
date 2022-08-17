@@ -21,7 +21,6 @@
 #include "knowhere/index/Index.h"
 #include "knowhere/index/IndexType.h"
 #include "knowhere/index/vector_index/Statistics.h"
-#include "knowhere/index/vector_index/helpers/Slice.h"
 #include "knowhere/utils/BitsetView.h"
 
 namespace knowhere {
