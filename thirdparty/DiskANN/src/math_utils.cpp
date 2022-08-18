@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 
 #include <limits>
+#include <unordered_set>
 #include <malloc.h>
 #include <math_utils.h>
 #include <mkl.h>
@@ -109,16 +110,15 @@ namespace math_utils {
     } else {
 #pragma omp parallel for schedule(static, 8192)
       for (int64_t i = 0; i < (_s64) num_points; i++) {
-        std::priority_queue<PivotContainer> top_k_queue;
+        std::vector<PivotContainer> top_k_vec;
         float* current = dist_matrix + (i * num_centers);
         for (size_t j = 0; j < num_centers; j++) {
-          PivotContainer this_piv(j, current[j]);
-          top_k_queue.push(this_piv);
+          top_k_vec.emplace_back(j, -current[j]);
         }
-        for (size_t j = 0; j < k; j++) {
-          PivotContainer this_piv = top_k_queue.top();
-          center_index[i * k + j] = (uint32_t) this_piv.piv_id;
-          top_k_queue.pop();
+        std::nth_element(top_k_vec.begin(), top_k_vec.begin() + k - 1, top_k_vec.end());
+        std::sort(top_k_vec.begin(), top_k_vec.begin() + k);
+        for (int64_t j = 0; j < k; j++) {
+          center_index[i * k + j] = top_k_vec[j].piv_id;
         }
       }
     }
@@ -242,13 +242,19 @@ namespace kmeans {
     bool compute_residual = true;
     // Timer timer;
 
-    if (closest_center == NULL)
+    bool ret_closest_center = true;
+    bool ret_closest_docs = true;
+    if (closest_center == NULL) {
       closest_center = new uint32_t[num_points];
-    if (closest_docs == NULL)
+      ret_closest_center = false;
+    }
+    if (closest_docs == NULL) {
       closest_docs = new std::vector<size_t>[num_centers];
-    else
+      ret_closest_docs = false;
+    } else {
       for (size_t c = 0; c < num_centers; ++c)
         closest_docs[c].clear();
+    }
 
     math_utils::compute_closest_centers(data, num_points, dim, centers,
                                         num_centers, 1, closest_center,
@@ -256,7 +262,6 @@ namespace kmeans {
 
     //	diskann::cout << "closest centerss calculation done " << std::endl;
 
-    memset(centers, 0, sizeof(float) * (size_t) num_centers * (size_t) dim);
 
 #pragma omp parallel for schedule(static, 1)
     for (int64_t c = 0; c < (_s64) num_centers; ++c) {
@@ -298,6 +303,12 @@ namespace kmeans {
         residual += residuals[chunk * BUF_PAD];
     }
 
+    if (!ret_closest_docs) {
+      delete[] closest_docs;
+    }
+    if (!ret_closest_center) {
+      delete[] closest_center;
+    }
     return residual;
   }
 
@@ -360,7 +371,7 @@ namespace kmeans {
                         float* pivot_data, size_t num_centers) {
     //	pivot_data = new float[num_centers * dim];
 
-    std::vector<size_t> picked;
+    std::unordered_set<size_t> picked;
     std::random_device rd;
     auto               x = rd();
     LOG(DEBUG) << "Selecting " << num_centers << " pivots from "
@@ -370,12 +381,13 @@ namespace kmeans {
     std::uniform_int_distribution<size_t> distribution(0, num_points - 1);
 
     size_t tmp_pivot;
-    for (size_t j = 0; j < num_centers; j++) {
-      tmp_pivot = distribution(generator);
-      if (std::find(picked.begin(), picked.end(), tmp_pivot) != picked.end())
-        continue;
-      picked.push_back(tmp_pivot);
-      std::memcpy(pivot_data + j * dim, data + tmp_pivot * dim,
+    for (int64_t j = num_points - num_centers; j < num_points; j++) {
+      tmp_pivot = std::uniform_int_distribution<size_t>(0, j)(generator);
+      if (picked.count(tmp_pivot)) {
+        tmp_pivot = j;
+      }
+      picked.insert(tmp_pivot);
+      std::memcpy(pivot_data + (j - num_points + num_centers) * dim, data + tmp_pivot * dim,
                   dim * sizeof(float));
     }
   }
