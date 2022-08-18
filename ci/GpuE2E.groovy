@@ -31,10 +31,10 @@ pipeline {
                     def gitShortCommit = sh(returnStdout: true, script: "echo ${env.GIT_COMMIT} | cut -b 1-7 ").trim()  
                     version="${env.CHANGE_ID}.${date}.${gitShortCommit}"
                     sh "./build.sh -g -u -t Release"
-                    knowhere_wheel="knowhere-${version}-cp38-cp38-linux_x86_64.whl"
                     sh "cd python  && VERSION=${version} python3 setup.py bdist_wheel"
-                    dir('python'){
-                      archiveArtifacts artifacts: "dist/${knowhere_wheel}", followSymlinks: false
+                    dir('python/dist'){
+                       knowhere_wheel=sh(returnStdout: true, script: 'ls | grep .whl').trim()
+                      archiveArtifacts artifacts: "${knowhere_wheel}", followSymlinks: false
                     }
                     // stash knowhere info for rebuild E2E Test only
                     sh "echo ${knowhere_wheel} > knowhere.txt"
@@ -72,7 +72,7 @@ pipeline {
                     checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], 
                     userRemoteConfigs: [[credentialsId: 'milvus-ci', url: 'https://github.com/milvus-io/knowhere-test.git']]])   
                     dir('tests'){
-                      unarchive mapping: ["dist/${knowhere_wheel}": "${knowhere_wheel}"]
+                      unarchive mapping: ["${knowhere_wheel}": "${knowhere_wheel}"]
                       sh "ls -lah"
                       sh "nvidia-smi"
                       sh "pip3 install ${knowhere_wheel} \
