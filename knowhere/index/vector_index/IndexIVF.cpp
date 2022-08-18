@@ -307,15 +307,17 @@ IVF::QueryImpl(int64_t n,
                const faiss::BitsetView bitset) {
     auto params = GenParams(config);
     auto ivf_index = dynamic_cast<faiss::IndexIVF*>(index_.get());
-    ivf_index->nprobe = std::min(params->nprobe, ivf_index->invlists->nlist);
+
     stdclock::time_point before = stdclock::now();
+    int parallel_mode = -1;
     if (params->nprobe > 1 && n <= 4) {
-        ivf_index->parallel_mode = 1;
+        parallel_mode = 1;
     } else {
-        ivf_index->parallel_mode = 0;
+        parallel_mode = 0;
     }
+    size_t max_codes = 0;
     auto ivf_stats = std::dynamic_pointer_cast<IVFStatistics>(stats);
-    ivf_index->search(n, xq, k, distances, labels, bitset);
+    ivf_index->search_thread_safe(n, xq, k, distances, labels, params->nprobe, parallel_mode, max_codes, bitset);
 #if 0
     stdclock::time_point after = stdclock::now();
     double search_cost = (std::chrono::duration<double, std::micro>(after - before)).count();
@@ -353,19 +355,21 @@ IVF::QueryByRangeImpl(int64_t n,
                       const faiss::BitsetView bitset) {
     auto params = GenParams(config);
     auto ivf_index = dynamic_cast<faiss::IndexIVF*>(index_.get());
-    ivf_index->nprobe = std::min(params->nprobe, ivf_index->invlists->nlist);
+
+    int parallel_mode = -1;
     if (params->nprobe > 1 && n <= 4) {
-        ivf_index->parallel_mode = 1;
+        parallel_mode = 1;
     } else {
-        ivf_index->parallel_mode = 0;
+        parallel_mode = 0;
     }
+    size_t max_codes = 0;
 
     if (index_->metric_type == faiss::MetricType::METRIC_L2) {
         radius *= radius;
     }
 
     faiss::RangeSearchResult res(n);
-    ivf_index->range_search(n, xq, radius, &res, bitset);
+    ivf_index->range_search_thread_safe(n, xq, radius, &res, params->nprobe, parallel_mode, max_codes, bitset);
 
     distances = res.distances;
     labels = res.labels;
