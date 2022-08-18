@@ -49,6 +49,9 @@ struct DiskANNBuildConfig {
     // SSD. This will trade off the recall. You would also want this to be greater than the number of bytes used for the
     // PQ compressed data stored in-memory
     uint32_t disk_pq_dims;
+    // This is the flag to enable fast build, in which we will not build vamana graph by full 2 round. This can
+    // accelerate index build ~30% with an ~1% recall regression.
+    bool accelerate_build;
 
     static DiskANNBuildConfig
     Get(const Config& config);

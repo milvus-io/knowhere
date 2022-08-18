@@ -168,11 +168,17 @@ IndexDiskANN<T>::AddWithoutIds(const DatasetPtr& data_set, const Config& config)
         KNOWHERE_THROW_MSG("Failed load the raw data before building.");
     }
 
-    diskann::BuildConfig diskann_internal_build_config {
-        data_path, index_prefix_, metric_, build_conf.max_degree, build_conf.search_list_size,
-            build_conf.search_dram_budget_gb, build_conf.build_dram_budget_gb, build_conf.num_threads,
-            build_conf.disk_pq_dims,
-    };
+    diskann::BuildConfig diskann_internal_build_config{data_path,
+                                                       index_prefix_,
+                                                       metric_,
+                                                       build_conf.max_degree,
+                                                       build_conf.search_list_size,
+                                                       build_conf.search_dram_budget_gb,
+                                                       build_conf.build_dram_budget_gb,
+                                                       build_conf.num_threads,
+                                                       build_conf.disk_pq_dims,
+                                                       false,
+                                                       build_conf.accelerate_build};
 
     auto build_successful = TryDiskANNCallAndThrow<int>(
         [&]() -> int { return diskann::build_disk_index<T>(diskann_internal_build_config); });
