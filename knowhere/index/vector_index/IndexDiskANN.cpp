@@ -14,7 +14,6 @@
 #include <omp.h>
 
 #include <limits>
-#include <sstream>
 #include <utility>
 #include <vector>
 
@@ -169,14 +168,14 @@ IndexDiskANN<T>::AddWithoutIds(const DatasetPtr& data_set, const Config& config)
         KNOWHERE_THROW_MSG("Failed load the raw data before building.");
     }
 
-    std::stringstream stream;
-    stream << build_conf.max_degree << " " << build_conf.search_list_size << " " << build_conf.search_dram_budget_gb
-           << " " << build_conf.build_dram_budget_gb << " " << build_conf.num_threads << " "
-           << build_conf.pq_disk_bytes;
+    diskann::BuildConfig diskann_internal_build_config {
+        data_path, index_prefix_, metric_, build_conf.max_degree, build_conf.search_list_size,
+            build_conf.search_dram_budget_gb, build_conf.build_dram_budget_gb, build_conf.num_threads,
+            build_conf.disk_pq_dims,
+    };
 
-    auto build_successful = TryDiskANNCallAndThrow<int>([&]() -> int {
-        return diskann::build_disk_index<T>(data_path.c_str(), index_prefix_.c_str(), stream.str().c_str(), metric_);
-    });
+    auto build_successful = TryDiskANNCallAndThrow<int>(
+        [&]() -> int { return diskann::build_disk_index<T>(diskann_internal_build_config); });
 
     is_prepared_ = false;
 
