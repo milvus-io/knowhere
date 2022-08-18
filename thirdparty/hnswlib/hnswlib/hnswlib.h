@@ -175,16 +175,21 @@ class StatisticsInfo {
     std::vector<uint32_t> accessed_points_;
 };
 
+struct SearchParam {
+    size_t ef_;
+};
+
 template<typename dist_t>
 class AlgorithmInterface {
  public:
     virtual void addPoint(const void *datapoint, labeltype label)=0;
 
-    virtual std::priority_queue<std::pair<dist_t, labeltype >>
-        searchKnn(const void *, size_t, const faiss::BitsetView, hnswlib::StatisticsInfo&) const = 0;
+    virtual std::priority_queue<std::pair<dist_t, labeltype>>
+    searchKnn(const void*, size_t, const faiss::BitsetView, hnswlib::StatisticsInfo&, const SearchParam*) const = 0;
 
     virtual std::vector<std::pair<dist_t, labeltype>>
-        searchRange(const void*, size_t, float, const faiss::BitsetView, hnswlib::StatisticsInfo&) const = 0;
+    searchRange(const void*, size_t, float, const faiss::BitsetView, hnswlib::StatisticsInfo&,
+                const SearchParam*) const = 0;
 
     // Return k nearest neighbor in the order of closer fist
     virtual std::vector<std::pair<dist_t, labeltype>>
@@ -202,7 +207,7 @@ AlgorithmInterface<dist_t>::searchKnnCloserFirst(const void* query_data, size_t 
     std::vector<std::pair<dist_t, labeltype>> result;
 
     // here searchKnn returns the result in the order of further first
-    auto ret = searchKnn(query_data, k, bitset, stats);
+    auto ret = searchKnn(query_data, k, bitset, stats, nullptr);
     {
         size_t sz = ret.size();
         result.resize(sz);

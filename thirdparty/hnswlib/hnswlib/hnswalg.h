@@ -572,6 +572,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     std::mutex global;
     size_t ef_;
 
+    // Do not call this to set EF in multi-thread case. This is not thread-safe.
     void
     setEf(size_t ef) {
         ef_ = ef;
@@ -1111,7 +1112,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     };
 
     std::priority_queue<std::pair<dist_t, labeltype>>
-    searchKnn(const void* query_data, size_t k, const faiss::BitsetView bitset, StatisticsInfo& stats) const {
+    searchKnn(const void* query_data, size_t k, const faiss::BitsetView bitset, StatisticsInfo& stats,
+              const SearchParam* param = nullptr) const {
         std::priority_queue<std::pair<dist_t, labeltype>> result;
         if (cur_element_count == 0)
             return result;
@@ -1151,10 +1153,11 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
         std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
             top_candidates;
+        size_t ef = param ? param->ef_ : this->ef_;
         if (!bitset.empty()) {
-            top_candidates = searchBaseLayerST<true, true>(currObj, query_data, std::max(ef_, k), bitset, stats);
+            top_candidates = searchBaseLayerST<true, true>(currObj, query_data, std::max(ef, k), bitset, stats);
         } else {
-            top_candidates = searchBaseLayerST<false, true>(currObj, query_data, std::max(ef_, k), bitset, stats);
+            top_candidates = searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), bitset, stats);
         }
 
         while (top_candidates.size() > k) {
@@ -1170,7 +1173,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
     std::vector<std::pair<dist_t, labeltype>>
     searchRange(const void* query_data, size_t range_k, float radius, const faiss::BitsetView bitset,
-                StatisticsInfo& stats) const {
+                StatisticsInfo& stats, const SearchParam* param = nullptr) const {
         if (cur_element_count == 0) {
             return {};
         }
@@ -1207,10 +1210,11 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
         std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
             top_candidates;
+        size_t ef = param ? param->ef_ : this->ef_;
         if (!bitset.empty()) {
-            top_candidates = searchBaseLayerST<true, true>(currObj, query_data, std::max(ef_, range_k), bitset, stats);
+            top_candidates = searchBaseLayerST<true, true>(currObj, query_data, std::max(ef, range_k), bitset, stats);
         } else {
-            top_candidates = searchBaseLayerST<false, true>(currObj, query_data, std::max(ef_, range_k), bitset, stats);
+            top_candidates = searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, range_k), bitset, stats);
         }
 
         while (top_candidates.size() > range_k) {
