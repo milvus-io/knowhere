@@ -109,11 +109,30 @@ namespace diskann {
       _u64 tuning_sample_num, _u64 tuning_sample_aligned_dim, uint32_t L,
       uint32_t nthreads, uint32_t start_bw = 2);
 
+  struct BuildConfig {
+    std::string data_file_path = "";
+    std::string index_file_path = "";
+    diskann::Metric compare_metric = diskann::Metric::L2;
+    // R (max degree)
+    unsigned max_degree = 0;
+    // L (indexing list size, better if >= R)
+    unsigned search_list_size = 0;
+    // B (RAM limit of final index in GB)
+    double search_mem_gb = 0.0;
+    //M (memory limit while indexing)
+    double index_mem_gb = 0.0;
+    // T (number of threads for indexing)
+    uint32_t num_threads = 0;
+    // B' (PQ dim for disk index: optional parameter for very 
+    // large dimensional data)
+    uint32_t disk_pq_dims = 0;
+    // reorder (set true to include full precision in data file: 
+    // optional paramter, use only when using disk PQ
+    bool reorder = false;
+  };
+
   template<typename T>
-  DISKANN_DLLEXPORT int build_disk_index(const char *    dataFilePath,
-                                          const char *    indexFilePath,
-                                          const char *    indexBuildParameters,
-                                          diskann::Metric _compareMetric);
+  DISKANN_DLLEXPORT int build_disk_index(const BuildConfig& config);
 
   template<typename T>
   DISKANN_DLLEXPORT void create_disk_layout(const std::string base_file,

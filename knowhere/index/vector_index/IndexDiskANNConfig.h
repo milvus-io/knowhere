@@ -48,7 +48,7 @@ struct DiskANNBuildConfig {
     // too large to store in SSD, this parameter provides the option to compress the vectors using PQ for storing on
     // SSD. This will trade off the recall. You would also want this to be greater than the number of bytes used for the
     // PQ compressed data stored in-memory
-    uint32_t pq_disk_bytes;
+    uint32_t disk_pq_dims;
 
     static DiskANNBuildConfig
     Get(const Config& config);

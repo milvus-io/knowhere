@@ -910,33 +910,9 @@ namespace diskann {
   }
 
   template<typename T>
-  int build_disk_index(const char *dataFilePath, const char *indexFilePath,
-                        const char *    indexBuildParameters,
-                        diskann::Metric compareMetric) {
-    std::stringstream parser;
-    parser << std::string(indexBuildParameters);
-    std::string              cur_param;
-    std::vector<std::string> param_list;
-    while (parser >> cur_param) {
-      param_list.push_back(cur_param);
-    }
-    if (param_list.size() != 5 && param_list.size() != 6 &&
-        param_list.size() != 7) {
-      LOG(ERROR)
-          << "Correct usage of parameters is R (max degree) "
-             "L (indexing list size, better if >= R)"
-             "B (RAM limit of final index in GB)"
-             "M (memory limit while indexing)"
-             "T (number of threads for indexing)"
-             "B' (PQ bytes for disk index: optional parameter for "
-             "very large dimensional data)"
-             "reorder (set true to include full precision in data file"
-             ": optional paramter, use only when using disk PQ";
-      return -1;
-    }
-
+  int build_disk_index(const BuildConfig& config) {
     if (!std::is_same<T, float>::value &&
-        compareMetric == diskann::Metric::INNER_PRODUCT) {
+        config.compare_metric == diskann::Metric::INNER_PRODUCT) {
       std::stringstream stream;
       stream << "DiskANN currently only supports floating point data for Max "
                 "Inner Product Search. "
@@ -944,29 +920,14 @@ namespace diskann {
       throw diskann::ANNException(stream.str(), -1);
     }
 
-    _u32 disk_pq_dims = 0;
-    bool use_disk_pq = false;
+    _u32 disk_pq_dims = config.disk_pq_dims;
+    bool use_disk_pq = disk_pq_dims != 0;
 
-    // if there is a 6th parameter, it means we compress the disk index
-    // vectors also using PQ data (for very large dimensionality data). If the
-    // provided parameter is 0, it means we store full vectors.
-    if (param_list.size() == 6 || param_list.size() == 7) {
-      disk_pq_dims = atoi(param_list[5].c_str());
-      use_disk_pq = true;
-      if (disk_pq_dims == 0)
-        use_disk_pq = false;
-    }
+    bool reorder_data = config.reorder;
 
-    bool reorder_data = false;
-    if (param_list.size() == 7) {
-      if (1 == atoi(param_list[6].c_str())) {
-        reorder_data = true;
-      }
-    }
-
-    std::string base_file(dataFilePath);
+    std::string base_file = config.data_file_path;
     std::string data_file_to_use = base_file;
-    std::string index_prefix_path(indexFilePath);
+    std::string index_prefix_path = config.index_file_path;
     std::string pq_pivots_path = get_pq_pivots_filename(index_prefix_path);
     std::string pq_compressed_vectors_path =
         get_pq_compressed_filename(index_prefix_path);
@@ -987,7 +948,7 @@ namespace diskann {
     // output a new base file which contains extra dimension with sqrt(1 -
     // ||x||^2/M^2) for every x, M is max norm of all points. Extra space on
     // disk needed!
-    if (compareMetric == diskann::Metric::INNER_PRODUCT) {
+    if (config.compare_metric == diskann::Metric::INNER_PRODUCT) {
       LOG(INFO) << "Using Inner Product search, so need to pre-process base "
                    "data into temp file. Please ensure there is additional "
                    "(n*(d+1)*4) bytes for storing pre-processed base vectors, "
@@ -1001,21 +962,21 @@ namespace diskann {
       diskann::save_bin<float>(norm_file, &max_norm_of_base, 1, 1);
     }
 
-    unsigned R = (unsigned) atoi(param_list[0].c_str());
-    unsigned L = (unsigned) atoi(param_list[1].c_str());
+    unsigned R = config.max_degree;
+    unsigned L = config.search_list_size;
 
-    double final_index_ram_limit = get_memory_budget(param_list[2]);
+    double final_index_ram_limit = get_memory_budget(config.search_mem_gb);
     if (final_index_ram_limit <= 0) {
       LOG(ERROR) << "Insufficient memory budget (or string was not in right "
                    "format). Should be > 0.";
       return -1;
     }
-    double indexing_ram_budget = (float) atof(param_list[3].c_str());
+    double indexing_ram_budget = config.index_mem_gb;
     if (indexing_ram_budget <= 0) {
       LOG(ERROR) << "Not building index. Please provide more RAM budget";
       return -1;
     }
-    _u32 num_threads = (_u32) atoi(param_list[4].c_str());
+    _u32 num_threads = config.num_threads;
 
     if (num_threads != 0) {
       omp_set_num_threads(num_threads);
@@ -1062,7 +1023,7 @@ namespace diskann {
       generate_pq_pivots(train_data, train_size, (uint32_t) dim, 256,
                          (uint32_t) disk_pq_dims, NUM_KMEANS_REPS,
                          disk_pq_pivots_path, false);
-      if (compareMetric == diskann::Metric::INNER_PRODUCT)
+      if (config.compare_metric == diskann::Metric::INNER_PRODUCT)
         generate_pq_data_from_pivots<float>(
             data_file_to_use.c_str(), 256, (uint32_t) disk_pq_dims,
             disk_pq_pivots_path, disk_pq_compressed_vectors_path);
@@ -1076,7 +1037,7 @@ namespace diskann {
     // don't translate data to make zero mean for PQ compression. We must not
     // translate for inner product search.
     bool make_zero_mean = true;
-    if (compareMetric == diskann::Metric::INNER_PRODUCT)
+    if (config.compare_metric == diskann::Metric::INNER_PRODUCT)
       make_zero_mean = false;
 
     generate_pq_pivots(train_data, train_size, (uint32_t) dim, 256,
@@ -1121,7 +1082,7 @@ namespace diskann {
     gen_random_slice<T>(base_file.c_str(), sample_data_file,
                         sample_sampling_rate);
 
-    if (compareMetric == diskann::Metric::INNER_PRODUCT) {
+    if (config.compare_metric == diskann::Metric::INNER_PRODUCT) {
       std::remove(data_file_to_use.c_str());
     }
     std::remove(mem_index_path.c_str());
@@ -1184,14 +1145,11 @@ namespace diskann {
       uint32_t start_bw);
 
   template DISKANN_DLLEXPORT int build_disk_index<int8_t>(
-      const char *dataFilePath, const char *indexFilePath,
-      const char *indexBuildParameters, diskann::Metric compareMetric);
+      const BuildConfig &config);
   template DISKANN_DLLEXPORT int build_disk_index<uint8_t>(
-      const char *dataFilePath, const char *indexFilePath,
-      const char *indexBuildParameters, diskann::Metric compareMetric);
+      const BuildConfig &config);
   template DISKANN_DLLEXPORT int build_disk_index<float>(
-      const char *dataFilePath, const char *indexFilePath,
-      const char *indexBuildParameters, diskann::Metric compareMetric);
+      const BuildConfig &config);
 
   template DISKANN_DLLEXPORT int build_merged_vamana_index<int8_t>(
       std::string base_file, diskann::Metric compareMetric, unsigned L,
