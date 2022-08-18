@@ -544,8 +544,9 @@ namespace diskann {
   template<typename T>
   int build_merged_vamana_index(std::string     base_file,
                                 diskann::Metric compareMetric, unsigned L,
-                                unsigned R, double sampling_rate,
-                                double ram_budget, std::string mem_index_path,
+                                unsigned R, bool accelerate_build,
+                                double sampling_rate, double ram_budget,
+                                std::string mem_index_path,
                                 std::string medoids_file,
                                 std::string centroids_file) {
     size_t base_num, base_dim;
@@ -565,6 +566,7 @@ namespace diskann {
       paras.Set<unsigned>("num_rnds", 2);
       paras.Set<bool>("saturate_graph", 1);
       paras.Set<std::string>("save_path", mem_index_path);
+      paras.Set<bool>("accelerate_build", accelerate_build);
 
       std::unique_ptr<diskann::Index<T>> _pvamanaIndex =
           std::unique_ptr<diskann::Index<T>>(new diskann::Index<T>(
@@ -605,6 +607,7 @@ namespace diskann {
       paras.Set<unsigned>("num_rnds", 2);
       paras.Set<bool>("saturate_graph", 0);
       paras.Set<std::string>("save_path", shard_index_file);
+      paras.Set<bool>("accelerate_build", accelerate_build);
 
       _u64 shard_base_dim, shard_base_pts;
       get_bin_metadata(shard_base_file, shard_base_pts, shard_base_dim);
@@ -1058,8 +1061,9 @@ namespace diskann {
 #endif
 
     diskann::build_merged_vamana_index<T>(
-        data_file_to_use.c_str(), diskann::Metric::L2, L, R, p_val,
-        indexing_ram_budget, mem_index_path, medoids_path, centroids_path);
+        data_file_to_use.c_str(), diskann::Metric::L2, L, R,
+        config.accelerate_build, p_val, indexing_ram_budget, mem_index_path,
+        medoids_path, centroids_path);
 
     if (!use_disk_pq) {
       diskann::create_disk_layout<T>(data_file_to_use.c_str(), mem_index_path,
@@ -1153,17 +1157,17 @@ namespace diskann {
 
   template DISKANN_DLLEXPORT int build_merged_vamana_index<int8_t>(
       std::string base_file, diskann::Metric compareMetric, unsigned L,
-      unsigned R, double sampling_rate, double ram_budget,
-      std::string mem_index_path, std::string medoids_path,
+      unsigned R, bool accelerate_build, double sampling_rate,
+      double ram_budget, std::string mem_index_path, std::string medoids_path,
       std::string centroids_file);
   template DISKANN_DLLEXPORT int build_merged_vamana_index<float>(
       std::string base_file, diskann::Metric compareMetric, unsigned L,
-      unsigned R, double sampling_rate, double ram_budget,
-      std::string mem_index_path, std::string medoids_path,
+      unsigned R, bool accelerate_build, double sampling_rate,
+      double ram_budget, std::string mem_index_path, std::string medoids_path,
       std::string centroids_file);
   template DISKANN_DLLEXPORT int build_merged_vamana_index<uint8_t>(
       std::string base_file, diskann::Metric compareMetric, unsigned L,
-      unsigned R, double sampling_rate, double ram_budget,
-      std::string mem_index_path, std::string medoids_path,
+      unsigned R, bool accelerate_build, double sampling_rate,
+      double ram_budget, std::string mem_index_path, std::string medoids_path,
       std::string centroids_file);
 };  // namespace diskann

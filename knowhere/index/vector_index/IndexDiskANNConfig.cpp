@@ -27,6 +27,7 @@ static constexpr const char* kSearchDramBudgetGb = "search_dram_budget_gb";
 static constexpr const char* kBuildDramBudgetGb = "build_dram_budget_gb";
 static constexpr const char* kNumThreads = "num_threads";
 static constexpr const char* kDiskPqBytes = "disk_pq_dims";
+static constexpr const char* kAccelerateBuild = "accelerate_build";
 
 static constexpr const char* kNumNodesToCache = "num_nodes_to_cache";
 static constexpr const char* kWarmUp = "warm_up";
@@ -121,7 +122,8 @@ to_json(Config& config, const DiskANNBuildConfig& build_conf) {
                     {kSearchDramBudgetGb, build_conf.search_dram_budget_gb},
                     {kBuildDramBudgetGb, build_conf.build_dram_budget_gb},
                     {kNumThreads, build_conf.num_threads},
-                    {kDiskPqBytes, build_conf.disk_pq_dims}};
+                    {kDiskPqBytes, build_conf.disk_pq_dims},
+                    {kAccelerateBuild, build_conf.accelerate_build}};
 }
 
 void
@@ -133,6 +135,7 @@ from_json(const Config& config, DiskANNBuildConfig& build_conf) {
     CheckNumericParamAndSet<float>(config, kBuildDramBudgetGb, 0, std::nullopt, build_conf.build_dram_budget_gb);
     CheckNumericParamAndSet<uint32_t>(config, kNumThreads, 1, 128, build_conf.num_threads);
     CheckNumericParamAndSet<uint32_t>(config, kDiskPqBytes, 0, std::nullopt, build_conf.disk_pq_dims);
+    CheckBoolParamAndSet(config, kAccelerateBuild, build_conf.accelerate_build);
 }
 
 void
