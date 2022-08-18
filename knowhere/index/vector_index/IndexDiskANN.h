@@ -26,7 +26,7 @@ class IndexDiskANN : public VecIndex {
                   "DiskANN only support float, int8 and uint8");
 
  public:
-    IndexDiskANN(std::string index_prefix, MetricType metric_type, std::unique_ptr<FileManager> file_manager);
+    IndexDiskANN(std::string index_prefix, MetricType metric_type, std::shared_ptr<FileManager> file_manager);
 
     IndexDiskANN(const IndexDiskANN& index_diskann) = delete;
 
@@ -96,12 +96,12 @@ class IndexDiskANN : public VecIndex {
     std::string index_prefix_;
 
     diskann::Metric metric_;
-    std::unique_ptr<FileManager> file_manager_;
+    std::shared_ptr<FileManager> file_manager_;
 
     std::unique_ptr<diskann::PQFlashIndex<T>> pq_flash_index_;
 
     bool is_prepared_ = false;
-    int32_t num_threads_  = 0;
+    int32_t num_threads_ = 0;
     std::mutex preparation_lock_;
 };
 

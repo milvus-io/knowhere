@@ -33,8 +33,8 @@ namespace knowhere {
 
 template <typename T>
 IndexDiskANN<T>::IndexDiskANN(std::string index_prefix, MetricType metric_type,
-                              std::unique_ptr<FileManager> file_manager)
-    : index_prefix_(index_prefix), file_manager_(std::move(file_manager)) {
+                              std::shared_ptr<FileManager> file_manager)
+    : index_prefix_(index_prefix), file_manager_(file_manager) {
     index_type_ = IndexEnum::INDEX_DISKANN;
 
     if (metric_type == metric::L2) {
