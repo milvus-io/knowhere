@@ -16,8 +16,8 @@
 #include <faiss/MetricType.h>
 #include <faiss/utils/Heap.h>
 #include <faiss/impl/AuxIndexStructures.h>
-#include <knowhere/utils/BitsetView.h>
-
+#include <knowhere/bitsetview.h>
+using knowhere::BitsetView;
 /* The binary distance type */
 typedef float tadis_t;
 

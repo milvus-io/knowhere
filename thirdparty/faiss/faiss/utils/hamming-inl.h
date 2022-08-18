@@ -6,8 +6,8 @@
  */
 
 #include <faiss/utils/BinaryDistance.h>
-#include <knowhere/utils/distances_simd_avx.h>
-#include <knowhere/utils/distances_simd_avx512.h>
+#include <src/simd/distances_simd_avx.h>
+#include <src/simd/distances_simd_avx512.h>
 
 namespace faiss {
 

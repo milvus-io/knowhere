@@ -27,17 +27,17 @@
 #include <faiss/utils/hamming.h>
 
 #include <math.h>
+#include <omp.h>
 #include <stdio.h>
 #include <algorithm>
 #include <memory>
-#include <omp.h>
 #include <vector>
 
 #include <faiss/impl/AuxIndexStructures.h>
 #include <faiss/impl/FaissAssert.h>
 #include <faiss/utils/Heap.h>
 #include <faiss/utils/utils.h>
-#include <knowhere/utils/distances_simd.h>
+#include <src/simd/distances_simd.h>
 
 static const size_t BLOCKSIZE_QUERY = 8192;
 static const size_t size_1M = 1 * 1024 * 1024;
@@ -382,8 +382,9 @@ void hamming_range_search(
         size_t code_size,
         RangeSearchResult* result,
         const BitsetView bitset = nullptr) {
-#define HC(name) \
-    hamming_range_search_template<name>(a, b, na, nb, radius, code_size, result, bitset)
+#define HC(name)                         \
+    hamming_range_search_template<name>( \
+            a, b, na, nb, radius, code_size, result, bitset)
 
     switch (code_size) {
         case 4:

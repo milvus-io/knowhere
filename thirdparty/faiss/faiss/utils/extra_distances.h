@@ -14,8 +14,8 @@
 
 #include <faiss/Index.h>
 #include <faiss/utils/Heap.h>
-#include <knowhere/utils/BitsetView.h>
-
+#include <knowhere/bitsetview.h>
+using knowhere::BitsetView;
 namespace faiss {
 
 void pairwise_extra_distances(

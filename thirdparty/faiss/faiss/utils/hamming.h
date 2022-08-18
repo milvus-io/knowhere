@@ -29,7 +29,7 @@
 #include <faiss/impl/AuxIndexStructures.h>
 #include <faiss/impl/platform_macros.h>
 #include <faiss/utils/Heap.h>
-#include <knowhere/utils/BitsetView.h>
+#include <knowhere/bitsetview.h>
 
 /* The Hamming distance type */
 typedef int32_t hamdis_t;

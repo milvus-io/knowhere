@@ -1,6 +1,6 @@
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag(-std=c++17 COMPILER_SUPPORTS_CXX17)
-set(CMAKE_CXX_FLAGS "-std=c++14 ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS}")
 
 if(NOT COMPILER_SUPPORTS_CXX17)
   message(

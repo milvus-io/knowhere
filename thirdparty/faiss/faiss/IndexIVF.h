@@ -20,7 +20,9 @@
 #include <faiss/invlists/DirectMap.h>
 #include <faiss/invlists/InvertedLists.h>
 #include <faiss/utils/Heap.h>
-#include <knowhere/utils/BitsetView.h>
+#include <knowhere/bitsetview.h>
+
+using knowhere::BitsetView;
 
 namespace faiss {
 

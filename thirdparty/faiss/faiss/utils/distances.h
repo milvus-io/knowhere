@@ -15,8 +15,8 @@
 
 #include <faiss/impl/platform_macros.h>
 #include <faiss/utils/Heap.h>
-#include <knowhere/utils/BitsetView.h>
-
+#include <knowhere/bitsetview.h>
+using knowhere::BitsetView;
 namespace faiss {
 
 /*********************************************************

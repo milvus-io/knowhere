@@ -16,8 +16,7 @@
 #include <typeinfo>
 
 #include <faiss/MetricType.h>
-#include <knowhere/utils/BitsetView.h>
-
+#include <knowhere/bitsetview.h>
 #define FAISS_VERSION_MAJOR 1
 #define FAISS_VERSION_MINOR 7
 #define FAISS_VERSION_PATCH 2
@@ -40,6 +39,7 @@
 
 namespace faiss {
 
+using knowhere::BitsetView;
 /// Forward declarations see AuxIndexStructures.h
 struct IDSelector;
 struct RangeSearchResult;
