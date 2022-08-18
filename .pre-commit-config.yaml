@@ -1,0 +1,35 @@
+# Pre-commit hook
+# See documentation at: https://pre-commit.com/
+#
+# Pre-commit hook to run the sanity checks from Jenkins locally.
+#
+# Requirements:
+#   - How to configure:
+#        - $ pip install pre-commit
+#        - $ pre-commit install --hook-type pre-push
+#   - How to prevent running it:
+#        - git options: --no-verify or -n
+#        - $ git commit -n -m "YOUR COMMIT MESSAGE"
+#   - How to run it as standalone
+#        - $ pre-commit run
+#
+#
+
+default_language_version:
+    python: python3.8
+fail_fast: True
+default_stages: [push]
+repos:
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v4.3.0
+      hooks:
+        - id: check-added-large-files
+        - id: check-merge-conflict
+        - id: end-of-file-fixer
+          stages: [push]
+        - id: trailing-whitespace
+          stages: [push]
+    - repo: https://github.com/pre-commit/mirrors-clang-format
+      rev: v14.0.6
+      hooks:
+        - id: clang-format
