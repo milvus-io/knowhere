@@ -99,8 +99,8 @@ namespace diskann {
   template<typename T>
   DISKANN_DLLEXPORT int build_merged_vamana_index(
       std::string base_file, diskann::Metric _compareMetric, unsigned L,
-      unsigned R, double sampling_rate, double ram_budget,
-      std::string mem_index_path, std::string medoids_file,
+      unsigned R, bool accelerate_build, double sampling_rate,
+      double ram_budget, std::string mem_index_path, std::string medoids_file,
       std::string centroids_file);
 
   template<typename T>
@@ -129,6 +129,8 @@ namespace diskann {
     // reorder (set true to include full precision in data file: 
     // optional paramter, use only when using disk PQ
     bool reorder = false;
+    // acclerate the index build ~30% and lose ~1% recall
+    bool accelerate_build = false;
   };
 
   template<typename T>
