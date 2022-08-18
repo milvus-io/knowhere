@@ -75,6 +75,16 @@ pull_request_rules:
         add:
           - ci-passed
 
+  - name: Test passed for docs only
+    conditions:
+      - base=main
+      - -files~=^(?!.*\.(md)).*$ 
+    actions:
+      label:
+        add:
+          - ci-passed
+          - kind/documentation
+
   - name: Test passed for code changed for diskAnn
     conditions:
       - base=support_diskann
@@ -91,6 +101,7 @@ pull_request_rules:
   - name: Remove ci-passed label when ut failed
     conditions:
       - base=main
+      - label!=kind/documentation
       - "status-success!=Unit Test on ubuntu-18.04"
       - "status-success!=Unit Test on centos7"
       - "status-success!=Unit Test on macos-11"
@@ -106,6 +117,7 @@ pull_request_rules:
   - name: Remove ci-passed label when ut failed - diskAnn
     conditions:
       - base=support_diskann
+      - label!=kind/documentation
       - "status-success!=Unit Test on ubuntu-18.04"
       - "status-success!=Unit Test on centos7"
       - "status-success!=Unit Test on macos-11"
