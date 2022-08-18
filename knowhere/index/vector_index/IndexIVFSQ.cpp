@@ -21,6 +21,7 @@
 #include <faiss/clone_index.h>
 
 #include "common/Exception.h"
+#include "common/Utils.h"
 #include "index/vector_index/IndexIVFSQ.h"
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/IndexParameter.h"
@@ -35,6 +36,7 @@ void
 IVFSQ::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA_DIM(dataset_ptr)
 
+    knowhere::utils::SetBuildOmpThread(config);
     faiss::MetricType metric_type = GetFaissMetricType(config);
     faiss::Index* coarse_quantizer = new faiss::IndexFlat(dim, metric_type);
     auto index = std::make_shared<faiss::IndexIVFScalarQuantizer>(

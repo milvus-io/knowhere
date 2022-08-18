@@ -31,6 +31,7 @@
 
 #include "common/Exception.h"
 #include "common/Log.h"
+#include "common/Utils.h"
 #include "index/vector_index/IndexIVF.h"
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/IndexParameter.h"
@@ -71,6 +72,7 @@ void
 IVF::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA_DIM(dataset_ptr)
 
+    utils::SetBuildOmpThread(config);
     auto nlist = GetIndexParamNlist(config);
     faiss::MetricType metric_type = GetFaissMetricType(config);
     faiss::Index* coarse_quantizer = new faiss::IndexFlat(dim, metric_type);
@@ -132,6 +134,7 @@ IVF::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::Bit
 
     GET_TENSOR_DATA(dataset_ptr)
 
+    utils::SetQueryOmpThread(config);
     int64_t* p_id = nullptr;
     float* p_dist = nullptr;
     auto release_when_exception = [&]() {
@@ -169,6 +172,7 @@ IVF::QueryByRange(const DatasetPtr& dataset,
     }
     GET_TENSOR_DATA(dataset)
 
+    utils::SetQueryOmpThread(config);
     auto radius = GetMetaRadius(config);
 
     int64_t* p_id = nullptr;

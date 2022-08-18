@@ -15,10 +15,10 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <omp.h>
 
 #include "common/Exception.h"
 #include "common/Log.h"
+#include "common/Utils.h"
 #include "hnswlib/hnswlib/hnswalg.h"
 #include "index/vector_index/IndexHNSW.h"
 #include "index/vector_index/adapter/VectorAdapter.h"
@@ -103,10 +103,9 @@ IndexHNSW::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) {
     }
 
     GET_TENSOR_DATA(dataset_ptr)
-
+    utils::SetBuildOmpThread(config);
     index_->addPoint(p_data, 0);
-if (CheckKeyInConfig(config, meta::BUILD_THREAD_NUM))
-    omp_set_num_threads(GetMetaBuildThreadNum(config));
+
 #pragma omp parallel for
     for (int i = 1; i < rows; ++i) {
         index_->addPoint((reinterpret_cast<const float*>(p_data) + Dim() * i), i);
@@ -154,6 +153,7 @@ IndexHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fais
     }
     GET_TENSOR_DATA_DIM(dataset_ptr)
 
+    utils::SetQueryOmpThread(config);
     auto k = GetMetaTopk(config);
     auto p_id = new int64_t[k * rows];
     auto p_dist = new float[k * rows];
@@ -172,8 +172,6 @@ IndexHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fais
     std::chrono::high_resolution_clock::time_point query_start, query_end;
     query_start = std::chrono::high_resolution_clock::now();
 
-if (CheckKeyInConfig(config, meta::QUERY_THREAD_NUM))
-    omp_set_num_threads(GetMetaQueryThreadNum(config));
 #pragma omp parallel for
     for (unsigned int i = 0; i < rows; ++i) {
         auto single_query = (float*)p_data + i * dim;
@@ -244,6 +242,7 @@ IndexHNSW::QueryByRange(const DatasetPtr& dataset,
     }
     GET_TENSOR_DATA_DIM(dataset)
 
+    utils::SetQueryOmpThread(config);
     auto range_k = GetIndexParamHNSWK(config);
     auto radius = GetMetaRadius(config);
     index_->setEf(GetIndexParamEf(config));

@@ -20,6 +20,7 @@
 
 #include "common/Exception.h"
 #include "common/Log.h"
+#include "common/Utils.h"
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/FaissIO.h"
 
@@ -89,6 +90,7 @@ IndexAnnoy::BuildAll(const DatasetPtr& dataset_ptr, const Config& config) {
 
     GET_TENSOR_DATA_DIM(dataset_ptr)
 
+    utils::SetBuildOmpThread(config);
     metric_type_ = GetMetaMetricType(config);
     if (metric_type_ == metric::L2) {
         index_ = std::make_shared<AnnoyIndex<int64_t, float, ::Euclidean, ::Kiss64Random, ThreadedBuildPolicy>>(dim);
@@ -101,7 +103,6 @@ IndexAnnoy::BuildAll(const DatasetPtr& dataset_ptr, const Config& config) {
     for (int i = 0; i < rows; ++i) {
         index_->add_item(i, static_cast<const float*>(p_data) + dim * i);
     }
-
     index_->build(GetIndexParamNtrees(config));
 }
 
@@ -137,6 +138,8 @@ IndexAnnoy::Query(const DatasetPtr& dataset_ptr, const Config& config, const fai
     }
 
     GET_TENSOR_DATA_DIM(dataset_ptr)
+
+    utils::SetQueryOmpThread(config);
     auto k = GetMetaTopk(config);
     auto search_k = GetIndexParamSearchK(config);
     auto p_id = new int64_t[k * rows];

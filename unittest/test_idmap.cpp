@@ -44,6 +44,7 @@ class IDMAPTest : public DataGen, public TestWithParam<knowhere::IndexMode> {
             {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
             {knowhere::meta::DIM, dim},
             {knowhere::meta::TOPK, k},
+            {knowhere::meta::QUERY_OMP_NUM, QUERY_OMP_NUM},
         };
         index_mode_ = GetParam();
         index_type_ = knowhere::IndexEnum::INDEX_FAISS_IDMAP;
