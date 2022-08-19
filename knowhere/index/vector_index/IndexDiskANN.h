@@ -35,7 +35,7 @@ class IndexDiskANN : public VecIndex {
 
     BinarySet
     Serialize(const Config& /* unused */) override {
-        KNOWHERE_THROW_MSG("DiskANN doesn't support Seialize.");
+        KNOWHERE_THROW_MSG("DiskANN doesn't support Serialize.");
     }
 
     void
