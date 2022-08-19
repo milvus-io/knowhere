@@ -164,7 +164,6 @@ if (KNOWHERE_WITH_DISKANN)
              ${depend_libs}
              diskann
              aio
-             ${MKL_LIBRARIES}
              )
 endif()
 

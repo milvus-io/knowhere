@@ -5,7 +5,7 @@
 #include <unordered_set>
 #include <malloc.h>
 #include <math_utils.h>
-#include <mkl.h>
+#include "openblas/cblas.h"
 #include "logger.h"
 #include "utils.h"
 
@@ -27,7 +27,7 @@ namespace math_utils {
 #pragma omp parallel for schedule(static, 8192)
     for (int64_t n_iter = 0; n_iter < (_s64) num_points; n_iter++) {
       vecs_l2sq[n_iter] =
-          cblas_snrm2((MKL_INT) dim, (data + (n_iter * dim)), 1);
+          cblas_snrm2(dim, (data + (n_iter * dim)), 1);
       vecs_l2sq[n_iter] *= vecs_l2sq[n_iter];
     }
   }
@@ -42,9 +42,9 @@ namespace math_utils {
     }
     diskann::cout << "done Rotating data with random matrix.." << std::flush;
 
-    cblas_sgemm(CblasRowMajor, CblasNoTrans, transpose, (MKL_INT) num_points,
-                (MKL_INT) dim, (MKL_INT) dim, 1.0, data, (MKL_INT) dim, rot_mat,
-                (MKL_INT) dim, 0, new_mat, (MKL_INT) dim);
+    cblas_sgemm(CblasRowMajor, CblasNoTrans, transpose,  num_points,
+                 dim,  dim, 1.0, data,  dim, rot_mat,
+                 dim, 0, new_mat,  dim);
 
     diskann::cout << "done." << std::endl;
   }
@@ -80,20 +80,20 @@ namespace math_utils {
       ones_b[i] = 1.0;
     }
 
-    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, (MKL_INT) num_points,
-                (MKL_INT) num_centers, (MKL_INT) 1, 1.0f, docs_l2sq,
-                (MKL_INT) 1, ones_a, (MKL_INT) 1, 0.0f, dist_matrix,
-                (MKL_INT) num_centers);
+    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,  num_points,
+                 num_centers,  1, 1.0f, docs_l2sq,
+                 1, ones_a,  1, 0.0f, dist_matrix,
+                 num_centers);
 
-    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, (MKL_INT) num_points,
-                (MKL_INT) num_centers, (MKL_INT) 1, 1.0f, ones_b, (MKL_INT) 1,
-                centers_l2sq, (MKL_INT) 1, 1.0f, dist_matrix,
-                (MKL_INT) num_centers);
+    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,  num_points,
+                 num_centers,  1, 1.0f, ones_b,  1,
+                centers_l2sq,  1, 1.0f, dist_matrix,
+                 num_centers);
 
-    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, (MKL_INT) num_points,
-                (MKL_INT) num_centers, (MKL_INT) dim, -2.0f, data,
-                (MKL_INT) dim, centers, (MKL_INT) dim, 1.0f, dist_matrix,
-                (MKL_INT) num_centers);
+    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,  num_points,
+                 num_centers,  dim, -2.0f, data,
+                 dim, centers,  dim, 1.0f, dist_matrix,
+                 num_centers);
 
     if (k == 1) {
 #pragma omp parallel for schedule(static, 8192)

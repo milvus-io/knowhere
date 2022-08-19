@@ -37,7 +37,6 @@ if [[ "${MACHINE}" == "Linux" ]]; then
         sudo apt install -y g++ gcc make ccache python3-dev gfortran
         if [ "$release_num" == "20.04" ];then
             sudo apt install -y python3-setuptools swig
-            sudo apt install libmkl-full-dev
         fi
         # Pre-installation of openblas can save about 15 minutes of openblas building time.
         # But the apt-installed openblas version is 0.2.20, while the latest openblas version is 0.3.19.
@@ -48,8 +47,6 @@ if [[ "${MACHINE}" == "Linux" ]]; then
         #DiskANN dependencies
         sudo apt-get install -y libboost-program-options-dev
         sudo apt-get install -y libaio-dev libgoogle-perftools-dev clang-format
-        wget https://registrationcenter-download.intel.com/akdlm/irc_nas/18487/l_BaseKit_p_2022.1.2.146.sh
-        sudo sh l_BaseKit_p_2022.1.2.146.sh -a --components intel.oneapi.lin.mkl.devel --action install --eula accept -s
     elif [[ -x "$(command -v yum)" ]]; then
         # for CentOS 7
         sudo yum install -y epel-release centos-release-scl-rh wget && \
@@ -64,8 +61,6 @@ if [[ "${MACHINE}" == "Linux" ]]; then
         #DiskANN dependencies
         sudo yum -y install boost-program-options
         sudo yum -y install boost libaio gperftools-devel 
-        sudo yum-config-manager --add-repo https://yum.repos.intel.com/mkl/setup/intel-mkl.repo
-        sudo yum install -y intel-mkl 
         #CMake 3.18 or higher is required
         wget -c https://github.com/Kitware/CMake/releases/download/v3.22.2/cmake-3.22.2-linux-x86_64.tar.gz && \
         tar -zxvf cmake-3.22.2-linux-x86_64.tar.gz && \

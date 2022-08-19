@@ -18,7 +18,7 @@
 #include "aux_utils.h"
 #include "cached_io.h"
 #include "index.h"
-#include "mkl.h"
+#include "openblas/cblas.h"
 #include "omp.h"
 #include "partition_and_pq.h"
 #include "percentile_stats.h"
@@ -983,7 +983,6 @@ namespace diskann {
 
     if (num_threads != 0) {
       omp_set_num_threads(num_threads);
-      mkl_set_num_threads(num_threads);
     }
 
     LOG(INFO) << "Starting index build: R=" << R << " L=" << L
