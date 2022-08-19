@@ -195,28 +195,26 @@ macro(build_openblas)
 
     set(OPENBLAS_CMAKE_ARGS
             ${EP_COMMON_CMAKE_ARGS}
-            -DVERSION=${OPENBLAS_VERSION}
             -DCMAKE_INSTALL_PREFIX=${KNOWHERE_INSTALL_PREFIX}
-            -DCMAKE_BUILD_TYPE=Release
             -DBUILD_SHARED_LIBS=ON
-            -DBUILD_STATIC_LIBS=ON
+            -DCMAKE_BUILD_TYPE=Release
             -DTARGET=CORE2
             -DDYNAMIC_ARCH=1
             -DDYNAMIC_OLDER=1
-            -DUSE_THREAD=0
-            -DUSE_OPENMP=0
-            -DFC=gfortran
-            -DCC=gcc
-            -DINTERFACE64=0
+            -DUSE_THREAD=1
+            -DUSE_OPENMP=1
             -DNUM_THREADS=128
-            -DNO_LAPACKE=0
+            -DCC=gcc
+            -DFC=gfortran
             )
+
+    set ( BLAS_MAKE_BUILD_ARGS ${MAKE_BUILD_ARGS} NO_STATIC=1 NO_LAPACK=1 NO_LAPACKE=1 )
 
     externalproject_add(openblas_ep
             URL             ${OPENBLAS_SOURCE_URL}
             URL_MD5         "28cc19a6acbf636f5aab5f10b9a0dfe1"
             CMAKE_ARGS      ${OPENBLAS_CMAKE_ARGS}
-            BUILD_COMMAND   ${MAKE} ${MAKE_BUILD_ARGS}
+            BUILD_COMMAND   ${MAKE} ${BLAS_MAKE_BUILD_ARGS}
             PREFIX          ${CMAKE_BINARY_DIR}/3rdparty_download/openblas-subbuild
             BINARY_DIR      openblas-bin
             INSTALL_DIR     ${KNOWHERE_INSTALL_PREFIX}
@@ -244,10 +242,14 @@ if (KNOWHERE_WITH_OPENBLAS)
         if (LINUX)
             set (BLA_VENDOR OpenBLAS)
         endif()
-        find_package(BLAS)
 
-        message(STATUS "Knowhere openblas libraries: ${BLAS_LIBRARIES}")
-        message(STATUS "Knowhere openblas found: ${BLAS_FOUND}")
+        if ( CMAKE_BUILD_TYPE STREQUAL "Debug" OR APPLE OR MSYS)
+            message(STATUS "Using debug mode or host is MacOS/MSYS, try to find openblas")
+            find_package(BLAS)
+            message(STATUS "Knowhere openblas libraries: ${BLAS_LIBRARIES}")
+            message(STATUS "Knowhere openblas found: ${BLAS_FOUND}")
+        endif()
+
 
         if (BLAS_FOUND)
             add_library(openblas ALIAS BLAS::BLAS)
