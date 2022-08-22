@@ -26,9 +26,12 @@ CUDA_COMPILER=/usr/local/cuda/bin/nvcc
 SUPPORT_GPU="OFF" #defaults to CPU version
 KNOWHERE_WITH_DISKANN="OFF"
 ENABLE_SANITIZER="OFF"
+BUILD_BENCHMARK="OFF"
 
-while getopts "p:t:cdglrsuzh" arg; do
+while getopts "p:t:bcdglrsuzh" arg; do
     case $arg in
+        b)
+            BUILD_BENCHMARK="ON" ;;
         c)
             BUILD_COVERAGE="ON" ;;
         d)
@@ -54,7 +57,9 @@ while getopts "p:t:cdglrsuzh" arg; do
             echo "
 
 parameter:
+-b: build benchmark(default: OFF)
 -c: code coverage(default: OFF)
+-d: support DiskANN(default: OFF)
 -g: build GPU version(default: OFF)
 -l: run cpplint, clang-format and clang-tidy(default: OFF)
 -p: install prefix(default: $(pwd)/knowhere)
@@ -63,7 +68,6 @@ parameter:
 -t: build type(default: Debug)
 -u: building unit test options(default: OFF)
 -z: support CPU profiling(default: OFF)
--d: support DiskANN(default: OFF)
 -h: help
 
 usage:
@@ -105,6 +109,7 @@ CMAKE_CMD="cmake -DBUILD_UNIT_TEST=${BUILD_UNITTEST} \
 -DKNOWHERE_GPU_VERSION=${SUPPORT_GPU} \
 -DENABLE_SANITIZER=${ENABLE_SANITIZER} \
 -DKNOWHERE_WITH_DISKANN=${KNOWHERE_WITH_DISKANN} \
+-DBUILD_BENCHMARK=${BUILD_BENCHMARK} \
 ../"
 
 echo ${CMAKE_CMD}
