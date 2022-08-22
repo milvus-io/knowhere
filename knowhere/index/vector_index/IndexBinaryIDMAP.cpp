@@ -14,6 +14,7 @@
 #include <faiss/MetaIndexes.h>
 
 #include "common/Exception.h"
+#include "common/Utils.h"
 #include "index/vector_index/IndexBinaryIDMAP.h"
 #include "index/vector_index/adapter/VectorAdapter.h"
 
@@ -76,6 +77,7 @@ BinaryIDMAP::Query(const DatasetPtr& dataset_ptr, const Config& config, const fa
     }
     GET_TENSOR_DATA(dataset_ptr)
 
+    utils::SetQueryOmpThread(config);
     int64_t* p_id = nullptr;
     float* p_dist = nullptr;
     auto release_when_exception = [&]() {
@@ -113,6 +115,7 @@ BinaryIDMAP::QueryByRange(const DatasetPtr& dataset,
     }
     GET_TENSOR_DATA(dataset)
 
+    utils::SetQueryOmpThread(config);
     auto radius = GetMetaRadius(config);
 
     int64_t* p_id = nullptr;
@@ -166,7 +169,6 @@ BinaryIDMAP::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) 
     }
 
     GET_TENSOR_DATA(dataset_ptr)
-
     index_->add(rows, reinterpret_cast<const uint8_t*>(p_data));
 }
 
@@ -174,6 +176,7 @@ void
 BinaryIDMAP::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA_DIM(dataset_ptr)
 
+    utils::SetBuildOmpThread(config);
     faiss::MetricType metric_type = GetFaissMetricType(config);
     auto index = std::make_shared<faiss::IndexBinaryFlat>(dim, metric_type);
     index_ = index;

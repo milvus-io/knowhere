@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "common/Exception.h"
+#include "common/Utils.h"
 #include "index/vector_index/IndexIDMAP.h"
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/FaissIO.h"
@@ -53,7 +54,7 @@ IDMAP::Load(const BinarySet& binary_set) {
 void
 IDMAP::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA_DIM(dataset_ptr)
-
+    utils::SetBuildOmpThread(config);
     faiss::MetricType metric_type = GetFaissMetricType(config);
     auto index = std::make_shared<faiss::IndexFlat>(dim, metric_type);
     index_ = index;
@@ -109,6 +110,7 @@ IDMAP::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::B
     }
     GET_TENSOR_DATA(dataset_ptr)
 
+    utils::SetQueryOmpThread(config);
     int64_t* p_id = nullptr;
     float* p_dist = nullptr;
     auto release_when_exception = [&]() {
@@ -146,6 +148,7 @@ IDMAP::QueryByRange(const DatasetPtr& dataset,
     }
     GET_TENSOR_DATA(dataset)
 
+    utils::SetQueryOmpThread(config);
     auto radius = GetMetaRadius(config);
 
     int64_t* p_id = nullptr;

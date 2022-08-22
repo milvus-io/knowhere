@@ -37,8 +37,8 @@ constexpr int64_t K = 10;
 constexpr int64_t PINMEM = 1024 * 1024 * 200;
 constexpr int64_t TEMPMEM = 1024 * 1024 * 300;
 constexpr int64_t RESNUM = 2;
-constexpr int64_t BUILD_THREAD_NUM = 3;
-constexpr int64_t QUERY_THREAD_NUM = 4;
+constexpr int64_t BUILD_INDEX_OMP_NUM = 3;
+constexpr int64_t QUERY_OMP_NUM = 4;
 
 class ParamGenerator {
  public:
@@ -55,12 +55,16 @@ class ParamGenerator {
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::HAMMING},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
+                {knowhere::meta::BUILD_INDEX_OMP_NUM, BUILD_INDEX_OMP_NUM},
+                {knowhere::meta::QUERY_OMP_NUM, QUERY_OMP_NUM},
             };
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_BIN_IVFFLAT) {
             return knowhere::Config{
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::HAMMING},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
+                {knowhere::meta::BUILD_INDEX_OMP_NUM, BUILD_INDEX_OMP_NUM},
+                {knowhere::meta::QUERY_OMP_NUM, QUERY_OMP_NUM},
                 {knowhere::indexparam::NLIST, 16},
                 {knowhere::indexparam::NPROBE, 8},
         };
@@ -70,6 +74,8 @@ class ParamGenerator {
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
                 {knowhere::meta::DEVICE_ID, DEVICE_ID},
+                {knowhere::meta::BUILD_INDEX_OMP_NUM, BUILD_INDEX_OMP_NUM},
+                {knowhere::meta::QUERY_OMP_NUM, QUERY_OMP_NUM},
             };
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
             return knowhere::Config{
@@ -77,8 +83,8 @@ class ParamGenerator {
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
                 {knowhere::meta::DEVICE_ID, DEVICE_ID},
-                {knowhere::meta::BUILD_THREAD_NUM, BUILD_THREAD_NUM},
-                {knowhere::meta::QUERY_THREAD_NUM, QUERY_THREAD_NUM},
+                {knowhere::meta::BUILD_INDEX_OMP_NUM, BUILD_INDEX_OMP_NUM},
+                {knowhere::meta::QUERY_OMP_NUM, QUERY_OMP_NUM},
                 {knowhere::indexparam::NLIST, 16},
                 {knowhere::indexparam::NPROBE, 8},
             };
@@ -88,6 +94,8 @@ class ParamGenerator {
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
                 {knowhere::meta::DEVICE_ID, DEVICE_ID},
+                {knowhere::meta::BUILD_INDEX_OMP_NUM, BUILD_INDEX_OMP_NUM},
+                {knowhere::meta::QUERY_OMP_NUM, QUERY_OMP_NUM},
                 {knowhere::indexparam::NLIST, 16},
                 {knowhere::indexparam::NPROBE, 8},
                 {knowhere::indexparam::M, 4},
@@ -100,6 +108,8 @@ class ParamGenerator {
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
                 {knowhere::meta::DEVICE_ID, DEVICE_ID},
+                {knowhere::meta::BUILD_INDEX_OMP_NUM, BUILD_INDEX_OMP_NUM},
+                {knowhere::meta::QUERY_OMP_NUM, QUERY_OMP_NUM},
                 {knowhere::indexparam::NLIST, 16},
                 {knowhere::indexparam::NPROBE, 8},
                 {knowhere::indexparam::NBITS, 8},
@@ -121,8 +131,8 @@ class ParamGenerator {
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
-                {knowhere::meta::BUILD_THREAD_NUM, BUILD_THREAD_NUM},
-                {knowhere::meta::QUERY_THREAD_NUM, QUERY_THREAD_NUM},
+                {knowhere::meta::BUILD_INDEX_OMP_NUM, BUILD_INDEX_OMP_NUM},
+                {knowhere::meta::QUERY_OMP_NUM, QUERY_OMP_NUM},
                 {knowhere::indexparam::HNSW_M, 16},
                 {knowhere::indexparam::EFCONSTRUCTION, 200},
                 {knowhere::indexparam::EF, 200},
@@ -132,6 +142,8 @@ class ParamGenerator {
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
                 {knowhere::meta::DIM, DIM},
                 {knowhere::meta::TOPK, K},
+                {knowhere::meta::BUILD_INDEX_OMP_NUM, BUILD_INDEX_OMP_NUM},
+                {knowhere::meta::QUERY_OMP_NUM, QUERY_OMP_NUM},
                 {knowhere::indexparam::N_TREES, 4},
                 {knowhere::indexparam::SEARCH_K, 100},
             };

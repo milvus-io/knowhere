@@ -17,6 +17,7 @@
 
 #include "common/Exception.h"
 #include "common/Log.h"
+#include "common/Utils.h"
 #include "index/vector_index/IndexBinaryIVF.h"
 #include "index/vector_index/adapter/VectorAdapter.h"
 
@@ -89,6 +90,7 @@ BinaryIVF::Query(const DatasetPtr& dataset_ptr, const Config& config, const fais
 
     GET_TENSOR_DATA(dataset_ptr)
 
+    utils::SetQueryOmpThread(config);
     int64_t* p_id = nullptr;
     float* p_dist = nullptr;
     auto release_when_exception = [&]() {
@@ -126,6 +128,7 @@ BinaryIVF::QueryByRange(const DatasetPtr& dataset,
     }
     GET_TENSOR_DATA(dataset)
 
+    utils::SetQueryOmpThread(config);
     auto radius = GetMetaRadius(config);
 
     int64_t* p_id = nullptr;
@@ -217,6 +220,7 @@ void
 BinaryIVF::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     GET_TENSOR_DATA_DIM(dataset_ptr)
 
+    utils::SetBuildOmpThread(config);
     int64_t nlist = GetIndexParamNlist(config);
     faiss::MetricType metric_type = GetFaissMetricType(config);
     faiss::IndexBinary* coarse_quantizer = new faiss::IndexBinaryFlat(dim, metric_type);
