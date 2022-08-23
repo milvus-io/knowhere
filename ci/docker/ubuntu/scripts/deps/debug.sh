@@ -1,5 +1,6 @@
 CMAKE_VERSION="v3.23"
 CMAKE_TAR="cmake-3.23.0-linux-x86_64.tar.gz"
+HDF_VERSION="1.13.2"
 apt-get update && apt-get install -y --no-install-recommends wget curl g++ gcc ca-certificates \
 make ccache python3-dev gfortran python3-setuptools swig libopenblas-dev pip git vim \
 libaio-dev libgoogle-perftools-dev clang-format libboost-all-dev libmkl-full-dev \
@@ -9,8 +10,8 @@ libaio-dev libgoogle-perftools-dev clang-format libboost-all-dev libmkl-full-dev
 && tar --strip-components=1 -xz -C /usr/local -f ${CMAKE_TAR} \
 && rm -f ${CMAKE_TAR} \
 
-wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.13/hdf5-1.13.1/src/hdf5-1.13.1.tar.gz && \
-    tar xvfz hdf5-1.13.1.tar.gz && cd hdf5-1.13.1 && \
+wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.13/hdf5-${HDF_VERSION}/src/hdf5-${HDF_VERSION}.tar.gz && \
+    tar xvfz hdf5-${HDF_VERSION}.tar.gz && cd hdf5-${HDF_VERSION} && \
     ./configure --prefix=/usr/local/hdf5 --enable-fortran && \
     make -j && make install && \
-    cd .. && rm -rf hdf5-1.13.1 && rm hdf5-1.13.1.tar.gz
+    cd .. && rm -rf hdf5-${HDF_VERSION} && rm hdf5-${HDF_VERSION}.tar.gz
