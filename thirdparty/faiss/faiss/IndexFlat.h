@@ -24,8 +24,6 @@ struct IndexFlat : IndexFlatCodes {
 
     explicit IndexFlat(idx_t d, MetricType metric = METRIC_L2);
 
-    void get_vector_by_id(idx_t n, const idx_t* xids, float* x) override;
-
     void search(
             idx_t n,
             const float* x,
@@ -34,11 +32,8 @@ struct IndexFlat : IndexFlatCodes {
             idx_t* labels,
             const BitsetView bitset = nullptr) const override;
 
-    void assign (
-            idx_t n,
-            const float* x,
-            idx_t* labels,
-            float* distances) const override;
+    void assign(idx_t n, const float* x, idx_t* labels, float* distances)
+            const override;
 
     void range_search(
             idx_t n,

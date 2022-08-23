@@ -63,7 +63,11 @@ struct IndexBinaryIVF : IndexBinary {
      */
     IndexBinaryIVF(IndexBinary* quantizer, size_t d, size_t nlist);
 
-    IndexBinaryIVF(IndexBinary *quantizer, size_t d, size_t nlist, MetricType metric);
+    IndexBinaryIVF(
+            IndexBinary* quantizer,
+            size_t d,
+            size_t nlist,
+            MetricType metric);
 
     IndexBinaryIVF();
 
@@ -89,8 +93,6 @@ struct IndexBinaryIVF : IndexBinary {
             const uint8_t* x,
             const idx_t* xids,
             const idx_t* precomputed_idx);
-
-    void get_vector_by_id(idx_t n, const idx_t* xids, uint8_t* x) override;
 
     /** Search a set of vectors, that are pre-quantized by the IVF
      *  quantizer. Fill in the corresponding heaps with the query

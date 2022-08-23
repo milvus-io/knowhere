@@ -22,7 +22,11 @@ void IndexBinary::train(idx_t, const uint8_t*) {
 }
 
 void IndexBinary::range_search(
-        idx_t, const uint8_t*, float, RangeSearchResult*, const BitsetView) const {
+        idx_t,
+        const uint8_t*,
+        float,
+        RangeSearchResult*,
+        const BitsetView) const {
     FAISS_THROW_MSG("range search not implemented");
 }
 
@@ -34,10 +38,6 @@ void IndexBinary::assign(idx_t n, const uint8_t* x, idx_t* labels, idx_t k)
 
 void IndexBinary::add_with_ids(idx_t, const uint8_t*, const idx_t*) {
     FAISS_THROW_MSG("add_with_ids not implemented for this type of index");
-}
-
-void IndexBinary::get_vector_by_id(idx_t n, const idx_t* xids, uint8_t* x) {
-    FAISS_THROW_MSG("get_vector_by_id not implemented for this type of index");
 }
 
 size_t IndexBinary::remove_ids(const IDSelector&) {

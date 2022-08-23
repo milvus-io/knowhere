@@ -24,8 +24,8 @@
 #include <faiss/utils/substructure-inl.h>
 #include <faiss/utils/superstructure-inl.h>
 #include <faiss/utils/utils.h>
-#include <src/simd/FaissHookFvec.h>
-#include <src/simd/distances_simd.h>
+#include <simd/FaissHookFvec.h>
+#include <simd/distances_simd.h>
 
 namespace faiss {
 

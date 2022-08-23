@@ -23,7 +23,6 @@
 #include <knowhere/bitsetview.h>
 
 using knowhere::BitsetView;
-
 namespace faiss {
 
 /** Encapsulates a quantizer object for the IndexIVF
@@ -32,9 +31,10 @@ namespace faiss {
  * of the lists (especially training)
  */
 struct Level1Quantizer {
-    Index* quantizer = nullptr;     ///< quantizer that maps vectors to inverted lists
+    Index* quantizer =
+            nullptr; ///< quantizer that maps vectors to inverted lists
     Index* quantizer_bak = nullptr; ///< quantizer for backup
-    size_t nlist;     ///< number of possible key values
+    size_t nlist;                   ///< number of possible key values
 
     /**
      * = 0: use the quantizer as index in a kmeans training
@@ -67,9 +67,11 @@ struct Level1Quantizer {
 };
 
 struct IVFSearchParameters {
-    size_t nprobe;    ///< number of probes at query time
-    size_t max_codes; ///< max nb of codes to visit to do a query
-    IVFSearchParameters() : nprobe(1), max_codes(0) {}
+    size_t nprobe;     ///< number of probes at query time
+    size_t max_codes;  ///< max nb of codes to visit to do a query
+    int parallel_mode; // default value if -1, and we will use
+                       // this->parallel_mode in this case
+    IVFSearchParameters() : nprobe(1), max_codes(0), parallel_mode(-1) {}
     virtual ~IVFSearchParameters() {}
 };
 
@@ -163,7 +165,8 @@ struct IndexIVF : Index, Level1Quantizer {
     void add_with_ids(idx_t n, const float* x, const idx_t* xids) override;
 
     /// Implementation for adding without original vector data
-    void add_with_ids_without_codes(idx_t n, const float* x, const idx_t* xids) override;
+    void add_with_ids_without_codes(idx_t n, const float* x, const idx_t* xids)
+            override;
 
     /** Implementation of vector addition where the vector assignments are
      * predefined. The default implementation hands over the code extraction to
@@ -260,13 +263,27 @@ struct IndexIVF : Index, Level1Quantizer {
             idx_t* labels,
             const BitsetView bitset = nullptr) const override;
 
-    /** Similar to search, but does not store codes **/
-    void search_without_codes(
+    void search_thread_safe(
             idx_t n,
             const float* x,
             idx_t k,
             float* distances,
             idx_t* labels,
+            const size_t nprobe,
+            const int parallel_mode,
+            const size_t max_codes,
+            const BitsetView bitset = nullptr) const;
+
+    /** Similar to search, but does not store codes **/
+    void search_without_codes_thread_safe(
+            idx_t n,
+            const float* x,
+            idx_t k,
+            float* distances,
+            idx_t* labels,
+            const size_t nprobe,
+            const int parallel_mode,
+            const size_t max_codes,
             const BitsetView bitset = nullptr) const;
 
     void range_search(
@@ -276,11 +293,24 @@ struct IndexIVF : Index, Level1Quantizer {
             RangeSearchResult* result,
             const BitsetView bitset = nullptr) const override;
 
-    void range_search_without_codes(
+    void range_search_thread_safe(
             idx_t n,
             const float* x,
             float radius,
             RangeSearchResult* result,
+            const size_t nprobe,
+            const int parallel_mode,
+            const size_t max_codes,
+            const BitsetView bitset = nullptr) const;
+
+    void range_search_without_codes_thread_safe(
+            idx_t n,
+            const float* x,
+            float radius,
+            RangeSearchResult* result,
+            const size_t nprobe,
+            const int parallel_mode,
+            const size_t max_codes,
             const BitsetView bitset = nullptr) const;
 
     void range_search_preassigned(

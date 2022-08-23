@@ -34,6 +34,7 @@ set(FAISS_SRC
   IndexFlatCodes.cpp
   IndexHNSW.cpp
   IndexIVF.cpp
+  IndexIVFThreadSafe.cpp
   IndexIVFAdditiveQuantizer.cpp
   IndexIVFFlat.cpp
   IndexIVFPQ.cpp

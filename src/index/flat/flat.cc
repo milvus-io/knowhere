@@ -10,38 +10,38 @@ namespace knowhere {
 
 class FlatIndexNode : public IndexNode {
  public:
-    FlatIndexNode() : index_() {
+    FlatIndexNode() : index_(nullptr) {
     }
-    virtual int
+    virtual Error
     Build(const DataSet& dataset, const Config& cfg) override {
         Train(dataset, cfg);
         Add(dataset, cfg);
-        return 0;
+        return Error::success;
     }
-    virtual int
+    virtual Error
     Train(const DataSet& dataset, const Config& cfg) override {
-        return 0;
+        return Error::success;
     }
-    virtual int
+    virtual Error
     Add(const DataSet& dataset, const Config& cfg) override {
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
         if (f_cfg.metric_type == "L2")
-            index_ = faiss::IndexFlat(f_cfg.dim, faiss::METRIC_L2);
+            index_ = new (std::nothrow) faiss::IndexFlat(f_cfg.dim, faiss::METRIC_L2);
         if (f_cfg.metric_type == "IP")
-            index_ = faiss::IndexFlat(f_cfg.dim, faiss::METRIC_INNER_PRODUCT);
+            index_ = new (std::nothrow) faiss::IndexFlat(f_cfg.dim, faiss::METRIC_INNER_PRODUCT);
 
-        if (index_.has_value()) {
+        if (!index_) {
             const void* x = dataset.GetTensor();
             const int64_t n = dataset.GetRows();
-            index_.value().add(n, (const float*)x);
-            return 0;
+            index_->add(n, (const float*)x);
+            return Error::success;
         }
-        return -1;
+        return Error::invalid_metric_type;
     }
-    virtual DataSetPtr
-    Qeury(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
-        if (!index_.has_value()) {
-            return nullptr;
+    virtual expected<DataSetPtr, Error>
+    Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
+        if (!index_) {
+            return unexpected(Error::empty_index);
         }
 
         DataSetPtr results = std::make_shared<DataSet>();
@@ -51,23 +51,23 @@ class FlatIndexNode : public IndexNode {
         auto len = f_cfg.k * nq;
         int64_t* ids = new (std::nothrow) int64_t[len];
         float* dis = new (std::nothrow) float[len];
-        index_.value().search(nq, (const float*)x, f_cfg.k, dis, ids, bitset);
+        index_->search(nq, (const float*)x, f_cfg.k, dis, ids, bitset);
 
         results->SetIds(ids);
         results->SetDistance(dis);
         return results;
     }
-    virtual DataSetPtr
-    QueryByRange(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
-        if (!index_.has_value()) {
-            return nullptr;
+    virtual expected<DataSetPtr, Error>
+    SearchByRange(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
+        if (!index_) {
+            return unexpected(Error::empty_index);
         }
         DataSetPtr results = std::make_shared<DataSet>();
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
         auto nq = dataset.GetRows();
         auto x = dataset.GetTensor();
         faiss::RangeSearchResult res(nq);
-        index_.value().range_search(nq, (const float*)x, f_cfg.radius, &res, nullptr);
+        index_->range_search(nq, (const float*)x, f_cfg.radius, &res, nullptr);
         results->SetIds(res.labels);
         results->SetDistance(res.distances);
         results->SetLims(res.lims);
@@ -77,7 +77,7 @@ class FlatIndexNode : public IndexNode {
         return results;
     }
 
-    virtual DataSetPtr
+    virtual expected<DataSetPtr, Error>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
         DataSetPtr results = std::make_shared<DataSet>();
         auto nq = dataset.GetRows();
@@ -86,27 +86,27 @@ class FlatIndexNode : public IndexNode {
         float* xq = new (std::nothrow) float[nq * f_cfg.dim];
         for (int64_t i = 0; i < nq; i++) {
             int64_t id = in_ids[i];
-            index_.value().reconstruct(id, xq + i * f_cfg.dim);
+            index_->reconstruct(id, xq + i * f_cfg.dim);
         }
         results->SetTensor(xq);
         return results;
     }
-    virtual int
+    virtual Error
     Serialization(BinarySet& binset) const override {
-        if (index_.has_value())
-            return -1;
+        if (!index_)
+            return Error::empty_index;
         MemoryIOWriter writer;
 
-        faiss::write_index(&index_.value(), &writer);
+        faiss::write_index(index_, &writer);
         std::shared_ptr<uint8_t[]> data(writer.data_);
 
         binset.Append("FLAT", data, writer.rp);
-        return 0;
+        return Error::success;
     }
-    virtual int
+    virtual Error
     Deserialization(const BinarySet& binset) override {
-        if (!index_.has_value())
-            return -1;
+        if (!index_)
+            return Error::empty_index;
         auto binary = binset.GetByName("FLAT");
 
         MemoryIOReader reader;
@@ -114,8 +114,8 @@ class FlatIndexNode : public IndexNode {
         reader.data_ = binary->data.get();
 
         faiss::Index* index = faiss::read_index(&reader);
-        index_ = *static_cast<faiss::IndexFlat*>(index);
-        return 0;
+        index_ = static_cast<faiss::IndexFlat*>(index);
+        return Error::success;
     }
 
     virtual std::unique_ptr<Config>
@@ -124,28 +124,30 @@ class FlatIndexNode : public IndexNode {
     }
     virtual int64_t
     Dims() const override {
-        return index_.value().d;
+        return index_->d;
     }
     virtual int64_t
     Size() const override {
-        return index_.value().ntotal * index_.value().d * sizeof(float);
+        return index_->ntotal * index_->d * sizeof(float);
     }
     virtual int64_t
     Count() const override {
-        return index_.value().ntotal;
+        return index_->ntotal;
     }
     virtual std::string
     Type() const override {
-        return "flat";
+        return "FLAT";
     }
     virtual ~FlatIndexNode() {
+        if (index_)
+            delete index_;
     }
 
  private:
-    std::optional<faiss::IndexFlat> index_;
+    faiss::IndexFlat* index_;
 };
 
-KNOWHERE_REGISTER_GLOBAL("FLAT", []() { return Index<FlatIndexNode>::Create(); });
+KNOWHERE_REGISTER_GLOBAL(FLAT, []() { return Index<FlatIndexNode>::Create(); });
 
 }  // namespace knowhere
    //

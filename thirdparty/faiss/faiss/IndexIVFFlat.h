@@ -35,17 +35,8 @@ struct IndexIVFFlat : IndexIVF {
             const idx_t* precomputed_idx) override;
 
     /// implemented for all IndexIVF* classes
-    void add_with_ids_without_codes(
-            idx_t n,
-            const float* x,
-            const idx_t* xids) override;
-
-    void get_vector_by_id(idx_t n, const idx_t* xids, float* x) override;
-
-    void get_vector_by_id_without_codes(
-            idx_t n,
-            const idx_t* xids,
-            float* x) override;
+    void add_with_ids_without_codes(idx_t n, const float* x, const idx_t* xids)
+            override;
 
     void encode_vectors(
             idx_t n,

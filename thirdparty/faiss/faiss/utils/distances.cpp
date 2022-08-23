@@ -146,7 +146,8 @@ void exhaustive_parallel_on_ny(
     size_t k = res.k;
     size_t thread_max_num = omp_get_max_threads();
 
-    size_t val = d * sizeof(float) + thread_max_num * k * (sizeof(float) + sizeof(int64_t));
+    size_t val = d * sizeof(float) +
+            thread_max_num * k * (sizeof(float) + sizeof(int64_t));
     size_t block_x = std::min<size_t>(get_l3_size() / val, nx);
     if (block_x == 0) {
         block_x = 1;
@@ -197,7 +198,7 @@ void exhaustive_parallel_on_ny(
 }
 
 /* Find the nearest neighbors for nx queries in a set of ny vectors */
-template<class ResultHandler>
+template <class ResultHandler>
 void exhaustive_L2sqr_IP_seq(
         const float* x,
         const float* y,
@@ -208,10 +209,13 @@ void exhaustive_L2sqr_IP_seq(
         fvec_func_ptr dis_compute_func,
         const BitsetView bitset) {
     size_t thread_max_num = omp_get_max_threads();
-    if (ny > parallel_policy_threshold || (nx < thread_max_num / 2 && ny >= thread_max_num * 32)) {
-        exhaustive_parallel_on_ny(x, y, d, nx, ny, res, dis_compute_func, bitset);
+    if (ny > parallel_policy_threshold ||
+        (nx < thread_max_num / 2 && ny >= thread_max_num * 32)) {
+        exhaustive_parallel_on_ny(
+                x, y, d, nx, ny, res, dis_compute_func, bitset);
     } else {
-        exhaustive_parallel_on_nx(x, y, d, nx, ny, res, dis_compute_func, bitset);
+        exhaustive_parallel_on_nx(
+                x, y, d, nx, ny, res, dis_compute_func, bitset);
     }
 }
 
@@ -462,20 +466,19 @@ static void knn_jaccard_blas(
             {
                 float one = 1, zero = 0;
                 FINTEGER nyi = j1 - j0, nxi = i1 - i0, di = d;
-                sgemm_(
-                        "Transpose",
-                        "Not transpose",
-                        &nyi,
-                        &nxi,
-                        &di,
-                        &one,
-                        y + j0 * d,
-                        &di,
-                        x + i0 * d,
-                        &di,
-                        &zero,
-                        ip_block,
-                        &nyi);
+                sgemm_("Transpose",
+                       "Not transpose",
+                       &nyi,
+                       &nxi,
+                       &di,
+                       &one,
+                       y + j0 * d,
+                       &di,
+                       x + i0 * d,
+                       &di,
+                       &zero,
+                       ip_block,
+                       &nyi);
             }
 
             /* collect minima */
@@ -511,12 +514,7 @@ static void knn_jaccard_blas(
 /*******************************************************
  * KNN driver functions
  *******************************************************/
-
-/* distance_compute_blas_threshold is used to decide to use BLAS or SIMD in
- * IDMAP. Since BLAS is always slower than SIMD in testing, we change this
- * default value from 20 to 65535 to disable BLAS.
- */
-int distance_compute_blas_threshold = 65535;
+int distance_compute_blas_threshold = 16384;
 int distance_compute_blas_query_bs = 4096;
 int distance_compute_blas_database_bs = 1024;
 int distance_compute_min_k_reservoir = 100;
@@ -533,7 +531,8 @@ void knn_inner_product(
         HeapResultHandler<CMin<float, int64_t>> res(
                 ha->nh, ha->val, ha->ids, ha->k);
         if (nx < distance_compute_blas_threshold) {
-            exhaustive_L2sqr_IP_seq(x, y, d, nx, ny, res, fvec_inner_product, bitset);
+            exhaustive_L2sqr_IP_seq(
+                    x, y, d, nx, ny, res, fvec_inner_product, bitset);
         } else {
             exhaustive_inner_product_blas(x, y, d, nx, ny, res, bitset);
         }
@@ -541,7 +540,8 @@ void knn_inner_product(
         ReservoirResultHandler<CMin<float, int64_t>> res(
                 ha->nh, ha->val, ha->ids, ha->k);
         if (nx < distance_compute_blas_threshold) {
-            exhaustive_L2sqr_IP_seq(x, y, d, nx, ny, res, fvec_inner_product, bitset);
+            exhaustive_L2sqr_IP_seq(
+                    x, y, d, nx, ny, res, fvec_inner_product, bitset);
         } else {
             exhaustive_inner_product_blas(x, y, d, nx, ny, res, bitset);
         }
@@ -596,7 +596,8 @@ void knn_jaccard(
         FAISS_ASSERT_MSG(false, "dim is not multiple of 4!");
     } else {
         NopDistanceCorrection nop;
-        HeapResultHandler<CMax<float, int64_t>> res(ha->nh, ha->val, ha->ids, ha->k);
+        HeapResultHandler<CMax<float, int64_t>> res(
+                ha->nh, ha->val, ha->ids, ha->k);
         knn_jaccard_blas(x, y, d, nx, ny, res, nop, bitset);
     }
 }
@@ -869,16 +870,18 @@ void elkan_L2_sse(
     }
 
     const size_t bs_y = 1024;
-    float* data = (float*)malloc((bs_y * (bs_y - 1) / 2) * sizeof (float));
+    float* data = (float*)malloc((bs_y * (bs_y - 1) / 2) * sizeof(float));
 
     for (size_t j0 = 0; j0 < ny; j0 += bs_y) {
         size_t j1 = j0 + bs_y;
-        if (j1 > ny) j1 = ny;
+        if (j1 > ny)
+            j1 = ny;
 
         auto Y = [&](size_t i, size_t j) -> float& {
             assert(i != j);
             i -= j0, j -= j0;
-            return (i > j) ? data[j + i * (i - 1) / 2] : data[i + j * (j - 1) / 2];
+            return (i > j) ? data[j + i * (i - 1) / 2]
+                           : data[i + j * (j - 1) / 2];
         };
 
 #pragma omp parallel
@@ -905,7 +908,7 @@ void elkan_L2_sse(
                 if (val_i_time_4 <= Y(ids_i, j)) {
                     continue;
                 }
-                const float *y_j = y + j * d;
+                const float* y_j = y + j * d;
                 float disij = fvec_L2sqr(x_i, y_j, d / 2);
                 if (disij >= val_i) {
                     continue;

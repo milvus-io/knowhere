@@ -25,8 +25,8 @@ find_package(Boost REQUIRED)
 include_directories(${OpenMP_CXX_INCLUDE_DIRS})
 
 
-knowhere_file_glob(GLOB KNOWHERE_SRCS src/common/*.cc 
-    src/index/flat/*.cc knowhere/helper/*.cc src/io/*.cc)
+knowhere_file_glob(GLOB_RECURSE KNOWHERE_SRCS src/common/*.cc
+    src/index/*.cc src/io/*.cc)
 include_directories(src)
 include_directories(include)
 include_directories(.)
@@ -36,7 +36,3 @@ add_dependencies(knowhere faiss)
 target_link_libraries(knowhere PRIVATE faiss)
 
 add_subdirectory(tests)
-
-
-
-

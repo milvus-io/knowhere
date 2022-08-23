@@ -1,23 +1,26 @@
 // Copyright (C) 2019-2020 Zilliz. All rights reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance
-// with the License. You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
 //
 // http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software distributed under the License
-// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-// or implied. See the License for the specific language governing permissions and limitations under the License
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License
 
 #ifndef FAISS_BINARY_DISTANCE_H
 #define FAISS_BINARY_DISTANCE_H
 
-#include <stdint.h>
 #include <faiss/MetricType.h>
-#include <faiss/utils/Heap.h>
 #include <faiss/impl/AuxIndexStructures.h>
+#include <faiss/utils/Heap.h>
 #include <knowhere/bitsetview.h>
-using knowhere::BitsetView;
+#include <stdint.h>
+
 /* The binary distance type */
 typedef float tadis_t;
 
@@ -25,9 +28,7 @@ namespace faiss {
 /**
  * Calculate the number of bit 1
  */
-extern int popcnt(
-        const uint8_t* data,
-        const size_t code_size);
+extern int popcnt(const uint8_t* data, const size_t code_size);
 
 /**
  * Calculate the number of bit 1 after xor
@@ -81,14 +82,14 @@ inline float Tanimoto_2_Jaccard(float tnmt) {
     return 1 - pow(2.0, -tnmt);
 }
 
- /** Return the k matched distances for a set of binary query vectors,
-  * using an array.
-  * @param a       queries, size ha->nh * ncodes
-  * @param b       database, size nb * ncodes
-  * @param na      number of queries vectors
-  * @param nb      number of database vectors
-  * @param k       number of the matched vectors to return
-  * @param ncodes  size of the binary codes (bytes)
+/** Return the k matched distances for a set of binary query vectors,
+ * using an array.
+ * @param a       queries, size ha->nh * ncodes
+ * @param b       database, size nb * ncodes
+ * @param na      number of queries vectors
+ * @param nb      number of database vectors
+ * @param k       number of the matched vectors to return
+ * @param ncodes  size of the binary codes (bytes)
  */
 void binary_distance_knn_mc(
         MetricType metric_type,

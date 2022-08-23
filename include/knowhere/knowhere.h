@@ -33,21 +33,21 @@ class Object {
 
 class IndexNode : public Object {
  public:
-    virtual int
+    virtual Error
     Build(const DataSet& dataset, const Config& cfg) = 0;
-    virtual int
+    virtual Error
     Train(const DataSet& dataset, const Config& cfg) = 0;
-    virtual int
+    virtual Error
     Add(const DataSet& dataset, const Config& cfg) = 0;
-    virtual DataSetPtr
-    Qeury(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const = 0;
-    virtual DataSetPtr
-    QueryByRange(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const = 0;
-    virtual DataSetPtr
+    virtual expected<DataSetPtr, Error>
+    Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const = 0;
+    virtual expected<DataSetPtr, Error>
+    SearchByRange(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const = 0;
+    virtual expected<DataSetPtr, Error>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const = 0;
-    virtual int
+    virtual Error
     Serialization(BinarySet& binset) const = 0;
-    virtual int
+    virtual Error
     Deserialization(const BinarySet& binset) = 0;
     virtual std::unique_ptr<Config>
     CreateConfig() const = 0;
@@ -174,8 +174,9 @@ class IndexFactory {
     MapInstance();
 };
 
+#define KNOWHERE_CONCAT(x, y) x##y
 #define KNOWHERE_REGISTER_GLOBAL(name, func) \
-    const IndexFactory& index_factory_ref_##__COUNTER__ = IndexFactory::Instance().Register(name, func)
+    const IndexFactory& KNOWHERE_CONCAT(index_factory_ref_, name) = IndexFactory::Instance().Register(#name, func)
 
 }  // namespace knowhere
 

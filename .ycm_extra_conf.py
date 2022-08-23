@@ -37,19 +37,23 @@ DIR_OF_THIS_SCRIPT = os.path.abspath(os.path.dirname(__file__))
 flags = [
     "-Wall",
     "-Wextra",
+    "-std=c++17",
     "-x",
     "c++",
     "-isystem",
-    "/usr/local/include",
+    "/usr/include/c++/10",
     "-isystem",
     "/usr/include",
     "-isystem",
-    "/usr/include/x86_64-linux-gnu/c++/9",
+    "/usr/local/include",
     "-I",
     "include/",
     "-I",
     "src/",
-    "-std=c++17",
+    "-I",
+    "thirdparty/",
+    "-I",
+    "thirdparty/faiss",
 ]
 
 

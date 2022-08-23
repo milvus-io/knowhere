@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <variant>
 
-#include "errorstat.h"
+#include "expected.h"
 #include "nlohmann/json.hpp"
 
 namespace knowhere {
@@ -164,7 +164,7 @@ class Config {
         return json;
     }
 
-    static int
+    static Error
     Load(Config& cfg, const Json& json, PARAM_TYPE type) {
         auto cfg_bak = cfg;
         for (auto it = cfg.__DICT__.begin(); it != cfg.__DICT__.end(); ++it) {
@@ -175,7 +175,7 @@ class Config {
                     continue;
                 if (json.find(it->first) == json.end() && !ptr->default_val.has_value()) {
                     cfg = cfg_bak;
-                    return -1;
+                    return Error::invalid_param_in_json;
                 }
                 if (json.find(it->first) == json.end()) {
                     *ptr->val = ptr->default_val.value();
@@ -183,7 +183,7 @@ class Config {
                 }
                 if (!json[it->first].is_number_integer()) {
                     cfg = cfg_bak;
-                    return -2;
+                    return Error::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
                     auto v = json[it->first];
@@ -191,7 +191,7 @@ class Config {
                         *ptr->val = v;
                     } else {
                         cfg = cfg_bak;
-                        return -3;
+                        return Error::out_of_range_in_json;
                     }
                 } else {
                     *ptr->val = json[it->first];
@@ -203,7 +203,7 @@ class Config {
                     continue;
                 if (json.find(it->first) == json.end() && !ptr->default_val.has_value()) {
                     cfg = cfg_bak;
-                    return -4;
+                    return Error::invalid_param_in_json;
                 }
                 if (json.find(it->first) == json.end()) {
                     *ptr->val = ptr->default_val.value();
@@ -211,7 +211,7 @@ class Config {
                 }
                 if (!json[it->first].is_number_float()) {
                     cfg = cfg_bak;
-                    return -5;
+                    return Error::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
                     auto v = json[it->first];
@@ -219,7 +219,7 @@ class Config {
                         *ptr->val = v;
                     } else {
                         cfg = cfg_bak;
-                        return -6;
+                        return Error::out_of_range_in_json;
                     }
                 } else {
                     *ptr->val = json[it->first];
@@ -231,7 +231,7 @@ class Config {
                     continue;
                 if (json.find(it->first) == json.end() && !ptr->default_val.has_value()) {
                     cfg = cfg_bak;
-                    return -7;
+                    return Error::invalid_param_in_json;
                 }
                 if (json.find(it->first) == json.end()) {
                     *ptr->val = ptr->default_val.value();
@@ -239,13 +239,13 @@ class Config {
                 }
                 if (!json[it->first].is_string()) {
                     cfg = cfg_bak;
-                    return -8;
+                    return Error::type_conflict_in_json;
                 }
                 *ptr->val = json[it->first];
             }
         }
 
-        return 0;
+        return Error::success;
     }
 
     typedef std::variant<Entry<std::string>, Entry<float>, Entry<int>> VarEntry;

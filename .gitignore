@@ -58,3 +58,6 @@ python/dist/
 python/knowhere.egg-info/
 python/knowhere/knowhere_wrap.cpp
 python/knowhere/swigknowhere.py
+
+
+*.bin

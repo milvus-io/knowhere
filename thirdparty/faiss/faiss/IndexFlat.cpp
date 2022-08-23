@@ -9,7 +9,6 @@
 
 #include <faiss/IndexFlat.h>
 
-#include <cstring>
 #include <faiss/FaissHook.h>
 #include <faiss/impl/AuxIndexStructures.h>
 #include <faiss/impl/FaissAssert.h>
@@ -17,17 +16,12 @@
 #include <faiss/utils/distances.h>
 #include <faiss/utils/extra_distances.h>
 #include <faiss/utils/utils.h>
+#include <cstring>
 
 namespace faiss {
 
 IndexFlat::IndexFlat(idx_t d, MetricType metric)
         : IndexFlatCodes(sizeof(float) * d, d, metric) {}
-
-void IndexFlat::get_vector_by_id(idx_t n, const idx_t* xids, float* x) {
-    for (idx_t i = 0; i < n; i++) {
-        memcpy(x + i * d, get_xb() + xids[i] * d, code_size);
-    }
-}
 
 void IndexFlat::search(
         idx_t n,
@@ -52,17 +46,22 @@ void IndexFlat::search(
     } else {
         float_maxheap_array_t res = {size_t(n), size_t(k), labels, distances};
         knn_extra_metrics(
-                x, get_xb(), d, n, ntotal, metric_type, metric_arg, &res, bitset);
+                x,
+                get_xb(),
+                d,
+                n,
+                ntotal,
+                metric_type,
+                metric_arg,
+                &res,
+                bitset);
     }
 }
 
-void IndexFlat::assign(
-        idx_t n,
-        const float* x,
-        idx_t* labels,
-        float* distances) const {
+void IndexFlat::assign(idx_t n, const float* x, idx_t* labels, float* distances)
+        const {
     // usually used in IVF k-means algorithm
-    float *dis_inner = (distances == nullptr) ? new float[n] : distances;
+    float* dis_inner = (distances == nullptr) ? new float[n] : distances;
     switch (metric_type) {
         case METRIC_INNER_PRODUCT:
         case METRIC_L2: {
@@ -72,7 +71,8 @@ void IndexFlat::assign(
         }
         default: {
             // binary metrics
-            // There may be something wrong, but maintain the original logic now.
+            // There may be something wrong, but maintain the original logic
+            // now.
             Index::assign(n, x, labels, dis_inner);
             break;
         }
@@ -94,7 +94,8 @@ void IndexFlat::range_search(
                     x, get_xb(), d, n, ntotal, radius, result, bitset);
             break;
         case METRIC_L2:
-            range_search_L2sqr(x, get_xb(), d, n, ntotal, radius, result, bitset);
+            range_search_L2sqr(
+                    x, get_xb(), d, n, ntotal, radius, result, bitset);
             break;
         default:
             FAISS_THROW_MSG("metric type not supported");
