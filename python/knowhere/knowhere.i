@@ -25,10 +25,12 @@ typedef uint64_t size_t;
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 #endif
+#include <unittest/LocalFileManager.h>
 #include <common/BinarySet.h>
 #include <common/Config.h>
 #include <common/Dataset.h>
 #include <common/Typedef.h>
+#include <common/FileManager.h>
 #include <index/vector_index/IndexAnnoy.h>
 #include <index/vector_index/IndexBinaryIDMAP.h>
 #include <index/vector_index/IndexHNSW.h>
@@ -37,6 +39,10 @@ typedef uint64_t size_t;
 #include <index/vector_index/IndexIVFSQ.h>
 #include <index/vector_index/IndexIVFPQ.h>
 #include <index/vector_index/IndexBinaryIVF.h>
+#ifdef KNOWHERE_WITH_DISKANN
+#include <index/vector_index/IndexDiskANN.h>
+#include <index/vector_index/IndexDiskANNConfig.h>
+#endif
 #ifdef KNOWHERE_GPU_VERSION
 #include <index/vector_index/gpu/IndexGPUIVF.h>
 #include <index/vector_index/gpu/IndexGPUIVFPQ.h>
@@ -55,14 +61,23 @@ using namespace knowhere;
 %init %{
 import_array();
 %}
+#ifdef KNOWHERE_WITH_DISKANN
+%ignore knowhere::IndexDiskANN::IndexDiskANN(std::string, MetricType, std::unique_ptr<FileManager>);
+#endif
 
 %include <std_string.i>
 %include <std_pair.i>
 %include <std_map.i>
 %include <std_shared_ptr.i>
+%include <exception.i>
 
 %shared_ptr(knowhere::Dataset)
 %template(DatasetPtr) std::shared_ptr<Dataset>;
+#ifdef KNOWHERE_WITH_DISKANN
+%shared_ptr(knowhere::IndexDiskANN<float>)
+%shared_ptr(knowhere::IndexDiskANN<int8_t>)
+%shared_ptr(knowhere::IndexDiskANN<uint8_t>)
+#endif
 %include <common/Dataset.h>
 %include <utils/BitsetView.h>
 %include <common/BinarySet.h>
@@ -74,6 +89,7 @@ import_array();
 %include <index/vector_index/FaissBaseBinaryIndex.h>
 %include <index/vector_offset_index/OffsetBaseIndex.h>
 %include <index/vector_index/FaissBaseIndex.h>
+%include <common/FileManager.h>
 %include <index/vector_index/IndexAnnoy.h>
 %include <index/vector_index/IndexHNSW.h>
 %include <index/vector_index/IndexIVF.h>
@@ -82,6 +98,10 @@ import_array();
 %include <index/vector_index/IndexIDMAP.h>
 %include <index/vector_index/IndexBinaryIDMAP.h>
 %include <index/vector_index/IndexBinaryIVF.h>
+#ifdef KNOWHERE_WITH_DISKANN
+%include <index/vector_index/IndexDiskANN.h>
+%include <index/vector_index/IndexDiskANNConfig.h>
+#endif
 #ifdef KNOWHERE_GPU_VERSION
 %include <index/vector_index/gpu/GPUIndex.h>
 %include <index/vector_index/gpu/IndexGPUIVF.h>
@@ -91,6 +111,52 @@ import_array();
 #endif
 %include <index/vector_offset_index/IndexIVF_NM.h>
 
+// Support for Exception
+%exception {
+    try {
+        $action
+    } catch (knowhere::KnowhereException &e) {
+        std::string msg = std::string("KnowhereException: ") + std::string(e.what());
+        SWIG_exception(SWIG_RuntimeError, msg.c_str());
+    } catch (...) {
+        SWIG_exception(SWIG_RuntimeError, "Unknown Error");
+    }
+}
+
+// Support for DiskANN
+#ifdef KNOWHERE_WITH_DISKANN
+%template(IndexDiskANNf) knowhere::IndexDiskANN<float>;
+%template(IndexDiskANNi8) knowhere::IndexDiskANN<int8_t>;
+%template(IndexDiskANNui8) knowhere::IndexDiskANN<uint8_t>;
+
+%inline %{
+
+#define TOUPPER(s) \
+    std::transform(s.begin(), s.end(), s.begin(), toupper)
+
+std::shared_ptr<knowhere::IndexDiskANN<float>>
+buildDiskANNf(std::string index_prefix, std::string metric_type) {
+    TOUPPER(metric_type);
+    return std::make_shared<knowhere::IndexDiskANN<float>>(index_prefix, metric_type,
+            std::unique_ptr<knowhere::FileManager>(new knowhere::LocalFileManager));
+}
+
+std::shared_ptr<knowhere::IndexDiskANN<int8_t>>
+buildDiskANNi8(std::string index_prefix, std::string metric_type) {
+    TOUPPER(metric_type);
+    return std::make_shared<knowhere::IndexDiskANN<int8_t>>(index_prefix, metric_type,
+            std::unique_ptr<knowhere::FileManager>(new knowhere::LocalFileManager));
+}
+
+std::shared_ptr<knowhere::IndexDiskANN<uint8_t>>
+buildDiskANNui8(std::string index_prefix, std::string metric_type) {
+    TOUPPER(metric_type);
+    return std::make_shared<knowhere::IndexDiskANN<uint8_t>>(index_prefix, metric_type,
+            std::unique_ptr<knowhere::FileManager>(new knowhere::LocalFileManager));
+}
+
+%}
+#endif
 
 #ifdef SWIGPYTHON
 %define DOWNCAST(subclass)
@@ -176,9 +242,11 @@ DumpRangeResultDis(knowhere::Dataset& result, float* dis, int len) {
 knowhere::Config
 CreateConfig(const std::string& str) {
     auto cfg = knowhere::Config::parse(str);
-    auto metric_type = cfg.at("metric_type").get<std::string>();
-    std::transform(metric_type.begin(), metric_type.end(), metric_type.begin(), toupper);
-    cfg["metric_type"] = metric_type;
+    if (cfg.count("metric_type")) {
+        auto metric_type = cfg.at("metric_type").get<std::string>();
+        std::transform(metric_type.begin(), metric_type.end(), metric_type.begin(), toupper);
+        cfg["metric_type"] = metric_type;
+    }
     return cfg;
 }
 
