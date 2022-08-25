@@ -31,6 +31,8 @@
 #include "common/Exception.h"
 #include "common/Log.h"
 #include "common/Utils.h"
+#include "faiss/invlists/InvertedLists.h"
+#include "feder/IVFFlat.h"
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/IndexParameter.h"
 #include "IndexIVF_NM.h"
@@ -65,7 +67,7 @@ IVF_NM::Load(const BinarySet& binary_set) {
     auto invlists = ivf_index->invlists;
     auto d = ivf_index->d;
     size_t nb = binary->size / invlists->code_size;
-    ivf_index->prefix_sum.resize(invlists->nlist);
+    ivf_index->prefix_sum.resize(invlists->nlist + 1);
     size_t curr_index = 0;
 
 #if 0
@@ -86,6 +88,7 @@ IVF_NM::Load(const BinarySet& binary_set) {
         ivf_index->prefix_sum[i] = curr_index;
         curr_index += list_size;
     }
+    ivf_index->prefix_sum[invlists->nlist] = curr_index;
 #else
     auto rol = dynamic_cast<faiss::ReadOnlyArrayInvertedLists*>(invlists);
     auto arranged_data = reinterpret_cast<float*>(rol->pin_readonly_codes->data);
@@ -241,6 +244,43 @@ IVF_NM::QueryByRange(const DatasetPtr& dataset_ptr, const Config& config, const 
         release_when_exception();
         KNOWHERE_THROW_MSG(e.what());
     }
+}
+
+DatasetPtr
+IVF_NM::GetIndexMeta(const Config& config) {
+    if (!index_) {
+        KNOWHERE_THROW_MSG("index not initialized or trained");
+    }
+
+    auto ivf_index = dynamic_cast<faiss::IndexIVF*>(index_.get());
+    auto ivf_quantizer = dynamic_cast<faiss::IndexFlat*>(ivf_index->quantizer);
+
+    int64_t dim = ivf_index->d;
+    int64_t nlist = ivf_index->nlist;
+    int64_t ntotal = ivf_index->ntotal;
+
+    feder::ivfflat::IVFFlatMeta meta(nlist, dim, ntotal);
+    std::unordered_set<int64_t> id_set;
+
+    for (int32_t i = 0; i < nlist; i++) {
+        // copy from IndexIVF::search_preassigned_without_codes
+        std::unique_ptr<faiss::InvertedLists::ScopedIds> sids =
+            std::make_unique<faiss::InvertedLists::ScopedIds>(ivf_index->invlists, i);
+
+        // node ids
+        auto node_num = ivf_index->invlists->list_size(i);
+        auto node_id_codes = sids->get();
+
+        // centroid vector
+        auto centroid_vec = ivf_quantizer->get_xb() + i * dim;
+
+        meta.AddCluster(i, node_id_codes, node_num, centroid_vec, dim);
+    }
+
+    Config json_meta, json_id_set;
+    nlohmann::to_json(json_meta, meta);
+    nlohmann::to_json(json_id_set, id_set);
+    return GenResultDataset(json_meta.dump(), json_id_set.dump());
 }
 
 void

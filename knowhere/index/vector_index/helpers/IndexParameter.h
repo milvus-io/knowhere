@@ -37,6 +37,9 @@ constexpr const char* OUTPUT_TENSOR = "output_tensor";
 constexpr const char* DEVICE_ID = "gpu_id";
 constexpr const char* BUILD_INDEX_OMP_NUM = "build_index_omp_num";
 constexpr const char* QUERY_OMP_NUM = "query_omp_num";
+constexpr const char* TRACE_VISIT = "trace_visit";
+constexpr const char* JSON_INFO = "json_info";
+constexpr const char* JSON_ID_SET = "json_id_set";
 };  // namespace meta
 
 namespace indexparam {
@@ -51,6 +54,7 @@ constexpr const char* EFCONSTRUCTION = "efConstruction";
 constexpr const char* HNSW_M = "M";
 constexpr const char* EF = "ef";
 constexpr const char* HNSW_K = "range_k";
+constexpr const char* OVERVIEW_LEVELS = "overview_levels";
 // Annoy Params
 constexpr const char* N_TREES = "n_trees";
 constexpr const char* SEARCH_K = "search_k";
@@ -145,6 +149,9 @@ DEFINE_CONFIG_SETTER(SetMetaBuildIndexOmpNum, meta::BUILD_INDEX_OMP_NUM, int64_t
 DEFINE_CONFIG_GETTER(GetMetaQueryOmpNum, meta::QUERY_OMP_NUM, int64_t)
 DEFINE_CONFIG_SETTER(SetMetaQueryOmpNum, meta::QUERY_OMP_NUM, int64_t)
 
+DEFINE_CONFIG_GETTER(GetMetaTraceVisit, meta::TRACE_VISIT, bool)
+DEFINE_CONFIG_SETTER(SetMetaTraceVisit, meta::TRACE_VISIT, bool)
+
 ///////////////////////////////////////////////////////////////////////////////
 // APIs to access indexparam
 
@@ -177,6 +184,9 @@ DEFINE_CONFIG_SETTER(SetIndexParamEf, indexparam::EF, int64_t)
 
 DEFINE_CONFIG_GETTER(GetIndexParamHNSWK, indexparam::HNSW_K, int64_t)
 DEFINE_CONFIG_SETTER(SetIndexParamHNSWK, indexparam::HNSW_K, int64_t)
+
+DEFINE_CONFIG_GETTER(GetIndexParamOverviewLevels, indexparam::OVERVIEW_LEVELS, int64_t)
+DEFINE_CONFIG_SETTER(SetIndexParamOverviewLevels, indexparam::OVERVIEW_LEVELS, int64_t)
 
 // Annoy Params
 DEFINE_CONFIG_GETTER(GetIndexParamNtrees, indexparam::N_TREES, int64_t)

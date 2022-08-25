@@ -118,6 +118,7 @@ bool AVX512Capable() {
 #include <iostream>
 #include <string.h>
 
+#include <knowhere/feder/HNSW.h>
 #include <knowhere/utils/BitsetView.h>
 
 namespace hnswlib {
@@ -185,7 +186,8 @@ class AlgorithmInterface {
     virtual void addPoint(const void *datapoint, labeltype label)=0;
 
     virtual std::priority_queue<std::pair<dist_t, labeltype>>
-    searchKnn(const void*, size_t, const faiss::BitsetView, hnswlib::StatisticsInfo&, const SearchParam*) const = 0;
+    searchKnn(const void*, size_t, const faiss::BitsetView, hnswlib::StatisticsInfo&, const SearchParam*,
+              const knowhere::feder::hnsw::FederResultUniq&) const = 0;
 
     virtual std::vector<std::pair<dist_t, labeltype>>
     searchRange(const void*, size_t, float, const faiss::BitsetView, hnswlib::StatisticsInfo&,
@@ -207,7 +209,7 @@ AlgorithmInterface<dist_t>::searchKnnCloserFirst(const void* query_data, size_t 
     std::vector<std::pair<dist_t, labeltype>> result;
 
     // here searchKnn returns the result in the order of further first
-    auto ret = searchKnn(query_data, k, bitset, stats, nullptr);
+    auto ret = searchKnn(query_data, k, bitset, stats, nullptr, nullptr);
     {
         size_t sz = ret.size();
         result.resize(sz);
