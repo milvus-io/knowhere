@@ -156,7 +156,7 @@ macro(build_diskann)
             "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
             "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
             "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
-            "-DCMAKE_CXX_FLAGS=-O3 -DELPP_THREAD_SAFE -fpermissive -I ${KNOWHERE_SOURCE_DIR} -I ${KNOWHERE_SOURCE_DIR}/thirdparty"
+            "-DCMAKE_CXX_FLAGS=-O3 -DELPP_THREAD_SAFE -fpermissive -I ${KNOWHERE_SOURCE_DIR} -I ${KNOWHERE_SOURCE_DIR}/thirdparty -I ${KNOWHERE_SOURCE_DIR}/output/include"       
             )
     message( STATUS "Building DISKANN with configure args -${DISKANN_CMAKE_ARGS}" )
     set( DISKANN_BUILD_DIR "${DISKANN_SOURCE_DIR}/build")
@@ -173,15 +173,20 @@ macro(build_diskann)
         ${DISKANN_STATIC_LIB} 
         BUILD_ALWAYS 1)
 
+        if ( NOT BLAS_FOUND )
+            message( STATUS "OpenBLAS BOUNDED" )
+            ExternalProject_Add_StepDependencies( diskann_ep configure openblas_ep knowhere_utils )
+        endif()
+
         add_library( diskann STATIC IMPORTED )
-       
+
         set_target_properties( diskann
         PROPERTIES
             IMPORTED_GLOBAL                 TRUE
             IMPORTED_LOCATION               "${DISKANN_STATIC_LIB}"
             INTERFACE_INCLUDE_DIRECTORIES   "${DISKANN_INCLUDE_DIR}")
 
-        target_link_libraries( diskann INTERFACE knowhere_utils )
+        target_link_libraries( diskann INTERFACE knowhere_utils openblas )
         add_dependencies( diskann diskann_ep )
 endmacro()
 
