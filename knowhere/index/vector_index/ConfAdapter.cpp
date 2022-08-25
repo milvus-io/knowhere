@@ -9,6 +9,8 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
+#include "index/vector_index/ConfAdapter.h"
+
 #include <cmath>
 #include <limits>
 #include <string>
@@ -16,7 +18,6 @@
 
 #include "common/Exception.h"
 #include "common/Log.h"
-#include "index/vector_index/ConfAdapter.h"
 #include "index/vector_index/helpers/IndexParameter.h"
 
 #ifdef KNOWHERE_GPU_VERSION
@@ -34,8 +35,6 @@ static const int64_t MIN_NPROBE = 1;
 static const int64_t MAX_NPROBE = MAX_NLIST;
 static const int64_t DEFAULT_MIN_DIM = 1;
 static const int64_t DEFAULT_MAX_DIM = 32768;
-static const int64_t NGT_MIN_EDGE_SIZE = 1;
-static const int64_t NGT_MAX_EDGE_SIZE = 200;
 static const int64_t HNSW_MIN_EFCONSTRUCTION = 8;
 static const int64_t HNSW_MAX_EFCONSTRUCTION = 512;
 static const int64_t HNSW_MIN_M = 4;
@@ -43,9 +42,8 @@ static const int64_t HNSW_MAX_M = 64;
 static const int64_t HNSW_MAX_EF = 32768;
 
 static const std::vector<MetricType> default_metric_array{metric::L2, metric::IP};
-static const std::vector<MetricType> default_binary_metric_array{metric::HAMMING, metric::JACCARD,
-                                                                 metric::TANIMOTO, metric::SUBSTRUCTURE,
-                                                                 metric::SUPERSTRUCTURE};
+static const std::vector<MetricType> default_binary_metric_array{metric::HAMMING, metric::JACCARD, metric::TANIMOTO,
+                                                                 metric::SUBSTRUCTURE, metric::SUPERSTRUCTURE};
 
 inline void
 CheckIntegerRange(const Config& cfg, const std::string& key, int64_t min, int64_t max) {
@@ -217,32 +215,6 @@ IVFPQConfAdapter::CheckCPUPQParams(int64_t dimension, int64_t m) {
 }
 
 bool
-IVFHNSWConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    // HNSW param check
-    CheckIntegerRange(cfg, indexparam::EFCONSTRUCTION, HNSW_MIN_EFCONSTRUCTION, HNSW_MAX_EFCONSTRUCTION);
-    CheckIntegerRange(cfg, indexparam::HNSW_M, HNSW_MIN_M, HNSW_MAX_M);
-
-    // IVF param check
-    CheckIntegerRange(cfg, indexparam::NLIST, MIN_NLIST, MAX_NLIST);
-
-    // auto tune params
-    auto rows = GetMetaRows(cfg);
-    auto nlist = GetIndexParamNlist(cfg);
-    SetIndexParamNlist(cfg, MatchNlist(rows, nlist));
-
-    return ConfAdapter::CheckTrain(cfg, mode);
-}
-
-bool
-IVFHNSWConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    // HNSW param check
-    CheckIntegerRange(cfg, indexparam::EF, GetMetaTopk(cfg), HNSW_MAX_EF);
-    // IVF param check
-    CheckIntegerRange(cfg, indexparam::NPROBE, MIN_NPROBE, MAX_NPROBE);
-    return ConfAdapter::CheckSearch(cfg, type, mode);
-}
-
-bool
 HNSWConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
     CheckIntegerRange(cfg, indexparam::EFCONSTRUCTION, HNSW_MIN_EFCONSTRUCTION, HNSW_MAX_EFCONSTRUCTION);
     CheckIntegerRange(cfg, indexparam::HNSW_M, HNSW_MIN_M, HNSW_MAX_M);
@@ -251,50 +223,6 @@ HNSWConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 HNSWConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    CheckIntegerRange(cfg, indexparam::EF, GetMetaTopk(cfg), HNSW_MAX_EF);
-    return ConfAdapter::CheckSearch(cfg, type, mode);
-}
-
-bool
-RHNSWFlatConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    CheckIntegerRange(cfg, indexparam::EFCONSTRUCTION, HNSW_MIN_EFCONSTRUCTION, HNSW_MAX_EFCONSTRUCTION);
-    CheckIntegerRange(cfg, indexparam::HNSW_M, HNSW_MIN_M, HNSW_MAX_M);
-    return ConfAdapter::CheckTrain(cfg, mode);
-}
-
-bool
-RHNSWFlatConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    CheckIntegerRange(cfg, indexparam::EF, GetMetaTopk(cfg), HNSW_MAX_EF);
-    return ConfAdapter::CheckSearch(cfg, type, mode);
-}
-
-bool
-RHNSWPQConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    CheckIntegerRange(cfg, indexparam::EFCONSTRUCTION, HNSW_MIN_EFCONSTRUCTION, HNSW_MAX_EFCONSTRUCTION);
-    CheckIntegerRange(cfg, indexparam::HNSW_M, HNSW_MIN_M, HNSW_MAX_M);
-
-    auto dimension = GetMetaDim(cfg);
-    if (!IVFPQConfAdapter::CheckCPUPQParams(dimension, GetIndexParamPQM(cfg))) {
-        return false;
-    }
-    return ConfAdapter::CheckTrain(cfg, mode);
-}
-
-bool
-RHNSWPQConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    CheckIntegerRange(cfg, indexparam::EF, GetMetaTopk(cfg), HNSW_MAX_EF);
-    return ConfAdapter::CheckSearch(cfg, type, mode);
-}
-
-bool
-RHNSWSQConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    CheckIntegerRange(cfg, indexparam::EFCONSTRUCTION, HNSW_MIN_EFCONSTRUCTION, HNSW_MAX_EFCONSTRUCTION);
-    CheckIntegerRange(cfg, indexparam::HNSW_M, HNSW_MIN_M, HNSW_MAX_M);
-    return ConfAdapter::CheckTrain(cfg, mode);
-}
-
-bool
-RHNSWSQConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
     CheckIntegerRange(cfg, indexparam::EF, GetMetaTopk(cfg), HNSW_MAX_EF);
     return ConfAdapter::CheckSearch(cfg, type, mode);
 }
@@ -336,77 +264,5 @@ ANNOYConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode
     CheckIntegerRange(cfg, indexparam::SEARCH_K, MIN_SEARCH_K, MAX_SEARCH_K);
     return ConfAdapter::CheckSearch(cfg, type, mode);
 }
-
-#ifdef KNOWHERE_SUPPORT_NGT
-bool
-NGTPANNGConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    CheckIntegerRange(cfg, indexparam::EDGE_SIZE, NGT_MIN_EDGE_SIZE, NGT_MAX_EDGE_SIZE);
-    CheckIntegerRange(cfg, indexparam::FORCEDLY_PRUNED_EDGE_SIZE, NGT_MIN_EDGE_SIZE, NGT_MAX_EDGE_SIZE);
-    CheckIntegerRange(cfg, indexparam::SELECTIVELY_PRUNED_EDGE_SIZE, NGT_MIN_EDGE_SIZE, NGT_MAX_EDGE_SIZE);
-    if (GetValueFromConfig<int64_t>(cfg, indexparam::SELECTIVELY_PRUNED_EDGE_SIZE) >=
-        GetValueFromConfig<int64_t>(cfg, indexparam::FORCEDLY_PRUNED_EDGE_SIZE)) {
-        return false;
-    }
-    return ConfAdapter::CheckTrain(cfg, mode);
-}
-
-bool
-NGTPANNGConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    CheckIntegerRange(cfg, indexparam::MAX_SEARCH_EDGES, -1, NGT_MAX_EDGE_SIZE);
-    CheckFloatRange(cfg, indexparam::EPSILON, -1.0, 1.0);
-    return ConfAdapter::CheckSearch(cfg, type, mode);
-}
-
-bool
-NGTONNGConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    CheckIntegerRange(cfg, indexparam::EDGE_SIZE, NGT_MIN_EDGE_SIZE, NGT_MAX_EDGE_SIZE);
-    CheckIntegerRange(cfg, indexparam::OUTGOING_EDGE_SIZE, NGT_MIN_EDGE_SIZE, NGT_MAX_EDGE_SIZE);
-    CheckIntegerRange(cfg, indexparam::INCOMING_EDGE_SIZE, NGT_MIN_EDGE_SIZE, NGT_MAX_EDGE_SIZE);
-    return ConfAdapter::CheckTrain(cfg, mode);
-}
-
-bool
-NGTONNGConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    CheckIntegerRange(cfg, indexparam::MAX_SEARCH_EDGES, -1, NGT_MAX_EDGE_SIZE);
-    CheckFloatRange(cfg, indexparam::EPSILON, -1.0, 1.0);
-    return ConfAdapter::CheckSearch(cfg, type, mode);
-}
-#endif
-
-#ifdef KNOWHERE_SUPPORT_NSG
-bool
-NSGConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
-    const int64_t MIN_KNNG = 5;
-    const int64_t MAX_KNNG = 300;
-    const int64_t MIN_SEARCH_LENGTH = 10;
-    const int64_t MAX_SEARCH_LENGTH = 300;
-    const int64_t MIN_OUT_DEGREE = 5;
-    const int64_t MAX_OUT_DEGREE = 300;
-    const int64_t MIN_CANDIDATE_POOL_SIZE = 50;
-    const int64_t MAX_CANDIDATE_POOL_SIZE = 1000;
-
-    CheckMetricType(cfg, default_metric_array);
-    CheckIntegerRange(cfg, indexparam::KNNG, MIN_KNNG, MAX_KNNG);
-    CheckIntegerRange(cfg, indexparam::SEARCH_LENGTH, MIN_SEARCH_LENGTH, MAX_SEARCH_LENGTH);
-    CheckIntegerRange(cfg, indexparam::OUT_DEGREE, MIN_OUT_DEGREE, MAX_OUT_DEGREE);
-    CheckIntegerRange(cfg, indexparam::CANDIDATE, MIN_CANDIDATE_POOL_SIZE, MAX_CANDIDATE_POOL_SIZE);
-
-    // auto tune params
-    auto rows = GetMetaRows(cfg);
-    SetIndexParamNlist(cfg, MatchNlist(rows, 8192));
-
-    int64_t nprobe = GetIndexParamNlist(cfg) * 0.1;
-    SetIndexParamNprobe(cfg, (nprobe < 1) ? 1 : nprobe);
-    return true;
-}
-
-bool
-NSGConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    static int64_t MIN_SEARCH_LENGTH = 1;
-    static int64_t MAX_SEARCH_LENGTH = 300;
-    CheckIntegerRange(cfg, indexparam::SEARCH_LENGTH, MIN_SEARCH_LENGTH, MAX_SEARCH_LENGTH);
-    return ConfAdapter::CheckSearch(cfg, type, mode);
-}
-#endif
 
 }  // namespace knowhere

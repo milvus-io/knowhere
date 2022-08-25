@@ -11,8 +11,6 @@
 
 include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty)
 include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/faiss)
-include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/SPTAG/AnnService)
-include_directories(${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib)
 include_directories(${KNOWHERE_SOURCE_DIR}/knowhere)
 include_directories(${KNOWHERE_SOURCE_DIR})
 
@@ -58,8 +56,6 @@ set(ALL_INDEXING_SRCS
         test_idmap.cpp
         test_ivf.cpp
         test_ivf_nm.cpp
-        test_ivf_hnsw.cpp
-        test_rhnsw.cpp
         test_vecindex.cpp
         )
 
@@ -85,32 +81,6 @@ if ( KNOWHERE_GPU_VERSION )
     set(ALL_INDEXING_SRCS
             ${ALL_INDEXING_SRCS}
             test_gpuresource.cpp
-            )
-endif ()
-
-if ( KNOWHERE_SUPPORT_SPTAG )
-    set( ALL_INDEXING_SRCS
-            ${ALL_INDEXING_SRCS}
-            test_sptag.cpp
-            )
-endif ()
-
-if ( KNOWHERE_SUPPORT_NGT )
-    set( ALL_INDEXING_SRCS
-            ${ALL_INDEXING_SRCS}
-            test_ngtonng.cpp
-            test_ngtpanng.cpp
-            )
-    set( DEPEND_LIBS
-            ${DEPEND_LIBS}
-            ngt
-            )
-endif ()
-
-if ( KNOWHERE_SUPPORT_NSG )
-    set( ALL_INDEXING_SRCS
-            ${ALL_INDEXING_SRCS}
-            test_nsg.cpp
             )
 endif ()
 

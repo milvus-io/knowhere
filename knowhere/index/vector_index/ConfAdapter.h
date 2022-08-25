@@ -60,24 +60,6 @@ class IVFPQConfAdapter : public IVFConfAdapter {
     CheckCPUPQParams(int64_t dimension, int64_t m);
 };
 
-class IVFHNSWConfAdapter : public ConfAdapter {
- public:
-    bool
-    CheckTrain(Config& cfg, const IndexMode mode) override;
-
-    bool
-    CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) override;
-};
-
-class NSGConfAdapter : public IVFConfAdapter {
- public:
-    bool
-    CheckTrain(Config& cfg, const IndexMode mode) override;
-
-    bool
-    CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) override;
-};
-
 class BinIDMAPConfAdapter : public ConfAdapter {
  public:
     bool
@@ -100,51 +82,6 @@ class HNSWConfAdapter : public ConfAdapter {
 };
 
 class ANNOYConfAdapter : public ConfAdapter {
- public:
-    bool
-    CheckTrain(Config& cfg, const IndexMode mode) override;
-
-    bool
-    CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) override;
-};
-
-class RHNSWFlatConfAdapter : public ConfAdapter {
- public:
-    bool
-    CheckTrain(Config& cfg, const IndexMode mode) override;
-
-    bool
-    CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) override;
-};
-
-class RHNSWPQConfAdapter : public ConfAdapter {
- public:
-    bool
-    CheckTrain(Config& cfg, const IndexMode mode) override;
-
-    bool
-    CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) override;
-};
-
-class RHNSWSQConfAdapter : public ConfAdapter {
- public:
-    bool
-    CheckTrain(Config& cfg, const IndexMode mode) override;
-
-    bool
-    CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) override;
-};
-
-class NGTPANNGConfAdapter : public ConfAdapter {
- public:
-    bool
-    CheckTrain(Config& cfg, const IndexMode mode) override;
-
-    bool
-    CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) override;
-};
-
-class NGTONNGConfAdapter : public ConfAdapter {
  public:
     bool
     CheckTrain(Config& cfg, const IndexMode mode) override;

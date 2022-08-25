@@ -43,9 +43,9 @@ namespace indexparam {
 // IVF Params
 constexpr const char* NPROBE = "nprobe";
 constexpr const char* NLIST = "nlist";
-constexpr const char* NBITS = "nbits";   // PQ/SQ
-constexpr const char* M = "m";           // PQ param for IVFPQ
-constexpr const char* PQ_M = "PQM";      // PQ param for RHNSWPQ
+constexpr const char* NBITS = "nbits";  // PQ/SQ
+constexpr const char* M = "m";          // PQ param for IVFPQ
+constexpr const char* PQ_M = "PQM";     // PQ param for RHNSWPQ
 // HNSW Params
 constexpr const char* EFCONSTRUCTION = "efConstruction";
 constexpr const char* HNSW_M = "M";
@@ -54,26 +54,6 @@ constexpr const char* HNSW_K = "range_k";
 // Annoy Params
 constexpr const char* N_TREES = "n_trees";
 constexpr const char* SEARCH_K = "search_k";
-#ifdef KNOWHERE_SUPPORT_NGT
-// NGT Params
-constexpr const char* EDGE_SIZE = "edge_size";
-// NGT Search Params
-constexpr const char* EPSILON = "epsilon";
-constexpr const char* MAX_SEARCH_EDGES = "max_search_edges";
-// NGT_PANNG Params
-constexpr const char* FORCEDLY_PRUNED_EDGE_SIZE = "forcedly_pruned_edge_size";
-constexpr const char* SELECTIVELY_PRUNED_EDGE_SIZE = "selectively_pruned_edge_size";
-// NGT_ONNG Params
-constexpr const char* OUTGOING_EDGE_SIZE = "outgoing_edge_size";
-constexpr const char* INCOMING_EDGE_SIZE = "incoming_edge_size";
-#endif
-#ifdef KNOWHERE_SUPPORT_NSG
-// NSG Params
-constexpr const char* KNNG = "knng";
-constexpr const char* SEARCH_LENGTH = "search_length";
-constexpr const char* OUT_DEGREE = "out_degree";
-constexpr const char* CANDIDATE = "candidate_pool_size";
-#endif
 }  // namespace indexparam
 
 using MetricType = std::string;
@@ -107,14 +87,14 @@ SetValueToConfig(Config& cfg, const std::string& key, const T value) {
 }
 
 #define DEFINE_CONFIG_GETTER(func_name, key, T) \
-inline T func_name(const Config& cfg) {         \
-    return GetValueFromConfig<T>(cfg, key);     \
-}
+    inline T func_name(const Config& cfg) {     \
+        return GetValueFromConfig<T>(cfg, key); \
+    }
 
-#define DEFINE_CONFIG_SETTER(func_name, key, T) \
-inline void func_name(Config& cfg, T value) {   \
-    SetValueToConfig<T>(cfg, key, (T)(value));  \
-}
+#define DEFINE_CONFIG_SETTER(func_name, key, T)    \
+    inline void func_name(Config& cfg, T value) {  \
+        SetValueToConfig<T>(cfg, key, (T)(value)); \
+    }
 
 ///////////////////////////////////////////////////////////////////////////////
 // APIs to access meta

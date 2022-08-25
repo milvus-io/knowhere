@@ -45,11 +45,6 @@ if ( LINUX AND ENABLE_PROFILING )
     add_subdirectory( profiler )
 endif()
 
-# ****************************** Thirdparty NGT ***************************************
-if ( LINUX AND KNOWHERE_SUPPORT_NGT )
-    add_subdirectory( NGT )
-endif()
-
 # ****************************** Thirdparty Faiss ***************************************
 set( FAISS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/faiss )
 
@@ -217,14 +212,6 @@ install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/hnswlib/"
         FILES_MATCHING
         PATTERN "*.h"
         )
-
-if (KNOWHERE_SUPPORT_NGT)
-    install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/NGT/lib/NGT/"
-            DESTINATION "include/NGT"
-            FILES_MATCHING
-            PATTERN "*.h"
-            )
-endif()
 
 install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/easyloggingpp/"
         DESTINATION "include/easyloggingpp"

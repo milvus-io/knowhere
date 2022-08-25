@@ -22,9 +22,6 @@
 #ifdef KNOWHERE_GPU_VERSION
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
 #endif
-#ifdef KNOWHERE_SUPPORT_NGT
-#include "NGT/lib/NGT/defines.h"
-#endif
 
 namespace knowhere {
 
@@ -123,10 +120,6 @@ void
 KnowhereConfig::SetLogHandler() {
     faiss::LOG_ERROR_ = &knowhere::log_error_;
     faiss::LOG_WARNING_ = &knowhere::log_warning_;
-#ifdef KNOWHERE_SUPPORT_NGT
-    NGT_LOG_ERROR_ = &knowhere::log_error_;
-    NGT_LOG_WARNING_ = &knowhere::log_warning_;
-#endif
 }
 
 void

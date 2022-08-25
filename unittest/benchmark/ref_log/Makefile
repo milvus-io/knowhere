@@ -32,8 +32,6 @@ test_knowhere_hnsw:
 	./benchmark_knowhere_float --gtest_filter="Benchmark_knowhere_float.TEST_HNSW" | tee test_knowhere_hnsw.log
 test_knowhere_annoy:
 	./benchmark_knowhere_float --gtest_filter="Benchmark_knowhere_float.TEST_ANNOY" | tee test_knowhere_annoy.log
-test_knowhere_rhnsw_flat:
-	./benchmark_knowhere_float --gtest_filter="Benchmark_knowhere_float.TEST_RHNSW_FLAT" | tee test_knowhere_rhnsw_flat.log
 test_knowhere_rhnsw_sq:
 	./benchmark_knowhere_float --gtest_filter="Benchmark_knowhere_float.TEST_RHNSW_SQ" | tee test_knowhere_rhnsw_sq.log
 test_knowhere_rhnsw_pq:

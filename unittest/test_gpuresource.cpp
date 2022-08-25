@@ -28,7 +28,6 @@
 #include "knowhere/index/vector_index/gpu/IndexGPUIVF.h"
 #include "knowhere/index/vector_index/gpu/IndexGPUIVFPQ.h"
 #include "knowhere/index/vector_index/gpu/IndexGPUIVFSQ.h"
-#include "knowhere/index/vector_index/gpu/IndexIVFSQHybrid.h"
 #include "knowhere/index/vector_index/helpers/Cloner.h"
 
 #include "unittest/Helper.h"

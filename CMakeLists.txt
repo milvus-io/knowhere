@@ -111,11 +111,6 @@ else ()
     message( STATUS "Building Knowhere CPU version" )
 endif ()
 
-if ( KNOWHERE_SUPPORT_SPTAG )
-    message( STATUS "Building Knowhere with SPTAG supported" )
-    add_compile_definitions( "KNOWHERE_SUPPORT_SPTAG" )
-endif ()
-
 if ( CMAKE_BUILD_TYPE STREQUAL "Release" )
     append_flags( CMAKE_CXX_FLAGS FLAGS "-O3" )
     append_flags( CUDA_NVCC_FLAGS FLAGS "-O3" )

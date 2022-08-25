@@ -15,7 +15,6 @@
 
 #include "knowhere/index/IndexType.h"
 #include "knowhere/index/vector_index/IndexIVF.h"
-#include "knowhere/index/vector_index/IndexIVFHNSW.h"
 #include "knowhere/index/vector_index/IndexIVFPQ.h"
 #include "knowhere/index/vector_index/IndexIVFSQ.h"
 #include "knowhere/index/vector_index/helpers/IndexParameter.h"
@@ -25,7 +24,6 @@
 #include "knowhere/index/vector_index/gpu/IndexGPUIVF.h"
 #include "knowhere/index/vector_index/gpu/IndexGPUIVFPQ.h"
 #include "knowhere/index/vector_index/gpu/IndexGPUIVFSQ.h"
-#include "knowhere/index/vector_index/gpu/IndexIVFSQHybrid.h"
 #include "knowhere/index/vector_offset_index/gpu/IndexGPUIVF_NM.h"
 #endif
 
@@ -101,8 +99,7 @@ class ParamGenerator {
                 {knowhere::indexparam::M, 4},
                 {knowhere::indexparam::NBITS, 8},
             };
-        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8 ||
-                   type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
+        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8) {
             return knowhere::Config{
                 {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
                 {knowhere::meta::DIM, DIM},
@@ -113,18 +110,6 @@ class ParamGenerator {
                 {knowhere::indexparam::NLIST, 16},
                 {knowhere::indexparam::NPROBE, 8},
                 {knowhere::indexparam::NBITS, 8},
-            };
-        } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFHNSW) {
-            return knowhere::Config{
-                {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
-                {knowhere::meta::DIM, DIM},
-                {knowhere::meta::TOPK, K},
-                {knowhere::meta::DEVICE_ID, DEVICE_ID},
-                {knowhere::indexparam::NLIST, 16},
-                {knowhere::indexparam::NPROBE, 8},
-                {knowhere::indexparam::HNSW_M, 16},
-                {knowhere::indexparam::EFCONSTRUCTION, 200},
-                {knowhere::indexparam::EF, 200},
             };
         } else if (type == knowhere::IndexEnum::INDEX_HNSW) {
             return knowhere::Config {
@@ -146,34 +131,6 @@ class ParamGenerator {
                 {knowhere::meta::QUERY_OMP_NUM, QUERY_OMP_NUM},
                 {knowhere::indexparam::N_TREES, 4},
                 {knowhere::indexparam::SEARCH_K, 100},
-            };
-        } else if (type == knowhere::IndexEnum::INDEX_RHNSWFlat) {
-            return knowhere::Config{
-                {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
-                {knowhere::meta::DIM, DIM},
-                {knowhere::meta::TOPK, K},
-                {knowhere::indexparam::HNSW_M, 16},
-                {knowhere::indexparam::EFCONSTRUCTION, 200},
-                {knowhere::indexparam::EF, 200},
-            };
-        } else if (type == knowhere::IndexEnum::INDEX_RHNSWPQ) {
-            return knowhere::Config{
-                {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
-                {knowhere::meta::DIM, DIM},
-                {knowhere::meta::TOPK, K},
-                {knowhere::indexparam::HNSW_M, 16},
-                {knowhere::indexparam::EFCONSTRUCTION, 200},
-                {knowhere::indexparam::EF, 200},
-                {knowhere::indexparam::PQ_M, 8},
-            };
-        } else if (type == knowhere::IndexEnum::INDEX_RHNSWSQ) {
-            return knowhere::Config{
-                {knowhere::meta::METRIC_TYPE, knowhere::metric::L2},
-                {knowhere::meta::DIM, DIM},
-                {knowhere::meta::TOPK, K},
-                {knowhere::indexparam::HNSW_M, 16},
-                {knowhere::indexparam::EFCONSTRUCTION, 200},
-                {knowhere::indexparam::EF, 200},
             };
         } else {
             std::cout << "Invalid index type " << type << std::endl;
