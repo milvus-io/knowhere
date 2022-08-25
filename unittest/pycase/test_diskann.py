@@ -33,7 +33,8 @@ def test_diskann():
                     "search_dram_budget_gb": 1.0,
                     "build_dram_budget_gb": 2.0,
                     "num_threads": 16,
-                    "pq_disk_bytes": 0
+                    "disk_pq_dims": 0,
+                    "accelerate_build": False
                 },
                 "diskANN_prepare_config": {
                     "num_threads": 16,

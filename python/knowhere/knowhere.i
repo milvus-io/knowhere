@@ -62,7 +62,8 @@ using namespace knowhere;
 import_array();
 %}
 #ifdef KNOWHERE_WITH_DISKANN
-%ignore knowhere::IndexDiskANN::IndexDiskANN(std::string, MetricType, std::unique_ptr<FileManager>);
+%ignore knowhere::IndexDiskANN::IndexDiskANN(std::string, MetricType, std::shared_ptr<knowhere::FileManager>);
+%ignore knowhere::IndexDiskANN::IndexDiskANN(IndexDiskANN&& index_diskann);
 #endif
 
 %include <std_string.i>
@@ -138,21 +139,21 @@ std::shared_ptr<knowhere::IndexDiskANN<float>>
 buildDiskANNf(std::string index_prefix, std::string metric_type) {
     TOUPPER(metric_type);
     return std::make_shared<knowhere::IndexDiskANN<float>>(index_prefix, metric_type,
-            std::unique_ptr<knowhere::FileManager>(new knowhere::LocalFileManager));
+            std::shared_ptr<knowhere::FileManager>(new knowhere::LocalFileManager));
 }
 
 std::shared_ptr<knowhere::IndexDiskANN<int8_t>>
 buildDiskANNi8(std::string index_prefix, std::string metric_type) {
     TOUPPER(metric_type);
     return std::make_shared<knowhere::IndexDiskANN<int8_t>>(index_prefix, metric_type,
-            std::unique_ptr<knowhere::FileManager>(new knowhere::LocalFileManager));
+            std::shared_ptr<knowhere::FileManager>(new knowhere::LocalFileManager));
 }
 
 std::shared_ptr<knowhere::IndexDiskANN<uint8_t>>
 buildDiskANNui8(std::string index_prefix, std::string metric_type) {
     TOUPPER(metric_type);
     return std::make_shared<knowhere::IndexDiskANN<uint8_t>>(index_prefix, metric_type,
-            std::unique_ptr<knowhere::FileManager>(new knowhere::LocalFileManager));
+            std::shared_ptr<knowhere::FileManager>(new knowhere::LocalFileManager));
 }
 
 %}
