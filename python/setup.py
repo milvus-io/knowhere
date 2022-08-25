@@ -35,6 +35,15 @@ def CheckCUDA():
 
 is_cuda_ver = CheckCUDA()
 
+def CheckAIO():
+    lib_path = os.path.join(KNOWHERE_ROOT, "cmake_build/knowhere/libknowhere.so")
+    x = os.popen("ldd " + lib_path).read()
+    if x.find("libaio.so") != -1:
+        return True
+    return False
+
+is_diskann_ver = CheckAIO()
+
 DEFINE_MACROS = [
     ("FINTEGER", "int"),
     ("SWIGWORDSIZE64", "1"),
@@ -43,6 +52,9 @@ DEFINE_MACROS = [
 
 if is_cuda_ver:
     DEFINE_MACROS.append(("KNOWHERE_GPU_VERSION", "1"))
+
+if is_diskann_ver:
+    DEFINE_MACROS.append(("KNOWHERE_WITH_DISKANN", "1"))
 
 INCLUDE_DIRS = [
     get_numpy_include(),
@@ -73,6 +85,9 @@ SWIG_OPTS = [
 
 if is_cuda_ver:
     SWIG_OPTS.append("-DKNOWHERE_GPU_VERSION=1")
+
+if is_diskann_ver:
+    SWIG_OPTS.append("-DKNOWHERE_WITH_DISKANN=1")
 
 _swigknowhere = Extension(
     "knowhere._swigknowhere",
