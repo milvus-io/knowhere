@@ -3,7 +3,7 @@ CMAKE_TAR="cmake-3.23.0-linux-x86_64.tar.gz"
 HDF_VERSION="1.13.2"
 apt-get update && apt-get install -y --no-install-recommends wget curl g++ gcc ca-certificates \
 make ccache python3-dev gfortran python3-setuptools swig libopenblas-dev pip git vim \
-libaio-dev libgoogle-perftools-dev clang-format libboost-all-dev libmkl-full-dev \
+libaio-dev libgoogle-perftools-dev clang-format libboost-all-dev  \
 && apt-get remove --purge -y  \
 && rm -rf /var/lib/apt/lists/* \
 && cd /tmp && wget  --tries=3 --retry-connrefused "https://cmake.org/files/${CMAKE_VERSION}/${CMAKE_TAR}" \
