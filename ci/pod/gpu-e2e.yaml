@@ -10,7 +10,7 @@ spec:
     app: knowhere
   containers:
   - name: main
-    image: milvusdb/knowhere-gpu-e2e:amd64-ubuntu20.04-20220720-71e9862
+    image: milvusdb/knowhere-gpu-e2e:amd64-ubuntu20.04-20220825-c7d6144
     tty: true
     args: ["cat"]
     resources:

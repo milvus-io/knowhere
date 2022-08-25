@@ -6,6 +6,8 @@ metadata:
   namespace: knowhere-ci
 spec:
   enableServiceLinks: false
+  nodeSelector:
+    app: knowhere
   containers:
   - name: main
     image: harbor.milvus.io/dockerhub/milvusdb/knowhere-cpu-build:amd64-ubuntu20.04-20220802-c691c3b
