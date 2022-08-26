@@ -159,6 +159,9 @@ TEST_P(HNSWTest, hnsw_range_search_l2) {
         RunFloatRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, knowhere::metric::L2,
                                            xb.data(), nb, xq.data(), nq, dim, radius, bitset);
 
+        auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
+        ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
+
         auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMin<float>>(result, nq, radius * radius, golden_labels.data(), golden_lims.data(), false);
     };
@@ -184,6 +187,9 @@ TEST_P(HNSWTest, hnsw_range_search_ip) {
         std::vector<size_t> golden_lims;
         RunFloatRangeSearchBF<CMax<float>>(golden_labels, golden_distances, golden_lims, knowhere::metric::IP,
                                            xb.data(), nb, xq.data(), nq, dim, radius, bitset);
+
+        auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
+        ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMax<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false);

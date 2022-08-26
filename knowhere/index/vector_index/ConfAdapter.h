@@ -27,6 +27,9 @@ class ConfAdapter {
 
     virtual bool
     CheckSearch(Config& cfg, const IndexType type, const IndexMode mode);
+
+    virtual bool
+    CheckRangeSearch(Config& cfg, const IndexType type, const IndexMode mode);
 };
 using ConfAdapterPtr = std::shared_ptr<ConfAdapter>;
 
