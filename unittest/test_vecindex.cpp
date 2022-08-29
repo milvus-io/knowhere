@@ -10,14 +10,14 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <gtest/gtest.h>
+
 #include <tuple>
 
 #include "knowhere/index/IndexType.h"
 #include "knowhere/index/VecIndex.h"
 #include "knowhere/index/VecIndexFactory.h"
-#include "knowhere/index/vector_index/helpers/IndexParameter.h"
 #include "knowhere/index/vector_index/ConfAdapterMgr.h"
-
+#include "knowhere/index/vector_index/helpers/IndexParameter.h"
 #include "unittest/Helper.h"
 #include "unittest/utils.h"
 
@@ -25,8 +25,7 @@ using ::testing::Combine;
 using ::testing::TestWithParam;
 using ::testing::Values;
 
-class VecIndexTest : public DataGen,
-                     public TestWithParam<std::tuple<knowhere::IndexType, knowhere::MetricType>> {
+class VecIndexTest : public DataGen, public TestWithParam<std::tuple<knowhere::IndexType, knowhere::MetricType>> {
  protected:
     void
     SetUp() override {
@@ -62,18 +61,10 @@ INSTANTIATE_TEST_CASE_P(
         std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFPQ, knowhere::metric::IP),
         std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFSQ8, knowhere::metric::L2),
         std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFSQ8, knowhere::metric::IP),
-        std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFHNSW, knowhere::metric::L2),
-        std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFHNSW, knowhere::metric::IP),
         std::make_tuple(knowhere::IndexEnum::INDEX_HNSW, knowhere::metric::L2),
         std::make_tuple(knowhere::IndexEnum::INDEX_HNSW, knowhere::metric::IP),
         std::make_tuple(knowhere::IndexEnum::INDEX_ANNOY, knowhere::metric::L2),
-        std::make_tuple(knowhere::IndexEnum::INDEX_ANNOY, knowhere::metric::IP),
-        std::make_tuple(knowhere::IndexEnum::INDEX_RHNSWFlat, knowhere::metric::L2),
-        std::make_tuple(knowhere::IndexEnum::INDEX_RHNSWFlat, knowhere::metric::IP),
-        std::make_tuple(knowhere::IndexEnum::INDEX_RHNSWPQ, knowhere::metric::L2),
-        std::make_tuple(knowhere::IndexEnum::INDEX_RHNSWPQ, knowhere::metric::IP),
-        std::make_tuple(knowhere::IndexEnum::INDEX_RHNSWSQ, knowhere::metric::L2),
-        std::make_tuple(knowhere::IndexEnum::INDEX_RHNSWSQ, knowhere::metric::IP)));
+        std::make_tuple(knowhere::IndexEnum::INDEX_ANNOY, knowhere::metric::IP)));
 
 TEST_P(VecIndexTest, basic) {
     assert(!xb.empty());
@@ -92,9 +83,7 @@ TEST_P(VecIndexTest, basic) {
 
     auto result = index_->Query(query_dataset, conf_, nullptr);
     if (index_type_ != knowhere::IndexEnum::INDEX_FAISS_IVFPQ &&
-        index_type_ != knowhere::IndexEnum::INDEX_FAISS_IVFSQ8 &&
-        index_type_ != knowhere::IndexEnum::INDEX_RHNSWPQ &&
-        index_type_ != knowhere::IndexEnum::INDEX_RHNSWSQ) {
+        index_type_ != knowhere::IndexEnum::INDEX_FAISS_IVFSQ8) {
         AssertAnns(result, nq, k);
     }
     AssertDist(result, metric_type_, nq, k);

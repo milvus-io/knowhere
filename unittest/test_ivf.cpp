@@ -28,7 +28,6 @@
 #include "knowhere/index/vector_index/gpu/IndexGPUIVF.h"
 #include "knowhere/index/vector_index/gpu/IndexGPUIVFPQ.h"
 #include "knowhere/index/vector_index/gpu/IndexGPUIVFSQ.h"
-#include "knowhere/index/vector_index/gpu/IndexIVFSQHybrid.h"
 #include "knowhere/index/vector_index/helpers/Cloner.h"
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
 #endif
@@ -259,19 +258,6 @@ TEST_P(IVFTest, clone_test) {
                 knowhere::KnowhereException);
         }
     }
-
-    {
-        // copy to gpu
-        if (index_type_ != knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
-            EXPECT_NO_THROW({
-                auto clone_index = knowhere::cloner::CopyCpuToGpu(index_, DEVICE_ID, knowhere::Config());
-                auto clone_result = clone_index->Query(query_dataset, conf_, nullptr);
-                AssertEqual(result, clone_result);
-                std::cout << "clone C <=> G [" << index_type_ << "] success" << std::endl;
-            });
-            EXPECT_ANY_THROW(knowhere::cloner::CopyCpuToGpu(index_, -1, knowhere::Config()));
-        }
-    }
 }
 #endif
 
@@ -316,11 +302,6 @@ TEST_P(IVFTest, invalid_gpu_source) {
     auto invalid_conf = ParamGenerator::GetInstance().Gen(index_type_);
     knowhere::SetMetaDeviceID(invalid_conf, -1);
 
-    // if (index_type_ == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
-    //     null faiss index
-    //     knowhere::cloner::CopyGpuToCpu(index_, knowhere::Config());
-    // }
-
     index_->Train(base_dataset, conf_);
 
     auto ivf_index = std::dynamic_pointer_cast<knowhere::GPUIVF>(index_);
@@ -333,24 +314,4 @@ TEST_P(IVFTest, invalid_gpu_source) {
     // ASSERT_ANY_THROW(index_->Load(binaryset));
     ASSERT_ANY_THROW(index_->Train(base_dataset, invalid_conf));
 }
-
-/*
-TEST_P(IVFTest, IVFSQHybrid_test) {
-    if (index_type_ != knowhere::IndexEnum::INDEX_FAISS_IVFSQ8H) {
-        return;
-    }
-
-    knowhere::cloner::CopyGpuToCpu(index_, conf_);
-    ASSERT_ANY_THROW(knowhere::cloner::CopyCpuToGpu(index_, -1, conf_));
-    ASSERT_ANY_THROW(index_->Train(base_dataset, conf_));
-    //ASSERT_ANY_THROW(index_->CopyCpuToGpu(DEVICE_ID, conf_));
-
-    index_->Train(base_dataset, conf_);
-    auto index = std::dynamic_pointer_cast<knowhere::IVFSQHybrid>(index_);
-    ASSERT_TRUE(index != nullptr);
-    ASSERT_ANY_THROW(index->UnsetQuantizer());
-
-    ASSERT_ANY_THROW(index->SetQuantizer(nullptr));
-}
-*/
 #endif

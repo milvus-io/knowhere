@@ -9,11 +9,12 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License
 
+#include "index/VecIndexFactory.h"
+
 #include <string>
 
 #include "common/Exception.h"
 #include "common/Log.h"
-#include "index/VecIndexFactory.h"
 #include "index/vector_index/IndexAnnoy.h"
 #include "index/vector_index/IndexBinaryIDMAP.h"
 #include "index/vector_index/IndexBinaryIVF.h"
@@ -21,32 +22,15 @@
 #include "index/vector_index/IndexIDMAP.h"
 #include "index/vector_index/IndexIVFPQ.h"
 #include "index/vector_index/IndexIVFSQ.h"
-#include "index/vector_index/IndexIVFHNSW.h"
-#include "index/vector_index/IndexRHNSWFlat.h"
-#include "index/vector_index/IndexRHNSWPQ.h"
-#include "index/vector_index/IndexRHNSWSQ.h"
 #include "index/vector_offset_index/IndexIVF_NM.h"
-
-#ifdef KNOWHERE_SUPPORT_SPTAG
-#include "knowhere/index/vector_index/IndexSPTAG.h"
-#endif
-
-#ifdef KNOWHERE_SUPPORT_NGT
-#include "IndexNGTONNG.h"
-#include "IndexNGTPANNG.h"
-#endif
-
-#ifdef KNOWHERE_SUPPORT_NSG
-#include "index/vector_offset_index/IndexNSG_NM.h"
-#endif
 
 #ifdef KNOWHERE_GPU_VERSION
 #include <cuda.h>
+
 #include "knowhere/index/vector_index/gpu/IndexGPUIDMAP.h"
 #include "knowhere/index/vector_index/gpu/IndexGPUIVF.h"
 #include "knowhere/index/vector_index/gpu/IndexGPUIVFPQ.h"
 #include "knowhere/index/vector_index/gpu/IndexGPUIVFSQ.h"
-#include "knowhere/index/vector_index/gpu/IndexIVFSQHybrid.h"
 #include "knowhere/index/vector_index/helpers/Cloner.h"
 #include "knowhere/index/vector_offset_index/gpu/IndexGPUIVF_NM.h"
 #endif
@@ -69,34 +53,10 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
                 return std::make_shared<knowhere::IVFPQ>();
             } else if (type == IndexEnum::INDEX_FAISS_IVFSQ8) {
                 return std::make_shared<knowhere::IVFSQ>();
-            } else if (type == IndexEnum::INDEX_FAISS_IVFHNSW) {
-                return std::make_shared<knowhere::IVFHNSW>();
             } else if (type == IndexEnum::INDEX_ANNOY) {
                 return std::make_shared<knowhere::IndexAnnoy>();
             } else if (type == IndexEnum::INDEX_HNSW) {
                 return std::make_shared<knowhere::IndexHNSW>();
-            } else if (type == IndexEnum::INDEX_RHNSWFlat) {
-                return std::make_shared<knowhere::IndexRHNSWFlat>();
-            } else if (type == IndexEnum::INDEX_RHNSWPQ) {
-                return std::make_shared<knowhere::IndexRHNSWPQ>();
-            } else if (type == IndexEnum::INDEX_RHNSWSQ) {
-                return std::make_shared<knowhere::IndexRHNSWSQ>();
-#ifdef KNOWHERE_SUPPORT_NGT
-            } else if (type == IndexEnum::INDEX_NGTPANNG) {
-                return std::make_shared<knowhere::IndexNGTPANNG>();
-            } else if (type == IndexEnum::INDEX_NGTONNG) {
-                return std::make_shared<knowhere::IndexNGTONNG>();
-#endif
-#ifdef KNOWHERE_SUPPORT_NSG
-            } else if (type == IndexEnum::INDEX_NSG) {
-                return std::make_shared<knowhere::NSG_NM>(-1);
-#endif
-#ifdef KNOWHERE_SUPPORT_SPTAG
-            } else if (type == IndexEnum::INDEX_SPTAG_KDT_RNT) {
-                return std::make_shared<knowhere::CPUSPTAGRNG>("KDT");
-            } else if (type == IndexEnum::INDEX_SPTAG_BKT_RNT) {
-                return std::make_shared<knowhere::CPUSPTAGRNG>("BKT");
-#endif
             } else {
                 KNOWHERE_THROW_FORMAT("Invalid index type %s", std::string(type).c_str());
             }

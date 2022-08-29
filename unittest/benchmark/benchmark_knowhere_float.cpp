@@ -91,37 +91,6 @@ class Benchmark_knowhere_float : public Benchmark_knowhere {
     }
 
     void
-    test_ivf_hnsw(const knowhere::Config& cfg) {
-        auto conf = cfg;
-        auto nlist = knowhere::GetIndexParamNlist(conf);
-        auto M = knowhere::GetIndexParamHNSWM(conf);
-        auto efConstruction = knowhere::GetIndexParamEfConstruction(conf);
-
-        printf("\n[%0.3f s] %s | %s nlist=%ld | M=%ld | efConstruction=%ld\n", get_time_diff(),
-               ann_test_name_.c_str(), index_type_.c_str(), nlist, M, efConstruction);
-        printf("================================================================================\n");
-        for (auto nprobe : NPROBEs_) {
-            knowhere::SetIndexParamNprobe(conf, nprobe);
-            for (auto ef : EFs_) {
-                knowhere::SetIndexParamEf(conf, ef);
-                for (auto nq : NQs_) {
-                    knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
-                    for (auto k : TOPKs_) {
-                        knowhere::SetMetaTopk(conf, k);
-                        CALC_TIME_SPAN(auto result = index_->Query(ds_ptr, conf, nullptr));
-                        auto ids = knowhere::GetDatasetIDs(result);
-                        float recall = CalcRecall(ids, nq, k);
-                        printf("  nprobe = %4d, ef = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n",
-                               nprobe, ef, nq, k, t_diff, recall);
-                    }
-                }
-            }
-        }
-        printf("================================================================================\n");
-        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
-    }
-
-    void
     test_hnsw(const knowhere::Config& cfg) {
         auto conf = cfg;
         auto M = knowhere::GetIndexParamHNSWM(conf);
@@ -361,27 +330,6 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_PQ) {
     }
 }
 
-TEST_F(Benchmark_knowhere_float, TEST_IVF_HNSW) {
-    index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFHNSW;
-
-    knowhere::Config conf = cfg_;
-    for (auto nlist : NLISTs_) {
-        knowhere::SetIndexParamNlist(conf, nlist);
-        for (auto M : HNSW_Ms_) {
-            knowhere::SetIndexParamHNSWM(conf, M);
-            for (auto efc : EFCONs_) {
-                knowhere::SetIndexParamEfConstruction(conf, efc);
-
-                std::string index_file_name = get_index_name({nlist, M, efc});
-                create_index(index_file_name, conf);
-                index_->Load(binary_set_);
-                binary_set_.clear();
-                test_ivf_hnsw(conf);
-            }
-        }
-    }
-}
-
 TEST_F(Benchmark_knowhere_float, TEST_HNSW) {
     index_type_ = knowhere::IndexEnum::INDEX_HNSW;
 
@@ -412,69 +360,5 @@ TEST_F(Benchmark_knowhere_float, TEST_ANNOY) {
         index_->Load(binary_set_);
         binary_set_.clear();
         test_annoy(conf);
-    }
-}
-
-TEST_F(Benchmark_knowhere_float, TEST_RHNSW_FLAT) {
-    index_type_ = knowhere::IndexEnum::INDEX_RHNSWFlat;
-
-    knowhere::Config conf = cfg_;
-    for (auto M : HNSW_Ms_) {
-        knowhere::SetIndexParamHNSWM(conf, M);
-        for (auto efc : EFCONs_) {
-            knowhere::SetIndexParamEfConstruction(conf, efc);
-
-            std::string index_file_name = get_index_name({M, efc});
-            create_index(index_file_name, conf);
-
-            // RHNSW index should load raw data
-            knowhere::BinaryPtr bin = std::make_shared<knowhere::Binary>();
-            bin->data = std::shared_ptr<uint8_t[]>((uint8_t*)xb_, [&](uint8_t*) {});
-            bin->size = dim_ * nb_ * sizeof(float);
-            binary_set_.Append(RAW_DATA, bin);
-
-            index_->Load(binary_set_);
-            binary_set_.clear();
-            test_hnsw(conf);
-        }
-    }
-}
-
-TEST_F(Benchmark_knowhere_float, TEST_RHNSW_SQ) {
-    index_type_ = knowhere::IndexEnum::INDEX_RHNSWSQ;
-
-    knowhere::Config conf = cfg_;
-    for (auto M : HNSW_Ms_) {
-        knowhere::SetIndexParamHNSWM(conf, M);
-        for (auto efc : EFCONs_) {
-            knowhere::SetIndexParamEfConstruction(conf, efc);
-
-            std::string index_file_name = get_index_name({M, efc});
-            create_index(index_file_name, conf);
-            index_->Load(binary_set_);
-            binary_set_.clear();
-            test_hnsw(conf);
-        }
-    }
-}
-
-TEST_F(Benchmark_knowhere_float, TEST_RHNSW_PQ) {
-    index_type_ = knowhere::IndexEnum::INDEX_RHNSWPQ;
-
-    knowhere::Config conf = cfg_;
-    for (auto M : HNSW_Ms_) {
-        knowhere::SetIndexParamHNSWM(conf, M);
-        for (auto efc : EFCONs_) {
-            knowhere::SetIndexParamEfConstruction(conf, efc);
-            for (auto m : Ms_) {
-                knowhere::SetIndexParamPQM(conf, m);
-
-                std::string index_file_name = get_index_name({M, efc, m});
-                create_index(index_file_name, conf);
-                index_->Load(binary_set_);
-                binary_set_.clear();
-                test_hnsw(conf);
-            }
-        }
     }
 }

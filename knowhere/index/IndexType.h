@@ -28,30 +28,11 @@ constexpr const char* INDEX_FAISS_IDMAP = "FLAT";
 constexpr const char* INDEX_FAISS_IVFFLAT = "IVF_FLAT";
 constexpr const char* INDEX_FAISS_IVFPQ = "IVF_PQ";
 constexpr const char* INDEX_FAISS_IVFSQ8 = "IVF_SQ8";
-constexpr const char* INDEX_FAISS_IVFSQ8H = "IVF_SQ8_HYBRID";
-constexpr const char* INDEX_FAISS_IVFHNSW = "IVF_HNSW";
 
 constexpr const char* INDEX_ANNOY = "ANNOY";
 constexpr const char* INDEX_HNSW = "HNSW";
-constexpr const char* INDEX_RHNSWFlat = "RHNSW_FLAT";
-constexpr const char* INDEX_RHNSWPQ = "RHNSW_PQ";
-constexpr const char* INDEX_RHNSWSQ = "RHNSW_SQ";
 
 constexpr const char* INDEX_DISKANN = "DISKANN";
-
-#ifdef KNOWHERE_SUPPORT_NGT
-constexpr const char* INDEX_NGTPANNG = "NGT_PANNG";
-constexpr const char* INDEX_NGTONNG = "NGT_ONNG";
-#endif
-
-#ifdef KNOWHERE_SUPPORT_NSG
-constexpr const char* INDEX_NSG = "NSG";
-#endif
-
-#ifdef KNOWHERE_SUPPORT_SPTAG
-constexpr const char* INDEX_SPTAG_KDT_RNT = "SPTAG_KDT_RNT";
-constexpr const char* INDEX_SPTAG_BKT_RNT = "SPTAG_BKT_RNT";
-#endif
 
 }  // namespace IndexEnum
 
