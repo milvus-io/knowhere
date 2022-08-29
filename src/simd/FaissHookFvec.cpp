@@ -1,10 +1,11 @@
 
 // -*- c++ -*-
 
+#include "FaissHookFvec.h"
+
 #include <iostream>
 #include <mutex>
 
-#include "FaissHookFvec.h"
 #include "distances_simd.h"
 #include "distances_simd_avx.h"
 #include "distances_simd_avx512.h"
@@ -32,25 +33,27 @@ fvec_madd_and_argmin_func_ptr fvec_madd_and_argmin = fvec_madd_and_argmin_ref;
 
 /*****************************************************************************/
 #ifdef __linux__
-bool cpu_support_avx512() {
+bool
+cpu_support_avx512() {
     InstructionSet& instruction_set_inst = InstructionSet::GetInstance();
-    return (instruction_set_inst.AVX512F() &&
-            instruction_set_inst.AVX512DQ() &&
-            instruction_set_inst.AVX512BW());
+    return (instruction_set_inst.AVX512F() && instruction_set_inst.AVX512DQ() && instruction_set_inst.AVX512BW());
 }
 
-bool cpu_support_avx2() {
+bool
+cpu_support_avx2() {
     InstructionSet& instruction_set_inst = InstructionSet::GetInstance();
     return (instruction_set_inst.AVX2());
 }
 
-bool cpu_support_sse4_2() {
+bool
+cpu_support_sse4_2() {
     InstructionSet& instruction_set_inst = InstructionSet::GetInstance();
     return (instruction_set_inst.SSE42());
 }
 #endif
 
-void hook_fvec(std::string& simd_type) {
+void
+hook_fvec(std::string& simd_type) {
     static std::mutex hook_mutex;
     std::lock_guard<std::mutex> lock(hook_mutex);
 
@@ -118,4 +121,4 @@ void hook_fvec(std::string& simd_type) {
 #endif
 }
 
-} // namespace faiss
+}  // namespace faiss

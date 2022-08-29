@@ -5,24 +5,16 @@
 
 namespace knowhere {
 
-class IVFConfig : public Config {
+class IVFConfig : public BaseConfig {
  public:
-    int dim;
-    std::string metric_type;
-    int k;
-    float radius;
     int nlist;
     int nprobe;
     KNOHWERE_DECLARE_CONFIG(IVFConfig) {
-        KNOWHERE_CONFIG_DECLARE_FIELD(dim).description("vector dims").for_all();
-        KNOWHERE_CONFIG_DECLARE_FIELD(metric_type).set_default("L2").description("distance metric type").for_all();
-        KNOWHERE_CONFIG_DECLARE_FIELD(k).set_default(10).description("top k").for_query().for_train();
-        KNOWHERE_CONFIG_DECLARE_FIELD(radius).set_default(0.0f).description("radius").for_range();
-        KNOWHERE_CONFIG_DECLARE_FIELD(nlist).set_default(1024).description("number of inverted lists").for_train();
+        KNOWHERE_CONFIG_DECLARE_FIELD(nlist).set_default(1024).description("number of inverted lists.").for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(nprobe)
             .set_default(1024)
-            .description("number of probes at query time")
-            .for_query()
+            .description("number of probes at query time.")
+            .for_search()
             .for_range();
     }
 };

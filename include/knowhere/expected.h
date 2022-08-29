@@ -1,3 +1,6 @@
+#ifndef EXPECTED_H
+#define EXPECTED_H
+
 #include <cassert>
 #include <iostream>
 #include <string>
@@ -11,9 +14,12 @@ enum class Error {
     type_conflict_in_json,
     invalid_metric_type,
     empty_index,
+    not_implemented,
     index_not_trained,
+    index_already_trained,
     faiss_inner_error,
-
+    annoy_inner_error,
+    hnsw_inner_error,
 };
 
 template <typename E>
@@ -85,3 +91,5 @@ class expected {
 };
 
 }  // namespace knowhere
+
+#endif /* EXPECTED_H */

@@ -55,7 +55,7 @@ if(__X86_64)
             -mf16c
             -mavx512dq
             -mavx512bw>)
-  add_library(faiss STATIC ${FAISS_SRCS}) 
+  add_library(faiss STATIC ${FAISS_SRCS})
   add_dependencies(faiss faiss_avx512 knowhere_utils)
   target_compile_options(faiss PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -msse4.2
                                           -mavx2 -mfma -mf16c -Wno-sign-compare
@@ -68,5 +68,3 @@ if(__X86_64)
   target_compile_definitions(faiss PRIVATE FINTEGER=int)
 
 endif()
-
-

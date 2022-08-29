@@ -54,8 +54,7 @@ uint8_t lookup8bit[256] = {
     /* e0 */ 3, /* e1 */ 4, /* e2 */ 4, /* e3 */ 5, /* e4 */ 4, /* e5 */ 5, /* e6 */ 5, /* e7 */ 6,
     /* e8 */ 4, /* e9 */ 5, /* ea */ 5, /* eb */ 6, /* ec */ 5, /* ed */ 6, /* ee */ 6, /* ef */ 7,
     /* f0 */ 4, /* f1 */ 5, /* f2 */ 5, /* f3 */ 6, /* f4 */ 5, /* f5 */ 6, /* f6 */ 6, /* f7 */ 7,
-    /* f8 */ 5, /* f9 */ 6, /* fa */ 6, /* fb */ 7, /* fc */ 6, /* fd */ 7, /* fe */ 7, /* ff */ 8
-};
+    /* f8 */ 5, /* f9 */ 6, /* fa */ 6, /* fb */ 7, /* fc */ 6, /* fd */ 7, /* fe */ 7, /* ff */ 8};
 
 /* Functions to compute:
    - L2 distance between 2 vectors
@@ -76,7 +75,8 @@ uint8_t lookup8bit[256] = {
  * Reference implementations
  */
 
-float fvec_L2sqr_ref(const float* x, const float* y, size_t d) {
+float
+fvec_L2sqr_ref(const float* x, const float* y, size_t d) {
     size_t i;
     float res = 0;
     for (i = 0; i < d; i++) {
@@ -86,7 +86,8 @@ float fvec_L2sqr_ref(const float* x, const float* y, size_t d) {
     return res;
 }
 
-float fvec_L1_ref(const float* x, const float* y, size_t d) {
+float
+fvec_L1_ref(const float* x, const float* y, size_t d) {
     size_t i;
     float res = 0;
     for (i = 0; i < d; i++) {
@@ -96,7 +97,8 @@ float fvec_L1_ref(const float* x, const float* y, size_t d) {
     return res;
 }
 
-float fvec_Linf_ref(const float* x, const float* y, size_t d) {
+float
+fvec_Linf_ref(const float* x, const float* y, size_t d) {
     size_t i;
     float res = 0;
     for (i = 0; i < d; i++) {
@@ -105,40 +107,32 @@ float fvec_Linf_ref(const float* x, const float* y, size_t d) {
     return res;
 }
 
-float fvec_inner_product_ref(const float* x, const float* y, size_t d) {
+float
+fvec_inner_product_ref(const float* x, const float* y, size_t d) {
     size_t i;
     float res = 0;
-    for (i = 0; i < d; i++)
-        res += x[i] * y[i];
+    for (i = 0; i < d; i++) res += x[i] * y[i];
     return res;
 }
 
-float fvec_norm_L2sqr_ref(const float* x, size_t d) {
+float
+fvec_norm_L2sqr_ref(const float* x, size_t d) {
     size_t i;
     double res = 0;
-    for (i = 0; i < d; i++)
-        res += x[i] * x[i];
+    for (i = 0; i < d; i++) res += x[i] * x[i];
     return res;
 }
 
-void fvec_L2sqr_ny_ref(
-        float* dis,
-        const float* x,
-        const float* y,
-        size_t d,
-        size_t ny) {
+void
+fvec_L2sqr_ny_ref(float* dis, const float* x, const float* y, size_t d, size_t ny) {
     for (size_t i = 0; i < ny; i++) {
         dis[i] = fvec_L2sqr_ref(x, y, d);
         y += d;
     }
 }
 
-void fvec_inner_products_ny_ref(
-        float* ip,
-        const float* x,
-        const float* y,
-        size_t d,
-        size_t ny) {
+void
+fvec_inner_products_ny_ref(float* ip, const float* x, const float* y, size_t d, size_t ny) {
     // BLAS slower for the use cases here
 #if 0
     {
@@ -157,7 +151,7 @@ void fvec_inner_products_ny_ref(
 
 //#if defined(__aarch64__)
 //
-//float fvec_L2sqr(const float* x, const float* y, size_t d) {
+// float fvec_L2sqr(const float* x, const float* y, size_t d) {
 //    float32x4_t accux4 = vdupq_n_f32(0);
 //    const size_t d_simd = d - (d & 3);
 //    size_t i;
@@ -178,7 +172,7 @@ void fvec_inner_products_ny_ref(
 //    return accux1;
 //}
 //
-//float fvec_inner_product(const float* x, const float* y, size_t d) {
+// float fvec_inner_product(const float* x, const float* y, size_t d) {
 //    float32x4_t accux4 = vdupq_n_f32(0);
 //    const size_t d_simd = d - (d & 3);
 //    size_t i;
@@ -197,7 +191,7 @@ void fvec_inner_products_ny_ref(
 //    return accux1;
 //}
 //
-//float fvec_norm_L2sqr(const float* x, size_t d) {
+// float fvec_norm_L2sqr(const float* x, size_t d) {
 //    float32x4_t accux4 = vdupq_n_f32(0);
 //    const size_t d_simd = d - (d & 3);
 //    size_t i;
@@ -215,56 +209,56 @@ void fvec_inner_products_ny_ref(
 //}
 //
 //// not optimized for ARM
-//void fvec_L2sqr_ny(
-//        float* dis,
-//        const float* x,
-//        const float* y,
-//        size_t d,
-//        size_t ny) {
-//    fvec_L2sqr_ny_ref(dis, x, y, d, ny);
-//}
+// void fvec_L2sqr_ny(
+//         float* dis,
+//         const float* x,
+//         const float* y,
+//         size_t d,
+//         size_t ny) {
+//     fvec_L2sqr_ny_ref(dis, x, y, d, ny);
+// }
 //
-//float fvec_L1(const float* x, const float* y, size_t d) {
-//    return fvec_L1_ref(x, y, d);
-//}
+// float fvec_L1(const float* x, const float* y, size_t d) {
+//     return fvec_L1_ref(x, y, d);
+// }
 //
-//float fvec_Linf(const float* x, const float* y, size_t d) {
-//    return fvec_Linf_ref(x, y, d);
-//}
+// float fvec_Linf(const float* x, const float* y, size_t d) {
+//     return fvec_Linf_ref(x, y, d);
+// }
 //
-//void fvec_inner_products_ny(
-//        float* dis,
-//        const float* x,
-//        const float* y,
-//        size_t d,
-//        size_t ny) {
-//    fvec_inner_products_ny_ref(dis, x, y, d, ny);
-//}
+// void fvec_inner_products_ny(
+//         float* dis,
+//         const float* x,
+//         const float* y,
+//         size_t d,
+//         size_t ny) {
+//     fvec_inner_products_ny_ref(dis, x, y, d, ny);
+// }
 //
 //#else
 //// scalar implementation
 //
-//float fvec_L2sqr(const float* x, const float* y, size_t d) {
+// float fvec_L2sqr(const float* x, const float* y, size_t d) {
 //    return fvec_L2sqr_ref(x, y, d);
 //}
 //
-//float fvec_L1(const float* x, const float* y, size_t d) {
+// float fvec_L1(const float* x, const float* y, size_t d) {
 //    return fvec_L1_ref(x, y, d);
 //}
 //
-//float fvec_Linf(const float* x, const float* y, size_t d) {
+// float fvec_Linf(const float* x, const float* y, size_t d) {
 //    return fvec_Linf_ref(x, y, d);
 //}
 //
-//float fvec_inner_product(const float* x, const float* y, size_t d) {
+// float fvec_inner_product(const float* x, const float* y, size_t d) {
 //    return fvec_inner_product_ref(x, y, d);
 //}
 //
-//float fvec_norm_L2sqr(const float* x, size_t d) {
+// float fvec_norm_L2sqr(const float* x, size_t d) {
 //    return fvec_norm_L2sqr_ref(x, d);
 //}
 //
-//void fvec_L2sqr_ny(
+// void fvec_L2sqr_ny(
 //        float* dis,
 //        const float* x,
 //        const float* y,
@@ -273,7 +267,7 @@ void fvec_inner_products_ny_ref(
 //    fvec_L2sqr_ny_ref(dis, x, y, d, ny);
 //}
 //
-//void fvec_inner_products_ny(
+// void fvec_inner_products_ny(
 //        float* dis,
 //        const float* x,
 //        const float* y,
@@ -288,22 +282,13 @@ void fvec_inner_products_ny_ref(
  * heavily optimized table computations
  ***************************************************************************/
 
-void fvec_madd_ref(
-        size_t n,
-        const float* a,
-        float bf,
-        const float* b,
-        float* c) {
-    for (size_t i = 0; i < n; i++)
-        c[i] = a[i] + bf * b[i];
+void
+fvec_madd_ref(size_t n, const float* a, float bf, const float* b, float* c) {
+    for (size_t i = 0; i < n; i++) c[i] = a[i] + bf * b[i];
 }
 
-int fvec_madd_and_argmin_ref(
-        size_t n,
-        const float* a,
-        float bf,
-        const float* b,
-        float* c) {
+int
+fvec_madd_and_argmin_ref(size_t n, const float* a, float bf, const float* b, float* c) {
     float vmin = 1e20;
     int imin = -1;
 
@@ -317,4 +302,4 @@ int fvec_madd_and_argmin_ref(
     return imin;
 }
 
-} // namespace faiss
+}  // namespace faiss

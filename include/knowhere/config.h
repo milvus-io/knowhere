@@ -17,7 +17,7 @@ template <typename T>
 struct Entry {};
 
 enum PARAM_TYPE {
-    QUERY = 0x1,
+    SEARCH = 0x1,
     RANGE = 0x2,
     TRAIN = 0x4,
 };
@@ -114,8 +114,8 @@ class EntryAccess {
         return *this;
     }
     EntryAccess&
-    for_query() {
-        entry->type |= PARAM_TYPE::QUERY;
+    for_search() {
+        entry->type |= PARAM_TYPE::SEARCH;
         return *this;
     }
     EntryAccess&
@@ -130,7 +130,7 @@ class EntryAccess {
     }
     EntryAccess&
     for_all() {
-        entry->type |= PARAM_TYPE::QUERY;
+        entry->type |= PARAM_TYPE::SEARCH;
         entry->type |= PARAM_TYPE::RANGE;
         entry->type |= PARAM_TYPE::TRAIN;
         return *this;
@@ -258,6 +258,24 @@ class Config {
     __DICT__[#PARAM] = knowhere::Config::VarEntry(std::in_place_type<Entry<decltype(PARAM)>>, &PARAM);   \
     EntryAccess<decltype(PARAM)> PARAM##_access(std::get_if<Entry<decltype(PARAM)>>(&__DICT__[#PARAM])); \
     PARAM##_access
+
+class BaseConfig : public Config {
+ public:
+    int dim;
+    std::string metric_type;
+    int k;
+    float radius;
+    KNOHWERE_DECLARE_CONFIG(BaseConfig) {
+        KNOWHERE_CONFIG_DECLARE_FIELD(dim).description("vector dims.").for_all();
+        KNOWHERE_CONFIG_DECLARE_FIELD(metric_type).set_default("L2").description("distance metric type.").for_all();
+        KNOWHERE_CONFIG_DECLARE_FIELD(k)
+            .set_default(10)
+            .description("search for top k similar vector.")
+            .for_search()
+            .for_train();
+        KNOWHERE_CONFIG_DECLARE_FIELD(radius).set_default(0.0f).description("range search radius.").for_range();
+    }
+};
 
 }  // namespace knowhere
 

@@ -1,9 +1,10 @@
 
 #pragma once
 
+#include <cpuid.h>
+
 #include <array>
 #include <bitset>
-#include <cpuid.h>
 #include <cstring>
 #include <iostream>
 #include <string>

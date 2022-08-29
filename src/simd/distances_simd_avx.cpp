@@ -5,18 +5,21 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#include <cassert>
+#include "distances_simd_avx.h"
+
 #include <immintrin.h>
 
+#include <cassert>
+
 #include "distances_simd.h"
-#include "distances_simd_avx.h"
 
 namespace faiss {
 
 #define ALIGNED(x) __attribute__((aligned(x)))
 
 // reads 0 <= d < 4 floats as __m128
-static inline __m128 masked_read(int d, const float* x) {
+static inline __m128
+masked_read(int d, const float* x) {
     assert(0 <= d && d < 4);
     ALIGNED(16) float buf[4] = {0, 0, 0, 0};
     switch (d) {
@@ -32,7 +35,8 @@ static inline __m128 masked_read(int d, const float* x) {
 }
 
 // reads 0 <= d < 8 floats as __m256
-static inline __m256 masked_read_8(int d, const float* x) {
+static inline __m256
+masked_read_8(int d, const float* x) {
     assert(0 <= d && d < 8);
     if (d < 4) {
         __m256 res = _mm256_setzero_ps();
@@ -46,7 +50,8 @@ static inline __m256 masked_read_8(int d, const float* x) {
     }
 }
 
-float fvec_inner_product_avx(const float* x, const float* y, size_t d) {
+float
+fvec_inner_product_avx(const float* x, const float* y, size_t d) {
     __m256 msum1 = _mm256_setzero_ps();
 
     while (d >= 8) {
@@ -81,7 +86,8 @@ float fvec_inner_product_avx(const float* x, const float* y, size_t d) {
     return _mm_cvtss_f32(msum2);
 }
 
-float fvec_L2sqr_avx(const float* x, const float* y, size_t d) {
+float
+fvec_L2sqr_avx(const float* x, const float* y, size_t d) {
     __m256 msum1 = _mm256_setzero_ps();
 
     while (d >= 8) {
@@ -119,7 +125,8 @@ float fvec_L2sqr_avx(const float* x, const float* y, size_t d) {
     return _mm_cvtss_f32(msum2);
 }
 
-float fvec_L1_avx(const float* x, const float* y, size_t d) {
+float
+fvec_L1_avx(const float* x, const float* y, size_t d) {
     __m256 msum1 = _mm256_setzero_ps();
     __m256 signmask = _mm256_castsi256_ps(_mm256_set1_epi32(0x7fffffffUL));
 
@@ -159,7 +166,8 @@ float fvec_L1_avx(const float* x, const float* y, size_t d) {
     return _mm_cvtss_f32(msum2);
 }
 
-float fvec_Linf_avx(const float* x, const float* y, size_t d) {
+float
+fvec_Linf_avx(const float* x, const float* y, size_t d) {
     __m256 msum1 = _mm256_setzero_ps();
     __m256 signmask = _mm256_castsi256_ps(_mm256_set1_epi32(0x7fffffffUL));
 
@@ -199,42 +207,38 @@ float fvec_Linf_avx(const float* x, const float* y, size_t d) {
     return _mm_cvtss_f32(msum2);
 }
 
-#define DECLARE_LOOKUP \
-const __m256i lookup = _mm256_setr_epi8( \
-                /* 0 */ 0, /* 1 */ 1, /* 2 */ 1, /* 3 */ 2, \
-                /* 4 */ 1, /* 5 */ 2, /* 6 */ 2, /* 7 */ 3, \
-                /* 8 */ 1, /* 9 */ 2, /* a */ 2, /* b */ 3, \
-                /* c */ 2, /* d */ 3, /* e */ 3, /* f */ 4, \
-                /* 0 */ 0, /* 1 */ 1, /* 2 */ 1, /* 3 */ 2, \
-                /* 4 */ 1, /* 5 */ 2, /* 6 */ 2, /* 7 */ 3, \
-                /* 8 */ 1, /* 9 */ 2, /* a */ 2, /* b */ 3, \
-                /* c */ 2, /* d */ 3, /* e */ 3, /* f */ 4  \
-        );
+#define DECLARE_LOOKUP                                                                                           \
+    const __m256i lookup =                                                                                       \
+        _mm256_setr_epi8(/* 0 */ 0, /* 1 */ 1, /* 2 */ 1, /* 3 */ 2, /* 4 */ 1, /* 5 */ 2, /* 6 */ 2, /* 7 */ 3, \
+                         /* 8 */ 1, /* 9 */ 2, /* a */ 2, /* b */ 3, /* c */ 2, /* d */ 3, /* e */ 3, /* f */ 4, \
+                         /* 0 */ 0, /* 1 */ 1, /* 2 */ 1, /* 3 */ 2, /* 4 */ 1, /* 5 */ 2, /* 6 */ 2, /* 7 */ 3, \
+                         /* 8 */ 1, /* 9 */ 2, /* a */ 2, /* b */ 3, /* c */ 2, /* d */ 3, /* e */ 3, /* f */ 4);
 
-int popcnt_AVX2_lookup(const uint8_t* data, const size_t n) {
+int
+popcnt_AVX2_lookup(const uint8_t* data, const size_t n) {
     size_t i = 0;
 
     const __m256i low_mask = _mm256_set1_epi8(0x0f);
 
     __m256i acc = _mm256_setzero_si256();
 
-#define ITER { \
+#define ITER                                                                                \
+    {                                                                                       \
         const __m256i vec = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data + i)); \
-        const __m256i lo  = _mm256_and_si256(vec, low_mask); \
-        const __m256i hi  = _mm256_and_si256(_mm256_srli_epi16(vec, 4), low_mask); \
-        const __m256i popcnt1 = _mm256_shuffle_epi8(lookup, lo); \
-        const __m256i popcnt2 = _mm256_shuffle_epi8(lookup, hi); \
-        local = _mm256_add_epi8(local, popcnt1); \
-        local = _mm256_add_epi8(local, popcnt2); \
-        i += 32; \
+        const __m256i lo = _mm256_and_si256(vec, low_mask);                                 \
+        const __m256i hi = _mm256_and_si256(_mm256_srli_epi16(vec, 4), low_mask);           \
+        const __m256i popcnt1 = _mm256_shuffle_epi8(lookup, lo);                            \
+        const __m256i popcnt2 = _mm256_shuffle_epi8(lookup, hi);                            \
+        local = _mm256_add_epi8(local, popcnt1);                                            \
+        local = _mm256_add_epi8(local, popcnt2);                                            \
+        i += 32;                                                                            \
     }
 
     DECLARE_LOOKUP
-    while (i + 8*32 <= n) {
+    while (i + 8 * 32 <= n) {
         __m256i local = _mm256_setzero_si256();
-        ITER ITER ITER ITER
-        ITER ITER ITER ITER
-        acc = _mm256_add_epi64(acc, _mm256_sad_epu8(local, _mm256_setzero_si256()));
+        ITER ITER ITER ITER ITER ITER ITER ITER acc =
+            _mm256_add_epi64(acc, _mm256_sad_epu8(local, _mm256_setzero_si256()));
     }
 
     __m256i local = _mm256_setzero_si256();
@@ -261,34 +265,33 @@ int popcnt_AVX2_lookup(const uint8_t* data, const size_t n) {
     return result;
 }
 
-int xor_popcnt_AVX2_lookup(const uint8_t* data1, const uint8_t* data2, const size_t n) {
-
+int
+xor_popcnt_AVX2_lookup(const uint8_t* data1, const uint8_t* data2, const size_t n) {
     size_t i = 0;
-
 
     const __m256i low_mask = _mm256_set1_epi8(0x0f);
 
     __m256i acc = _mm256_setzero_si256();
 
-#define ITER { \
-        const __m256i s1  = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data1 + i)); \
-        const __m256i s2  = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data2 + i)); \
-        const __m256i vec = _mm256_xor_si256(s1, s2);\
-        const __m256i lo  = _mm256_and_si256(vec, low_mask); \
-        const __m256i hi  = _mm256_and_si256(_mm256_srli_epi16(vec, 4), low_mask); \
-        const __m256i popcnt1 = _mm256_shuffle_epi8(lookup, lo); \
-        const __m256i popcnt2 = _mm256_shuffle_epi8(lookup, hi); \
-        local = _mm256_add_epi8(local, popcnt1); \
-        local = _mm256_add_epi8(local, popcnt2); \
-        i += 32; \
+#define ITER                                                                                \
+    {                                                                                       \
+        const __m256i s1 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data1 + i)); \
+        const __m256i s2 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data2 + i)); \
+        const __m256i vec = _mm256_xor_si256(s1, s2);                                       \
+        const __m256i lo = _mm256_and_si256(vec, low_mask);                                 \
+        const __m256i hi = _mm256_and_si256(_mm256_srli_epi16(vec, 4), low_mask);           \
+        const __m256i popcnt1 = _mm256_shuffle_epi8(lookup, lo);                            \
+        const __m256i popcnt2 = _mm256_shuffle_epi8(lookup, hi);                            \
+        local = _mm256_add_epi8(local, popcnt1);                                            \
+        local = _mm256_add_epi8(local, popcnt2);                                            \
+        i += 32;                                                                            \
     }
 
     DECLARE_LOOKUP
-    while (i + 8*32 <= n) {
+    while (i + 8 * 32 <= n) {
         __m256i local = _mm256_setzero_si256();
-        ITER ITER ITER ITER
-        ITER ITER ITER ITER
-        acc = _mm256_add_epi64(acc, _mm256_sad_epu8(local, _mm256_setzero_si256()));
+        ITER ITER ITER ITER ITER ITER ITER ITER acc =
+            _mm256_add_epi64(acc, _mm256_sad_epu8(local, _mm256_setzero_si256()));
     }
 
     __m256i local = _mm256_setzero_si256();
@@ -309,39 +312,39 @@ int xor_popcnt_AVX2_lookup(const uint8_t* data1, const uint8_t* data2, const siz
     result += static_cast<uint64_t>(_mm256_extract_epi64(acc, 3));
 
     for (/**/; i < n; i++) {
-        result += lookup8bit[data1[i]^data2[i]];
+        result += lookup8bit[data1[i] ^ data2[i]];
     }
 
     return result;
 }
 
-int or_popcnt_AVX2_lookup(const uint8_t* data1, const uint8_t* data2, const size_t n) {
-
+int
+or_popcnt_AVX2_lookup(const uint8_t* data1, const uint8_t* data2, const size_t n) {
     size_t i = 0;
 
     const __m256i low_mask = _mm256_set1_epi8(0x0f);
 
     __m256i acc = _mm256_setzero_si256();
 
-#define ITER { \
-        const __m256i s1  = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data1 + i)); \
-        const __m256i s2  = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data2 + i)); \
-        const __m256i vec = _mm256_or_si256(s1, s2);\
-        const __m256i lo  = _mm256_and_si256(vec, low_mask); \
-        const __m256i hi  = _mm256_and_si256(_mm256_srli_epi16(vec, 4), low_mask); \
-        const __m256i popcnt1 = _mm256_shuffle_epi8(lookup, lo); \
-        const __m256i popcnt2 = _mm256_shuffle_epi8(lookup, hi); \
-        local = _mm256_add_epi8(local, popcnt1); \
-        local = _mm256_add_epi8(local, popcnt2); \
-        i += 32; \
+#define ITER                                                                                \
+    {                                                                                       \
+        const __m256i s1 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data1 + i)); \
+        const __m256i s2 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data2 + i)); \
+        const __m256i vec = _mm256_or_si256(s1, s2);                                        \
+        const __m256i lo = _mm256_and_si256(vec, low_mask);                                 \
+        const __m256i hi = _mm256_and_si256(_mm256_srli_epi16(vec, 4), low_mask);           \
+        const __m256i popcnt1 = _mm256_shuffle_epi8(lookup, lo);                            \
+        const __m256i popcnt2 = _mm256_shuffle_epi8(lookup, hi);                            \
+        local = _mm256_add_epi8(local, popcnt1);                                            \
+        local = _mm256_add_epi8(local, popcnt2);                                            \
+        i += 32;                                                                            \
     }
 
     DECLARE_LOOKUP
-    while (i + 8*32 <= n) {
+    while (i + 8 * 32 <= n) {
         __m256i local = _mm256_setzero_si256();
-        ITER ITER ITER ITER
-        ITER ITER ITER ITER
-        acc = _mm256_add_epi64(acc, _mm256_sad_epu8(local, _mm256_setzero_si256()));
+        ITER ITER ITER ITER ITER ITER ITER ITER acc =
+            _mm256_add_epi64(acc, _mm256_sad_epu8(local, _mm256_setzero_si256()));
     }
 
     __m256i local = _mm256_setzero_si256();
@@ -362,39 +365,39 @@ int or_popcnt_AVX2_lookup(const uint8_t* data1, const uint8_t* data2, const size
     result += static_cast<uint64_t>(_mm256_extract_epi64(acc, 3));
 
     for (/**/; i < n; i++) {
-        result += lookup8bit[data1[i]|data2[i]];
+        result += lookup8bit[data1[i] | data2[i]];
     }
 
     return result;
 }
 
-int and_popcnt_AVX2_lookup(const uint8_t* data1, const uint8_t* data2, const size_t n) {
-
+int
+and_popcnt_AVX2_lookup(const uint8_t* data1, const uint8_t* data2, const size_t n) {
     size_t i = 0;
 
     const __m256i low_mask = _mm256_set1_epi8(0x0f);
 
     __m256i acc = _mm256_setzero_si256();
 
-#define ITER { \
-        const __m256i s1  = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data1 + i)); \
-        const __m256i s2  = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data2 + i)); \
-        const __m256i vec = _mm256_and_si256(s1, s2);\
-        const __m256i lo  = _mm256_and_si256(vec, low_mask); \
-        const __m256i hi  = _mm256_and_si256(_mm256_srli_epi16(vec, 4), low_mask); \
-        const __m256i popcnt1 = _mm256_shuffle_epi8(lookup, lo); \
-        const __m256i popcnt2 = _mm256_shuffle_epi8(lookup, hi); \
-        local = _mm256_add_epi8(local, popcnt1); \
-        local = _mm256_add_epi8(local, popcnt2); \
-        i += 32; \
+#define ITER                                                                                \
+    {                                                                                       \
+        const __m256i s1 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data1 + i)); \
+        const __m256i s2 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data2 + i)); \
+        const __m256i vec = _mm256_and_si256(s1, s2);                                       \
+        const __m256i lo = _mm256_and_si256(vec, low_mask);                                 \
+        const __m256i hi = _mm256_and_si256(_mm256_srli_epi16(vec, 4), low_mask);           \
+        const __m256i popcnt1 = _mm256_shuffle_epi8(lookup, lo);                            \
+        const __m256i popcnt2 = _mm256_shuffle_epi8(lookup, hi);                            \
+        local = _mm256_add_epi8(local, popcnt1);                                            \
+        local = _mm256_add_epi8(local, popcnt2);                                            \
+        i += 32;                                                                            \
     }
 
     DECLARE_LOOKUP
-    while (i + 8*32 <= n) {
+    while (i + 8 * 32 <= n) {
         __m256i local = _mm256_setzero_si256();
-        ITER ITER ITER ITER
-        ITER ITER ITER ITER
-        acc = _mm256_add_epi64(acc, _mm256_sad_epu8(local, _mm256_setzero_si256()));
+        ITER ITER ITER ITER ITER ITER ITER ITER acc =
+            _mm256_add_epi64(acc, _mm256_sad_epu8(local, _mm256_setzero_si256()));
     }
 
     __m256i local = _mm256_setzero_si256();
@@ -415,17 +418,17 @@ int and_popcnt_AVX2_lookup(const uint8_t* data1, const uint8_t* data2, const siz
     result += static_cast<uint64_t>(_mm256_extract_epi64(acc, 3));
 
     for (/**/; i < n; i++) {
-        result += lookup8bit[(data1[i]&data2[i])];
+        result += lookup8bit[(data1[i] & data2[i])];
     }
 
     return result;
 }
 
 float
-jaccard_AVX2(const uint8_t * a, const uint8_t * b, size_t n) {
-    int accu_num = and_popcnt_AVX2_lookup(a,b,n);
-    int accu_den = or_popcnt_AVX2_lookup(a,b,n);
+jaccard_AVX2(const uint8_t* a, const uint8_t* b, size_t n) {
+    int accu_num = and_popcnt_AVX2_lookup(a, b, n);
+    int accu_den = or_popcnt_AVX2_lookup(a, b, n);
     return (accu_den == 0) ? 1.0 : ((float)(accu_den - accu_num) / (float)(accu_den));
 }
 
-} // namespace faiss
+}  // namespace faiss

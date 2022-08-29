@@ -9,25 +9,6 @@ if(NOT COMPILER_SUPPORTS_CXX17)
   )
 endif()
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  check_cxx_compiler_flag("-fopenmp=libomp" COMPILER_SUPPORTS_OMP)
-  set(CMAKE_CXX_FLAGS "-fopenmp=libomp ${CMAKE_CXX_FLAGS}")
-endif()
-
-if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-  check_cxx_compiler_flag("-Xclang -fopenmp" COMPILER_SUPPORTS_OMP)
-  set(CMAKE_CXX_FLAGS "-Xclang -fopenmp ${CMAKE_CXX_FLAGS}")
-endif()
-
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  check_cxx_compiler_flag("-fopenmp" COMPILER_SUPPORTS_OMP)
-  set(CMAKE_CXX_FLAGS "-fopenmp ${CMAKE_CXX_FLAGS}")
-endif()
-
-if(NOT COMPILER_SUPPORTS_OMP)
-  message(FATAL_ERROR "compiler must support openmp.")
-endif()
-
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   message(STATUS "Build in Debug mode")
   set(CMAKE_CXX_FLAGS "-O0 -g -Wall -fPIC ${CMAKE_CXX_FLAGS}")

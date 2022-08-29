@@ -1,3 +1,6 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wsign-compare"
 #pragma once
 
 #include <assert.h>
@@ -9,7 +12,7 @@
 #include <unordered_set>
 
 #include "hnswlib.h"
-#include "knowhere/index/vector_index/helpers/FaissIO.h"
+#include "io/FaissIO.h"
 #include "visited_list_pool.h"
 
 namespace hnswlib {
@@ -249,7 +252,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
     template <bool has_deletions, bool collect_metrics = false>
     std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
-    searchBaseLayerST(tableint ep_id, const void* data_point, size_t ef, const faiss::BitsetView bitset,
+    searchBaseLayerST(tableint ep_id, const void* data_point, size_t ef, const knowhere::BitsetView bitset,
                       StatisticsInfo& stats) const {
         VisitedList* vl = visited_list_pool_->getFreeVisitedList();
         vl_type* visited_array = vl->mass;
@@ -382,7 +385,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     std::vector<std::pair<dist_t, labeltype>>
     getNeighboursWithinRadius(std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>,
                                                   CompareByFirst>& top_candidates,
-                              const void* data_point, float radius, const faiss::BitsetView bitset) const {
+                              const void* data_point, float radius, const knowhere::BitsetView bitset) const {
         std::vector<std::pair<dist_t, labeltype>> result;
         VisitedList* vl = visited_list_pool_->getFreeVisitedList();
         vl_type* visited_array = vl->mass;
@@ -572,6 +575,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     std::mutex global;
     size_t ef_;
 
+    // Do not call this to set EF in multi-thread case. This is not thread-safe.
     void
     setEf(size_t ef) {
         ef_ = ef;
@@ -1111,7 +1115,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     };
 
     std::priority_queue<std::pair<dist_t, labeltype>>
-    searchKnn(const void* query_data, size_t k, const faiss::BitsetView bitset, StatisticsInfo& stats) const {
+    searchKnn(const void* query_data, size_t k, const knowhere::BitsetView bitset, StatisticsInfo& stats,
+              const SearchParam* param = nullptr) const {
         std::priority_queue<std::pair<dist_t, labeltype>> result;
         if (cur_element_count == 0)
             return result;
@@ -1151,10 +1156,11 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
         std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
             top_candidates;
+        size_t ef = param ? param->ef_ : this->ef_;
         if (!bitset.empty()) {
-            top_candidates = searchBaseLayerST<true, true>(currObj, query_data, std::max(ef_, k), bitset, stats);
+            top_candidates = searchBaseLayerST<true, true>(currObj, query_data, std::max(ef, k), bitset, stats);
         } else {
-            top_candidates = searchBaseLayerST<false, true>(currObj, query_data, std::max(ef_, k), bitset, stats);
+            top_candidates = searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), bitset, stats);
         }
 
         while (top_candidates.size() > k) {
@@ -1169,8 +1175,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     };
 
     std::vector<std::pair<dist_t, labeltype>>
-    searchRange(const void* query_data, size_t range_k, float radius, const faiss::BitsetView bitset,
-                StatisticsInfo& stats) const {
+    searchRange(const void* query_data, size_t range_k, float radius, const knowhere::BitsetView bitset,
+                StatisticsInfo& stats, const SearchParam* param = nullptr) const {
         if (cur_element_count == 0) {
             return {};
         }
@@ -1207,10 +1213,11 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
         std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
             top_candidates;
+        size_t ef = param ? param->ef_ : this->ef_;
         if (!bitset.empty()) {
-            top_candidates = searchBaseLayerST<true, true>(currObj, query_data, std::max(ef_, range_k), bitset, stats);
+            top_candidates = searchBaseLayerST<true, true>(currObj, query_data, std::max(ef, range_k), bitset, stats);
         } else {
-            top_candidates = searchBaseLayerST<false, true>(currObj, query_data, std::max(ef_, range_k), bitset, stats);
+            top_candidates = searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, range_k), bitset, stats);
         }
 
         while (top_candidates.size() > range_k) {
@@ -1277,3 +1284,4 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 };
 
 }  // namespace hnswlib
+#pragma GCC diagnostic pop

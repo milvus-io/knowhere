@@ -199,7 +199,7 @@ void knn_L2sqr(
         const float* y_norm2 = nullptr,
         const BitsetView bitset = nullptr);
 
-void knn_jaccard (
+void knn_jaccard(
         const float* x,
         const float* y,
         size_t d,
