@@ -399,7 +399,7 @@ TEST_P(DiskANNTest, knn_search_with_accelerate_build_test) {
     auto accelerate_diskann = std::make_unique<knowhere::IndexDiskANN<float>>(
         index_dir + "/diskann", metric_, std::make_unique<knowhere::LocalFileManager>());
 
-    // build 
+    // build
     knowhere::Config cfg;
     knowhere::DiskANNBuildConfig accelerate_build_conf = build_conf;
     accelerate_build_conf.accelerate_build = true;
@@ -700,6 +700,35 @@ TEST_P(DiskANNTest, build_config_test) {
         knowhere::IndexDiskANN<float> test_diskann(test_index_dir, metric_,
                                                    std::make_unique<knowhere::LocalFileManager>());
         EXPECT_THROW(test_diskann.BuildAll(nullptr, illegal_cfg), knowhere::KnowhereException);
+    }
+    // raw data file not exist
+    {
+        fs::remove(test_data_path);
+        fs::remove(test_index_dir);
+
+        illegal_build_config = build_conf;
+        illegal_build_config.data_path = test_data_path;
+        illegal_cfg.clear();
+        knowhere::DiskANNBuildConfig::Set(illegal_cfg, illegal_build_config);
+        knowhere::IndexDiskANN<float> test_diskann(test_index_dir, metric_,
+                                                   std::make_unique<knowhere::LocalFileManager>());
+        EXPECT_THROW(test_diskann.BuildAll(nullptr, illegal_cfg), knowhere::KnowhereException);
+    }
+    // Re-build the index on the already built index files
+    {
+        if (metric_ == knowhere::metric::IP) {
+            auto illegal_diskann_ip = knowhere::IndexDiskANN<float>(kIpIndexDir + "/diskann", knowhere::metric::IP,
+                                                                    std::make_unique<knowhere::LocalFileManager>());
+            illegal_cfg.clear();
+            knowhere::DiskANNBuildConfig::Set(illegal_cfg, build_conf);
+            EXPECT_THROW(illegal_diskann_ip.BuildAll(nullptr, illegal_cfg), knowhere::KnowhereException);
+        } else if (metric_ == knowhere::metric::L2) {
+            auto illegal_diskann_l2 = knowhere::IndexDiskANN<float>(kL2IndexDir + "/diskann", knowhere::metric::L2,
+                                                                    std::make_unique<knowhere::LocalFileManager>());
+            illegal_cfg.clear();
+            knowhere::DiskANNBuildConfig::Set(illegal_cfg, build_conf);
+            EXPECT_THROW(illegal_diskann_l2.BuildAll(nullptr, illegal_cfg), knowhere::KnowhereException);
+        }
     }
     fs::remove_all(test_dir);
     fs::remove(test_dir);

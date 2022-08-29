@@ -91,8 +91,11 @@ GetOptionalFilenames(const std::string& prefix) {
 
 template <typename T>
 void
-CheckFileSize(const std::string& data_path, const size_t num, const size_t dim) {
+CheckDataFile(const std::string& data_path, const size_t num, const size_t dim) {
     std::ifstream file(data_path.c_str(), std::ios::binary | std::ios::ate);
+    if (!file.is_open()) {
+        KNOWHERE_THROW_MSG("Raw data path is not found");
+    }
     uint64_t autual_file_size = static_cast<uint64_t>(file.tellg());
     file.close();
     uint64_t expected_file_size = num * dim * sizeof(T) + 2 * sizeof(uint32_t);
@@ -114,13 +117,28 @@ CheckNodeLength(const uint32_t degree, const size_t dim) {
     }
 }
 
+bool
+AnyIndexFileExist(const std::string& index_prefix) {
+    auto file_exist = [&index_prefix](std::vector<std::string> filenames) -> bool {
+        for (auto& filename : filenames) {
+            if (file_exists(filename)) {
+                return true;
+            }
+        }
+        return false;
+    };
+    auto is_exist = file_exist(GetNecessaryFilenames(index_prefix, diskann::INNER_PRODUCT, true, true));
+    is_exist = is_exist | file_exist(GetOptionalFilenames(index_prefix));
+    return is_exist;
+}
+
 template <typename T>
 void
 CheckBuildParams(const DiskANNBuildConfig& build_conf) {
     size_t num, dim;
     diskann::get_bin_metadata(build_conf.data_path, num, dim);
 
-    CheckFileSize<T>(build_conf.data_path, num, dim);
+    CheckDataFile<T>(build_conf.data_path, num, dim);
     CheckNodeLength<T>(build_conf.max_degree, dim);
 }
 
@@ -159,13 +177,14 @@ void
 IndexDiskANN<T>::AddWithoutIds(const DatasetPtr& data_set, const Config& config) {
     std::lock_guard<std::mutex> lock(preparation_lock_);
     auto build_conf = DiskANNBuildConfig::Get(config);
-
-    CheckBuildParams<T>(build_conf);
-
     auto& data_path = build_conf.data_path;
     // Load raw data
     if (!LoadFile(data_path)) {
         KNOWHERE_THROW_MSG("Failed load the raw data before building.");
+    }
+    CheckBuildParams<T>(build_conf);
+    if (AnyIndexFileExist(index_prefix_)) {
+        KNOWHERE_THROW_MSG("This index prefix already has index files.");
     }
 
     diskann::BuildConfig diskann_internal_build_config{data_path,
