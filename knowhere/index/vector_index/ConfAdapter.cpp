@@ -98,6 +98,14 @@ ConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode
     return true;
 }
 
+bool
+ConfAdapter::CheckRangeSearch(Config& cfg, const IndexType type, const IndexMode mode) {
+    const float DEFAULT_MIN_RADIUS = 0.0;
+    const float DEFAULT_MAX_RADIUS = std::numeric_limits<float>::max();
+    CheckFloatRange(cfg, meta::RADIUS, DEFAULT_MIN_RADIUS, DEFAULT_MAX_RADIUS);
+    return true;
+}
+
 int64_t
 MatchNlist(int64_t size, int64_t nlist) {
     const int64_t MIN_POINTS_PER_CENTROID = 39;

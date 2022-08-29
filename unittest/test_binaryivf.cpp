@@ -149,6 +149,9 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_hamming) {
         RunBinaryRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, knowhere::metric::HAMMING,
                                             xb_bin.data(), nb, xq_bin.data(), nq, dim, radius, bitset);
 
+        auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
+        ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
+
         auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false);
     };
@@ -176,6 +179,9 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_jaccard) {
         RunBinaryRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, knowhere::metric::JACCARD,
                                             xb_bin.data(), nb, xq_bin.data(), nq, dim, radius, bitset);
 
+        auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
+        ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
+
         auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false);
     };
@@ -201,6 +207,9 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_tanimoto) {
         std::vector<size_t> golden_lims;
         RunBinaryRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, knowhere::metric::TANIMOTO,
                                             xb_bin.data(), nb, xq_bin.data(), nq, dim, radius, bitset);
+
+        auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
+        ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
         CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false);
