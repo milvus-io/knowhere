@@ -23,7 +23,7 @@ else()
 	cmake_minimum_required(VERSION 2.8)
 endif()
 
-set(CMAKE_STANDARD 14)
+set(CMAKE_STANDARD 17)
 
 if(NOT MSVC)
 	set(CMAKE_CXX_COMPILER g++)
