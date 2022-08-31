@@ -733,3 +733,14 @@ TEST_P(DiskANNTest, build_config_test) {
     fs::remove_all(test_dir);
     fs::remove(test_dir);
 }
+
+TEST_P(DiskANNTest, generate_cache_list_test) {
+    knowhere::Config cfg;
+    uint32_t cached_nodes_num = kNumRows * 10;
+    knowhere::DiskANNPrepareConfig prep_conf_to_test = prep_conf;
+    prep_conf_to_test.use_bfs_cache = false;
+    prep_conf_to_test.num_nodes_to_cache = cached_nodes_num;
+
+    knowhere::DiskANNPrepareConfig::Set(cfg, prep_conf_to_test);
+    EXPECT_THROW(diskann->Prepare(cfg), knowhere::KnowhereException);
+}
