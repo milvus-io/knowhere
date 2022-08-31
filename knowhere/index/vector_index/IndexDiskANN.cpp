@@ -271,6 +271,9 @@ IndexDiskANN<T>::Prepare(const Config& config) {
 
     std::string warmup_query_file = diskann::get_sample_data_filename(index_prefix_);
     // load cache
+    if (prep_conf.num_nodes_to_cache > pq_flash_index_->get_num_points() / 3) {
+        KNOWHERE_THROW_MSG("Failed to generate cache, num_nodes_to_cache is larger than 1/3 of the total data number.");
+    }
     if (prep_conf.num_nodes_to_cache > 0) {
         std::vector<uint32_t> node_list;
         LOG_KNOWHERE_INFO_ << "Caching " << prep_conf.num_nodes_to_cache << " sample nodes around medoid(s).";

@@ -350,16 +350,6 @@ namespace diskann {
 
     node_list.clear();
 
-    // Do not cache more than 10% of the nodes in the index
-    _u64 tenp_nodes = (_u64)(std::round(this->num_points * 0.1));
-    if (num_nodes_to_cache > tenp_nodes) {
-      LOG(INFO) << "Reducing nodes to cache from: " << num_nodes_to_cache
-                    << " to: " << tenp_nodes
-                    << "(10 percent of total nodes:" << this->num_points << ")";
-      num_nodes_to_cache = tenp_nodes == 0 ? 1 : tenp_nodes;
-    }
-    LOG(INFO) << "Caching " << num_nodes_to_cache << "...";
-
     // borrow thread data
     ThreadData<T> this_thread_data = this->thread_data.pop();
     while (this_thread_data.scratch.sector_scratch == nullptr) {
