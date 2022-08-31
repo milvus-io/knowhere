@@ -25,9 +25,11 @@
 #include <chrono>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include "IndexIVF_NM.h"
 #include "common/Exception.h"
 #include "common/Log.h"
 #include "common/Utils.h"
@@ -35,7 +37,6 @@
 #include "feder/IVFFlat.h"
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/IndexParameter.h"
-#include "IndexIVF_NM.h"
 #ifdef KNOWHERE_GPU_VERSION
 #include "index/vector_index/gpu/IndexGPUIVF.h"
 #include "index/vector_index/helpers/FaissGpuResourceMgr.h"
