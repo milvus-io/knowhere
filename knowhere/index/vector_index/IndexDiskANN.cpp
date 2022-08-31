@@ -376,8 +376,8 @@ IndexDiskANN<T>::Query(const DatasetPtr& dataset_ptr, const Config& config, cons
 
     GET_TENSOR_DATA_DIM(dataset_ptr);
     auto query = static_cast<const T*>(p_data);
-    auto p_id = static_cast<int64_t*>(malloc(sizeof(int64_t) * k * rows));
-    auto p_dist = static_cast<float*>(malloc(sizeof(float) * k * rows));
+    auto p_id = new int64_t[k * rows];
+    auto p_dist = new float[k * rows];
 
     std::optional<KnowhereException> ex = std::nullopt;
 #pragma omp parallel for schedule(dynamic, 1)
@@ -422,7 +422,7 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
 
     std::vector<std::vector<int64_t>> result_id_array(rows);
     std::vector<std::vector<float>> result_dist_array(rows);
-    auto p_lims = static_cast<size_t*>(malloc((rows + 1) * sizeof(size_t)));
+    auto p_lims = new size_t[rows + 1];
     *p_lims = 0;
 
     std::optional<KnowhereException> ex = std::nullopt;
@@ -465,8 +465,8 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
     }
 
     auto ans_size = *(p_lims + rows);
-    auto p_id = static_cast<int64_t*>(malloc(ans_size * sizeof(int64_t)));
-    auto p_dist = static_cast<float*>(malloc(ans_size * sizeof(float)));
+    auto p_id = new int64_t[ans_size];
+    auto p_dist = new float[ans_size];
 
     for (int64_t row = 0; row < rows; ++row) {
         auto start = *(p_lims + row);
