@@ -63,7 +63,7 @@ struct DiskANNPrepareConfig {
     uint32_t num_threads;
     // While serving the index, the entire graph is stored on SSD. For faster search performance, you can cache a few
     // frequently accessed nodes in memory.
-    uint32_t num_nodes_to_cache;
+    float search_cache_budget_gb;
     // Should we do warm-up before searching.
     bool warm_up;
     // Should we use the bfs strategy to cache. We have two cache strategies: 1. use sample queries to do searches and

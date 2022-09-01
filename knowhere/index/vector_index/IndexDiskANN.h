@@ -98,6 +98,9 @@ class IndexDiskANN : public VecIndex {
     bool
     AddFile(const std::string& filename);
 
+    uint64_t
+    GetCachedNodeNum(const float CacheDramBudget, const uint64_t data_dim, const uint64_t max_degree);
+
     std::string index_prefix_;
 
     diskann::Metric metric_;

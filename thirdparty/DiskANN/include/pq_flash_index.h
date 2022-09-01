@@ -114,6 +114,8 @@ namespace diskann {
 
     DISKANN_DLLEXPORT _u64 get_data_dim() const noexcept;
 
+    DISKANN_DLLEXPORT _u64 get_max_degree() const noexcept;
+
    protected:
     DISKANN_DLLEXPORT void use_medoids_data_as_centroids();
     DISKANN_DLLEXPORT void setup_thread_data(_u64 nthreads);

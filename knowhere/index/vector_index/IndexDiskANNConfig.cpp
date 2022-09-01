@@ -29,7 +29,7 @@ static constexpr const char* kNumThreads = "num_threads";
 static constexpr const char* kDiskPqBytes = "disk_pq_dims";
 static constexpr const char* kAccelerateBuild = "accelerate_build";
 
-static constexpr const char* kNumNodesToCache = "num_nodes_to_cache";
+static constexpr const char* kCacheDramBudgetGb = "search_cache_budget_gb";
 static constexpr const char* kWarmUp = "warm_up";
 static constexpr const char* kUseBfsCache = "use_bfs_cache";
 static constexpr const char* kAioMaxnr = "aio_maxnr";
@@ -68,8 +68,8 @@ static constexpr uint64_t kAioMaxnrMaxValue = 2 * kBeamwidthMaxValue;
 static constexpr uint64_t kAioMaxnrDefaultValue = 32;
 static constexpr uint32_t kLinuxAioMaxnrLimit = 65536;
 static constexpr uint32_t kSearchNumThreadsMinValue = 1;
-static constexpr uint32_t kNumNodesToCacheMinValue = 0;
-static constexpr std::optional<uint32_t> kNumNodesToCacheMaxValue = std::nullopt;
+static constexpr float kCacheDramBudgetGbMinValue = 0;
+static constexpr std::optional<float> kCacheDramBudgetGbMaxValue = std::nullopt;
 static constexpr std::optional<float> kRadiusMinValue = std::nullopt;
 static constexpr std::optional<float> kRadiusMaxValue = std::nullopt;
 static constexpr uint64_t kMinKMinValue = 1;
@@ -169,8 +169,8 @@ from_json(const Config& config, DiskANNBuildConfig& build_conf) {
                                       build_conf.max_degree);
     CheckNumericParamAndSet<uint32_t>(config, kSearchListSize, kBuildSearchListSizeMinValue,
                                       kBuildSearchListSizeMaxValue, build_conf.search_list_size);
-    CheckNumericParamAndSet<float>(config, kPQCodeBudgetGb, kPQCodeBudgetGbMinValue,
-                                   kPQCodeBudgetGbMaxValue, build_conf.pq_code_budget_gb);
+    CheckNumericParamAndSet<float>(config, kPQCodeBudgetGb, kPQCodeBudgetGbMinValue, kPQCodeBudgetGbMaxValue,
+                                   build_conf.pq_code_budget_gb);
     CheckNumericParamAndSet<float>(config, kBuildDramBudgetGb, kBuildDramBudgetGbMinValue, kBuildDramBudgetGbMaxValue,
                                    build_conf.build_dram_budget_gb);
     CheckNumericParamAndSet<uint32_t>(config, kNumThreads, kBuildNumThreadsMinValue, kBuildNumThreadsMaxValue,
@@ -183,7 +183,7 @@ from_json(const Config& config, DiskANNBuildConfig& build_conf) {
 void
 to_json(Config& config, const DiskANNPrepareConfig& prep_conf) {
     config = Config{{kNumThreads, prep_conf.num_threads},
-                    {kNumNodesToCache, prep_conf.num_nodes_to_cache},
+                    {kCacheDramBudgetGb, prep_conf.search_cache_budget_gb},
                     {kWarmUp, prep_conf.warm_up},
                     {kUseBfsCache, prep_conf.use_bfs_cache},
                     {kAioMaxnr, prep_conf.aio_maxnr}};
@@ -200,8 +200,8 @@ from_json(const Config& config, DiskANNPrepareConfig& prep_conf) {
     auto num_thread_max_value = kLinuxAioMaxnrLimit / prep_conf.aio_maxnr;
     CheckNumericParamAndSet<uint32_t>(config, kNumThreads, kSearchNumThreadsMinValue, num_thread_max_value,
                                       prep_conf.num_threads);
-    CheckNumericParamAndSet<uint32_t>(config, kNumNodesToCache, kNumNodesToCacheMinValue, kNumNodesToCacheMaxValue,
-                                      prep_conf.num_nodes_to_cache);
+    CheckNumericParamAndSet<float>(config, kCacheDramBudgetGb, kCacheDramBudgetGbMinValue,
+                                      kCacheDramBudgetGbMaxValue, prep_conf.search_cache_budget_gb);
     CheckNonNumbericParamAndSet<bool>(config, kWarmUp, prep_conf.warm_up);
     CheckNonNumbericParamAndSet<bool>(config, kUseBfsCache, prep_conf.use_bfs_cache);
 }

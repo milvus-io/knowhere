@@ -1275,6 +1275,11 @@ namespace diskann {
     return data_dim;
   }
 
+  template<typename T>
+  _u64 PQFlashIndex<T>::get_max_degree() const noexcept {
+    return max_degree;
+  }
+
 #ifdef EXEC_ENV_OLS
   template<typename T>
   char *PQFlashIndex<T>::getHeaderBytes() {

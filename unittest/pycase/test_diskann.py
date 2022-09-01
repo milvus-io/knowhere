@@ -38,7 +38,7 @@ def test_diskann():
                 },
                 "diskANN_prepare_config": {
                     "num_threads": 16,
-                    "num_nodes_to_cache": 100,
+                    "search_cache_budget_gb": 0.00009,
                     "warm_up": True,
                     "use_bfs_cache": False
                 },
