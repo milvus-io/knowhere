@@ -63,7 +63,6 @@ static constexpr uint32_t kBeamwidthMinValue = 1;
 static constexpr uint32_t kBeamwidthMaxValue = 128;
 static constexpr uint64_t kKMinValue = 1;
 static constexpr std::optional<uint64_t> kKMaxValue = std::nullopt;
-static constexpr std::optional<uint32_t> kSearchListSizeMaxValue = std::nullopt;
 static constexpr uint64_t kAioMaxnrMinValue = 1;
 static constexpr uint64_t kAioMaxnrMaxValue = 2 * kBeamwidthMaxValue;
 static constexpr uint64_t kAioMaxnrDefaultValue = 32;
@@ -217,7 +216,7 @@ void
 from_json(const Config& config, DiskANNQueryConfig& query_conf) {
     CheckNumericParamAndSet<uint64_t>(config, kK, kKMinValue, kKMaxValue, query_conf.k);
     // The search_list_size should be no less than the k.
-    CheckNumericParamAndSet<uint32_t>(config, kSearchListSize, query_conf.k, kSearchListSizeMaxValue,
+    CheckNumericParamAndSet<uint32_t>(config, kSearchListSize, query_conf.k, 10 * query_conf.k,
                                       query_conf.search_list_size);
     CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, kBeamwidthMinValue, kBeamwidthMaxValue, query_conf.beamwidth);
 }
