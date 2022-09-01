@@ -148,9 +148,9 @@ namespace diskann {
                                SECTOR_LEN);
         diskann::alloc_aligned(
             (void **) &scratch.aligned_pq_coord_scratch,
-            (_u64) MAX_GRAPH_DEGREE * (_u64) MAX_PQ_CHUNKS * sizeof(_u8), 256);
+            (_u64) MAX_GRAPH_DEGREE * (_u64) this->aligned_dim * sizeof(_u8), 256);
         diskann::alloc_aligned((void **) &scratch.aligned_pqtable_dist_scratch,
-                               256 * (_u64) MAX_PQ_CHUNKS * sizeof(float), 256);
+                               256 * (_u64) this->aligned_dim * sizeof(float), 256);
         diskann::alloc_aligned((void **) &scratch.aligned_dist_scratch,
                                (_u64) MAX_GRAPH_DEGREE * sizeof(float), 256);
         diskann::alloc_aligned((void **) &scratch.aligned_query_T,
@@ -587,15 +587,6 @@ namespace diskann {
         << "Loaded PQ centroids and in-memory compressed vectors. #points: "
         << num_points << " #dim: " << data_dim
         << " #aligned_dim: " << aligned_dim << " #chunks: " << n_chunks;
-
-    if (n_chunks > MAX_PQ_CHUNKS) {
-      std::stringstream stream;
-      stream << "Error loading index. Ensure that max PQ bytes for in-memory "
-                "PQ data does not exceed "
-             << MAX_PQ_CHUNKS << std::endl;
-      throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
-                                  __LINE__);
-    }
 
     std::string disk_pq_pivots_path = this->disk_index_file + "_pq_pivots.bin";
     if (file_exists(disk_pq_pivots_path)) {

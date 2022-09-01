@@ -82,55 +82,14 @@ namespace diskann {
     diskann::save_bin<_u64>(index_file, new_meta.data(), new_meta.size(), 1);
   }
 
-  double get_memory_budget(double search_ram_budget) {
-    double final_index_ram_limit = search_ram_budget;
-    if (search_ram_budget - SPACE_FOR_CACHED_NODES_IN_GB >
-        THRESHOLD_FOR_CACHING_IN_GB) {  // slack for space used by cached
-                                        // nodes
-      final_index_ram_limit = search_ram_budget - SPACE_FOR_CACHED_NODES_IN_GB;
-    }
-    return final_index_ram_limit * 1024 * 1024 * 1024;
+  double get_memory_budget(double pq_code_size) {
+    double final_pq_code_limit = pq_code_size;
+    return final_pq_code_limit * 1024 * 1024 * 1024;
   }
 
   double get_memory_budget(const std::string &mem_budget_str) {
     double search_ram_budget = atof(mem_budget_str.c_str());
     return get_memory_budget(search_ram_budget);
-  }
-
-  size_t calculate_num_pq_chunks(double final_index_ram_limit,
-                                 size_t points_num, uint32_t dim,
-                                 const std::vector<std::string> &param_list) {
-    size_t num_pq_chunks =
-        (size_t)(std::floor)(_u64(final_index_ram_limit / (double) points_num));
-    LOG(DEBUG) << "Calculated num_pq_chunks :" << num_pq_chunks;
-    if (param_list.size() >= 6) {
-      float compress_ratio = (float) atof(param_list[5].c_str());
-      if (compress_ratio > 0 && compress_ratio <= 1) {
-        size_t chunks_by_cr = (size_t)(std::floor)(compress_ratio * dim);
-
-        if (chunks_by_cr > 0 && chunks_by_cr < num_pq_chunks) {
-          LOG(DEBUG) << "Compress ratio:" << compress_ratio
-                        << " new #pq_chunks:" << chunks_by_cr;
-          num_pq_chunks = chunks_by_cr;
-        } else {
-          LOG(DEBUG) << "Compress ratio: " << compress_ratio
-                        << " #new pq_chunks: " << chunks_by_cr
-                        << " is either zero or greater than num_pq_chunks: "
-                        << num_pq_chunks << ". num_pq_chunks is unchanged. ";
-        }
-      } else {
-        LOG(ERROR) << "Compression ratio: " << compress_ratio << " should be in (0,1]";
-      }
-    }
-
-    num_pq_chunks = num_pq_chunks <= 0 ? 1 : num_pq_chunks;
-    num_pq_chunks = num_pq_chunks > dim ? dim : num_pq_chunks;
-    num_pq_chunks =
-        num_pq_chunks > MAX_PQ_CHUNKS ? MAX_PQ_CHUNKS : num_pq_chunks;
-
-    LOG(DEBUG) << "Compressing " << dim << "-dimensional data into "
-                  << num_pq_chunks << " bytes per vector.";
-    return num_pq_chunks;
   }
 
   double calculate_recall(unsigned num_queries, unsigned *gold_std,
@@ -968,8 +927,8 @@ namespace diskann {
     unsigned R = config.max_degree;
     unsigned L = config.search_list_size;
 
-    double final_index_ram_limit = get_memory_budget(config.search_mem_gb);
-    if (final_index_ram_limit <= 0) {
+    double pq_code_size_limit = get_memory_budget(config.pq_code_size_gb);
+    if (pq_code_size_limit <= 0) {
       LOG(ERROR) << "Insufficient memory budget (or string was not in right "
                    "format). Should be > 0.";
       return -1;
@@ -986,7 +945,7 @@ namespace diskann {
     }
 
     LOG(INFO) << "Starting index build: R=" << R << " L=" << L
-                  << " Query RAM budget: " << final_index_ram_limit / (1024 * 1024 * 1024) << "(GiB)"
+                  << " Query RAM budget: " << pq_code_size_limit / (1024 * 1024 * 1024) << "(GiB)"
                   << " Indexing ram budget: " << indexing_ram_budget << "(GiB)"
                   << " T: " << num_threads;
 
@@ -997,12 +956,10 @@ namespace diskann {
     diskann::get_bin_metadata(data_file_to_use.c_str(), points_num, dim);
 
     size_t num_pq_chunks =
-        (size_t)(std::floor)(_u64(final_index_ram_limit / points_num));
+        (size_t)(std::floor)(_u64(pq_code_size_limit / points_num));
 
     num_pq_chunks = num_pq_chunks <= 0 ? 1 : num_pq_chunks;
     num_pq_chunks = num_pq_chunks > dim ? dim : num_pq_chunks;
-    num_pq_chunks =
-        num_pq_chunks > MAX_PQ_CHUNKS ? MAX_PQ_CHUNKS : num_pq_chunks;
 
     LOG(DEBUG) << "Compressing " << dim << "-dimensional data into "
                   << num_pq_chunks << " bytes per vector.";

@@ -30,7 +30,7 @@ def test_diskann():
                     "data_path": data_path,
                     "max_degree": 80,
                     "search_list_size": 128,
-                    "search_dram_budget_gb": 1.0,
+                    "pq_code_budget_gb": 1.0,
                     "build_dram_budget_gb": 2.0,
                     "num_threads": 16,
                     "disk_pq_dims": 0,
