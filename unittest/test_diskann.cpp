@@ -552,7 +552,7 @@ TEST_P(DiskANNTest, cached_warmup_test) {
     // search cache + warmup preparation
     knowhere::DiskANNPrepareConfig prep_conf_to_test = prep_conf;
     prep_conf_to_test.warm_up = true;
-    prep_conf_to_test.num_nodes_to_cache = 1000;
+    prep_conf_to_test.search_cache_budget_gb = 0.00001;
     knowhere::DiskANNPrepareConfig::Set(cfg, prep_conf_to_test);
     EXPECT_TRUE(diskann->Prepare(cfg));
 
@@ -736,10 +736,9 @@ TEST_P(DiskANNTest, build_config_test) {
 
 TEST_P(DiskANNTest, generate_cache_list_test) {
     knowhere::Config cfg;
-    uint32_t cached_nodes_num = kNumRows * 10;
     knowhere::DiskANNPrepareConfig prep_conf_to_test = prep_conf;
     prep_conf_to_test.use_bfs_cache = false;
-    prep_conf_to_test.num_nodes_to_cache = cached_nodes_num;
+    prep_conf_to_test.search_cache_budget_gb = 3.0;
 
     knowhere::DiskANNPrepareConfig::Set(cfg, prep_conf_to_test);
     EXPECT_THROW(diskann->Prepare(cfg), knowhere::KnowhereException);

@@ -51,6 +51,7 @@ IndexDiskANN<T>::IndexDiskANN(std::string index_prefix, MetricType metric_type,
 }
 
 namespace {
+static constexpr float kCacheExpansionRate = 1.2;
 void
 CheckPreparation(bool is_prepared) {
     if (!is_prepared) {
@@ -234,7 +235,7 @@ IndexDiskANN<T>::Prepare(const Config& config) {
     // Load file from file manager.
     for (auto& filename :
          GetNecessaryFilenames(index_prefix_, metric_ == diskann::INNER_PRODUCT,
-                               prep_conf.num_nodes_to_cache > 0 && !prep_conf.use_bfs_cache, prep_conf.warm_up)) {
+                               prep_conf.search_cache_budget_gb > 0 && !prep_conf.use_bfs_cache, prep_conf.warm_up)) {
         if (!LoadFile(filename)) {
             return false;
         }
@@ -271,16 +272,18 @@ IndexDiskANN<T>::Prepare(const Config& config) {
 
     std::string warmup_query_file = diskann::get_sample_data_filename(index_prefix_);
     // load cache
-    if (prep_conf.num_nodes_to_cache > pq_flash_index_->get_num_points() / 3) {
+    auto num_nodes_to_cache = GetCachedNodeNum(prep_conf.search_cache_budget_gb, pq_flash_index_->get_data_dim(),
+                                               pq_flash_index_->get_max_degree());
+    if (num_nodes_to_cache > pq_flash_index_->get_num_points() / 3) {
         KNOWHERE_THROW_MSG("Failed to generate cache, num_nodes_to_cache is larger than 1/3 of the total data number.");
     }
-    if (prep_conf.num_nodes_to_cache > 0) {
+    if (num_nodes_to_cache > 0) {
         std::vector<uint32_t> node_list;
-        LOG_KNOWHERE_INFO_ << "Caching " << prep_conf.num_nodes_to_cache << " sample nodes around medoid(s).";
+        LOG_KNOWHERE_INFO_ << "Caching " << num_nodes_to_cache << " sample nodes around medoid(s).";
 
         if (prep_conf.use_bfs_cache) {
             auto gen_cache_successful = TryDiskANNCall<bool>([&]() -> bool {
-                pq_flash_index_->cache_bfs_levels(prep_conf.num_nodes_to_cache, node_list);
+                pq_flash_index_->cache_bfs_levels(num_nodes_to_cache, node_list);
                 return true;
             });
 
@@ -290,8 +293,8 @@ IndexDiskANN<T>::Prepare(const Config& config) {
             }
         } else {
             auto gen_cache_successful = TryDiskANNCall<bool>([&]() -> bool {
-                pq_flash_index_->generate_cache_list_from_sample_queries(
-                    warmup_query_file, 15, 6, prep_conf.num_nodes_to_cache, prep_conf.num_threads, node_list);
+                pq_flash_index_->generate_cache_list_from_sample_queries(warmup_query_file, 15, 6, num_nodes_to_cache,
+                                                                         prep_conf.num_threads, node_list);
                 return true;
             });
 
@@ -509,6 +512,15 @@ IndexDiskANN<T>::AddFile(const std::string& filename) {
         return false;
     }
     return true;
+}
+
+template <typename T>
+uint64_t
+IndexDiskANN<T>::GetCachedNodeNum(const float cache_dram_budget, const uint64_t data_dim, const uint64_t max_degree) {
+    uint32_t one_cached_node_budget = (max_degree + 1) * sizeof(unsigned) + sizeof(T) * data_dim;
+    auto num_nodes_to_cache =
+        static_cast<uint64_t>(1024 * 1024 * 1024 * cache_dram_budget) / (one_cached_node_budget * kCacheExpansionRate);
+    return num_nodes_to_cache;
 }
 
 // Explicit template instantiation
