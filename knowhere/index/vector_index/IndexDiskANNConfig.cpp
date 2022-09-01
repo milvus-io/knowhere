@@ -23,7 +23,7 @@ namespace {
 static constexpr const char* kDataPath = "data_path";
 static constexpr const char* kMaxDegree = "max_degree";
 static constexpr const char* kSearchListSize = "search_list_size";
-static constexpr const char* kSearchDramBudgetGb = "search_dram_budget_gb";
+static constexpr const char* kPQCodeBudgetGb = "pq_code_budget_gb";
 static constexpr const char* kBuildDramBudgetGb = "build_dram_budget_gb";
 static constexpr const char* kNumThreads = "num_threads";
 static constexpr const char* kDiskPqBytes = "disk_pq_dims";
@@ -51,8 +51,8 @@ static constexpr uint32_t kMaxDegreeMinValue = 1;
 static constexpr uint32_t kMaxDegreeMaxValue = 512;
 static constexpr uint32_t kBuildSearchListSizeMinValue = 1;
 static constexpr std::optional<uint32_t> kBuildSearchListSizeMaxValue = std::nullopt;
-static constexpr float kSearchDramBudgetGbMinValue = 0;
-static constexpr std::optional<float> kSearchDramBudgetGbMaxValue = std::nullopt;
+static constexpr float kPQCodeBudgetGbMinValue = 0;
+static constexpr std::optional<float> kPQCodeBudgetGbMaxValue = std::nullopt;
 static constexpr float kBuildDramBudgetGbMinValue = 0;
 static constexpr std::optional<float> kBuildDramBudgetGbMaxValue = std::nullopt;
 static constexpr uint32_t kBuildNumThreadsMinValue = 1;
@@ -155,7 +155,7 @@ to_json(Config& config, const DiskANNBuildConfig& build_conf) {
     config = Config{{kDataPath, build_conf.data_path},
                     {kMaxDegree, build_conf.max_degree},
                     {kSearchListSize, build_conf.search_list_size},
-                    {kSearchDramBudgetGb, build_conf.search_dram_budget_gb},
+                    {kPQCodeBudgetGb, build_conf.pq_code_budget_gb},
                     {kBuildDramBudgetGb, build_conf.build_dram_budget_gb},
                     {kNumThreads, build_conf.num_threads},
                     {kDiskPqBytes, build_conf.disk_pq_dims},
@@ -169,8 +169,8 @@ from_json(const Config& config, DiskANNBuildConfig& build_conf) {
                                       build_conf.max_degree);
     CheckNumericParamAndSet<uint32_t>(config, kSearchListSize, kBuildSearchListSizeMinValue,
                                       kBuildSearchListSizeMaxValue, build_conf.search_list_size);
-    CheckNumericParamAndSet<float>(config, kSearchDramBudgetGb, kSearchDramBudgetGbMinValue,
-                                   kSearchDramBudgetGbMaxValue, build_conf.search_dram_budget_gb);
+    CheckNumericParamAndSet<float>(config, kPQCodeBudgetGb, kPQCodeBudgetGbMinValue,
+                                   kPQCodeBudgetGbMaxValue, build_conf.pq_code_budget_gb);
     CheckNumericParamAndSet<float>(config, kBuildDramBudgetGb, kBuildDramBudgetGbMinValue, kBuildDramBudgetGbMaxValue,
                                    build_conf.build_dram_budget_gb);
     CheckNumericParamAndSet<uint32_t>(config, kNumThreads, kBuildNumThreadsMinValue, kBuildNumThreadsMaxValue,

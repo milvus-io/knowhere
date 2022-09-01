@@ -50,10 +50,6 @@ namespace diskann {
   DISKANN_DLLEXPORT void   add_new_file_to_single_index(std::string index_file,
                                                         std::string new_file);
 
-  DISKANN_DLLEXPORT size_t calculate_num_pq_chunks(double final_index_ram_limit,
-                                                   size_t points_num,
-                                                   uint32_t dim);
-
   DISKANN_DLLEXPORT double calculate_recall(
       unsigned num_queries, unsigned *gold_std, float *gs_dist, unsigned dim_gs,
       unsigned *our_results, unsigned dim_or, unsigned recall_at);
@@ -117,8 +113,8 @@ namespace diskann {
     unsigned max_degree = 0;
     // L (indexing list size, better if >= R)
     unsigned search_list_size = 0;
-    // B (RAM limit of final index in GB)
-    double search_mem_gb = 0.0;
+    // B (PQ code size in GB)
+    double pq_code_size_gb = 0.0;
     //M (memory limit while indexing)
     double index_mem_gb = 0.0;
     // T (number of threads for indexing)

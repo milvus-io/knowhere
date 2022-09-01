@@ -192,7 +192,7 @@ IndexDiskANN<T>::AddWithoutIds(const DatasetPtr& data_set, const Config& config)
                                                        metric_,
                                                        build_conf.max_degree,
                                                        build_conf.search_list_size,
-                                                       build_conf.search_dram_budget_gb,
+                                                       build_conf.pq_code_budget_gb,
                                                        build_conf.build_dram_budget_gb,
                                                        build_conf.num_threads,
                                                        build_conf.disk_pq_dims,

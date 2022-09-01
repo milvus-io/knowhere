@@ -28,14 +28,9 @@ struct DiskANNBuildConfig {
     // value larger than the max_degree unless you need to build indices really quickly and can somewhat compromise on
     // quality.
     uint32_t search_list_size;
-    // Bound on the memory footprint of the index at search time in GB. Once built, the index will use up only the
-    // specified RAM limit, the rest will reside on disk. This will dictate how aggressively we compress the data
-    // vectors to store in memory. Larger will yield better performance at search time. For an n point index, to use b
-    // byte PQ compressed representation in memory, use search_dram_budget_gb = ((n * b) / 2^30 + (250000 * (4 *
-    // max_degree + sizeof(T)*ndim)) / 2^30). The second term in the summation is to allow some buffer for caching about
-    // 250,000 nodes from the graph in memory while serving. If you are not sure about this term, add 0.25GB to the
-    // first term.
-    float search_dram_budget_gb;
+    // Limit the size of the PQ code after the raw vector has been PQ-encoded. PQ code is (a search_list_size / row_num
+    // )-dimensional uint8 vector. If pq_code_budget_gb is too large, it will be adjusted to the size of dim*row_num.
+    float pq_code_budget_gb;
     // Limit on the memory allowed for building the index in GB. If you specify a value less than what is required to
     // build the index in one pass, the index is built using a divide and conquer approach so that sub-graphs will fit
     // in the RAM budget. The sub-graphs are overlayed to build the overall index. This approach can be up to 1.5 times
