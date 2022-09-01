@@ -205,7 +205,7 @@ CheckRangeSearchRecall(GroundTruthPtr ground_truth, const int64_t* result, const
 
 template <typename DiskANNConfig>
 void
-check_config_error(DiskANNConfig& config_to_test) {
+CheckConfigError(DiskANNConfig& config_to_test) {
     knowhere::Config cfg;
     DiskANNConfig::Set(cfg, config_to_test);
     EXPECT_THROW(DiskANNConfig::Get(cfg), knowhere::KnowhereException);
@@ -602,51 +602,51 @@ TEST_P(DiskANNTest, config_test) {
     // build config
     knowhere::DiskANNBuildConfig build_conf_to_test = build_conf;
     build_conf_to_test.max_degree = 0;
-    check_config_error<knowhere::DiskANNBuildConfig>(build_conf_to_test);
+    CheckConfigError<knowhere::DiskANNBuildConfig>(build_conf_to_test);
 
     build_conf_to_test.max_degree = 513;
-    check_config_error<knowhere::DiskANNBuildConfig>(build_conf_to_test);
+    CheckConfigError<knowhere::DiskANNBuildConfig>(build_conf_to_test);
 
     build_conf_to_test = build_conf;
     build_conf_to_test.num_threads = 0;
-    check_config_error<knowhere::DiskANNBuildConfig>(build_conf_to_test);
+    CheckConfigError<knowhere::DiskANNBuildConfig>(build_conf_to_test);
 
     build_conf_to_test.num_threads = 129;
-    check_config_error<knowhere::DiskANNBuildConfig>(build_conf_to_test);
+    CheckConfigError<knowhere::DiskANNBuildConfig>(build_conf_to_test);
 
     // prepare config
     knowhere::DiskANNPrepareConfig prep_conf_to_test = prep_conf;
     prep_conf_to_test.num_threads = 0;
-    check_config_error<knowhere::DiskANNPrepareConfig>(prep_conf_to_test);
+    CheckConfigError<knowhere::DiskANNPrepareConfig>(prep_conf_to_test);
 
-    prep_conf_to_test.num_threads = 129;
-    check_config_error<knowhere::DiskANNPrepareConfig>(prep_conf_to_test);
+    prep_conf_to_test.num_threads = 2049;
+    CheckConfigError<knowhere::DiskANNPrepareConfig>(prep_conf_to_test);
 
     // query config
     knowhere::DiskANNQueryConfig query_conf_to_test = query_conf;
     query_conf_to_test.k = 10;
     query_conf_to_test.search_list_size = 9;
-    check_config_error<knowhere::DiskANNQueryConfig>(query_conf_to_test);
+    CheckConfigError<knowhere::DiskANNQueryConfig>(query_conf_to_test);
 
     query_conf_to_test = query_conf;
     query_conf_to_test.beamwidth = 0;
-    check_config_error<knowhere::DiskANNQueryConfig>(query_conf_to_test);
+    CheckConfigError<knowhere::DiskANNQueryConfig>(query_conf_to_test);
 
     query_conf_to_test.beamwidth = 129;
-    check_config_error<knowhere::DiskANNQueryConfig>(query_conf_to_test);
+    CheckConfigError<knowhere::DiskANNQueryConfig>(query_conf_to_test);
 
     // query by range config
     knowhere::DiskANNQueryByRangeConfig range_search_conf_to_test = l2_range_search_conf;
     range_search_conf_to_test.min_k = 10;
     range_search_conf_to_test.max_k = 9;
-    check_config_error<knowhere::DiskANNQueryByRangeConfig>(range_search_conf_to_test);
+    CheckConfigError<knowhere::DiskANNQueryByRangeConfig>(range_search_conf_to_test);
 
     range_search_conf_to_test = l2_range_search_conf;
     range_search_conf_to_test.beamwidth = 0;
-    check_config_error<knowhere::DiskANNQueryByRangeConfig>(range_search_conf_to_test);
+    CheckConfigError<knowhere::DiskANNQueryByRangeConfig>(range_search_conf_to_test);
 
     range_search_conf_to_test.beamwidth = 129;
-    check_config_error<knowhere::DiskANNQueryByRangeConfig>(range_search_conf_to_test);
+    CheckConfigError<knowhere::DiskANNQueryByRangeConfig>(range_search_conf_to_test);
 }
 
 TEST_P(DiskANNTest, build_config_test) {

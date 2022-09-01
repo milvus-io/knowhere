@@ -32,6 +32,7 @@ static constexpr const char* kAccelerateBuild = "accelerate_build";
 static constexpr const char* kNumNodesToCache = "num_nodes_to_cache";
 static constexpr const char* kWarmUp = "warm_up";
 static constexpr const char* kUseBfsCache = "use_bfs_cache";
+static constexpr const char* kAioMaxnr = "aio_maxnr";
 
 static constexpr const char* kK = "k";
 static constexpr const char* kBeamwidth = "beamwidth";
@@ -46,6 +47,63 @@ static constexpr const char* kDiskANNPrepareConfig = "diskANN_prepare_config";
 static constexpr const char* kDiskANNQueryConfig = "diskANN_query_config";
 static constexpr const char* kDiskANNQueryByRangeConfig = "diskANN_query_by_range_config";
 
+static constexpr uint32_t kMaxDegreeMinValue = 1;
+static constexpr uint32_t kMaxDegreeMaxValue = 512;
+static constexpr uint32_t kBuildSearchListSizeMinValue = 1;
+static constexpr std::optional<uint32_t> kBuildSearchListSizeMaxValue = std::nullopt;
+static constexpr float kSearchDramBudgetGbMinValue = 0;
+static constexpr std::optional<float> kSearchDramBudgetGbMaxValue = std::nullopt;
+static constexpr float kBuildDramBudgetGbMinValue = 0;
+static constexpr std::optional<float> kBuildDramBudgetGbMaxValue = std::nullopt;
+static constexpr uint32_t kBuildNumThreadsMinValue = 1;
+static constexpr uint32_t kBuildNumThreadsMaxValue = 128;
+static constexpr uint32_t kDiskPqBytesMinValue = 0;
+static constexpr std::optional<uint32_t> kDiskPqBytesMaxValue = std::nullopt;
+static constexpr uint32_t kBeamwidthMinValue = 1;
+static constexpr uint32_t kBeamwidthMaxValue = 128;
+static constexpr uint64_t kKMinValue = 1;
+static constexpr std::optional<uint64_t> kKMaxValue = std::nullopt;
+static constexpr std::optional<uint32_t> kSearchListSizeMaxValue = std::nullopt;
+static constexpr uint64_t kAioMaxnrMinValue = 1;
+static constexpr uint64_t kAioMaxnrMaxValue = 2 * kBeamwidthMaxValue;
+static constexpr uint64_t kAioMaxnrDefaultValue = 32;
+static constexpr uint32_t kLinuxAioMaxnrLimit = 65536;
+static constexpr uint32_t kSearchNumThreadsMinValue = 1;
+static constexpr uint32_t kNumNodesToCacheMinValue = 0;
+static constexpr std::optional<uint32_t> kNumNodesToCacheMaxValue = std::nullopt;
+static constexpr std::optional<float> kRadiusMinValue = std::nullopt;
+static constexpr std::optional<float> kRadiusMaxValue = std::nullopt;
+static constexpr uint64_t kMinKMinValue = 1;
+static constexpr std::optional<uint64_t> kMinKMaxValue = std::nullopt;
+static constexpr std::optional<uint64_t> kMaxKMaxValue = std::nullopt;
+static constexpr float kSearchListAndKRatioMinValue = 1.0;
+static constexpr float kSearchListAndKRatioMaxValue = 5.0;
+static constexpr float kSearchListAndKRatioDefaultValue = 2.0;
+
+template <typename T>
+void
+CheckType(const Config& config, const std::string& key) {
+    if constexpr (std::is_same_v<T, bool>) {
+        if (!config[key].is_boolean()) {
+            KNOWHERE_THROW_FORMAT("Param '%s' should be a bool.", key.data());
+        }
+    } else if constexpr (std::is_same_v<T, std::string>) {
+        if (!config[key].is_string()) {
+            KNOWHERE_THROW_FORMAT("Param '%s' should be a string.", key.data());
+        }
+    } else if constexpr (std::is_integral_v<T>) {
+        if (!config[key].is_number_integer()) {
+            KNOWHERE_THROW_FORMAT("Param '%s' should be a integer.", key.data());
+        }
+    } else if constexpr (std::is_floating_point_v<T>) {
+        if (!config[key].is_number_float()) {
+            KNOWHERE_THROW_FORMAT("Param '%s' should be a float.", key.data());
+        }
+    } else {
+        KNOWHERE_THROW_MSG("Unsupported type.");
+    }
+}
+
 /**
  * @brief Check the numeric param's existence and type, and allocate it to the config.
  *
@@ -58,7 +116,8 @@ template <typename T>
 void
 CheckNumericParamAndSet(const Config& config, const std::string& key, std::optional<T> min_o, std::optional<T> max_o,
                         T& to_be_set) {
-    static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "CheckAndSet only accept int and float type");
+    static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>,
+                  "CheckNumericParamAndSet only accept int and float type");
 
     if (!config.contains(key)) {
         KNOWHERE_THROW_FORMAT("Param '%s' not exist", key.data());
@@ -67,15 +126,8 @@ CheckNumericParamAndSet(const Config& config, const std::string& key, std::optio
     T min = min_o.has_value() ? min_o.value() : std::numeric_limits<T>::lowest();
     T max = max_o.has_value() ? max_o.value() : std::numeric_limits<T>::max();
 
-    if (std::is_same_v<T, float>) {
-        if (!config[key].is_number_float()) {
-            KNOWHERE_THROW_FORMAT("Param '%s' should be a float", key.data());
-        }
-    } else {
-        if (!config[key].is_number_integer()) {
-            KNOWHERE_THROW_FORMAT("Param '%s' should be an integer", key.data());
-        }
-    }
+    CheckType<T>(config, key);
+
     T value = GetValueFromConfig<T>(config, key);
     if (value < min || value > max) {
         std::stringstream error_msg;
@@ -86,30 +138,15 @@ CheckNumericParamAndSet(const Config& config, const std::string& key, std::optio
 }
 
 /**
- * @brief Check the bool param's existence and type, and allocate it to the config.
+ * @brief Check the non-numeric param's existence and type, and allocate it to the config.
  */
+template <typename T>
 void
-CheckBoolParamAndSet(const Config& config, const std::string& key, bool& to_be_set) {
+CheckNonNumbericParamAndSet(const Config& config, const std::string& key, T& to_be_set) {
     if (!config.contains(key)) {
         KNOWHERE_THROW_FORMAT("Param '%s' not exist", key.data());
     }
-    if (!config[key].is_boolean()) {
-        KNOWHERE_THROW_FORMAT("Param '%s' should be a bool", key.data());
-    }
-    config.at(key).get_to(to_be_set);
-}
-
-/**
- * @brief Check the string param's existence and type, and allocate it to the config.
- */
-void
-CheckStringParamAndSet(const Config& config, const std::string& key, std::string& to_be_set) {
-    if (!config.contains(key)) {
-        KNOWHERE_THROW_FORMAT("Param '%s' not exist", key.data());
-    }
-    if (!config[key].is_string()) {
-        KNOWHERE_THROW_FORMAT("Param '%s' should be a string", key.data());
-    }
+    CheckType<T>(config, key);
     config.at(key).get_to(to_be_set);
 }
 }  // namespace
@@ -128,14 +165,20 @@ to_json(Config& config, const DiskANNBuildConfig& build_conf) {
 
 void
 from_json(const Config& config, DiskANNBuildConfig& build_conf) {
-    CheckStringParamAndSet(config, kDataPath, build_conf.data_path);
-    CheckNumericParamAndSet<uint32_t>(config, kMaxDegree, 1, 512, build_conf.max_degree);
-    CheckNumericParamAndSet<uint32_t>(config, kSearchListSize, 1, std::nullopt, build_conf.search_list_size);
-    CheckNumericParamAndSet<float>(config, kSearchDramBudgetGb, 0, std::nullopt, build_conf.search_dram_budget_gb);
-    CheckNumericParamAndSet<float>(config, kBuildDramBudgetGb, 0, std::nullopt, build_conf.build_dram_budget_gb);
-    CheckNumericParamAndSet<uint32_t>(config, kNumThreads, 1, 128, build_conf.num_threads);
-    CheckNumericParamAndSet<uint32_t>(config, kDiskPqBytes, 0, std::nullopt, build_conf.disk_pq_dims);
-    CheckBoolParamAndSet(config, kAccelerateBuild, build_conf.accelerate_build);
+    CheckNonNumbericParamAndSet<std::string>(config, kDataPath, build_conf.data_path);
+    CheckNumericParamAndSet<uint32_t>(config, kMaxDegree, kMaxDegreeMinValue, kMaxDegreeMaxValue,
+                                      build_conf.max_degree);
+    CheckNumericParamAndSet<uint32_t>(config, kSearchListSize, kBuildSearchListSizeMinValue,
+                                      kBuildSearchListSizeMaxValue, build_conf.search_list_size);
+    CheckNumericParamAndSet<float>(config, kSearchDramBudgetGb, kSearchDramBudgetGbMinValue,
+                                   kSearchDramBudgetGbMaxValue, build_conf.search_dram_budget_gb);
+    CheckNumericParamAndSet<float>(config, kBuildDramBudgetGb, kBuildDramBudgetGbMinValue, kBuildDramBudgetGbMaxValue,
+                                   build_conf.build_dram_budget_gb);
+    CheckNumericParamAndSet<uint32_t>(config, kNumThreads, kBuildNumThreadsMinValue, kBuildNumThreadsMaxValue,
+                                      build_conf.num_threads);
+    CheckNumericParamAndSet<uint32_t>(config, kDiskPqBytes, kDiskPqBytesMinValue, kDiskPqBytesMaxValue,
+                                      build_conf.disk_pq_dims);
+    CheckNonNumbericParamAndSet<bool>(config, kAccelerateBuild, build_conf.accelerate_build);
 }
 
 void
@@ -143,15 +186,25 @@ to_json(Config& config, const DiskANNPrepareConfig& prep_conf) {
     config = Config{{kNumThreads, prep_conf.num_threads},
                     {kNumNodesToCache, prep_conf.num_nodes_to_cache},
                     {kWarmUp, prep_conf.warm_up},
-                    {kUseBfsCache, prep_conf.use_bfs_cache}};
+                    {kUseBfsCache, prep_conf.use_bfs_cache},
+                    {kAioMaxnr, prep_conf.aio_maxnr}};
 }
 
 void
 from_json(const Config& config, DiskANNPrepareConfig& prep_conf) {
-    CheckNumericParamAndSet<uint32_t>(config, kNumThreads, 1, 128, prep_conf.num_threads);
-    CheckNumericParamAndSet<uint32_t>(config, kNumNodesToCache, 0, std::nullopt, prep_conf.num_nodes_to_cache);
-    CheckBoolParamAndSet(config, kWarmUp, prep_conf.warm_up);
-    CheckBoolParamAndSet(config, kUseBfsCache, prep_conf.use_bfs_cache);
+    if (config.contains(kAioMaxnr)) {
+        CheckNumericParamAndSet<uint64_t>(config, kAioMaxnr, kAioMaxnrMinValue, kAioMaxnrMaxValue, prep_conf.aio_maxnr);
+    } else {
+        prep_conf.aio_maxnr = kAioMaxnrDefaultValue;
+    }
+    // According to de definition of aio_maxnr in the IndexDiskANNConfig.h file.
+    auto num_thread_max_value = kLinuxAioMaxnrLimit / prep_conf.aio_maxnr;
+    CheckNumericParamAndSet<uint32_t>(config, kNumThreads, kSearchNumThreadsMinValue, num_thread_max_value,
+                                      prep_conf.num_threads);
+    CheckNumericParamAndSet<uint32_t>(config, kNumNodesToCache, kNumNodesToCacheMinValue, kNumNodesToCacheMaxValue,
+                                      prep_conf.num_nodes_to_cache);
+    CheckNonNumbericParamAndSet<bool>(config, kWarmUp, prep_conf.warm_up);
+    CheckNonNumbericParamAndSet<bool>(config, kUseBfsCache, prep_conf.use_bfs_cache);
 }
 
 void
@@ -162,10 +215,11 @@ to_json(Config& config, const DiskANNQueryConfig& query_conf) {
 
 void
 from_json(const Config& config, DiskANNQueryConfig& query_conf) {
-    CheckNumericParamAndSet<uint64_t>(config, kK, 1, std::nullopt, query_conf.k);
+    CheckNumericParamAndSet<uint64_t>(config, kK, kKMinValue, kKMaxValue, query_conf.k);
     // The search_list_size should be no less than the k.
-    CheckNumericParamAndSet<uint32_t>(config, kSearchListSize, query_conf.k, std::nullopt, query_conf.search_list_size);
-    CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, 1, 128, query_conf.beamwidth);
+    CheckNumericParamAndSet<uint32_t>(config, kSearchListSize, query_conf.k, kSearchListSizeMaxValue,
+                                      query_conf.search_list_size);
+    CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, kBeamwidthMinValue, kBeamwidthMaxValue, query_conf.beamwidth);
 }
 
 void
@@ -179,11 +233,16 @@ to_json(Config& config, const DiskANNQueryByRangeConfig& query_conf) {
 
 void
 from_json(const Config& config, DiskANNQueryByRangeConfig& query_conf) {
-    CheckNumericParamAndSet<float>(config, kRadius, std::nullopt, std::nullopt, query_conf.radius);
-    CheckNumericParamAndSet<uint64_t>(config, kMinK, 1, std::nullopt, query_conf.min_k);
-    CheckNumericParamAndSet<uint64_t>(config, kMaxK, query_conf.min_k, std::nullopt, query_conf.max_k);
-    CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, 1, 128, query_conf.beamwidth);
-    CheckNumericParamAndSet<float>(config, kSearchListAndKRatio, 1.0, 5.0, query_conf.search_list_and_k_ratio);
+    CheckNumericParamAndSet<float>(config, kRadius, kRadiusMinValue, kRadiusMaxValue, query_conf.radius);
+    CheckNumericParamAndSet<uint64_t>(config, kMinK, kMinKMinValue, kMinKMaxValue, query_conf.min_k);
+    CheckNumericParamAndSet<uint64_t>(config, kMaxK, query_conf.min_k, kMaxKMaxValue, query_conf.max_k);
+    CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, kBeamwidthMinValue, kBeamwidthMaxValue, query_conf.beamwidth);
+    if (config.contains(kSearchListAndKRatio)) {
+        CheckNumericParamAndSet<float>(config, kSearchListAndKRatio, kSearchListAndKRatioMinValue,
+                                       kSearchListAndKRatioMaxValue, query_conf.search_list_and_k_ratio);
+    } else {
+        query_conf.search_list_and_k_ratio = kSearchListAndKRatioDefaultValue;
+    }
 }
 
 DiskANNBuildConfig
