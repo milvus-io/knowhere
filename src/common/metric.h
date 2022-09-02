@@ -1,5 +1,5 @@
-#ifndef METRIC_H
-#define METRIC_H
+#ifndef COMMON_METRIC_H
+#define COMMON_METRIC_H
 
 #include <algorithm>
 #include <string>
@@ -9,7 +9,7 @@
 #include "knowhere/expected.h"
 namespace knowhere {
 
-expected<faiss::MetricType, Error>
+inline expected<faiss::MetricType, Error>
 Str2FaissMetricType(std::string metric) {
     static const std::unordered_map<std::string, faiss::MetricType> metric_map = {
         {"L2", faiss::MetricType::METRIC_L2},

@@ -8,6 +8,24 @@ knowhere_file_glob(GLOB FAISS_AVX512_SRCS
 
 list(REMOVE_ITEM FAISS_SRCS ${FAISS_AVX512_SRCS})
 
+if(USE_CUDA)
+    knowhere_file_glob(
+        GLOB FAISS_GPU_SRCS
+        thirdparty/faiss/faiss/gpu/*.cu
+        thirdparty/faiss/faiss/gpu/*.cpp
+        thirdparty/faiss/faiss/gpu/impl/*.cu
+        thirdparty/faiss/faiss/gpu/impl/*.cpp
+        thirdparty/faiss/faiss/gpu/utils/*.cu
+        thirdparty/faiss/faiss/gpu/utils/*.cpp
+        thirdparty/faiss/faiss/gpu/impl/scan/*.cu
+        thirdparty/faiss/faiss/gpu/utils/blockselect/*.cu
+        thirdparty/faiss/faiss/gpu/utils/blockselect/*.cpp
+        thirdparty/faiss/faiss/gpu/utils/warpselect/*.cu
+        )
+    list(APPEND FAISS_SRCS ${FAISS_GPU_SRCS})
+endif()
+
+
 set(UTILS_SRC
             src/simd/distances_simd.cpp
             src/simd/FaissHookFvec.cpp
@@ -55,7 +73,11 @@ if(__X86_64)
             -mf16c
             -mavx512dq
             -mavx512bw>)
+
   add_library(faiss STATIC ${FAISS_SRCS})
+
+  target_link_libraries(faiss PUBLIC CUDA::cudart CUDA::cublas)
+  target_compile_options(faiss PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xfatbin=-compress-all>)
   add_dependencies(faiss faiss_avx512 knowhere_utils)
   target_compile_options(faiss PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -msse4.2
                                           -mavx2 -mfma -mf16c -Wno-sign-compare
