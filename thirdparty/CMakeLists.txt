@@ -80,7 +80,6 @@ macro(build_faiss)
             )
     if(KNOWHERE_GPU_VERSION)
         set(FAISS_CMAKE_ARGS "${FAISS_CMAKE_ARGS}"
-            "-DCMAKE_CUDA_ARCHITECTURES=75;70;61;60"
             "-DCMAKE_CUDA_FLAGS=-Xcompiler -fPIC -std=c++11 -D_FORCE_INLINES --expt-extended-lambda -I${CMAKE_SOURCE_DIR}"
             )
     endif()
