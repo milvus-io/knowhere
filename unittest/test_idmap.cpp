@@ -15,6 +15,7 @@
 
 #include "knowhere/common/Exception.h"
 #include "knowhere/index/IndexType.h"
+#include "knowhere/index/VecIndexFactory.h"
 #include "knowhere/index/vector_index/ConfAdapterMgr.h"
 #include "knowhere/index/vector_index/IndexIDMAP.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
@@ -24,9 +25,10 @@
 #include "knowhere/index/vector_index/helpers/Cloner.h"
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
 #endif
+#include "unittest/Helper.h"
+#include "unittest/MutiThreadTest.h"
 #include "unittest/range_utils.h"
 #include "unittest/utils.h"
-#include "unittest/Helper.h"
 
 using ::testing::Combine;
 using ::testing::TestWithParam;
@@ -122,6 +124,15 @@ TEST_P(IDMAPTest, idmap_basic) {
     // query with bitset
     auto result_bs_1 = index_->Query(query_dataset, conf_, *bitset);
     AssertAnns(result_bs_1, nq, k, CheckMode::CHECK_NOT_EQUAL);
+}
+TEST_P(IDMAPTest, idmap_thread) {
+    auto& factory = knowhere::VecIndexFactory::GetInstance();
+    auto index_ = factory.CreateVecIndex(index_type_, index_mode_);
+    index_->BuildAll(base_dataset, conf_);
+    int size = 10;
+    for (int i = 0; i < size; i++) {
+        knowhere::mthreadtest::Async(index_, query_dataset, conf_, nullptr);
+    }
 }
 
 TEST_P(IDMAPTest, idmap_serialize) {
