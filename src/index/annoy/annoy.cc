@@ -103,7 +103,7 @@ class AnnoyIndexNode : public IndexNode {
                 assert(id >= 0 && id < index_->get_n_items());
                 index_->get_item(id, p_x + i * dim);
             }
-        } catch (...) {
+        } catch (const std::exception& e) {
             std::unique_ptr<float> auto_del(p_x);
             return unexpected(Error::annoy_inner_error);
         }

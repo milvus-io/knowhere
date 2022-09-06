@@ -75,9 +75,10 @@ if(__X86_64)
             -mavx512bw>)
 
   add_library(faiss STATIC ${FAISS_SRCS})
-
-  target_link_libraries(faiss PUBLIC CUDA::cudart CUDA::cublas)
-  target_compile_options(faiss PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xfatbin=-compress-all>)
+  if(USE_CUDA)
+    target_link_libraries(faiss PUBLIC CUDA::cudart CUDA::cublas)
+    target_compile_options(faiss PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xfatbin=-compress-all>)
+  endif()
   add_dependencies(faiss faiss_avx512 knowhere_utils)
   target_compile_options(faiss PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -msse4.2
                                           -mavx2 -mfma -mf16c -Wno-sign-compare

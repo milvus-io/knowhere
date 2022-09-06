@@ -8,6 +8,7 @@ include(cmake/utils/utils.cmake)
 
 
 knowhere_option(USE_CUDA "Build with CUDA" OFF)
+knowhere_option(WITH_UT "Build with UT test" OFF)
 
 if(USE_CUDA)
     set(CMAKE_CUDA_ARCHITECTURES 75;70;61;60)
@@ -42,7 +43,8 @@ knowhere_file_glob(GLOB_RECURSE KNOWHERE_SRCS src/common/*.cc
     src/index/*.cc src/io/*.cc)
 
 if(NOT USE_CUDA)
-    knowhere_file_glob(GLOB_RECURSE KNOWHERE_GPU_SRCS src/index/gpu_ivf/*.cc)
+    knowhere_file_glob(GLOB_RECURSE KNOWHERE_GPU_SRCS src/index/ivf_gpu/*.cc
+        src/index/flat_gpu/*.cc)
     list(REMOVE_ITEM KNOWHERE_SRCS ${KNOWHERE_GPU_SRCS})
 endif()
 
@@ -54,4 +56,7 @@ add_library(knowhere SHARED ${KNOWHERE_SRCS})
 add_dependencies(knowhere faiss)
 target_link_libraries(knowhere PRIVATE faiss)
 
-add_subdirectory(tests)
+if (WITH_UT)
+    add_subdirectory(tests)
+    add_subdirectory(ut)
+endif()

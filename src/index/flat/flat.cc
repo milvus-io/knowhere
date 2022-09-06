@@ -19,9 +19,11 @@ class FlatIndexNode : public IndexNode {
     }
     virtual Error
     Build(const DataSet& dataset, const Config& cfg) override {
-        Train(dataset, cfg);
-        Add(dataset, cfg);
-        return Error::success;
+        auto err = Train(dataset, cfg);
+        if (err != Error::success)
+            return err;
+        err = Add(dataset, cfg);
+        return err;
     }
     virtual Error
     Train(const DataSet& dataset, const Config& cfg) override {

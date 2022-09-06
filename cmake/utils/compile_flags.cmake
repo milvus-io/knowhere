@@ -13,11 +13,11 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   message(STATUS "Build in Debug mode")
   set(CMAKE_CXX_FLAGS "-O0 -g -Wall -fPIC ${CMAKE_CXX_FLAGS}")
   set(CMAKE_CUDA_FLAGS
-      "-O0 -g -Xcompiler=-Wall -Xcompiler=-fPIC ${CMAKE_CUDA_FLAGS}")
+      "-O0 -g -Xcompiler=-w -Xcompiler=-fPIC ${CMAKE_CUDA_FLAGS}")
 else()
   set(CMAKE_CXX_FLAGS "-O2 -Wall -fPIC ${CMAKE_CXX_FLAGS}")
   if (USE_CUDA)
     set(CMAKE_CUDA_FLAGS
-        "-O2 -Xcompiler=-Wall -Xcompiler=-fPIC ${CMAKE_CUDA_FLAGS}")
+        "-O2  -Xcompiler=-w -Xcompiler=-fPIC ${CMAKE_CUDA_FLAGS}")
   endif()
 endif()

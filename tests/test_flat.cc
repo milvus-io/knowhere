@@ -4,7 +4,7 @@
 
 void
 flat() {
-    auto idx = knowhere::IndexFactory::Instance().Create("GPUIVFSQ");
+    auto idx = knowhere::IndexFactory::Instance().Create("GPUFLAT");
 
     knowhere::DataSet xb;
     xb.SetRows(10000);
