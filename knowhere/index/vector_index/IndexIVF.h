@@ -11,11 +11,11 @@
 
 #pragma once
 
+#include <faiss/IndexIVF.h>
+
 #include <memory>
 #include <utility>
 #include <vector>
-
-#include <faiss/IndexIVF.h>
 
 #include "knowhere/common/Typedef.h"
 #include "knowhere/index/VecIndex.h"
@@ -49,6 +49,12 @@ class IVF : public VecIndex, public FaissBaseIndex {
 
     DatasetPtr
     GetVectorById(const DatasetPtr&, const Config&) override;
+
+    void
+    AsyncQuery(const DatasetPtr&, const Config&, const faiss::BitsetView);
+
+    DatasetPtr
+    Sync();
 
     DatasetPtr
     Query(const DatasetPtr&, const Config&, const faiss::BitsetView) override;

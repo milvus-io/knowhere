@@ -28,6 +28,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <future>
 
 #include "common/Exception.h"
 #include "common/Log.h"
@@ -201,6 +202,31 @@ IVF::QueryByRange(const DatasetPtr& dataset,
         release_when_exception();
         KNOWHERE_THROW_MSG(e.what());
     }
+}
+
+
+std::vector<std::future<DatasetPtr>>&
+GetFeatureStack() {
+    static std::vector<std::future<DatasetPtr>> stk;
+   return stk;
+}
+
+void
+IVF::AsyncQuery(const DatasetPtr& dataset, const Config& config, const faiss::BitsetView bitset) {
+    std::vector<std::future<DatasetPtr>>& stk = GetFeatureStack();
+    stk.emplace_back(std::async(std::launch::async, [this, &dataset, &config, bitset]() {
+        std::cout << std::this_thread::get_id() << std::endl;
+        return this->Query(dataset, config, bitset);
+    }));
+}
+
+DatasetPtr
+IVF::Sync() {
+    std::vector<std::future<DatasetPtr>>& stk = GetFeatureStack();
+    assert(!stk.empty());
+    auto res = stk.back().get();
+    stk.pop_back();
+    return res;
 }
 
 int64_t
