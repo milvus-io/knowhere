@@ -193,4 +193,24 @@ IndexAnnoy::Size() {
     return index_->cal_size();
 }
 
+#if (TEST_MODE == 1)
+void
+IndexAnnoy::AsyncQuery(const DatasetPtr& dataset, const Config& config, const faiss::BitsetView bitset) {
+    std::vector<std::future<DatasetPtr>>& stk = GetFeatureStack();
+    stk.emplace_back(std::async(std::launch::async, [this, &dataset, &config, bitset]() {
+        std::cout << std::this_thread::get_id() << std::endl;
+        return this->Query(dataset, config, bitset);
+    }));
+}
+
+DatasetPtr
+IndexAnnoy::Sync() {
+    std::vector<std::future<DatasetPtr>>& stk = GetFeatureStack();
+    assert(!stk.empty());
+    auto res = stk.back().get();
+    stk.pop_back();
+    return res;
+}
+#endif
+
 }  // namespace knowhere

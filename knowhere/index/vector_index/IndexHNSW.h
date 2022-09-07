@@ -61,6 +61,14 @@ class IndexHNSW : public VecIndex {
     int64_t
     Size() override;
 
+#if (TEST_MODE == 1)
+    void
+    AsyncQuery(const DatasetPtr&, const Config&, const faiss::BitsetView);
+
+    DatasetPtr
+    Sync();
+#endif
+
 #if 0
     void
     ClearStatistics() override;

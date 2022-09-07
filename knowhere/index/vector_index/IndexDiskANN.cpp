@@ -523,6 +523,28 @@ IndexDiskANN<T>::GetCachedNodeNum(const float cache_dram_budget, const uint64_t 
     return num_nodes_to_cache;
 }
 
+#if (TEST_MODE == 1)
+template <typename T>
+void
+IndexDiskANN<T>::AsyncQuery(const DatasetPtr& dataset, const Config& config, const faiss::BitsetView bitset) {
+    std::vector<std::future<DatasetPtr>>& stk = GetFeatureStack();
+    stk.emplace_back(std::async(std::launch::async, [this, &dataset, &config, bitset]() {
+        std::cout << std::this_thread::get_id() << std::endl;
+        return this->Query(dataset, config, bitset);
+    }));
+}
+
+template <typename T>
+DatasetPtr
+IndexDiskANN<T>::Sync() {
+    std::vector<std::future<DatasetPtr>>& stk = GetFeatureStack();
+    assert(!stk.empty());
+    auto res = stk.back().get();
+    stk.pop_back();
+    return res;
+}
+#endif
+
 // Explicit template instantiation
 template class IndexDiskANN<float>;
 template class IndexDiskANN<uint8_t>;

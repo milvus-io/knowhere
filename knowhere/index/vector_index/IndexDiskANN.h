@@ -91,6 +91,14 @@ class IndexDiskANN : public VecIndex {
         return is_prepared_;
     }
 
+#if (TEST_MODE == 1)
+    void
+    AsyncQuery(const DatasetPtr&, const Config&, const faiss::BitsetView);
+
+    DatasetPtr
+    Sync();
+#endif
+
  private:
     bool
     LoadFile(const std::string& filename);

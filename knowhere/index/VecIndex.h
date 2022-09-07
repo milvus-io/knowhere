@@ -24,6 +24,11 @@
 #include "knowhere/index/vector_index/helpers/Slice.h"
 #include "knowhere/utils/BitsetView.h"
 
+#define TEST_MODE 1
+#if (TEST_MODE == 1)
+#include <future>
+#endif
+
 namespace knowhere {
 
 #define RAW_DATA "RAW_DATA"
@@ -101,6 +106,14 @@ class VecIndex : public Index {
     index_mode() const {
         return index_mode_;
     }
+
+#if (TEST_MODE == 1)
+    std::vector<std::future<DatasetPtr>>&
+    GetFeatureStack() {
+        static std::vector<std::future<DatasetPtr>> stk;
+        return stk;
+    }
+#endif
 
  protected:
     IndexType index_type_ = "";

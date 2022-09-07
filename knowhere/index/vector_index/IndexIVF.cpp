@@ -386,6 +386,26 @@ IVF::QueryByRangeImpl(int64_t n,
     res.lims = nullptr;
 }
 
+#if (TEST_MODE == 1)
+void
+IVF::AsyncQuery(const DatasetPtr& dataset, const Config& config, const faiss::BitsetView bitset) {
+    std::vector<std::future<DatasetPtr>>& stk = GetFeatureStack();
+    stk.emplace_back(std::async(std::launch::async, [this, &dataset, &config, bitset]() {
+        std::cout << std::this_thread::get_id() << std::endl;
+        return this->Query(dataset, config, bitset);
+    }));
+}
+
+DatasetPtr
+IVF::Sync() {
+    std::vector<std::future<DatasetPtr>>& stk = GetFeatureStack();
+    assert(!stk.empty());
+    auto res = stk.back().get();
+    stk.pop_back();
+    return res;
+}
+#endif
+
 void
 IVF::SealImpl() {
 #ifdef KNOWHERE_GPU_VERSION
