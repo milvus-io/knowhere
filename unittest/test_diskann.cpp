@@ -363,6 +363,18 @@ TEST_P(DiskANNTest, bitset_view_test) {
     EXPECT_GT(recall, 0.5);
 }
 
+TEST_P(DiskANNTest, meta_test) {
+    EXPECT_THROW(diskann->Dim(), knowhere::KnowhereException);
+    EXPECT_THROW(diskann->Count(), knowhere::KnowhereException);
+
+    knowhere::Config cfg;
+    knowhere::DiskANNPrepareConfig::Set(cfg, prep_conf);
+    EXPECT_TRUE(diskann->Prepare(cfg));
+
+    EXPECT_EQ(kDim, diskann->Dim());
+    EXPECT_EQ(kNumRows, diskann->Count());
+}
+
 TEST_P(DiskANNTest, knn_search_test) {
     knowhere::Config cfg;
     knowhere::DiskANNQueryConfig::Set(cfg, query_conf);
@@ -405,6 +417,9 @@ TEST_P(DiskANNTest, knn_search_with_accelerate_build_test) {
     accelerate_build_conf.accelerate_build = true;
     knowhere::DiskANNBuildConfig::Set(cfg, accelerate_build_conf);
     accelerate_diskann->BuildAll(nullptr, cfg);
+
+    EXPECT_EQ(kDim, accelerate_diskann->Dim());
+    EXPECT_EQ(kNumRows, accelerate_diskann->Count());
 
     // prepare
     cfg.clear();
