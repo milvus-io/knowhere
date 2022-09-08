@@ -39,6 +39,7 @@ typedef uint64_t size_t;
 #include <index/vector_index/IndexIVFSQ.h>
 #include <index/vector_index/IndexIVFPQ.h>
 #include <index/vector_index/IndexBinaryIVF.h>
+#include <unittest/AsyncIndex.h>
 #ifdef KNOWHERE_WITH_DISKANN
 #include <index/vector_index/IndexDiskANN.h>
 #include <index/vector_index/IndexDiskANNConfig.h>
@@ -79,6 +80,7 @@ import_array();
 %shared_ptr(knowhere::IndexDiskANN<int8_t>)
 %shared_ptr(knowhere::IndexDiskANN<uint8_t>)
 #endif
+%shared_ptr(knowhere::AsyncIndex)
 %include <common/Dataset.h>
 %include <utils/BitsetView.h>
 %include <common/BinarySet.h>
@@ -99,6 +101,7 @@ import_array();
 %include <index/vector_index/IndexIDMAP.h>
 %include <index/vector_index/IndexBinaryIDMAP.h>
 %include <index/vector_index/IndexBinaryIVF.h>
+%include <unittest/AsyncIndex.h>
 #ifdef KNOWHERE_WITH_DISKANN
 %include <index/vector_index/IndexDiskANN.h>
 %include <index/vector_index/IndexDiskANNConfig.h>
