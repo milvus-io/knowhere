@@ -2,15 +2,23 @@ filters:
   ".*":
     reviewers:
       - cydrain
-      - landyliu
       - xiaofan-luan
       - liliu-z
+      - Presburger
+      - foxspy
+      - hhy3
+      - smellthemoon
+      - cqy123456
 
     approvers:
       - cydrain
-      - landyliu
       - xiaofan-luan
       - liliu-z
+      - Presburger
+      - foxspy
+      - hhy3
+      - smellthemoon
+      - cqy123456
 
   "tests":
     reviewers:
