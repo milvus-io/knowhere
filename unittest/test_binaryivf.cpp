@@ -153,7 +153,7 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_hamming) {
         ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false, bitset);
     };
 
     test_range_search_hamming(hamming_radius, nullptr);
@@ -183,7 +183,7 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_jaccard) {
         ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false, bitset);
     };
 
     test_range_search_jaccard(jaccard_radius, nullptr);
@@ -212,7 +212,7 @@ TEST_P(BinaryIVFTest, binaryivf_range_search_tanimoto) {
         ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false, bitset);
     };
 
     test_range_search_tanimoto(tanimoto_radius, nullptr);

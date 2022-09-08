@@ -142,7 +142,8 @@ void CheckRangeSearchResult(
     const float radius,
     const int64_t* golden_ids,
     const size_t* golden_lims,
-    const bool is_idmap) {
+    const bool is_idmap,
+    const faiss::BitsetView bitset) {
 
     auto lims = knowhere::GetDatasetLims(result);
     auto ids = knowhere::GetDatasetIDs(result);
@@ -160,6 +161,7 @@ void CheckRangeSearchResult(
         std::unordered_set<int64_t> golden_ids_set(golden_ids + golden_lims[i],
                                                    golden_ids + golden_lims[i+1]);
         for (int j = lims[i]; j < lims[i+1]; j++) {
+            ASSERT_TRUE(bitset.empty() || !bitset.test(ids[j]));
             bool hit = (golden_ids_set.count(ids[j]) == 1);
             if (hit) {
                 recall_cnt++;

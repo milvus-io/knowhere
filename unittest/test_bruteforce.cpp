@@ -121,7 +121,7 @@ TEST_P(BruteForceTest, float_range_search_l2) {
 
         auto result = knowhere::BruteForce::RangeSearch(base_dataset, query_dataset, config, bitset);
         CheckRangeSearchResult<CMin<float>>(result, nq, radius * radius, golden_labels.data(), golden_lims.data(),
-                                            true);
+                                            true, bitset);
     };
 
     auto old_blas_threshold = knowhere::KnowhereConfig::GetBlasThreshold();
@@ -159,7 +159,7 @@ TEST_P(BruteForceTest, float_range_search_ip) {
                                            xb.data(), nb, xq.data(), nq, dim, radius, bitset);
 
         auto result = knowhere::BruteForce::RangeSearch(base_dataset, query_dataset, config, bitset);
-        CheckRangeSearchResult<CMax<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), true);
+        CheckRangeSearchResult<CMax<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), true, bitset);
     };
 
     auto old_blas_threshold = knowhere::KnowhereConfig::GetBlasThreshold();
@@ -196,7 +196,7 @@ TEST_P(BruteForceTest, binary_range_search_hamming) {
                                             xb_bin.data(), nb, xq_bin.data(), nq, dim, radius, bitset);
 
         auto result = knowhere::BruteForce::RangeSearch(base_dataset, query_dataset, config, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), true);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), true, bitset);
     };
 
     test_range_search_hamming(hamming_radius, nullptr);
@@ -224,7 +224,7 @@ TEST_P(BruteForceTest, binary_range_search_jaccard) {
                                             xb_bin.data(), nb, xq_bin.data(), nq, dim, radius, bitset);
 
         auto result = knowhere::BruteForce::RangeSearch(base_dataset, query_dataset, config, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), true);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), true, bitset);
     };
 
     test_range_search_jaccard(jaccard_radius, nullptr);
@@ -252,7 +252,7 @@ TEST_P(BruteForceTest, binary_range_search_tanimoto) {
                                             xb_bin.data(), nb, xq_bin.data(), nq, dim, radius, bitset);
 
         auto result = knowhere::BruteForce::RangeSearch(base_dataset, query_dataset, config, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), true);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), true, bitset);
     };
 
     test_range_search_tanimoto(tanimoto_radius, nullptr);
