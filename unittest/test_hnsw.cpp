@@ -249,17 +249,8 @@ TEST_P(HNSWTest, HNSW_get_meta) {
     }
 }
 
-TEST_P(HNSWTest, HNSW_trace_visit) {
-    assert(!xb.empty());
-
-    index_->BuildAll(base_dataset, conf_);
-
-    knowhere::SetMetaTraceVisit(conf_, true);
-    ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
-
-    auto qd = knowhere::GenDataset(1, dim, xq.data());
-    auto result = index_->Query(qd, conf_, nullptr);
-
+void
+CheckFederResult(const knowhere::DatasetPtr result, int64_t nb) {
     auto json_info = knowhere::GetDatasetJsonInfo(result);
     auto json_id_set = knowhere::GetDatasetJsonIdSet(result);
     //std::cout << json_info << std::endl;
@@ -294,4 +285,33 @@ TEST_P(HNSWTest, HNSW_trace_visit) {
         ASSERT_GE(id, 0);
         ASSERT_LT(id, nb);
     }
+}
+
+TEST_P(HNSWTest, HNSW_trace_visit) {
+    assert(!xb.empty());
+
+    index_->BuildAll(base_dataset, conf_);
+
+    knowhere::SetMetaTraceVisit(conf_, true);
+    ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
+
+    auto qd = knowhere::GenDataset(1, dim, xq.data());
+    auto result = index_->Query(qd, conf_, nullptr);
+
+    CheckFederResult(result, nb);
+}
+
+TEST_P(HNSWTest, HNSW_range_trace_visit) {
+    index_->BuildAll(base_dataset, conf_);
+
+    knowhere::SetIndexParamHNSWK(conf_, 20);
+    knowhere::SetMetaRadius(conf_, radius);
+
+    knowhere::SetMetaTraceVisit(conf_, true);
+    ASSERT_ANY_THROW(index_->QueryByRange(query_dataset, conf_, nullptr));
+
+    auto qd = knowhere::GenDataset(1, dim, xq.data());
+    auto result = index_->QueryByRange(qd, conf_, nullptr);
+
+    CheckFederResult(result, nb);
 }

@@ -61,15 +61,6 @@ IndexHNSW::Load(const BinarySet& index_binary) {
         index_ = std::make_shared<hnswlib::HierarchicalNSW<float>>(space);
         index_->stats_enable_ = (STATISTICS_LEVEL >= 3);
         index_->loadIndex(reader);
-#if 0
-        auto hnsw_stats = std::static_pointer_cast<LibHNSWStatistics>(stats);
-        if (STATISTICS_LEVEL >= 3) {
-            auto lock = hnsw_stats->Lock();
-            hnsw_stats->update_level_distribution(index_->maxlevel_, index_->level_stats_);
-        }
-#endif
-        // LOG_KNOWHERE_DEBUG_ << "IndexHNSW::Load finished, show statistics:";
-        // LOG_KNOWHERE_DEBUG_ << hnsw_stats->ToString();
     } catch (std::exception& e) {
         KNOWHERE_THROW_MSG(e.what());
     }
@@ -111,15 +102,6 @@ IndexHNSW::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) {
     for (int i = 1; i < rows; ++i) {
         index_->addPoint((reinterpret_cast<const float*>(p_data) + Dim() * i), i);
     }
-#if 0
-    if (STATISTICS_LEVEL >= 3) {
-        auto hnsw_stats = std::static_pointer_cast<LibHNSWStatistics>(stats);
-        auto lock = hnsw_stats->Lock();
-        hnsw_stats->update_level_distribution(index_->maxlevel_, index_->level_stats_);
-    }
-#endif
-    // LOG_KNOWHERE_DEBUG_ << "IndexHNSW::Train finished, show statistics:";
-    // LOG_KNOWHERE_DEBUG_ << GetStatistics()->ToString();
 }
 
 DatasetPtr
@@ -158,85 +140,10 @@ IndexHNSW::Query(const DatasetPtr& dataset_ptr, const Config& config, const fais
     auto k = GetMetaTopk(config);
     auto p_id = new int64_t[k * rows];
     auto p_dist = new float[k * rows];
-    std::vector<hnswlib::StatisticsInfo> query_stats;
-    auto hnsw_stats = std::dynamic_pointer_cast<LibHNSWStatistics>(stats);
-    if (STATISTICS_LEVEL >= 3) {
-        query_stats.resize(rows);
-        for (auto i = 0; i < rows; ++i) {
-            query_stats[i].target_level_ = hnsw_stats->target_level;
-        }
-    }
 
     feder::hnsw::FederResultUniq feder_result;
-    if (CheckKeyInConfig(config, meta::TRACE_VISIT) && GetMetaTraceVisit(config)) {
-        KNOWHERE_THROW_IF_NOT_MSG(rows == 1, "NQ must be 1 when Feder tracing");
-        feder_result = std::make_unique<feder::hnsw::FederResult>();
-    }
 
-    size_t ef = GetIndexParamEf(config);
-    hnswlib::SearchParam param{ef};
-    bool transform = (index_->metric_type_ == 1);  // InnerProduct: 1
-
-    std::chrono::high_resolution_clock::time_point query_start, query_end;
-    query_start = std::chrono::high_resolution_clock::now();
-
-#pragma omp parallel for
-    for (unsigned int i = 0; i < rows; ++i) {
-        auto single_query = (float*)p_data + i * dim;
-        std::priority_queue<std::pair<float, hnswlib::labeltype>> rst;
-        if (STATISTICS_LEVEL >= 3) {
-            rst = index_->searchKnn(single_query, k, bitset, query_stats[i], &param, feder_result);
-        } else {
-            auto dummy_stat = hnswlib::StatisticsInfo();
-            rst = index_->searchKnn(single_query, k, bitset, dummy_stat, &param, feder_result);
-        }
-        size_t rst_size = rst.size();
-
-        auto p_single_dis = p_dist + i * k;
-        auto p_single_id = p_id + i * k;
-        size_t idx = rst_size - 1;
-        while (!rst.empty()) {
-            auto& it = rst.top();
-            p_single_dis[idx] = transform ? (1 - it.first) : it.first;
-            p_single_id[idx] = it.second;
-            rst.pop();
-            idx--;
-        }
-
-        for (idx = rst_size; idx < k; idx++) {
-            p_single_dis[idx] = float(1.0 / 0.0);
-            p_single_id[idx] = -1;
-        }
-    }
-    query_end = std::chrono::high_resolution_clock::now();
-
-#if 0
-    if (STATISTICS_LEVEL) {
-        auto lock = hnsw_stats->Lock();
-        if (STATISTICS_LEVEL >= 1) {
-            hnsw_stats->update_nq(rows);
-            hnsw_stats->update_ef_sum(index_->ef_ * rows);
-            hnsw_stats->update_total_query_time(
-                std::chrono::duration_cast<std::chrono::milliseconds>(query_end - query_start).count());
-        }
-        if (STATISTICS_LEVEL >= 2) {
-            hnsw_stats->update_filter_percentage(bitset);
-        }
-        if (STATISTICS_LEVEL >= 3) {
-            for (auto i = 0; i < rows; ++i) {
-                for (auto j = 0; j < query_stats[i].accessed_points.size(); ++j) {
-                    auto tgt = hnsw_stats->access_cnt_map.find(query_stats[i].accessed_points[j]);
-                    if (tgt == hnsw_stats->access_cnt_map.end())
-                        hnsw_stats->access_cnt_map[query_stats[i].accessed_points[j]] = 1;
-                    else
-                        tgt->second += 1;
-                }
-            }
-        }
-    }
-#endif
-    // LOG_KNOWHERE_DEBUG_ << "IndexHNSW::Query finished, show statistics:";
-    // LOG_KNOWHERE_DEBUG_ << GetStatistics()->ToString();
+    QueryImpl(rows, reinterpret_cast<const float*>(p_data), k, p_dist, p_id, feder_result, config, bitset);
 
     // set visit_info json string into result dataset
     if (feder_result != nullptr) {
@@ -259,49 +166,23 @@ IndexHNSW::QueryByRange(const DatasetPtr& dataset,
     GET_TENSOR_DATA_DIM(dataset)
 
     utils::SetQueryOmpThread(config);
-    auto range_k = GetIndexParamHNSWK(config);
     auto radius = GetMetaRadius(config);
-    size_t ef = GetIndexParamEf(config);
-    hnswlib::SearchParam param{ef};
-    bool is_IP = (index_->metric_type_ == 1);  // InnerProduct: 1
 
-    if (!is_IP) {
-        radius *= radius;
+    int64_t* p_id = nullptr;
+    float* p_dist = nullptr;
+    size_t* p_lims = nullptr;
+
+    feder::hnsw::FederResultUniq feder_result;
+    QueryByRangeImpl(rows, reinterpret_cast<const float*>(p_data), radius, p_dist, p_id, p_lims, feder_result,
+                     config, bitset);
+
+    // set visit_info json string into result dataset
+    if (feder_result != nullptr) {
+        Config json_visit_info, json_id_set;
+        nlohmann::to_json(json_visit_info, feder_result->visit_info_);
+        nlohmann::to_json(json_id_set, feder_result->id_set_);
+        return GenResultDataset(p_id, p_dist, json_visit_info.dump(), json_id_set.dump());
     }
-
-    std::vector<std::vector<int64_t>> result_id_array(rows);
-    std::vector<std::vector<float>> result_dist_array(rows);
-    std::vector<size_t> result_lims(rows + 1, 0);
-
-//#pragma omp parallel for
-    for (unsigned int i = 0; i < rows; ++i) {
-        auto single_query = (float*)p_data + i * dim;
-
-        auto dummy_stat = hnswlib::StatisticsInfo();
-        auto rst =
-            index_->searchRange(single_query, range_k, (is_IP ? 1.0f - radius : radius), bitset, dummy_stat, &param);
-
-        for (auto& p : rst) {
-            result_dist_array[i].push_back(is_IP ? (1 - p.first) : p.first);
-            result_id_array[i].push_back(p.second);
-        }
-        result_lims[i+1] = result_lims[i] + rst.size();
-    }
-
-    LOG_KNOWHERE_DEBUG_ << "Range search radius: " << radius << ", result num: " << result_lims.back();
-
-    auto p_id = new int64_t[result_lims.back()];
-    auto p_dist = new float[result_lims.back()];
-    auto p_lims = new size_t[rows + 1];
-
-    for (int64_t i = 0; i < rows; i++) {
-        size_t start = result_lims[i];
-        size_t size = result_lims[i+1] - result_lims[i];
-        memcpy(p_id + start, result_id_array[i].data(), size * sizeof(int64_t));
-        memcpy(p_dist + start, result_dist_array[i].data(), size * sizeof(float));
-    }
-    memcpy(p_lims, result_lims.data(), (rows + 1) * sizeof(size_t));
-
     return GenResultDataset(p_id, p_dist, p_lims);
 }
 
@@ -357,16 +238,110 @@ IndexHNSW::Size() {
     return index_->cal_size();
 }
 
-#if 0
 void
-IndexHNSW::ClearStatistics() {
-    if (!STATISTICS_LEVEL)
-        return;
-    auto hnsw_stats = std::static_pointer_cast<LibHNSWStatistics>(stats);
-    auto lock = hnsw_stats->Lock();
-    hnsw_stats->clear();
+IndexHNSW::QueryImpl(int64_t n,
+                     const float* xq,
+                     int64_t k,
+                     float* distances,
+                     int64_t* labels,
+                     feder::hnsw::FederResultUniq& feder,
+                     const Config& config,
+                     const faiss::BitsetView bitset) {
+    if (CheckKeyInConfig(config, meta::TRACE_VISIT) && GetMetaTraceVisit(config)) {
+        KNOWHERE_THROW_IF_NOT_MSG(n == 1, "NQ must be 1 when Feder tracing");
+        feder = std::make_unique<feder::hnsw::FederResult>();
+    }
+
+    auto dim = GetMetaDim(config);
+    size_t ef = GetIndexParamEf(config);
+    hnswlib::SearchParam param{ef};
+    bool transform = (index_->metric_type_ == 1);  // InnerProduct: 1
+
+#pragma omp parallel for
+    for (unsigned int i = 0; i < n; ++i) {
+        auto single_query = xq + i * dim;
+        std::priority_queue<std::pair<float, hnswlib::labeltype>> rst;
+        auto dummy_stat = hnswlib::StatisticsInfo();
+        rst = index_->searchKnn(single_query, k, bitset, dummy_stat, &param, feder);
+
+        size_t rst_size = rst.size();
+        auto p_single_dis = distances + i * k;
+        auto p_single_id = labels + i * k;
+        size_t idx = rst_size - 1;
+        while (!rst.empty()) {
+            auto& it = rst.top();
+            p_single_dis[idx] = transform ? (1 - it.first) : it.first;
+            p_single_id[idx] = it.second;
+            rst.pop();
+            idx--;
+        }
+
+        for (idx = rst_size; idx < k; idx++) {
+            p_single_dis[idx] = float(1.0 / 0.0);
+            p_single_id[idx] = -1;
+        }
+    }
 }
-#endif
+
+void
+IndexHNSW::QueryByRangeImpl(int64_t n,
+                            const float* xq,
+                            float radius,
+                            float*& distances,
+                            int64_t*& labels,
+                            size_t*& lims,
+                            feder::hnsw::FederResultUniq& feder,
+                            const Config& config,
+                            const faiss::BitsetView bitset) {
+    if (CheckKeyInConfig(config, meta::TRACE_VISIT) && GetMetaTraceVisit(config)) {
+        KNOWHERE_THROW_IF_NOT_MSG(n == 1, "NQ must be 1 when Feder tracing");
+        feder = std::make_unique<feder::hnsw::FederResult>();
+    }
+
+    auto dim = GetMetaDim(config);
+    auto range_k = GetIndexParamHNSWK(config);
+    size_t ef = GetIndexParamEf(config);
+    hnswlib::SearchParam param{ef};
+    bool is_IP = (index_->metric_type_ == 1);  // InnerProduct: 1
+
+    if (!is_IP) {
+        radius *= radius;
+    }
+
+    std::vector<std::vector<int64_t>> result_id_array(n);
+    std::vector<std::vector<float>> result_dist_array(n);
+    std::vector<size_t> result_size(n);
+    std::vector<size_t> result_lims(n + 1);
+
+#pragma omp parallel for
+    for (unsigned int i = 0; i < n; ++i) {
+        auto single_query = xq + i * dim;
+
+        auto dummy_stat = hnswlib::StatisticsInfo();
+        auto rst = index_->searchRange(single_query, range_k, (is_IP ? 1.0f - radius : radius), bitset, dummy_stat,
+                                       &param, feder);
+
+        for (auto& p : rst) {
+            result_dist_array[i].push_back(is_IP ? (1 - p.first) : p.first);
+            result_id_array[i].push_back(p.second);
+        }
+        result_size[i] = rst.size();
+    }
+    std::partial_sum(result_size.begin(), result_size.end(), result_lims.begin() + 1);
+    LOG_KNOWHERE_DEBUG_ << "Range search radius: " << radius << ", result num: " << result_lims.back();
+
+    labels = new int64_t[result_lims.back()];
+    distances = new float[result_lims.back()];
+    lims = new size_t[n + 1];
+
+    for (int64_t i = 0; i < n; i++) {
+        size_t start = result_lims[i];
+        size_t size = result_lims[i+1] - result_lims[i];
+        std::copy_n(result_id_array[i].data(), size, labels + start);
+        std::copy_n(result_dist_array[i].data(), size, distances + start);
+    }
+    std::copy_n(result_lims.data(), n + 1, lims);
+}
 
 void
 IndexHNSW::UpdateLevelLinkList(int32_t level, feder::hnsw::HNSWMeta& meta, std::unordered_set<int64_t>& id_set) {

@@ -61,12 +61,15 @@ class IndexHNSW : public VecIndex {
     int64_t
     Size() override;
 
-#if 0
-    void
-    ClearStatistics() override;
-#endif
-
  protected:
+    void
+    QueryImpl(int64_t, const float*, int64_t, float*, int64_t*, feder::hnsw::FederResultUniq&, const Config&,
+              const faiss::BitsetView);
+
+    void
+    QueryByRangeImpl(int64_t, const float*, float, float*&, int64_t*&, size_t*&, feder::hnsw::FederResultUniq&,
+                     const Config&, const faiss::BitsetView);
+
     void
     UpdateLevelLinkList(int32_t, feder::hnsw::HNSWMeta&, std::unordered_set<int64_t>&);
 
