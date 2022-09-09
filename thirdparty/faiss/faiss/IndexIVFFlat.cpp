@@ -218,7 +218,9 @@ struct IVFFlatScanner : InvertedListScanner {
                     : fvec_L2sqr(xi, yj, d);
             if (C::cmp(radius, dis)) {
                 int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
-                res.add(dis, id);
+                if (bitset.empty() || !bitset.test(id)) {
+                    res.add(dis, id);
+                }
             }
         }
     }

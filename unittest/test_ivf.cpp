@@ -175,7 +175,7 @@ TEST_P(IVFTest, ivf_range_search_l2) {
         ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, nq, radius * radius, golden_labels.data(), golden_lims.data(), false);
+        CheckRangeSearchResult<CMin<float>>(result, nq, radius * radius, golden_labels.data(), golden_lims.data(), false, bitset);
     };
 
     for (float radius: {4.1f, 4.2f, 4.3f}) {
@@ -206,7 +206,7 @@ TEST_P(IVFTest, ivf_range_search_ip) {
         ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMax<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false);
+        CheckRangeSearchResult<CMax<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false, bitset);
     };
 
     for (float radius: {42.0f, 43.0f, 44.0f}) {
