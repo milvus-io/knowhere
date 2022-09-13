@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-18.04, macos-11, centos7 ]
+        os: [ ubuntu-20.04, macos-11, centos7 ]
     env:
       INSTALL_OPENBLAS: true
       LD_LIBRARY_PATH: "${LD_LIBRARY_PATH}:/usr/lib"
@@ -41,12 +41,12 @@ jobs:
         run: |
           ./scripts/install_deps.sh
       - name: Cpplint & Clang-format check
-        if: ${{ matrix.os == 'ubuntu-18.04' }}
+        if: ${{ matrix.os == 'ubuntu-20.04' }}
         run: |
           ./build.sh -l
       - name: Run Unittest
         run: |
-          if [[ ${{ matrix.os }} == 'ubuntu-18.04' ]]
+          if [[ ${{ matrix.os }} == 'ubuntu-20.04' ]]
           then
             diskann_opt=-d
           fi

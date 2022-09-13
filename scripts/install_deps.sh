@@ -42,13 +42,13 @@ if [[ "${MACHINE}" == "Linux" ]]; then
         # But the apt-installed openblas version is 0.2.20, while the latest openblas version is 0.3.19.
         # So we only pre-install openblas in Unittest, and compile openblas-0.3.19 when release.
         if [[ "${INSTALL_OPENBLAS}" == "true" ]]; then
-          sudo wget https://github.com/xianyi/OpenBLAS/archive/v0.3.21.tar.gz && \
-                tar zxvf v0.3.21.tar.gz && cd OpenBLAS-0.3.21 && \
-                make NO_STATIC=1 NO_LAPACK=1 NO_LAPACKE=1 NO_CBLAS=1 NO_AFFINITY=1 USE_OPENMP=1 \
-                    CFLAGS="-O3 -fPIC" TARGET=CORE2 DYNAMIC_ARCH=1 \
-                    NUM_THREADS=64 MAJOR_VERSION=3 libs shared && \
-                make -j4 PREFIX=/usr NO_STATIC=1 install && \
-                cd .. && rm -rf OpenBLAS-0.3.21 && rm v0.3.21.tar.gz 
+            wget https://github.com/xianyi/OpenBLAS/archive/v0.3.21.tar.gz && \
+            tar zxvf v0.3.21.tar.gz && cd OpenBLAS-0.3.21 && \
+            sudo make NO_STATIC=1 NO_LAPACKE=1  NO_AFFINITY=1 USE_OPENMP=1 \
+                CFLAGS="-O3 -fPIC" TARGET=CORE2 DYNAMIC_ARCH=1 \
+                NUM_THREADS=64 MAJOR_VERSION=3 libs shared && \
+            sudo make -j4 PREFIX=/usr NO_STATIC=1 install && \
+            cd .. && rm -rf OpenBLAS-0.3.21 && rm v0.3.21.tar.gz 
         fi
         #DiskANN dependencies
         sudo apt-get install -y libboost-program-options-dev
