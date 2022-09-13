@@ -2,7 +2,7 @@ CMAKE_VERSION="v3.23"
 CMAKE_TAR="cmake-3.23.0-linux-x86_64.tar.gz"
 apt-get update && apt-get install -y --no-install-recommends wget curl g++ gcc ca-certificates \
 make ccache python3-dev gfortran python3-setuptools swig pip \
-libaio-dev libgoogle-perftools-dev clang-format libboost-all-dev \
+libaio-dev libgoogle-perftools-dev clang-format libboost-all-dev liblapack-dev \
 && apt-get remove --purge -y  \
 && rm -rf /var/lib/apt/lists/* \
 && wget https://github.com/xianyi/OpenBLAS/archive/v0.3.21.tar.gz && \

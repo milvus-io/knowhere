@@ -23,7 +23,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu20.04]
-        function: ["build","debug","e2e"]
+        function: ["build","e2e"]
         type: ["cpu","gpu"]
     env:
       OS_NAME: ${{ matrix.os }}
