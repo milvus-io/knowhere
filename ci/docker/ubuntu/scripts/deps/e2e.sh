@@ -1,5 +1,5 @@
 apt-get update && apt-get install -y --no-install-recommends wget curl g++ gcc make ca-certificates \
- python3-dev gfortran python3-setuptools swig libopenblas-dev pip git vim \
+ python3-dev gfortran python3-setuptools swig libopenblas-dev liblapack-dev pip git vim \
  libaio-dev libboost-all-dev \
 && apt-get remove --purge -y  \
 && rm -rf /var/lib/apt/lists/* \
