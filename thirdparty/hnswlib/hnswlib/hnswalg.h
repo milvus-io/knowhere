@@ -398,7 +398,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     std::vector<std::pair<dist_t, labeltype>>
     getNeighboursWithinRadius(std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>,
                                                   CompareByFirst>& top_candidates,
-                              const void* data_point, float radius, const faiss::BitsetView bitset) const {
+                              const void* data_point, float radius, const faiss::BitsetView bitset,
+                              const knowhere::feder::hnsw::FederResultUniq& feder_result = nullptr) const {
         std::vector<std::pair<dist_t, labeltype>> result;
         VisitedList* vl = visited_list_pool_->getFreeVisitedList();
         vl_type* visited_array = vl->mass;
@@ -443,11 +444,21 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                     if (bitset.empty() || !bitset.test((int64_t)candidate_id)) {
                         char* cand_obj = (getDataByInternalId(candidate_id));
                         dist_t dist = fstdistfunc_(data_point, cand_obj, dist_func_param_);
-
+                        if (feder_result != nullptr) {
+                            feder_result->visit_info_.AddVisitRecord(0, current_id, candidate_id, dist);
+                            feder_result->id_set_.insert(current_id);
+                            feder_result->id_set_.insert(candidate_id);
+                        }
                         if (dist < radius) {
                             radius_queue.push({dist, candidate_id});
                             result.emplace_back(dist, candidate_id);
                         }
+                    }
+                } else {
+                    if (feder_result != nullptr) {
+                        feder_result->visit_info_.AddVisitRecord(0, current_id, candidate_id, -1.0);
+                        feder_result->id_set_.insert(current_id);
+                        feder_result->id_set_.insert(candidate_id);
                     }
                 }
             }
@@ -1200,7 +1211,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
     std::vector<std::pair<dist_t, labeltype>>
     searchRange(const void* query_data, size_t range_k, float radius, const faiss::BitsetView bitset,
-                StatisticsInfo& stats, const SearchParam* param = nullptr) const {
+                StatisticsInfo& stats, const SearchParam* param = nullptr,
+                const knowhere::feder::hnsw::FederResultUniq& feder_result = nullptr) const {
         if (cur_element_count == 0) {
             return {};
         }
@@ -1210,6 +1222,9 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
         for (int level = maxlevel_; level > 0; level--) {
             bool changed = true;
+            if (feder_result != nullptr) {
+                feder_result->visit_info_.AddLevelVisitRecord(level);
+            }
             while (changed) {
                 changed = false;
                 unsigned int* data;
@@ -1225,7 +1240,11 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                     if (cand < 0 || cand > max_elements_)
                         throw std::runtime_error("cand error");
                     dist_t d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
-
+                    if (feder_result != nullptr) {
+                        feder_result->visit_info_.AddVisitRecord(level, currObj, cand, d);
+                        feder_result->id_set_.insert(currObj);
+                        feder_result->id_set_.insert(cand);
+                    }
                     if (d < curdist) {
                         curdist = d;
                         currObj = cand;
@@ -1239,9 +1258,11 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             top_candidates;
         size_t ef = param ? param->ef_ : this->ef_;
         if (!bitset.empty()) {
-            top_candidates = searchBaseLayerST<true, true>(currObj, query_data, std::max(ef, range_k), bitset, stats);
+            top_candidates = searchBaseLayerST<true, true>(currObj, query_data, std::max(ef, range_k), bitset, stats,
+                                                           param, feder_result);
         } else {
-            top_candidates = searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, range_k), bitset, stats);
+            top_candidates = searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, range_k), bitset, stats,
+                                                            param, feder_result);
         }
 
         while (top_candidates.size() > range_k) {
