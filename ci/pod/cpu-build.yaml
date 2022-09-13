@@ -10,7 +10,7 @@ spec:
     app: knowhere
   containers:
   - name: main
-    image: harbor.milvus.io/dockerhub/milvusdb/knowhere-cpu-build:amd64-ubuntu20.04-20220802-c691c3b
+    image: harbor.milvus.io/dockerhub/milvusdb/knowhere-cpu-build:amd64-ubuntu20.04-20220913-4d10334
     tty: true
     args: ["cat"]
     resources:
