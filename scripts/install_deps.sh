@@ -79,7 +79,7 @@ if [[ "${MACHINE}" == "Linux" ]]; then
         fi
         #DiskANN dependencies
         sudo apt-get install -y libboost-program-options-dev
-        sudo apt-get install -y libaio-dev libgoogle-perftools-dev clang-format
+        sudo apt-get install -y libaio-dev
     elif [[ -x "$(command -v yum)" ]]; then
         # for CentOS 7
         sudo yum install -y epel-release centos-release-scl-rh wget && \
@@ -93,7 +93,7 @@ if [[ "${MACHINE}" == "Linux" ]]; then
         source "/etc/profile.d/llvm-toolset-7.sh"
         #DiskANN dependencies
         sudo yum -y install boost-program-options
-        sudo yum -y install boost libaio gperftools-devel 
+        sudo yum -y install boost libaio
         #CMake 3.18 or higher is required
         wget -c https://github.com/Kitware/CMake/releases/download/v3.22.2/cmake-3.22.2-linux-x86_64.tar.gz && \
         tar -zxvf cmake-3.22.2-linux-x86_64.tar.gz && \
