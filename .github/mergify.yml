@@ -68,21 +68,7 @@ pull_request_rules:
       - "status-success=Unit Test on centos7"
       - "status-success=Unit Test on macos-11"
       - "status-success=Unit Test on MSYS"
-      - "status-success=cpu-e2e"
-      - "status-success=gpu-e2e"
-    actions:
-      label:
-        add:
-          - ci-passed
-
-  - name: Test passed for code changed for diskAnn
-    conditions:
-      - base=support_diskann
-      - "status-success=Unit Test on ubuntu-18.04"
-      - "status-success=Unit Test on centos7"
-      - "status-success=Unit Test on macos-11"
-      - "status-success=Unit Test on MSYS"
-      - "status-success=diskAnn-cpu-e2e"
+      - "status-success=e2e"
     actions:
       label:
         add:
@@ -95,27 +81,13 @@ pull_request_rules:
       - "status-success!=Unit Test on centos7"
       - "status-success!=Unit Test on macos-11"
       - "status-success!=Unit Test on MSYS"
-      - "status-success!=cpu-e2e"
-      - "status-success!=gpu-e2e"
+      - "status-success!=e2e"
       - -title~=\[skip e2e\]
     actions:
       label:
         remove:
           - ci-passed
 
-  - name: Remove ci-passed label when ut failed - diskAnn
-    conditions:
-      - base=support_diskann
-      - "status-success!=Unit Test on ubuntu-18.04"
-      - "status-success!=Unit Test on centos7"
-      - "status-success!=Unit Test on macos-11"
-      - "status-success!=Unit Test on MSYS"
-      - "status-success!=diskAnn-cpu-e2e"
-      - -title~=\[skip e2e\]
-    actions:
-      label:
-        remove:
-          - ci-passed
 
   - name: Test passed for title skip e2e
     conditions:
