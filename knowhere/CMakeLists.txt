@@ -72,10 +72,14 @@ set(vector_offset_index_srcs
         index/vector_offset_index/IndexIVF_NM.cpp
         )
 
+set(BLA_VENDOR "")
+find_package(LAPACK REQUIRED)
+
 set(depend_libs
         faiss
         pthread
         knowhere_utils
+        ${LAPACK_LIBRARIES}
         )
 
 if (KNOWHERE_WITH_DISKANN)
