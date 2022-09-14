@@ -134,16 +134,6 @@ AnyIndexFileExist(const std::string& index_prefix) {
 }
 
 template <typename T>
-void
-CheckBuildParams(const DiskANNBuildConfig& build_conf) {
-    size_t num, dim;
-    diskann::get_bin_metadata(build_conf.data_path, num, dim);
-
-    CheckDataFile<T>(build_conf.data_path, num, dim);
-    CheckNodeLength<T>(build_conf.max_degree, dim);
-}
-
-template <typename T>
 std::optional<T>
 TryDiskANNCall(std::function<T()>&& diskann_call) {
     try {
@@ -183,7 +173,16 @@ IndexDiskANN<T>::AddWithoutIds(const DatasetPtr& data_set, const Config& config)
     if (!LoadFile(data_path)) {
         KNOWHERE_THROW_MSG("Failed load the raw data before building.");
     }
-    CheckBuildParams<T>(build_conf);
+
+    size_t count;
+    size_t dim;
+    diskann::get_bin_metadata(build_conf.data_path, count, dim);
+    CheckDataFile<T>(data_path, count, dim);
+    CheckNodeLength<T>(build_conf.max_degree, dim);
+
+    count_.store(count);
+    dim_.store(dim);
+
     if (AnyIndexFileExist(index_prefix_)) {
         KNOWHERE_THROW_MSG("This index prefix already has index files.");
     }
@@ -203,8 +202,6 @@ IndexDiskANN<T>::AddWithoutIds(const DatasetPtr& data_set, const Config& config)
     auto build_successful = TryDiskANNCallAndThrow<int>(
         [&]() -> int { return diskann::build_disk_index<T>(diskann_internal_build_config); });
 
-    is_prepared_ = false;
-
     if (build_successful != 0) {
         KNOWHERE_THROW_MSG("Failed to build DiskANN.");
     }
@@ -220,6 +217,8 @@ IndexDiskANN<T>::AddWithoutIds(const DatasetPtr& data_set, const Config& config)
             KNOWHERE_THROW_MSG("Failed to add file " + filename + ".");
         }
     }
+
+    is_prepared_.store(false);
 }
 
 template <typename T>
@@ -228,7 +227,7 @@ IndexDiskANN<T>::Prepare(const Config& config) {
     std::lock_guard<std::mutex> lock(preparation_lock_);
 
     auto prep_conf = DiskANNPrepareConfig::Get(config);
-    if (is_prepared_) {
+    if (is_prepared_.load()) {
         return true;
     }
 
@@ -268,6 +267,14 @@ IndexDiskANN<T>::Prepare(const Config& config) {
     if (!load_successful.has_value() || load_successful.value() != 0) {
         LOG_KNOWHERE_ERROR_ << "Failed to load DiskANN.";
         return false;
+    }
+
+    count_.store(pq_flash_index_->get_num_points());
+    // DiskANN will add one more dim for IP type.
+    if (metric_ == diskann::Metric::INNER_PRODUCT) {
+        dim_.store(pq_flash_index_->get_data_dim() - 1);
+    } else {
+        dim_.store(pq_flash_index_->get_data_dim());
     }
 
     std::string warmup_query_file = diskann::get_sample_data_filename(index_prefix_);
@@ -361,7 +368,7 @@ IndexDiskANN<T>::Prepare(const Config& config) {
         }
     }
 
-    is_prepared_ = true;
+    is_prepared_.store(true);
     return true;
 }
 
@@ -369,7 +376,7 @@ template <typename T>
 
 DatasetPtr
 IndexDiskANN<T>::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::BitsetView bitset) {
-    CheckPreparation(is_prepared_);
+    CheckPreparation(is_prepared_.load());
 
     // set thread number
     omp_set_num_threads(num_threads_);
@@ -412,7 +419,7 @@ IndexDiskANN<T>::Query(const DatasetPtr& dataset_ptr, const Config& config, cons
 template <typename T>
 DatasetPtr
 IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& config, const faiss::BitsetView bitset) {
-    CheckPreparation(is_prepared_);
+    CheckPreparation(is_prepared_.load());
 
     // set thread number
     omp_set_num_threads(num_threads_);
@@ -483,15 +490,19 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
 template <typename T>
 int64_t
 IndexDiskANN<T>::Count() {
-    CheckPreparation(is_prepared_);
-    return pq_flash_index_->get_num_points();
+    if (count_.load() == -1) {
+        KNOWHERE_THROW_MSG("index is not ready yet.");
+    }
+    return count_.load();
 }
 
 template <typename T>
 int64_t
 IndexDiskANN<T>::Dim() {
-    CheckPreparation(is_prepared_);
-    return pq_flash_index_->get_data_dim();
+    if (dim_.load() == -1) {
+        KNOWHERE_THROW_MSG("index is not ready yet.");
+    }
+    return dim_.load();
 }
 
 template <typename T>

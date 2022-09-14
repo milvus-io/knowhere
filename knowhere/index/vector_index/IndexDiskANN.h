@@ -13,6 +13,7 @@
 
 #include <memory>
 #include <string>
+#include <atomic>
 
 #include "DiskANN/include/pq_flash_index.h"
 #include "knowhere/common/FileManager.h"
@@ -108,9 +109,11 @@ class IndexDiskANN : public VecIndex {
 
     std::unique_ptr<diskann::PQFlashIndex<T>> pq_flash_index_;
 
-    bool is_prepared_ = false;
+    std::atomic_bool is_prepared_ = false;
     int32_t num_threads_ = 0;
     std::mutex preparation_lock_;
+    std::atomic_int64_t dim_ = -1;
+    std::atomic_int64_t count_ = -1;
 };
 
 }  // namespace knowhere
