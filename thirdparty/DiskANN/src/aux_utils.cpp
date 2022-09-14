@@ -18,7 +18,6 @@
 #include "aux_utils.h"
 #include "cached_io.h"
 #include "index.h"
-#include "openblas/cblas.h"
 #include "omp.h"
 #include "partition_and_pq.h"
 #include "percentile_stats.h"

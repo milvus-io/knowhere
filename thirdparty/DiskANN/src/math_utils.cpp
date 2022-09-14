@@ -5,9 +5,45 @@
 #include <unordered_set>
 #include <malloc.h>
 #include <math_utils.h>
-#include "openblas/cblas.h"
 #include "logger.h"
 #include "utils.h"
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifndef OPENBLAS_CONST
+# define OPENBLAS_CONST const
+#endif
+
+typedef int blasint;
+
+typedef enum CBLAS_ORDER {
+  CblasRowMajor = 101,
+  CblasColMajor = 102
+} CBLAS_ORDER;
+typedef enum CBLAS_TRANSPOSE {
+  CblasNoTrans = 111,
+  CblasTrans = 112,
+  CblasConjTrans = 113,
+  CblasConjNoTrans = 114
+} CBLAS_TRANSPOSE;
+
+float cblas_snrm2(const int N, const float* X, const int incX);
+void cblas_sgemm(OPENBLAS_CONST enum CBLAS_ORDER     Order,
+                 OPENBLAS_CONST enum CBLAS_TRANSPOSE TransA,
+                 OPENBLAS_CONST enum CBLAS_TRANSPOSE TransB,
+                 OPENBLAS_CONST blasint M, OPENBLAS_CONST blasint N,
+                 OPENBLAS_CONST blasint K, OPENBLAS_CONST float alpha,
+                 OPENBLAS_CONST float* A, OPENBLAS_CONST blasint lda,
+                 OPENBLAS_CONST float* B, OPENBLAS_CONST blasint ldb,
+                 OPENBLAS_CONST float beta, float* C,
+                 OPENBLAS_CONST blasint ldc);
+#ifdef __cplusplus
+}
+#endif
+
 
 namespace math_utils {
 
