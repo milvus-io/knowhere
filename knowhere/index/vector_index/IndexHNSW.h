@@ -61,7 +61,7 @@ class IndexHNSW : public VecIndex {
     int64_t
     Size() override;
 
- protected:
+ private:
     void
     QueryImpl(int64_t, const float*, int64_t, float*, int64_t*, feder::hnsw::FederResultUniq&, const Config&,
               const faiss::BitsetView);

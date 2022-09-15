@@ -252,14 +252,13 @@ IndexHNSW::QueryImpl(int64_t n,
         feder = std::make_unique<feder::hnsw::FederResult>();
     }
 
-    auto dim = GetMetaDim(config);
     size_t ef = GetIndexParamEf(config);
     hnswlib::SearchParam param{ef};
     bool transform = (index_->metric_type_ == 1);  // InnerProduct: 1
 
 #pragma omp parallel for
     for (unsigned int i = 0; i < n; ++i) {
-        auto single_query = xq + i * dim;
+        auto single_query = xq + i * Dim();
         std::priority_queue<std::pair<float, hnswlib::labeltype>> rst;
         auto dummy_stat = hnswlib::StatisticsInfo();
         rst = index_->searchKnn(single_query, k, bitset, dummy_stat, &param, feder);
@@ -298,7 +297,6 @@ IndexHNSW::QueryByRangeImpl(int64_t n,
         feder = std::make_unique<feder::hnsw::FederResult>();
     }
 
-    auto dim = GetMetaDim(config);
     auto range_k = GetIndexParamHNSWK(config);
     size_t ef = GetIndexParamEf(config);
     hnswlib::SearchParam param{ef};
@@ -315,7 +313,7 @@ IndexHNSW::QueryByRangeImpl(int64_t n,
 
 #pragma omp parallel for
     for (unsigned int i = 0; i < n; ++i) {
-        auto single_query = xq + i * dim;
+        auto single_query = xq + i * Dim();
 
         auto dummy_stat = hnswlib::StatisticsInfo();
         auto rst = index_->searchRange(single_query, range_k, (is_IP ? 1.0f - radius : radius), bitset, dummy_stat,
