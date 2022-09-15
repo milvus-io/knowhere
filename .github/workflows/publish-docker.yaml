@@ -24,7 +24,7 @@ jobs:
       matrix:
         os: [ubuntu20.04]
         function: ["build","e2e"]
-        type: ["cpu","gpu"]
+        type: ["cpu"]
     env:
       OS_NAME: ${{ matrix.os }}
       TYPE: ${{ matrix.type }}
