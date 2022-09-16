@@ -735,28 +735,36 @@ namespace diskann {
     vamana_reader.read((char *) &vamana_frozen_num, sizeof(_u64));
     // compute
     _u64 medoid, max_node_len, nnodes_per_sector;
+    _u64 nsector_per_node;
     npts_64 = (_u64) npts;
     medoid = (_u64) medoid_u32;
     if (vamana_frozen_num == 1)
       vamana_frozen_loc = medoid;
     max_node_len =
         (((_u64) width_u32 + 1) * sizeof(unsigned)) + (ndims_64 * sizeof(T));
-    nnodes_per_sector = SECTOR_LEN / max_node_len;
 
-    LOG(DEBUG) << "medoid: " << medoid << "B" << "max_node_len: " 
-               << max_node_len << "B" << "nnodes_per_sector: "
-              << nnodes_per_sector << "B";
-
-    // SECTOR_LEN buffer for each sector
-    std::unique_ptr<char[]> sector_buf = std::make_unique<char[]>(SECTOR_LEN);
-    std::unique_ptr<char[]> node_buf = std::make_unique<char[]>(max_node_len);
-    unsigned &nnbrs = *(unsigned *) (node_buf.get() + ndims_64 * sizeof(T));
-    unsigned *nhood_buf =
-        (unsigned *) (node_buf.get() + (ndims_64 * sizeof(T)) +
-                      sizeof(unsigned));
+    bool long_node = max_node_len > SECTOR_LEN;
+    if (long_node) {
+      if (append_reorder_data) {
+        throw diskann::ANNException(
+            "Reorder data for long node is not supported.", -1, __FUNCSIG__,
+            __FILE__, __LINE__);
+      }
+      nsector_per_node = ROUND_UP(max_node_len, SECTOR_LEN) / SECTOR_LEN;
+      LOG(DEBUG) << "medoid: " << medoid << "B" << "max_node_len: " 
+                 << max_node_len << "B" << "nsector_per_node: "
+                 << nsector_per_node << "B";
+    } else {
+      nnodes_per_sector = SECTOR_LEN / max_node_len;
+      LOG(DEBUG) << "medoid: " << medoid << "B" << "max_node_len: " 
+                 << max_node_len << "B" << "nnodes_per_sector: "
+                 << nnodes_per_sector << "B";
+    }
 
     // number of sectors (1 for meta data)
-    _u64 n_sectors = ROUND_UP(npts_64, nnodes_per_sector) / nnodes_per_sector;
+    _u64 n_sectors =
+        long_node ? nsector_per_node * npts_64
+                  : ROUND_UP(npts_64, nnodes_per_sector) / nnodes_per_sector;
     _u64 n_reorder_sectors = 0;
     _u64 n_data_nodes_per_sector = 0;
 
@@ -768,6 +776,12 @@ namespace diskann {
     }
     _u64 disk_index_file_size =
         (n_sectors + n_reorder_sectors + 1) * SECTOR_LEN;
+
+    // SECTOR_LEN buffer for each sector
+    _u64 sector_buf_size = 
+        long_node ? nsector_per_node * SECTOR_LEN : SECTOR_LEN;
+    std::unique_ptr<char[]> sector_buf =
+        std::make_unique<char[]>(sector_buf_size);
 
     // write first sector with metadata
     *(_u64 *) (sector_buf.get() + 0 * sizeof(_u64)) = disk_index_file_size;
@@ -787,7 +801,32 @@ namespace diskann {
 
     diskann_writer.write(sector_buf.get(), SECTOR_LEN);
 
-    std::unique_ptr<T[]> cur_node_coords = std::make_unique<T[]>(ndims_64);
+    if (long_node) {
+      for (_u64 node_id = 0; node_id < npts_64; ++node_id) {
+        memset(sector_buf.get(), 0, sector_buf_size);  
+        char *nnbrs = sector_buf.get() + ndims_64 * sizeof(T);
+        char *nhood_buf =
+            sector_buf.get() + (ndims_64 * sizeof(T)) + sizeof(unsigned);
+        
+        // read cur node's nnbrs
+        vamana_reader.read(nnbrs, sizeof(unsigned));
+
+        // sanity checks on nnbrs
+        assert(*nnbrs > 0);
+        assert(*nnbrs <= width_u32);
+
+        // read node's nhood
+        vamana_reader.read(nhood_buf, (*nnbrs) * sizeof(unsigned));
+
+        // write coords of node first
+        base_reader.read((char *) sector_buf.get(), sizeof(T) * ndims_64);
+
+        diskann_writer.write(sector_buf.get(), sector_buf_size);
+      }
+      LOG(DEBUG) << "Output file written.";
+      return;
+    }
+
     LOG(DEBUG) << "# sectors: " << n_sectors;
     _u64 cur_node_id = 0;
     for (_u64 sector = 0; sector < n_sectors; sector++) {
@@ -798,41 +837,25 @@ namespace diskann {
       for (_u64 sector_node_id = 0;
            sector_node_id < nnodes_per_sector && cur_node_id < npts_64;
            sector_node_id++) {
-        memset(node_buf.get(), 0, max_node_len);
-        // read cur node's nnbrs
-        vamana_reader.read((char *) &nnbrs, sizeof(unsigned));
-
-        // sanity checks on nnbrs
-        assert(nnbrs > 0);
-        assert(nnbrs <= width_u32);
-
-        // read node's nhood
-        vamana_reader.read((char *) nhood_buf,
-                           (std::min)(nnbrs, width_u32) * sizeof(unsigned));
-        if (nnbrs > width_u32) {
-          vamana_reader.seekg((nnbrs - width_u32) * sizeof(unsigned),
-                              vamana_reader.cur);
-        }
-
-        // write coords of node first
-        //  T *node_coords = data + ((_u64) ndims_64 * cur_node_id);
-        base_reader.read((char *) cur_node_coords.get(), sizeof(T) * ndims_64);
-        memcpy(node_buf.get(), cur_node_coords.get(), ndims_64 * sizeof(T));
-
-        // write nnbrs
-        *(unsigned *) (node_buf.get() + ndims_64 * sizeof(T)) =
-            (std::min)(nnbrs, width_u32);
-
-        // write nhood next
-        memcpy(node_buf.get() + ndims_64 * sizeof(T) + sizeof(unsigned),
-               nhood_buf, (std::min)(nnbrs, width_u32) * sizeof(unsigned));
-
-        // get offset into sector_buf
         char *sector_node_buf =
             sector_buf.get() + (sector_node_id * max_node_len);
+        char *nnbrs = sector_node_buf + ndims_64 * sizeof(T);
+        char *nhood_buf =
+            sector_node_buf + (ndims_64 * sizeof(T)) + sizeof(unsigned);
 
-        // copy node buf into sector_node_buf
-        memcpy(sector_node_buf, node_buf.get(), max_node_len);
+        // read cur node's nnbrs
+        vamana_reader.read(nnbrs, sizeof(unsigned));
+
+        // sanity checks on nnbrs
+        assert(*nnbrs > 0);
+        assert(*nnbrs <= width_u32);
+
+        // read node's nhood
+        vamana_reader.read(nhood_buf, (*nnbrs) * sizeof(unsigned));
+
+        // write coords of node first
+        base_reader.read(sector_node_buf, sizeof(T) * ndims_64);
+
         cur_node_id++;
       }
       // flush sector to disk
