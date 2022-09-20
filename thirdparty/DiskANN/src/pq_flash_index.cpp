@@ -32,13 +32,6 @@
 #define READ_U32(stream, val) stream.read((char *) &val, sizeof(_u32))
 #define READ_UNSIGNED(stream, val) stream.read((char *) &val, sizeof(unsigned))
 
-// sector # on disk where node_id is present with in the graph part
-#define NODE_SECTOR_NO(node_id) (((_u64)(node_id)) / nnodes_per_sector + 1)
-
-// obtains region of sector containing node
-#define OFFSET_TO_NODE(sector_buf, node_id) \
-  ((char *) sector_buf + (((_u64) node_id) % nnodes_per_sector) * max_node_len)
-
 // returns region of `node_buf` containing [NNBRS][NBR_ID(_u32)]
 #define OFFSET_TO_NODE_NHOOD(node_buf) \
   (unsigned *) ((char *) node_buf + disk_bytes_per_point)
@@ -144,7 +137,7 @@ namespace diskann {
         diskann::alloc_aligned((void **) &scratch.coord_scratch,
                                coord_alloc_size, 256);
         diskann::alloc_aligned((void **) &scratch.sector_scratch,
-                               (_u64) MAX_N_SECTOR_READS * (_u64) SECTOR_LEN,
+                               (_u64) MAX_N_SECTOR_READS * read_len_for_node,
                                SECTOR_LEN);
         diskann::alloc_aligned(
             (void **) &scratch.aligned_pq_coord_scratch,
@@ -232,11 +225,11 @@ namespace diskann {
       for (_u64 node_idx = start_idx; node_idx < end_idx; node_idx++) {
         AlignedRead read;
         char *      buf = nullptr;
-        alloc_aligned((void **) &buf, SECTOR_LEN, SECTOR_LEN);
+        alloc_aligned((void **) &buf, read_len_for_node, SECTOR_LEN);
         nhoods.push_back(std::make_pair(node_list[node_idx], buf));
-        read.len = SECTOR_LEN;
+        read.len = read_len_for_node;
         read.buf = buf;
-        read.offset = NODE_SECTOR_NO(node_list[node_idx]) * SECTOR_LEN;
+        read.offset = get_node_sector_offset(node_list[node_idx]);
         read_reqs.push_back(read);
       }
 
@@ -250,7 +243,7 @@ namespace diskann {
         }
 #endif
         auto &nhood = nhoods[i];
-        char *node_buf = OFFSET_TO_NODE(nhood.second, nhood.first);
+        char *node_buf = get_offset_to_node(nhood.second, nhood.first);
         T *   node_coords = OFFSET_TO_NODE_COORDS(node_buf);
         T *   cached_coords = coord_cache_buf + node_idx * aligned_dim;
         memcpy(cached_coords, node_coords, disk_bytes_per_point);
@@ -402,12 +395,12 @@ namespace diskann {
         std::vector<std::pair<_u32, char *>> nhoods;
         for (size_t cur_pt = start; cur_pt < end; cur_pt++) {
           char *buf = nullptr;
-          alloc_aligned((void **) &buf, SECTOR_LEN, SECTOR_LEN);
+          alloc_aligned((void **) &buf, read_len_for_node, SECTOR_LEN);
           nhoods.push_back(std::make_pair(nodes_to_expand[cur_pt], buf));
           AlignedRead read;
-          read.len = SECTOR_LEN;
+          read.len = read_len_for_node;
           read.buf = buf;
-          read.offset = NODE_SECTOR_NO(nodes_to_expand[cur_pt]) * SECTOR_LEN;
+          read.offset = get_node_sector_offset(nodes_to_expand[cur_pt]);
           read_reqs.push_back(read);
         }
 
@@ -424,7 +417,7 @@ namespace diskann {
           auto &nhood = nhoods[i];
 
           // insert node coord into coord_cache
-          char *    node_buf = OFFSET_TO_NODE(nhood.second, nhood.first);
+          char *    node_buf = get_offset_to_node(nhood.second, nhood.first);
           unsigned *node_nhood = OFFSET_TO_NODE_NHOOD(node_buf);
           _u64      nnbrs = (_u64) *node_nhood;
           unsigned *nbrs = node_nhood + 1;
@@ -491,15 +484,15 @@ namespace diskann {
       auto medoid = medoids[cur_m];
       // read medoid nhood
       char *medoid_buf = nullptr;
-      alloc_aligned((void **) &medoid_buf, SECTOR_LEN, SECTOR_LEN);
+      alloc_aligned((void **) &medoid_buf, read_len_for_node, SECTOR_LEN);
       std::vector<AlignedRead> medoid_read(1);
-      medoid_read[0].len = SECTOR_LEN;
+      medoid_read[0].len = read_len_for_node;
       medoid_read[0].buf = medoid_buf;
-      medoid_read[0].offset = NODE_SECTOR_NO(medoid) * SECTOR_LEN;
+      medoid_read[0].offset = get_node_sector_offset(medoid);
       reader->read(medoid_read, ctx);
 
       // all data about medoid
-      char *medoid_node_buf = OFFSET_TO_NODE(medoid_buf, medoid);
+      char *medoid_node_buf = get_offset_to_node(medoid_buf, medoid);
 
       // add medoid coords to `coord_cache`
       T *medoid_coords = new T[data_dim];
@@ -648,6 +641,13 @@ namespace diskann {
     READ_U64(index_metadata, medoid_id_on_file);
     READ_U64(index_metadata, max_node_len);
     READ_U64(index_metadata, nnodes_per_sector);
+    
+    if (max_node_len > SECTOR_LEN) {
+      long_node = true;
+      nsectors_per_node = ROUND_UP(max_node_len, SECTOR_LEN) / SECTOR_LEN;
+      read_len_for_node = SECTOR_LEN * nsectors_per_node;
+    }
+
     max_degree = ((max_node_len - disk_bytes_per_point) / sizeof(unsigned)) - 1;
 
     if (max_degree > MAX_GRAPH_DEGREE) {
@@ -963,12 +963,12 @@ namespace diskann {
           auto                    id = frontier[i];
           std::pair<_u32, char *> fnhood;
           fnhood.first = id;
-          fnhood.second = sector_scratch + sector_scratch_idx * SECTOR_LEN;
+          fnhood.second =
+              sector_scratch + sector_scratch_idx * read_len_for_node;
           sector_scratch_idx++;
           frontier_nhoods.push_back(fnhood);
-          frontier_read_reqs.emplace_back(
-              NODE_SECTOR_NO(((size_t) id)) * SECTOR_LEN, SECTOR_LEN,
-              fnhood.second);
+          frontier_read_reqs.emplace_back(get_node_sector_offset(((size_t) id)),
+                                          read_len_for_node, fnhood.second);
           if (stats != nullptr) {
             stats->n_4k++;
             stats->n_ios++;
@@ -1058,7 +1058,7 @@ namespace diskann {
       for (auto &frontier_nhood : frontier_nhoods) {
 #endif
         char *node_disk_buf =
-            OFFSET_TO_NODE(frontier_nhood.second, frontier_nhood.first);
+            get_offset_to_node(frontier_nhood.second, frontier_nhood.first);
         unsigned *node_buf = OFFSET_TO_NODE_NHOOD(node_disk_buf);
         _u64      nnbrs = (_u64)(*node_buf);
         T *       node_fp_coords = OFFSET_TO_NODE_COORDS(node_disk_buf);

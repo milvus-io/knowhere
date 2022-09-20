@@ -106,18 +106,6 @@ CheckDataFile(const std::string& data_path, const size_t num, const size_t dim) 
     }
 }
 
-/**
- * @brief Check the length of a node.
- */
-template <typename T>
-void
-CheckNodeLength(const uint32_t degree, const size_t dim) {
-    uint64_t node_length = ((degree + 1) * sizeof(unsigned) + dim * sizeof(T));
-    if (node_length > SECTOR_LEN) {
-        KNOWHERE_THROW_FORMAT("Node length (%ld bytes) exceeds the sector length", node_length);
-    }
-}
-
 bool
 AnyIndexFileExist(const std::string& index_prefix) {
     auto file_exist = [&index_prefix](std::vector<std::string> filenames) -> bool {
@@ -178,7 +166,6 @@ IndexDiskANN<T>::AddWithoutIds(const DatasetPtr& data_set, const Config& config)
     size_t dim;
     diskann::get_bin_metadata(build_conf.data_path, count, dim);
     CheckDataFile<T>(data_path, count, dim);
-    CheckNodeLength<T>(build_conf.max_degree, dim);
 
     count_.store(count);
     dim_.store(dim);
@@ -419,6 +406,10 @@ IndexDiskANN<T>::Query(const DatasetPtr& dataset_ptr, const Config& config, cons
 template <typename T>
 DatasetPtr
 IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& config, const faiss::BitsetView bitset) {
+    // TODO: the IP distance is negative in all cases now, need to fix it.
+    if (metric_ == diskann::INNER_PRODUCT) {
+        KNOWHERE_THROW_MSG("DiskANN doesn't support QueryByRange for IP now.");
+    }
     CheckPreparation(is_prepared_.load());
 
     // set thread number

@@ -122,6 +122,18 @@ namespace diskann {
     DISKANN_DLLEXPORT void destroy_thread_data();
 
    private:
+    // sector # on disk where node_id is present with in the graph part
+    _u64 get_node_sector_offset(_u64 node_id) {
+        return long_node ? (node_id * nsectors_per_node + 1) * SECTOR_LEN
+                         : (node_id / nnodes_per_sector + 1) * SECTOR_LEN;
+    }
+
+    // obtains region of sector containing node
+    char* get_offset_to_node(char* sector_buf, _u64 node_id) {
+        return long_node ? sector_buf
+                         : sector_buf + (node_id % nnodes_per_sector) * max_node_len;
+    }
+
     // index info
     // nhood of node `i` is in sector: [i / nnodes_per_sector]
     // offset in sector: [(i % nnodes_per_sector) * max_node_len]
@@ -140,6 +152,9 @@ namespace diskann {
     float max_base_norm = 0.0f;
 
     // data info
+    bool long_node = false;
+    _u64 nsectors_per_node = 0;
+    _u64 read_len_for_node = SECTOR_LEN;
     _u64 num_points = 0;
     _u64 num_frozen_points = 0;
     _u64 frozen_location = 0;
@@ -184,7 +199,7 @@ namespace diskann {
 
     // nhood_cache
     unsigned *                                    nhood_cache_buf = nullptr;
-    tsl::robin_map<_u32, std::pair<_u32, _u32 *>> nhood_cache;
+    tsl::robin_map<_u32, std::pair<_u32, _u32 *>> nhood_cache; // <id, <neihbors_num, neihbors>>
 
     // coord_cache
     T *                       coord_cache_buf = nullptr;

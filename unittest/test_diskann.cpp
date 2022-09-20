@@ -49,19 +49,28 @@ constexpr uint32_t kDim = 56;
 constexpr float kMax = 100;
 constexpr uint32_t kK = 10;
 constexpr uint32_t kBigK = kNumRows * 2;
-constexpr float kIpRadius = 0;
 constexpr float kL2Radius = 300000;
+
+constexpr uint32_t kLargeDimNumRows = 1000;
+constexpr uint32_t kLargeDimNumQueries = 10;
+constexpr uint32_t kLargeDim = 5600;
+constexpr uint32_t kLargeDimBigK = kLargeDimNumRows * 2;
+constexpr float kLargeDimL2Radius = 37000000;
 
 std::string kDir = fs::current_path().string() + "/diskann_test";
 std::string kRawDataPath = kDir + "/raw_data";
+std::string kLargeDimRawDataPath = kDir + "/large_dim_raw_data";
 std::string kIpIndexDir = kDir + "/ip_index";
 std::string kL2IndexDir = kDir + "/l2_index";
+std::string kLargeDimIpIndexDir = kDir + "/large_dim_ip_index";
+std::string kLargeDimL2IndexDir = kDir + "/large_dim_l2_index";
 
 const knowhere::DiskANNBuildConfig build_conf{kRawDataPath, 50, 90, 0.2, 0.2, 4, 0};
+const knowhere::DiskANNBuildConfig large_dim_build_conf{kLargeDimRawDataPath, 50, 90, 0.2, 0.2, 4, 0};
 const knowhere::DiskANNPrepareConfig prep_conf{4, 0, false, false};
 const knowhere::DiskANNQueryConfig query_conf{kK, kK * 10, 3};
 const knowhere::DiskANNQueryByRangeConfig l2_range_search_conf{kL2Radius, 10, 10000, 3};
-const knowhere::DiskANNQueryByRangeConfig ip_range_search_conf{kIpRadius, 10, 10000, 3};
+const knowhere::DiskANNQueryByRangeConfig large_dim_l2_range_search_conf{kLargeDimL2Radius, 10, 1000, 3};
 
 std::random_device rd;
 size_t x = rd();
@@ -88,25 +97,25 @@ struct DisPairLess {
 };
 
 GroundTruthPtr
-GenGroundTruth(const float* data_p, const float* query_p, const std::string metric,
-               const faiss::BitsetView bitset = nullptr) {
+GenGroundTruth(const float* data_p, const float* query_p, const std::string metric, const uint32_t num_rows,
+               const uint32_t num_dims, const uint32_t num_queries, const faiss::BitsetView bitset = nullptr) {
     GroundTruthPtr ground_truth = std::make_shared<GroundTruth>();
-    ground_truth->resize(kNumQueries);
+    ground_truth->resize(num_queries);
 
-    for (uint32_t query_index = 0; query_index < kNumQueries; ++query_index) {  // for each query
+    for (uint32_t query_index = 0; query_index < num_queries; ++query_index) {  // for each query
         // use priority_queue to keep the topK;
         std::priority_queue<IdDisPair, std::vector<IdDisPair>, DisPairLess> pq;
-        for (int64_t row = 0; row < kNumRows; ++row) {  // for each row
+        for (int64_t row = 0; row < num_rows; ++row) {  // for each row
             if (!bitset.empty() && bitset.test(row)) {
                 continue;
             }
             float dis = 0;
-            for (uint32_t dim = 0; dim < kDim; ++dim) {  // for every dim
+            for (uint32_t dim = 0; dim < num_dims; ++dim) {  // for every dim
                 if (metric == knowhere::metric::IP) {
-                    dis -= (data_p[kDim * row + dim] * query_p[query_index * kDim + dim]);
+                    dis -= (data_p[num_dims * row + dim] * query_p[query_index * num_dims + dim]);
                 } else {
-                    dis += ((data_p[kDim * row + dim] - query_p[query_index * kDim + dim]) *
-                            (data_p[kDim * row + dim] - query_p[query_index * kDim + dim]));
+                    dis += ((data_p[num_dims * row + dim] - query_p[query_index * num_dims + dim]) *
+                            (data_p[num_dims * row + dim] - query_p[query_index * num_dims + dim]));
                 }
             }
             if (pq.size() < kK) {
@@ -131,24 +140,24 @@ GenGroundTruth(const float* data_p, const float* query_p, const std::string metr
 }
 
 GroundTruthPtr
-GenRangeSearchGrounTruth(const float* data_p, const float* query_p, const std::string metric,
+GenRangeSearchGrounTruth(const float* data_p, const float* query_p, const std::string metric, const uint32_t num_rows,
+                         const uint32_t num_dims, const uint32_t num_queries, const float radius,
                          const faiss::BitsetView bitset = nullptr) {
     GroundTruthPtr ground_truth = std::make_shared<GroundTruth>();
-    ground_truth->resize(kNumQueries);
-    float radius = metric == knowhere::metric::L2 ? kL2Radius : kIpRadius;
-    for (uint32_t query_index = 0; query_index < kNumQueries; ++query_index) {
+    ground_truth->resize(num_queries);
+    for (uint32_t query_index = 0; query_index < num_queries; ++query_index) {
         std::vector<IdDisPair> paris;
-        for (int64_t row = 0; row < kNumRows; ++row) {  // for each row
+        for (int64_t row = 0; row < num_rows; ++row) {  // for each row
             if (!bitset.empty() && bitset.test(row)) {
                 continue;
             }
             float dis = 0;
-            for (uint32_t dim = 0; dim < kDim; ++dim) {  // for every dim
+            for (uint32_t dim = 0; dim < num_dims; ++dim) {  // for every dim
                 if (metric == knowhere::metric::IP) {
-                    dis -= (data_p[kDim * row + dim] * query_p[query_index * kDim + dim]);
+                    dis += (data_p[num_dims * row + dim] * query_p[query_index * num_dims + dim]);
                 } else {
-                    dis += ((data_p[kDim * row + dim] - query_p[query_index * kDim + dim]) *
-                            (data_p[kDim * row + dim] - query_p[query_index * kDim + dim]));
+                    dis += ((data_p[num_dims * row + dim] - query_p[query_index * num_dims + dim]) *
+                            (data_p[num_dims * row + dim] - query_p[query_index * num_dims + dim]));
                 }
             }
             if (dis <= radius) {
@@ -181,19 +190,20 @@ GetMatchedNum(const std::vector<int64_t>& ground_truth, const int64_t* result, c
 }
 
 float
-CheckTopKRecall(GroundTruthPtr ground_truth, const int64_t* result, const int32_t k) {
+CheckTopKRecall(GroundTruthPtr ground_truth, const int64_t* result, const int32_t k, const uint32_t num_queries) {
     uint32_t recall = 0;
-    for (uint32_t n = 0; n < kNumQueries; ++n) {
+    for (uint32_t n = 0; n < num_queries; ++n) {
         recall += GetMatchedNum(ground_truth->at(n), result + (n * k), ground_truth->at(n).size());
     }
-    return ((float)recall) / ((float)kNumQueries * k);
+    return ((float)recall) / ((float)num_queries * k);
 }
 
 float
-CheckRangeSearchRecall(GroundTruthPtr ground_truth, const int64_t* result, const size_t* limits) {
+CheckRangeSearchRecall(GroundTruthPtr ground_truth, const int64_t* result, const size_t* limits,
+                       const uint32_t num_queries) {
     uint32_t recall = 0;
     uint32_t total = 0;
-    for (uint32_t n = 0; n < kNumQueries; ++n) {
+    for (uint32_t n = 0; n < num_queries; ++n) {
         recall += GetMatchedNum(ground_truth->at(n), result + limits[n], limits[n + 1] - limits[n]);
         total += ground_truth->at(n).size();
     }
@@ -213,10 +223,33 @@ CheckConfigError(DiskANNConfig& config_to_test) {
 
 }  // namespace
 
-class DiskANNTest : public TestWithParam<std::string> {
+class DiskANNTest : public TestWithParam<std::tuple<std::string, bool>> {
  public:
     DiskANNTest() {
-        metric_ = GetParam();
+        std::tie(metric_, is_large_dim_) = GetParam();
+        if (!is_large_dim_) {
+            dim_ = kDim;
+            num_rows_ = kNumRows;
+            num_queries_ = kNumQueries;
+            big_k_ = kBigK;
+            raw_data_ = global_raw_data_;
+            query_data_ = global_query_data_;
+            ground_truth_ = metric_ == knowhere::metric::L2 ? l2_ground_truth_ : ip_ground_truth_;
+            range_search_ground_truth_ = l2_range_search_ground_truth_;
+            range_search_conf_ = l2_range_search_conf;
+            range_search_radius_ = kL2Radius;
+        } else {
+            dim_ = kLargeDim;
+            num_rows_ = kLargeDimNumRows;
+            num_queries_ = kLargeDimNumQueries;
+            big_k_ = kLargeDimBigK;
+            raw_data_ = global_large_dim_raw_data_;
+            query_data_ = global_large_dim_query_data_;
+            ground_truth_ = metric_ == knowhere::metric::L2 ? large_dim_l2_ground_truth_ : large_dim_ip_ground_truth_;
+            range_search_ground_truth_ = large_dim_l2_range_search_ground_truth_;
+            range_search_conf_ = large_dim_l2_range_search_conf;
+            range_search_radius_ = kLargeDimL2Radius;
+        }
         InitDiskANN();
     }
 
@@ -229,37 +262,78 @@ class DiskANNTest : public TestWithParam<std::string> {
         fs::remove_all(kDir);
         fs::remove(kDir);
 
-        raw_data_ = GenData(kNumRows * kDim);
-        query_data_ = GenData(kNumQueries * kDim);
+        global_raw_data_ = GenData(kNumRows * kDim);
+        global_large_dim_raw_data_ = GenData(kLargeDimNumRows * kLargeDim);
+        global_query_data_ = GenData(kNumQueries * kDim);
+        global_large_dim_query_data_ = GenData(kLargeDimNumQueries * kLargeDim);
 
-        ip_ground_truth_ = GenGroundTruth(raw_data_, query_data_, knowhere::metric::IP);
-        l2_ground_truth_ = GenGroundTruth(raw_data_, query_data_, knowhere::metric::L2);
-        ip_range_search_ground_truth_ = GenRangeSearchGrounTruth(raw_data_, query_data_, knowhere::metric::IP);
-        l2_range_search_ground_truth_ = GenRangeSearchGrounTruth(raw_data_, query_data_, knowhere::metric::L2);
+        // global_raw_data_ = new float[kNumRows * kDim];
+        // std::ifstream r(kRawDataPath, std::ios::binary);
+        // uint32_t tem;
+        // r.read((char*)&tem, sizeof(uint32_t));
+        // r.read((char*)&tem, sizeof(uint32_t));
+        // r.read((char*)global_raw_data_, kNumRows * kDim * sizeof(float));
+        // r.close();
+        // global_large_dim_raw_data_ = new float[kLargeDimNumRows * kLargeDim];
+        // std::ifstream lr(kLargeDimRawDataPath, std::ios::binary);
+        // lr.read((char*)&tem, sizeof(uint32_t));
+        // lr.read((char*)&tem, sizeof(uint32_t));
+        // lr.read((char*)global_large_dim_raw_data_, kLargeDimNumRows * kLargeDim * sizeof(float));
+        // lr.close();
+
+        ip_ground_truth_ =
+            GenGroundTruth(global_raw_data_, global_query_data_, knowhere::metric::IP, kNumRows, kDim, kNumQueries);
+        l2_ground_truth_ =
+            GenGroundTruth(global_raw_data_, global_query_data_, knowhere::metric::L2, kNumRows, kDim, kNumQueries);
+        l2_range_search_ground_truth_ = GenRangeSearchGrounTruth(
+            global_raw_data_, global_query_data_, knowhere::metric::L2, kNumRows, kDim, kNumQueries, kL2Radius);
+
+        large_dim_ip_ground_truth_ =
+            GenGroundTruth(global_large_dim_raw_data_, global_large_dim_query_data_, knowhere::metric::IP,
+                           kLargeDimNumRows, kLargeDim, kLargeDimNumQueries);
+        large_dim_l2_ground_truth_ =
+            GenGroundTruth(global_large_dim_raw_data_, global_large_dim_query_data_, knowhere::metric::L2,
+                           kLargeDimNumRows, kLargeDim, kLargeDimNumQueries);
+        large_dim_l2_range_search_ground_truth_ =
+            GenRangeSearchGrounTruth(global_large_dim_raw_data_, global_large_dim_query_data_, knowhere::metric::L2,
+                                     kLargeDimNumRows, kLargeDim, kLargeDimNumQueries, kLargeDimL2Radius);
 
         // prepare the dir
         ASSERT_TRUE(fs::create_directory(kDir));
         ASSERT_TRUE(fs::create_directory(kIpIndexDir));
         ASSERT_TRUE(fs::create_directory(kL2IndexDir));
+        ASSERT_TRUE(fs::create_directory(kLargeDimL2IndexDir));
+        ASSERT_TRUE(fs::create_directory(kLargeDimIpIndexDir));
 
-        WriteRawDataToDisk(kRawDataPath, raw_data_, kNumRows, kDim);
+        WriteRawDataToDisk(kRawDataPath, global_raw_data_, kNumRows, kDim);
+        WriteRawDataToDisk(kLargeDimRawDataPath, global_large_dim_raw_data_, kLargeDimNumRows, kLargeDim);
 
         knowhere::Config cfg;
         knowhere::DiskANNBuildConfig::Set(cfg, build_conf);
-
         auto diskann_ip = std::make_unique<knowhere::IndexDiskANN<float>>(
             kIpIndexDir + "/diskann", knowhere::metric::IP, std::make_unique<knowhere::LocalFileManager>());
         diskann_ip->BuildAll(nullptr, cfg);
         auto diskann_l2 = std::make_unique<knowhere::IndexDiskANN<float>>(
             kL2IndexDir + "/diskann", knowhere::metric::L2, std::make_unique<knowhere::LocalFileManager>());
         diskann_l2->BuildAll(nullptr, cfg);
+
+        knowhere::Config large_dim_cfg;
+        knowhere::DiskANNBuildConfig::Set(large_dim_cfg, large_dim_build_conf);
+        auto large_dim_diskann_ip = std::make_unique<knowhere::IndexDiskANN<float>>(
+            kLargeDimIpIndexDir + "/diskann", knowhere::metric::IP, std::make_unique<knowhere::LocalFileManager>());
+        large_dim_diskann_ip->BuildAll(nullptr, large_dim_cfg);
+        auto large_dim_diskann_l2 = std::make_unique<knowhere::IndexDiskANN<float>>(
+            kLargeDimL2IndexDir + "/diskann", knowhere::metric::L2, std::make_unique<knowhere::LocalFileManager>());
+        large_dim_diskann_l2->BuildAll(nullptr, large_dim_cfg);
     }
 
     static void
     TearDownTestCase() {
         LOG_KNOWHERE_INFO_ << "Cleaning up the test environment for DiskANN Unittest.";
-        delete[] raw_data_;
-        delete[] query_data_;
+        delete[] global_raw_data_;
+        delete[] global_large_dim_raw_data_;
+        delete[] global_query_data_;
+        delete[] global_large_dim_query_data_;
         // Clean up the dir
 
         fs::remove_all(kDir);
@@ -269,28 +343,56 @@ class DiskANNTest : public TestWithParam<std::string> {
  protected:
     void
     InitDiskANN() {
-        auto index_dir = metric_ == knowhere::metric::L2 ? kL2IndexDir : kIpIndexDir;
+        std::string index_dir = "";
+        if (metric_ == knowhere::metric::L2) {
+            index_dir = is_large_dim_ ? kLargeDimL2IndexDir : kL2IndexDir;
+        } else {
+            index_dir = is_large_dim_ ? kLargeDimIpIndexDir : kIpIndexDir;
+        }
         diskann = std::make_unique<knowhere::IndexDiskANN<float>>(index_dir + "/diskann", metric_,
                                                                   std::make_unique<knowhere::LocalFileManager>());
     }
-    static float* raw_data_;
-    static float* query_data_;
+    static float* global_raw_data_;
+    static float* global_large_dim_raw_data_;
+    static float* global_query_data_;
+    static float* global_large_dim_query_data_;
     static GroundTruthPtr ip_ground_truth_;
     static GroundTruthPtr l2_ground_truth_;
-    static GroundTruthPtr ip_range_search_ground_truth_;
     static GroundTruthPtr l2_range_search_ground_truth_;
+    static GroundTruthPtr large_dim_ip_ground_truth_;
+    static GroundTruthPtr large_dim_l2_ground_truth_;
+    static GroundTruthPtr large_dim_l2_range_search_ground_truth_;
     std::string metric_;
+    bool is_large_dim_;
+    uint32_t dim_;
+    uint32_t num_rows_;
+    uint32_t num_queries_;
+    uint32_t big_k_;
+    GroundTruthPtr ground_truth_;
+    GroundTruthPtr range_search_ground_truth_;
+    float* raw_data_;
+    float* query_data_;
+    float range_search_radius_;
+    knowhere::DiskANNQueryByRangeConfig range_search_conf_;
     std::unique_ptr<knowhere::VecIndex> diskann;
 };
 
-float* DiskANNTest::query_data_ = nullptr;
-float* DiskANNTest::raw_data_ = nullptr;
+float* DiskANNTest::global_raw_data_ = nullptr;
+float* DiskANNTest::global_large_dim_raw_data_ = nullptr;
+float* DiskANNTest::global_query_data_ = nullptr;
+float* DiskANNTest::global_large_dim_query_data_ = nullptr;
 GroundTruthPtr DiskANNTest::ip_ground_truth_ = nullptr;
 GroundTruthPtr DiskANNTest::l2_ground_truth_ = nullptr;
-GroundTruthPtr DiskANNTest::ip_range_search_ground_truth_ = nullptr;
 GroundTruthPtr DiskANNTest::l2_range_search_ground_truth_ = nullptr;
+GroundTruthPtr DiskANNTest::large_dim_ip_ground_truth_ = nullptr;
+GroundTruthPtr DiskANNTest::large_dim_l2_ground_truth_ = nullptr;
+GroundTruthPtr DiskANNTest::large_dim_l2_range_search_ground_truth_ = nullptr;
 
-INSTANTIATE_TEST_CASE_P(DiskANNParameters, DiskANNTest, Values(knowhere::metric::L2, knowhere::metric::IP));
+INSTANTIATE_TEST_CASE_P(DiskANNParameters, DiskANNTest,
+                        Values(std::make_tuple(knowhere::metric::L2, true /* large dim */),
+                               std::make_tuple(knowhere::metric::L2, false /* large dim */),
+                               std::make_tuple(knowhere::metric::IP, true /* large dim */),
+                               std::make_tuple(knowhere::metric::IP, false /* large dim */)));
 
 TEST_P(DiskANNTest, bitset_view_test) {
     knowhere::Config cfg;
@@ -300,13 +402,13 @@ TEST_P(DiskANNTest, bitset_view_test) {
     // test for knn search
     cfg.clear();
     knowhere::DiskANNQueryConfig::Set(cfg, query_conf);
-    knowhere::DatasetPtr data_set_ptr = knowhere::GenDataset(kNumQueries, kDim, (void*)query_data_);
+    knowhere::DatasetPtr data_set_ptr = knowhere::GenDataset(num_queries_, dim_, (void*)query_data_);
     auto result = diskann->Query(data_set_ptr, cfg, nullptr);
 
     // pick ids to mask
     auto ids = knowhere::GetDatasetIDs(result);
     std::unordered_set<int64_t> ids_to_mask;
-    for (int32_t q = 0; q < kNumQueries; ++q) {
+    for (int32_t q = 0; q < num_queries_; ++q) {
         for (int32_t k = 0; k < kK; k += 2) {
             ids_to_mask.insert(ids[q * kK + k]);
         }
@@ -314,31 +416,33 @@ TEST_P(DiskANNTest, bitset_view_test) {
 
     // create bitset view
     std::vector<uint8_t> knn_bitset_data;
-    knn_bitset_data.resize(kNumRows / 8);
+    knn_bitset_data.resize(num_rows_ / 8);
     for (auto& id_to_mask : ids_to_mask) {
         set_bit(knn_bitset_data.data(), id_to_mask);
     }
-    faiss::BitsetView knn_bitset(knn_bitset_data.data(), kNumRows);
-    auto ground_truth = GenGroundTruth(raw_data_, query_data_, metric_, knn_bitset);
+    faiss::BitsetView knn_bitset(knn_bitset_data.data(), num_rows_);
+    auto ground_truth = GenGroundTruth(raw_data_, query_data_, metric_, num_rows_, dim_, num_queries_, knn_bitset);
 
     // query with bitset view
     result = diskann->Query(data_set_ptr, cfg, knn_bitset);
     ids = knowhere::GetDatasetIDs(result);
 
-    auto recall = CheckTopKRecall(ground_truth, ids, kK);
+    auto recall = CheckTopKRecall(ground_truth, ids, kK, num_queries_);
     EXPECT_GT(recall, 0.8);
 
+    if (metric_ == knowhere::metric::IP) {
+        GTEST_SKIP() << "Skip bitset view range search test for IP.";
+    }
     // test for range search
     cfg.clear();
-    auto range_search_conf = metric_ == knowhere::metric::IP ? ip_range_search_conf : l2_range_search_conf;
-    knowhere::DiskANNQueryByRangeConfig::Set(cfg, range_search_conf);
+    knowhere::DiskANNQueryByRangeConfig::Set(cfg, range_search_conf_);
     result = diskann->QueryByRange(data_set_ptr, cfg, nullptr);
 
     // pick ids to mask
     ids = knowhere::GetDatasetIDs(result);
     auto lims = knowhere::GetDatasetLims(result);
     ids_to_mask.clear();
-    for (int32_t q = 0; q < kNumQueries; ++q) {
+    for (int32_t q = 0; q < num_queries_; ++q) {
         for (int32_t i = 0; i < lims[q + 1] - lims[q]; i += 5) {
             ids_to_mask.insert(ids[lims[q] + i]);
         }
@@ -346,12 +450,13 @@ TEST_P(DiskANNTest, bitset_view_test) {
 
     // create bitset view
     std::vector<uint8_t> range_search_bitset_data;
-    range_search_bitset_data.resize(kNumRows / 8);
+    range_search_bitset_data.resize(num_rows_ / 8);
     for (auto& id_to_mask : ids_to_mask) {
         set_bit(range_search_bitset_data.data(), id_to_mask);
     }
-    faiss::BitsetView range_search_bitset(range_search_bitset_data.data(), kNumRows);
-    ground_truth = GenRangeSearchGrounTruth(raw_data_, query_data_, metric_, range_search_bitset);
+    faiss::BitsetView range_search_bitset(range_search_bitset_data.data(), num_rows_);
+    ground_truth = GenRangeSearchGrounTruth(raw_data_, query_data_, metric_, num_rows_, dim_, num_queries_,
+                                            range_search_radius_, range_search_bitset);
 
     // query with bitset view
     result = diskann->QueryByRange(data_set_ptr, cfg, range_search_bitset);
@@ -359,7 +464,7 @@ TEST_P(DiskANNTest, bitset_view_test) {
     ids = knowhere::GetDatasetIDs(result);
     lims = knowhere::GetDatasetLims(result);
 
-    recall = CheckRangeSearchRecall(ground_truth, ids, lims);
+    recall = CheckRangeSearchRecall(ground_truth, ids, lims, num_queries_);
     EXPECT_GT(recall, 0.5);
 }
 
@@ -371,14 +476,14 @@ TEST_P(DiskANNTest, meta_test) {
     knowhere::DiskANNPrepareConfig::Set(cfg, prep_conf);
     EXPECT_TRUE(diskann->Prepare(cfg));
 
-    EXPECT_EQ(kDim, diskann->Dim());
-    EXPECT_EQ(kNumRows, diskann->Count());
+    EXPECT_EQ(dim_, diskann->Dim());
+    EXPECT_EQ(num_rows_, diskann->Count());
 }
 
 TEST_P(DiskANNTest, knn_search_test) {
     knowhere::Config cfg;
     knowhere::DiskANNQueryConfig::Set(cfg, query_conf);
-    knowhere::DatasetPtr data_set_ptr = knowhere::GenDataset(kNumQueries, kDim, (void*)query_data_);
+    knowhere::DatasetPtr data_set_ptr = knowhere::GenDataset(num_queries_, dim_, (void*)query_data_);
     // test query before preparation
     EXPECT_THROW(diskann->Query(data_set_ptr, cfg, nullptr), knowhere::KnowhereException);
 
@@ -393,17 +498,16 @@ TEST_P(DiskANNTest, knn_search_test) {
     auto result = diskann->Query(data_set_ptr, cfg, nullptr);
 
     auto ids = knowhere::GetDatasetIDs(result);
+    auto diss = knowhere::GetDatasetDistance(result);
 
-    if (metric_ == knowhere::metric::IP) {
-        auto ip_recall = CheckTopKRecall(ip_ground_truth_, ids, kK);
-        EXPECT_GT(ip_recall, 0.8);
-    } else {
-        auto l2_recall = CheckTopKRecall(l2_ground_truth_, ids, kK);
-        EXPECT_GT(l2_recall, 0.8);
-    }
+    auto recall = CheckTopKRecall(ground_truth_, ids, kK, num_queries_);
+    EXPECT_GT(recall, 0.8);
 }
 
 TEST_P(DiskANNTest, knn_search_with_accelerate_build_test) {
+    if (is_large_dim_) {
+        GTEST_SKIP() << "Skip build accelerate test for large dim.";
+    }
     std::string index_dir =
         metric_ == knowhere::metric::L2 ? kDir + "/accelearte_build_l2_index" : kDir + "/accelearte_build_ip_index";
     ASSERT_TRUE(fs::create_directory(index_dir));
@@ -418,8 +522,8 @@ TEST_P(DiskANNTest, knn_search_with_accelerate_build_test) {
     knowhere::DiskANNBuildConfig::Set(cfg, accelerate_build_conf);
     accelerate_diskann->BuildAll(nullptr, cfg);
 
-    EXPECT_EQ(kDim, accelerate_diskann->Dim());
-    EXPECT_EQ(kNumRows, accelerate_diskann->Count());
+    EXPECT_EQ(dim_, accelerate_diskann->Dim());
+    EXPECT_EQ(num_rows_, accelerate_diskann->Count());
 
     // prepare
     cfg.clear();
@@ -429,26 +533,27 @@ TEST_P(DiskANNTest, knn_search_with_accelerate_build_test) {
     // test query
     cfg.clear();
     knowhere::DiskANNQueryConfig::Set(cfg, query_conf);
-    knowhere::DatasetPtr data_set_ptr = knowhere::GenDataset(kNumQueries, kDim, (void*)query_data_);
+    knowhere::DatasetPtr data_set_ptr = knowhere::GenDataset(num_queries_, dim_, (void*)query_data_);
     auto result = diskann->Query(data_set_ptr, cfg, nullptr);
 
     auto ids = knowhere::GetDatasetIDs(result);
 
-    if (metric_ == knowhere::metric::IP) {
-        auto ip_recall = CheckTopKRecall(ip_ground_truth_, ids, kK);
-        EXPECT_GT(ip_recall, 0.8);
-    } else {
-        auto l2_recall = CheckTopKRecall(l2_ground_truth_, ids, kK);
-        EXPECT_GT(l2_recall, 0.8);
-    }
+    auto recall = CheckTopKRecall(ground_truth_, ids, kK, num_queries_);
+    EXPECT_GT(recall, 0.8);
+
+    fs::remove_all(index_dir);
+    fs::remove(index_dir);
 }
 
 TEST_P(DiskANNTest, merged_vamana_knn_search_test) {
+    if (is_large_dim_) {
+        GTEST_SKIP() << "Skip merge vamana test for large dim.";
+    }
     std::string kMergedL2IndexDir = kDir + "/merged_l2_index";
     std::string kMergedIpIndexDir = kDir + "/merged_ip_index";
 
     float merged_build_ram_limit =
-        static_cast<float>(kNumRows * kDim) * sizeof(float) / static_cast<float>(1024 * 1024 * 1024) +
+        static_cast<float>(num_rows_ * dim_) * sizeof(float) / static_cast<float>(1024 * 1024 * 1024) +
         std::numeric_limits<float>::epsilon();
     knowhere::DiskANNBuildConfig merged_vamana_build_conf{kRawDataPath, 50, 90, 0.2, merged_build_ram_limit, 4, 0};
 
@@ -471,7 +576,7 @@ TEST_P(DiskANNTest, merged_vamana_knn_search_test) {
         index_dir + "/diskann", metric_, std::make_unique<knowhere::LocalFileManager>());
     knowhere::Config cfg;
     knowhere::DiskANNQueryConfig::Set(cfg, query_conf);
-    knowhere::DatasetPtr data_set_ptr = knowhere::GenDataset(kNumQueries, kDim, (void*)query_data_);
+    knowhere::DatasetPtr data_set_ptr = knowhere::GenDataset(num_queries_, dim_, (void*)query_data_);
     // test query before preparation
     EXPECT_THROW(merged_diskann->Query(data_set_ptr, cfg, nullptr), knowhere::KnowhereException);
 
@@ -487,24 +592,22 @@ TEST_P(DiskANNTest, merged_vamana_knn_search_test) {
 
     auto ids = knowhere::GetDatasetIDs(result);
 
-    if (metric_ == knowhere::metric::IP) {
-        auto ip_recall = CheckTopKRecall(ip_ground_truth_, ids, kK);
-        EXPECT_GT(ip_recall, 0.8);
-    } else {
-        auto l2_recall = CheckTopKRecall(l2_ground_truth_, ids, kK);
-        EXPECT_GT(l2_recall, 0.8);
-    }
+    auto recall = CheckTopKRecall(ground_truth_, ids, kK, num_queries_);
+    EXPECT_GT(recall, 0.8);
+
+    fs::remove_all(index_dir);
+    fs::remove(index_dir);
 }
 
 TEST_P(DiskANNTest, knn_search_big_k_test) {
     // gen new ground truth
     auto ground_truth = std::make_shared<GroundTruth>();
-    ground_truth->resize(kNumQueries);
-    for (uint32_t query_index = 0; query_index < kNumQueries; ++query_index) {
-        for (uint32_t row = 0; row < kNumRows; ++row) {
+    ground_truth->resize(num_queries_);
+    for (uint32_t query_index = 0; query_index < num_queries_; ++query_index) {
+        for (uint32_t row = 0; row < num_rows_; ++row) {
             (ground_truth->at(query_index)).emplace_back(row);
         }
-        for (uint32_t row = kNumRows; row < kBigK; ++row) {
+        for (uint32_t row = num_rows_; row < kBigK; ++row) {
             (ground_truth->at(query_index)).emplace_back(-1);
         }
     }
@@ -522,20 +625,22 @@ TEST_P(DiskANNTest, knn_search_big_k_test) {
     query_conf_to_test.k = kBigK;
     query_conf_to_test.search_list_size = kBigK * 10;
     knowhere::DiskANNQueryConfig::Set(cfg, query_conf_to_test);
-    knowhere::DatasetPtr data_set_ptr = knowhere::GenDataset(kNumQueries, kDim, (void*)query_data_);
+    knowhere::DatasetPtr data_set_ptr = knowhere::GenDataset(num_queries_, dim_, (void*)query_data_);
     auto result = diskann->Query(data_set_ptr, cfg, nullptr);
 
     auto ids = knowhere::GetDatasetIDs(result);
 
-    auto recall = CheckTopKRecall(ground_truth, ids, kBigK);
+    auto recall = CheckTopKRecall(ground_truth, ids, kBigK, num_queries_);
     EXPECT_GT(recall, 0.8);
 }
 
 TEST_P(DiskANNTest, range_search_test) {
+    if (metric_ == knowhere::metric::IP) {
+        GTEST_SKIP() << "Skip range search test for IP.";
+    }
     knowhere::Config cfg;
-    auto range_search_conf = metric_ == knowhere::metric::IP ? ip_range_search_conf : l2_range_search_conf;
-    knowhere::DiskANNQueryByRangeConfig::Set(cfg, range_search_conf);
-    knowhere::DatasetPtr data_set_ptr = knowhere::GenDataset(kNumQueries, kDim, (void*)query_data_);
+    knowhere::DiskANNQueryByRangeConfig::Set(cfg, range_search_conf_);
+    knowhere::DatasetPtr data_set_ptr = knowhere::GenDataset(num_queries_, dim_, (void*)query_data_);
     // test query before preparation
     EXPECT_THROW(diskann->QueryByRange(data_set_ptr, cfg, nullptr), knowhere::KnowhereException);
 
@@ -546,19 +651,15 @@ TEST_P(DiskANNTest, range_search_test) {
 
     // test query by range
     cfg.clear();
-    knowhere::DiskANNQueryByRangeConfig::Set(cfg, range_search_conf);
+    knowhere::DiskANNQueryByRangeConfig::Set(cfg, range_search_conf_);
     auto result = diskann->QueryByRange(data_set_ptr, cfg, nullptr);
 
     auto ids = knowhere::GetDatasetIDs(result);
     auto lims = knowhere::GetDatasetLims(result);
 
-    if (metric_ == knowhere::metric::IP) {
-        auto ip_recall = CheckRangeSearchRecall(ip_range_search_ground_truth_, ids, lims);
-        EXPECT_GT(ip_recall, 0.5);
-    } else {
-        auto l2_recall = CheckRangeSearchRecall(l2_range_search_ground_truth_, ids, lims);
-        EXPECT_GT(l2_recall, 0.8);
-    }
+    auto recall = CheckRangeSearchRecall(range_search_ground_truth_, ids, lims, num_queries_);
+    auto expected_recall = 0.8;
+    EXPECT_GT(recall, expected_recall);
 }
 
 TEST_P(DiskANNTest, cached_warmup_test) {
@@ -574,18 +675,16 @@ TEST_P(DiskANNTest, cached_warmup_test) {
     // test query
     cfg.clear();
     knowhere::DiskANNQueryConfig::Set(cfg, query_conf);
-    knowhere::DatasetPtr data_set_ptr = knowhere::GenDataset(kNumQueries, kDim, (void*)query_data_);
+    knowhere::DatasetPtr data_set_ptr = knowhere::GenDataset(num_queries_, dim_, (void*)query_data_);
     auto result = diskann->Query(data_set_ptr, cfg, nullptr);
     auto ids = knowhere::GetDatasetIDs(result);
 
-    if (metric_ == knowhere::metric::IP) {
-        auto ip_recall = CheckTopKRecall(ip_ground_truth_, ids, kK);
-        EXPECT_GT(ip_recall, 0.8);
-    } else {
-        auto l2_recall = CheckTopKRecall(l2_ground_truth_, ids, kK);
-        EXPECT_GT(l2_recall, 0.8);
-    }
+    auto recall = CheckTopKRecall(ground_truth_, ids, kK, num_queries_);
+    EXPECT_GT(recall, 0.8);
 
+    if (metric_ == knowhere::metric::IP) {
+        GTEST_SKIP() << "Skip cached warmup range search test for IP.";
+    }
     // bfs cache + warmup preparation
     InitDiskANN();
     cfg.clear();
@@ -595,22 +694,16 @@ TEST_P(DiskANNTest, cached_warmup_test) {
 
     // test query by range
     cfg.clear();
-    auto range_search_conf = metric_ == knowhere::metric::IP ? ip_range_search_conf : l2_range_search_conf;
-    knowhere::DiskANNQueryByRangeConfig::Set(cfg, range_search_conf);
-    data_set_ptr = knowhere::GenDataset(kNumQueries, kDim, (void*)query_data_);
+    knowhere::DiskANNQueryByRangeConfig::Set(cfg, range_search_conf_);
+    data_set_ptr = knowhere::GenDataset(num_queries_, dim_, (void*)query_data_);
     result = diskann->QueryByRange(data_set_ptr, cfg, nullptr);
 
     ids = knowhere::GetDatasetIDs(result);
     auto lims = knowhere::GetDatasetLims(result);
-    // p(ids, lims[1], ip_range_search_ground_truth_);
 
-    if (metric_ == knowhere::metric::IP) {
-        auto ip_recall = CheckRangeSearchRecall(ip_range_search_ground_truth_, ids, lims);
-        EXPECT_GT(ip_recall, 0.5);
-    } else {
-        auto l2_recall = CheckRangeSearchRecall(l2_range_search_ground_truth_, ids, lims);
-        EXPECT_GT(l2_recall, 0.8);
-    }
+    recall = CheckRangeSearchRecall(range_search_ground_truth_, ids, lims, num_queries_);
+    auto expected_recall = 0.8;
+    EXPECT_GT(recall, expected_recall);
 }
 
 TEST_P(DiskANNTest, config_test) {
@@ -670,33 +763,9 @@ TEST_P(DiskANNTest, build_config_test) {
     std::string test_index_dir = test_dir + "/test_index";
     ASSERT_TRUE(fs::create_directory(test_dir));
 
-    // node size > diskann sector
-    std::vector<std::tuple<uint32_t, uint32_t>> illegal_dim_and_R_set{
-        std::make_tuple(1024, 32), std::make_tuple(400, 640), std::make_tuple(960, 128)};
     knowhere::Config illegal_cfg;
     knowhere::DiskANNBuildConfig illegal_build_config;
 
-    for (auto& dim_and_R : illegal_dim_and_R_set) {
-        fs::remove(test_data_path);
-        fs::remove(test_index_dir);
-
-        uint32_t data_dim = std::get<0>(dim_and_R);
-        uint32_t data_n = 1000;
-        std::vector<float> raw_data(data_dim * data_n);
-        WriteRawDataToDisk(test_data_path, raw_data.data(), data_n, data_dim);
-
-        illegal_build_config = build_conf;  // init
-        illegal_build_config.data_path = test_data_path;
-        illegal_build_config.max_degree = std::get<1>(dim_and_R);
-        illegal_cfg.clear();
-        knowhere::DiskANNBuildConfig::Set(illegal_cfg, illegal_build_config);
-        knowhere::IndexDiskANN<float> test_diskann(test_index_dir, metric_,
-                                                   std::make_unique<knowhere::LocalFileManager>());
-        EXPECT_THROW(test_diskann.BuildAll(nullptr, illegal_cfg), knowhere::KnowhereException);
-
-        fs::remove(test_data_path);
-        fs::remove(test_index_dir);
-    }
     // data size != file size
     {
         fs::remove(test_data_path);
