@@ -98,7 +98,7 @@ ConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode
 
 bool
 ConfAdapter::CheckRangeSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    const float DEFAULT_MIN_RADIUS = 0.0;
+    const float DEFAULT_MIN_RADIUS = -1.0;
     const float DEFAULT_MAX_RADIUS = std::numeric_limits<float>::max();
     CheckFloatRange(cfg, meta::RADIUS, DEFAULT_MIN_RADIUS, DEFAULT_MAX_RADIUS);
     return true;
