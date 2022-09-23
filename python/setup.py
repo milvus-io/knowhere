@@ -81,6 +81,7 @@ EXTRA_LINK_ARGS = [
 SWIG_OPTS = [
     "-c++",
     "-I" + os.path.join(KNOWHERE_ROOT, "knowhere"),
+    "-I" + os.path.join(KNOWHERE_ROOT),
 ]
 
 if is_cuda_ver:

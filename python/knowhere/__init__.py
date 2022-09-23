@@ -58,6 +58,26 @@ def CreateIndexDiskANN(index_name, index_prefix, metric_type, simd_type="auto"):
             'diskann_f' 'diskann_i8' 'diskann_ui8'."""
     )
 
+def CreateAsyncIndex(index_name, simd_type="auto", *args):
+
+    if simd_type not in ["auto", "avx512", "avx2", "avx", "sse4_2"]:
+        raise ValueError("simd type only support auto avx512 avx2 avx sse4_2")
+
+    if index_name not in ["bin_flat", "bin_ivf_flat", "flat", "ivf_flat", "ivf_pq", "ivf_sq8",
+                          "hnsw", "annoy","gpu_flat", "gpu_ivf_flat",
+                          "gpu_ivf_pq", "gpu_ivf_sq8", "diskann_f", "diskann_i8", "diskann_ui8"]:
+        raise ValueError(
+        """ index name only support
+            'bin_flat', 'bin_ivf_flat', 'flat', 'ivf_flat', 'ivf_pq', 'ivf_sq8',
+            'hnsw', 'annoy', 'gpu_flat', 'gpu_ivf_flat',
+            'gpu_ivf_pq', 'gpu_ivf_sq8', 'diskann_f', 'diskann_i8', 'diskann_ui8'."""
+    )
+    if index_name in ["diskann_f", "diskann_i8", "diskann_ui8"] :
+        index_prefix = args[0]
+        metric_type = args[1]
+        return AsyncIndex(index_name, index_prefix, metric_type) 
+    return AsyncIndex(index_name)
+
 
 class GpuContext:
     def __init__(
