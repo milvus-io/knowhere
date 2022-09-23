@@ -348,17 +348,18 @@ IndexHNSW::UpdateLevelLinkList(int32_t level, feder::hnsw::HNSWMeta& meta, std::
         return;
     }
 
-    hnswlib::tableint enter_point = index_->enterpoint_node_;
+    std::vector<hnswlib::tableint> level_elements;
 
-    std::unordered_set<hnswlib::tableint> visited;
-    std::queue<hnswlib::tableint> q;
-    q.emplace(enter_point);
+    // get all elements in current level
+    for (size_t i = 0; i < index_->cur_element_count; i++) {
+        // elements in high level also exist in low level
+        if (index_->element_levels_[i] >= level) {
+            level_elements.emplace_back(i);
+        }
+    }
 
-    while (!q.empty()) {
-        auto curr_id = q.front();
-        q.pop();
-        visited.insert(curr_id);
-
+    // iterate all elements in current level, record their link lists
+    for (auto curr_id : level_elements) {
         auto data = index_->get_linklist(curr_id, level);
         auto size = index_->getListCount(data);
 
@@ -367,9 +368,6 @@ IndexHNSW::UpdateLevelLinkList(int32_t level, feder::hnsw::HNSWMeta& meta, std::
         for (int i = 0; i < size; i++) {
             hnswlib::tableint cand = datal[i];
             neighbors[i] = cand;
-            if (visited.find(cand) == visited.end()) {
-                q.emplace(cand);
-            }
         }
         id_set.insert(curr_id);
         id_set.insert(neighbors.begin(), neighbors.end());
