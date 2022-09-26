@@ -22,6 +22,7 @@
 #include "knowhere/index/vector_index/IndexIVFPQ.h"
 #include "knowhere/index/vector_index/IndexIVFSQ.h"
 #ifdef KNOWHERE_WITH_DISKANN
+#include "LocalFileManager.h"
 #include "knowhere/index/vector_index/IndexDiskANN.h"
 #include "knowhere/index/vector_index/IndexDiskANNConfig.h"
 #endif
@@ -54,13 +55,17 @@ class AsyncIndex : public VecIndex {
     }
 
 #ifdef KNOWHERE_WITH_DISKANN
-    AsyncIndex(std::string type, MetricType metric_type, std::shared_ptr<FileManager> file_manager) {
+    AsyncIndex(std::string type, std::string index_prefix, std::string metric_type) {
+        std::transform(metric_type.begin(), metric_type.end(), metric_type.begin(), toupper);
         if (type == "diskann_f") {
-            index_ = std::make_unique<knowhere::IndexDiskANN<float>>(type, metric_type, file_manager);
+            index_ = std::make_unique<knowhere::IndexDiskANN<float>>(index_prefix, metric_type,
+                                                                     std::make_shared<LocalFileManager>());
         } else if (type == "disann_ui8") {
-            index_ = std::make_unique<knowhere::IndexDiskANN<uint8_t>>(type, metric_type, file_manager);
+            index_ = std::make_unique<knowhere::IndexDiskANN<uint8_t>>(index_prefix, metric_type,
+                                                                       std::make_shared<LocalFileManager>());
         } else if (type == "diskann_i8") {
-            index_ = std::make_unique<knowhere::IndexDiskANN<int8_t>>(type, metric_type, file_manager);
+            index_ = std::make_unique<knowhere::IndexDiskANN<int8_t>>(index_prefix, metric_type,
+                                                                      std::make_shared<LocalFileManager>());
         } else {
             KNOWHERE_THROW_FORMAT("Invalid index type %s", std::string(type).c_str());
         }
