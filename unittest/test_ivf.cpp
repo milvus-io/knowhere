@@ -34,6 +34,7 @@
 
 #include "unittest/Helper.h"
 #include "unittest/range_utils.h"
+#include "unittest/ThreadChecker.h"
 #include "unittest/utils.h"
 
 using ::testing::Combine;
@@ -214,6 +215,17 @@ TEST_P(IVFTest, ivf_range_search_ip) {
         test_range_search_ip(radius, nullptr);
         test_range_search_ip(radius, *bitset);
     }
+}
+
+TEST_P(IVFTest, ivf_omp) {
+    int pid = getpid();
+    int32_t num_threads_before_build = knowhere::threadchecker::GetThreadNum(pid);
+    index_->BuildAll(base_dataset, conf_);
+    int32_t num_threads_after_build = knowhere::threadchecker::GetThreadNum(pid);
+    EXPECT_GE(knowhere::threadchecker::GetBuildOmpThread(conf_), num_threads_after_build - num_threads_before_build + 1);
+    auto result = index_->Query(query_dataset, conf_, nullptr);
+    int32_t num_threads_after_query = knowhere::threadchecker::GetThreadNum(pid);
+    EXPECT_GE(knowhere::threadchecker::GetQueryOmpThread(conf_), num_threads_after_query - num_threads_after_build + 1);
 }
 
 // TODO(linxj): deprecated

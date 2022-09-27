@@ -35,8 +35,8 @@ constexpr int64_t K = 10;
 constexpr int64_t PINMEM = 1024 * 1024 * 200;
 constexpr int64_t TEMPMEM = 1024 * 1024 * 300;
 constexpr int64_t RESNUM = 2;
-constexpr int64_t BUILD_INDEX_OMP_NUM = 3;
-constexpr int64_t QUERY_OMP_NUM = 4;
+constexpr int64_t BUILD_INDEX_OMP_NUM = 17;
+constexpr int64_t QUERY_OMP_NUM = 13;
 
 class ParamGenerator {
  public:
