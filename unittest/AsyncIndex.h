@@ -70,6 +70,11 @@ class AsyncIndex : public VecIndex {
             KNOWHERE_THROW_FORMAT("Invalid index type %s", std::string(type).c_str());
         }
     }
+    bool
+    Prepare(const Config& config) {
+        return index_->prepare();
+    }
+
 #endif
 
     std::vector<std::future<DatasetPtr>>&
