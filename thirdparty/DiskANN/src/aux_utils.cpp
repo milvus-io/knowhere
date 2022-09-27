@@ -983,7 +983,7 @@ namespace diskann {
     num_pq_chunks = num_pq_chunks <= 0 ? 1 : num_pq_chunks;
     num_pq_chunks = num_pq_chunks > dim ? dim : num_pq_chunks;
 
-    LOG(DEBUG) << "Compressing " << dim << "-dimensional data into "
+    LOG(INFO) << "Compressing " << dim << "-dimensional data into "
                   << num_pq_chunks << " bytes per vector.";
 
     size_t train_size, train_dim;
@@ -1021,6 +1021,7 @@ namespace diskann {
     if (config.compare_metric == diskann::Metric::INNER_PRODUCT)
       make_zero_mean = false;
 
+    auto pq_s = std::chrono::high_resolution_clock::now();
     generate_pq_pivots(train_data, train_size, (uint32_t) dim, 256,
                        (uint32_t) num_pq_chunks, NUM_KMEANS_REPS,
                        pq_pivots_path, make_zero_mean);
@@ -1028,7 +1029,9 @@ namespace diskann {
     generate_pq_data_from_pivots<T>(data_file_to_use.c_str(), 256,
                                     (uint32_t) num_pq_chunks, pq_pivots_path,
                                     pq_compressed_vectors_path);
-
+    auto pq_e = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> pq_diff = pq_e - pq_s;
+    LOG(INFO) << "Training PQ codes cost: " << pq_diff.count() << "s";
     delete[] train_data;
 
     train_data = nullptr;
@@ -1037,12 +1040,14 @@ namespace diskann {
 #if defined(RELEASE_UNUSED_TCMALLOC_MEMORY_AT_CHECKPOINTS) && defined(DISKANN_BUILD)
     MallocExtension::instance()->ReleaseFreeMemory();
 #endif
-
+    auto graph_s = std::chrono::high_resolution_clock::now();
     diskann::build_merged_vamana_index<T>(
         data_file_to_use.c_str(), diskann::Metric::L2, L, R,
         config.accelerate_build, p_val, indexing_ram_budget, mem_index_path,
         medoids_path, centroids_path);
-
+    auto graph_e = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> graph_diff = graph_e - graph_s;
+    LOG(INFO) << "Training graph cost: " << graph_diff.count() << "s";
     if (!use_disk_pq) {
       diskann::create_disk_layout<T>(data_file_to_use.c_str(), mem_index_path,
                                      disk_index_path);

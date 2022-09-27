@@ -11,6 +11,7 @@
 
 #include "knowhere/index/vector_index/IndexDiskANNConfig.h"
 
+#include <algorithm>
 #include <limits>
 #include <optional>
 #include <sstream>
@@ -59,6 +60,7 @@ static constexpr uint32_t kBuildNumThreadsMinValue = 1;
 static constexpr uint32_t kBuildNumThreadsMaxValue = 128;
 static constexpr uint32_t kDiskPqBytesMinValue = 0;
 static constexpr std::optional<uint32_t> kDiskPqBytesMaxValue = std::nullopt;
+static constexpr uint32_t kSearchListSizeMaxValue = 200;
 static constexpr uint32_t kBeamwidthMinValue = 1;
 static constexpr uint32_t kBeamwidthMaxValue = 128;
 static constexpr uint64_t kKMinValue = 1;
@@ -200,8 +202,8 @@ from_json(const Config& config, DiskANNPrepareConfig& prep_conf) {
     auto num_thread_max_value = kLinuxAioMaxnrLimit / prep_conf.aio_maxnr;
     CheckNumericParamAndSet<uint32_t>(config, kNumThreads, kSearchNumThreadsMinValue, num_thread_max_value,
                                       prep_conf.num_threads);
-    CheckNumericParamAndSet<float>(config, kCacheDramBudgetGb, kCacheDramBudgetGbMinValue,
-                                      kCacheDramBudgetGbMaxValue, prep_conf.search_cache_budget_gb);
+    CheckNumericParamAndSet<float>(config, kCacheDramBudgetGb, kCacheDramBudgetGbMinValue, kCacheDramBudgetGbMaxValue,
+                                   prep_conf.search_cache_budget_gb);
     CheckNonNumbericParamAndSet<bool>(config, kWarmUp, prep_conf.warm_up);
     CheckNonNumbericParamAndSet<bool>(config, kUseBfsCache, prep_conf.use_bfs_cache);
 }
@@ -216,7 +218,8 @@ void
 from_json(const Config& config, DiskANNQueryConfig& query_conf) {
     CheckNumericParamAndSet<uint64_t>(config, kK, kKMinValue, kKMaxValue, query_conf.k);
     // The search_list_size should be no less than the k.
-    CheckNumericParamAndSet<uint32_t>(config, kSearchListSize, query_conf.k, 10 * query_conf.k,
+    CheckNumericParamAndSet<uint32_t>(config, kSearchListSize, query_conf.k,
+                                      std::max(kSearchListSizeMaxValue, static_cast<uint32_t>(10 * query_conf.k)),
                                       query_conf.search_list_size);
     CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, kBeamwidthMinValue, kBeamwidthMaxValue, query_conf.beamwidth);
 }
