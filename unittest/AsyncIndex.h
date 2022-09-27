@@ -72,7 +72,7 @@ class AsyncIndex : public VecIndex {
     }
     bool
     Prepare(const Config& config) {
-        return index_->Prepare();
+        return index_->Prepare(config);
     }
 
 #endif
