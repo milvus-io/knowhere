@@ -31,6 +31,10 @@ class FlatIndexNode : public IndexNode {
     }
     virtual Error
     Add(const DataSet& dataset, const Config& cfg) override {
+        if (!index_) {
+            delete index_;
+            index_ = nullptr;
+        }
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
         auto metric = Str2FaissMetricType(f_cfg.metric_type);
         if (!metric.has_value())
@@ -74,7 +78,7 @@ class FlatIndexNode : public IndexNode {
                     }
                 }
             }
-        } catch (...) {
+        } catch (const std::exception&) {
             std::unique_ptr<int64_t[]> auto_delete_ids(ids);
             std::unique_ptr<float[]> auto_delete_dis(dis);
             return unexpected(Error::faiss_inner_error);
@@ -82,30 +86,6 @@ class FlatIndexNode : public IndexNode {
 
         results->SetIds(ids);
         results->SetDistance(dis);
-        return results;
-    }
-    virtual expected<DataSetPtr, Error>
-    SearchByRange(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
-        if (!index_) {
-            return unexpected(Error::empty_index);
-        }
-        DataSetPtr results = std::make_shared<DataSet>();
-        const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
-        auto nq = dataset.GetRows();
-        auto x = dataset.GetTensor();
-        faiss::RangeSearchResult res(nq);
-        if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
-            index_->range_search(nq, (const float*)x, f_cfg.radius, &res, nullptr);
-        }
-        if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
-            index_->range_search(nq, (const uint8_t*)x, f_cfg.radius, &res, nullptr);
-        }
-        results->SetIds(res.labels);
-        results->SetDistance(res.distances);
-        results->SetLims(res.lims);
-        res.labels = nullptr;
-        res.distances = nullptr;
-        res.lims = nullptr;
         return results;
     }
 
@@ -124,7 +104,7 @@ class FlatIndexNode : public IndexNode {
                 }
                 results->SetTensor(xq);
                 return results;
-            } catch (...) {
+            } catch (const std::exception&) {
                 return unexpected(Error::faiss_inner_error);
             }
         }
@@ -137,7 +117,7 @@ class FlatIndexNode : public IndexNode {
                 }
                 results->SetTensor(xq);
                 return results;
-            } catch (...) {
+            } catch (const std::exception&) {
                 return unexpected(Error::faiss_inner_error);
             }
         }
@@ -158,14 +138,16 @@ class FlatIndexNode : public IndexNode {
             if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value)
                 binset.Append("BinaryIVF", data, writer.rp);
             return Error::success;
-        } catch (...) {
+        } catch (const std::exception&) {
             return Error::faiss_inner_error;
         }
     }
     virtual Error
     Deserialization(const BinarySet& binset) override {
-        if (!index_)
-            return Error::empty_index;
+        if (index_) {
+            delete index_;
+            index_ = nullptr;
+        }
         std::string name = "";
         if constexpr (std::is_same<T, faiss::IndexFlat>::value)
             name = "FLAT";
@@ -187,7 +169,7 @@ class FlatIndexNode : public IndexNode {
         return Error::success;
     }
 
-    virtual std::unique_ptr<Config>
+    virtual std::unique_ptr<BaseConfig>
     CreateConfig() const override {
         return std::make_unique<FlatConfig>();
     }

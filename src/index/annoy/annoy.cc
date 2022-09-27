@@ -80,10 +80,6 @@ class AnnoyIndexNode : public IndexNode {
         results->SetDistance(p_dist);
         return results;
     }
-    virtual expected<DataSetPtr, Error>
-    SearchByRange(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
-        return unexpected(Error::not_implemented);
-    }
 
     virtual expected<DataSetPtr, Error>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
@@ -120,15 +116,15 @@ class AnnoyIndexNode : public IndexNode {
         }
 
         auto metric_type_length = metric_type_.length();
-        auto metric_type = std::make_shared<uint8_t[]>(metric_type_length);
+        std::shared_ptr<uint8_t[]> metric_type(new uint8_t[metric_type_length]);
         memcpy(metric_type.get(), metric_type_.data(), metric_type_.length());
 
         auto dim = Dims();
-        auto dim_data = std::make_shared<uint8_t[]>(sizeof(uint64_t));
+        std::shared_ptr<uint8_t[]> dim_data(new uint8_t[sizeof(uint64_t)]);
         memcpy(dim_data.get(), &dim, sizeof(uint64_t));
 
         size_t index_length = index_->get_index_length();
-        auto index_data = std::make_shared<uint8_t[]>(index_length);
+        std::shared_ptr<uint8_t[]> index_data(new uint8_t[index_length]);
         memcpy(index_data.get(), index_->get_index(), index_length);
 
         binset.Append("annoy_metric_type", metric_type, metric_type_length);
@@ -139,6 +135,8 @@ class AnnoyIndexNode : public IndexNode {
     }
     virtual Error
     Deserialization(const BinarySet& binset) override {
+        if (index_)
+            delete index_;
         auto metric_type = binset.GetByName("annoy_metric_type");
         metric_type_.resize(static_cast<size_t>(metric_type->size));
         memcpy(metric_type_.data(), metric_type->data.get(), static_cast<size_t>(metric_type->size));
@@ -165,7 +163,7 @@ class AnnoyIndexNode : public IndexNode {
         return Error::success;
     }
 
-    virtual std::unique_ptr<Config>
+    virtual std::unique_ptr<BaseConfig>
     CreateConfig() const override {
         return std::make_unique<AnnoyConfig>();
     }

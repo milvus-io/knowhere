@@ -11,7 +11,6 @@ class HnswConfig : public BaseConfig {
     int build_thread_num;
     int query_thread_num;
     int ef;
-    int range_k;
     KNOHWERE_DECLARE_CONFIG(HnswConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(M).description("hnsw M").set_default(16).for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(efConstruction).description("hnsw efConstruction").set_default(200).for_train();
@@ -24,7 +23,6 @@ class HnswConfig : public BaseConfig {
             .set_default(-1)
             .for_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(ef).description("hnsw ef").set_default(32).for_search();
-        KNOWHERE_CONFIG_DECLARE_FIELD(range_k).description("hnsw range k").set_default(20).for_range();
     }
 };
 

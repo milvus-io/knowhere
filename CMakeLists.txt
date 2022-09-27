@@ -9,6 +9,7 @@ include(cmake/utils/utils.cmake)
 
 knowhere_option(USE_CUDA "Build with CUDA" OFF)
 knowhere_option(WITH_UT "Build with UT test" OFF)
+knowhere_option(WITH_ASAN "Build with ASAN" OFF)
 
 if(USE_CUDA)
     set(CMAKE_CUDA_ARCHITECTURES 75;70;61;60)
@@ -22,11 +23,6 @@ include(cmake/utils/platform_check.cmake)
 include(cmake/libs/libfaiss.cmake)
 include(cmake/libs/libannoy.cmake)
 include(cmake/libs/libhnsw.cmake)
-
-
-add_definitions(-DAUTO_INITIALIZE_EASYLOGGINGPP=1)
-add_definitions(-DELPP_THREAD_SAFE=1)
-add_definitions(-DINFO=1)
 
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(thirdparty/faiss)
@@ -54,7 +50,7 @@ include_directories(.)
 
 add_library(knowhere SHARED ${KNOWHERE_SRCS})
 add_dependencies(knowhere faiss)
-target_link_libraries(knowhere PRIVATE faiss)
+target_link_libraries(knowhere PUBLIC faiss)
 
 if (WITH_UT)
     add_subdirectory(tests)

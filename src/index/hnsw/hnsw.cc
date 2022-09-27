@@ -52,6 +52,7 @@ class HnswIndexNode : public IndexNode {
         for (int i = 1; i < rows; ++i) {
             index_->addPoint((static_cast<const float*>(tensor) + hnsw_cfg.dim * i), i);
         }
+        return Error::success;
     }
     virtual expected<DataSetPtr, Error>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
@@ -101,63 +102,6 @@ class HnswIndexNode : public IndexNode {
         res->SetDistance(p_dist);
         return res;
     }
-    virtual expected<DataSetPtr, Error>
-    SearchByRange(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
-        if (!index_) {
-            return unexpected(Error::empty_index);
-        }
-
-        auto rows = dataset.GetRows();
-        auto dim = dataset.GetDim();
-        auto tensor = dataset.GetTensor();
-        auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
-        auto range_k = hnsw_cfg.range_k;
-        auto radius = hnsw_cfg.radius;
-        size_t ef = hnsw_cfg.ef;
-        hnswlib::SearchParam param{ef};
-        bool is_IP = (index_->metric_type_ == 1);  // InnerProduct: 1
-
-        if (!is_IP) {
-            radius *= radius;
-        }
-
-        std::vector<std::vector<int64_t>> result_id_array(rows);
-        std::vector<std::vector<float>> result_dist_array(rows);
-        std::vector<size_t> result_lims(rows + 1, 0);
-
-#pragma omp parallel for
-        for (unsigned int i = 0; i < rows; ++i) {
-            auto single_query = (float*)tensor + i * dim;
-
-            auto dummy_stat = hnswlib::StatisticsInfo();
-            auto rst = index_->searchRange(single_query, range_k, (is_IP ? 1.0f - radius : radius), bitset, dummy_stat,
-                                           &param);
-
-            for (auto& p : rst) {
-                result_dist_array[i].push_back(is_IP ? (1 - p.first) : p.first);
-                result_id_array[i].push_back(p.second);
-            }
-            result_lims[i + 1] = result_lims[i] + rst.size();
-        }
-
-        auto p_id = new (std::nothrow) int64_t[result_lims.back()];
-        auto p_dist = new (std::nothrow) float[result_lims.back()];
-        auto p_lims = new (std::nothrow) size_t[rows + 1];
-
-        for (int64_t i = 0; i < rows; i++) {
-            size_t start = result_lims[i];
-            size_t size = result_lims[i + 1] - result_lims[i];
-            memcpy(p_id + start, result_id_array[i].data(), size * sizeof(int64_t));
-            memcpy(p_dist + start, result_dist_array[i].data(), size * sizeof(float));
-        }
-        memcpy(p_lims, result_lims.data(), (rows + 1) * sizeof(size_t));
-        auto res = std::make_shared<DataSet>();
-        res->SetIds(p_id);
-        res->SetDistance(p_dist);
-        res->SetLims(p_lims);
-        return res;
-    }
-
     virtual expected<DataSetPtr, Error>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
         if (!index_) {
@@ -223,15 +167,15 @@ class HnswIndexNode : public IndexNode {
         return Error::success;
     }
 
-    virtual std::unique_ptr<Config>
+    virtual std::unique_ptr<BaseConfig>
     CreateConfig() const override {
         return std::make_unique<HnswConfig>();
     }
     virtual int64_t
     Dims() const override {
         if (!index_)
-            return 0;
-        return (*static_cast<size_t*>(index_->dist_func_param_));
+            return (*static_cast<size_t*>(index_->dist_func_param_));
+        return 0;
     }
     virtual int64_t
     Size() const override {
@@ -257,5 +201,7 @@ class HnswIndexNode : public IndexNode {
  private:
     hnswlib::HierarchicalNSW<float>* index_;
 };
+
+KNOWHERE_REGISTER_GLOBAL(HNSW, []() { return Index<HnswIndexNode>::Create(); });
 
 }  // namespace knowhere

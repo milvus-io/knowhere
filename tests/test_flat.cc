@@ -19,13 +19,10 @@ flat() {
         f.read((char*)data, s_size);
         xb.SetTensor(data);
     }
-    auto cfg = idx->CreateConfig();
     knowhere::Json json = knowhere::Json::parse(
         R"({"dim": 128, "metric_type": "L2", "k": 10, "radius": 100.0 , "nlist": 100, "nprobe": 80, "gpu_id": 0, "m": 4, "nbits": 8 })");
-    auto r = knowhere::Config::Load(*cfg, json, knowhere::PARAM_TYPE::TRAIN);
-    assert(r == knowhere::Error::success);
-    idx->Train(xb, *cfg);
-    idx->Add(xb, *cfg);
+    idx.Train(xb, json);
+    idx.Add(xb, json);
     knowhere::DataSet xq;
     xq.SetRows(10);
     xq.SetDim(128);
@@ -38,10 +35,8 @@ flat() {
         f.read((char*)data, s_size);
         xq.SetTensor(data);
     }
-    r = knowhere::Config::Load(*cfg, json, knowhere::PARAM_TYPE::SEARCH);
-    assert(r == knowhere::Error::success);
     for (int i = 0; i < 100000; ++i) {
-        auto res = idx->Search(xq, *cfg, nullptr);
+        auto res = idx.Search(xq, json, nullptr);
         if (!res.has_value())
             std::cout << (int)res.error() << std::endl;
         {

@@ -9,6 +9,10 @@ if(NOT COMPILER_SUPPORTS_CXX17)
   )
 endif()
 
+if(WITH_ASAN)
+    set(CMAKE_CXX_FLAGS "-fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking -fsanitize=address ${CMAKE_CXX_FLAGS}")
+endif()
+
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   message(STATUS "Build in Debug mode")
   set(CMAKE_CXX_FLAGS "-O0 -g -Wall -fPIC ${CMAKE_CXX_FLAGS}")

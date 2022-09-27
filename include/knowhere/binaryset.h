@@ -64,6 +64,8 @@ class BinarySet {
  public:
     std::map<std::string, BinaryPtr> binary_map_;
 };
+
+using BinarySetPtr = std::shared_ptr<BinarySet>;
 }  // namespace knowhere
 
 #endif /* BINARYSET_H */

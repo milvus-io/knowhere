@@ -8,18 +8,18 @@ namespace knowhere {
 
 enum class Error {
     success = 0,
-    invalid_args,
-    invalid_param_in_json,
-    out_of_range_in_json,
-    type_conflict_in_json,
-    invalid_metric_type,
-    empty_index,
-    not_implemented,
-    index_not_trained,
-    index_already_trained,
-    faiss_inner_error,
-    annoy_inner_error,
-    hnsw_inner_error,
+    invalid_args = 1,
+    invalid_param_in_json = 2,
+    out_of_range_in_json = 3,
+    type_conflict_in_json = 4,
+    invalid_metric_type = 5,
+    empty_index = 6,
+    not_implemented = 7,
+    index_not_trained = 8,
+    index_already_trained = 9,
+    faiss_inner_error = 10,
+    annoy_inner_error = 11,
+    hnsw_inner_error = 12,
 };
 
 template <typename E>
@@ -52,8 +52,15 @@ class expected {
         err = unexp.err;
     }
 
-    expected(const expected&) = default;
-    expected(expected&&) = default;
+    expected(const expected<T, E>& other) {
+        this->has_val = other.has_val;
+        if (other.has_val) {
+            this->val = other.val;
+        } else {
+            this->err = other.err;
+        }
+    };
+    expected(expected<T, E>&&) = default;
     bool
     has_value() {
         return has_val;

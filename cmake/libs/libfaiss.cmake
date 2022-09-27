@@ -59,8 +59,10 @@ add_library(knowhere_utils STATIC
             $<TARGET_OBJECTS:utils_sse>
             $<TARGET_OBJECTS:utils_avx>
             $<TARGET_OBJECTS:utils_avx512>
-            )
+)
 
+set(BLA_VENDOR OpenBLAS)
+find_package(BLAS REQUIRED)
 
 if(__X86_64)
   add_library(faiss_avx512 OBJECT ${FAISS_AVX512_SRCS})

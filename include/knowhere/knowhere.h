@@ -14,17 +14,17 @@ namespace knowhere {
 
 class Object {
  public:
-    uint32_t
+    inline uint32_t
     Ref() const {
         return ref_counts_.load(std::memory_order_relaxed);
     };
-    void
+    inline void
     DecRef() {
-        ref_counts_.fetch_add(1, std::memory_order_relaxed);
-    };
-    void
-    IncRef() {
         ref_counts_.fetch_sub(1, std::memory_order_relaxed);
+    };
+    inline void
+    IncRef() {
+        ref_counts_.fetch_add(1, std::memory_order_relaxed);
     };
 
  private:
@@ -42,14 +42,12 @@ class IndexNode : public Object {
     virtual expected<DataSetPtr, Error>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const = 0;
     virtual expected<DataSetPtr, Error>
-    SearchByRange(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const = 0;
-    virtual expected<DataSetPtr, Error>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const = 0;
     virtual Error
     Serialization(BinarySet& binset) const = 0;
     virtual Error
     Deserialization(const BinarySet& binset) = 0;
-    virtual std::unique_ptr<Config>
+    virtual std::unique_ptr<BaseConfig>
     CreateConfig() const = 0;
     virtual int64_t
     Dims() const = 0;
@@ -68,9 +66,11 @@ class Index {
     template <typename T2>
     friend class Index;
 
+    Index() : node(nullptr) {
+    }
     static Index<T1>
     Create() {
-        return Index(new T1());
+        return Index(new (std::nothrow) T1());
     }
 
     template <typename T2>
@@ -128,17 +128,85 @@ class Index {
         return *this;
     }
 
-    T1*
-    operator->() {
-        return node;
-    }
-
     template <typename T2>
     Index<T2>
     Cast() {
         static_assert(std::is_base_of<T1, T2>::value);
         node->IncRef();
         return Index(dynamic_cast<T2>(node));
+    }
+
+    Error
+    Build(const DataSet& dataset, const Json& json) {
+        auto cfg = this->node->CreateConfig();
+        auto res = Config::Load(*cfg, json, knowhere::TRAIN);
+        if (res != Error::success)
+            return res;
+        return this->node->Build(dataset, *cfg);
+    }
+
+    Error
+    Train(const DataSet& dataset, const Json& json) {
+        auto cfg = this->node->CreateConfig();
+        auto res = Config::Load(*cfg, json, knowhere::TRAIN);
+        if (res != Error::success)
+            return res;
+        return this->node->Train(dataset, *cfg);
+    }
+
+    Error
+    Add(const DataSet& dataset, const Json& json) {
+        auto cfg = this->node->CreateConfig();
+        auto res = Config::Load(*cfg, json, knowhere::TRAIN);
+        if (res != Error::success)
+            return res;
+        return this->node->Add(dataset, *cfg);
+    };
+
+    expected<DataSetPtr, Error>
+    Search(const DataSet& dataset, const Json& json, const BitsetView& bitset) const {
+        auto cfg = this->node->CreateConfig();
+        auto res = Config::Load(*cfg, json, knowhere::SEARCH);
+        if (res != Error::success)
+            return unexpected(res);
+        return this->node->Search(dataset, *cfg, bitset);
+    };
+
+    expected<DataSetPtr, Error>
+    GetVectorByIds(const DataSet& dataset, const Json& json) const {
+        auto cfg = this->node->CreateConfig();
+        auto res = Config::Load(*cfg, json, knowhere::SEARCH);
+        if (res != Error::success)
+            return unexpected(res);
+        return this->node->GetVectorByIds(dataset, *cfg);
+    };
+
+    Error
+    Serialization(BinarySet& binset) const {
+        return this->node->Serialization(binset);
+    };
+
+    Error
+    Deserialization(const BinarySet& binset) {
+        return this->node->Deserialization(binset);
+    };
+
+    int64_t
+    Dims() const {
+        return this->node->Dims();
+    };
+    int64_t
+    Size() const {
+        return this->node->Size();
+    };
+    int64_t
+    Count() const {
+        return this->node->Count();
+    }
+
+    std::string
+    Type() {
+        return this->node->Type();
     }
 
     ~Index() {
@@ -173,6 +241,32 @@ class IndexFactory {
     static FuncMap&
     MapInstance();
 };
+
+/*
+class IndexWrap {
+ public:
+    IndexWrap(const std::string& name) {
+        idx = IndexFactory::Instance().Create(name);
+    }
+
+    Error
+    Build(const DataSet& dataset, const Json& json) {
+        return idx.Build(dataset, json);
+    }
+
+    Error
+    Train(const DataSet& dataset, const Json& json) {
+        return idx.Train(dataset, json);
+    }
+    expected<DataSetPtr, Error>
+    Search(const DataSet& dataset, const Json& json) {
+        return idx.Search(dataset, json, nullptr);
+    }
+
+ private:
+    Index<IndexNode> idx;
+};
+*/
 
 #define KNOWHERE_CONCAT(x, y) x##y
 #define KNOWHERE_REGISTER_GLOBAL(name, func) \

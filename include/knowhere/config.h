@@ -2,6 +2,7 @@
 #define CONFIG_H
 
 #include <iostream>
+#include <list>
 #include <optional>
 #include <unordered_map>
 #include <variant>
@@ -13,69 +14,49 @@ namespace knowhere {
 
 typedef nlohmann::json Json;
 
+typedef int32_t CFG_INT;
+typedef std::string CFG_STRING;
+typedef float CFG_FLOAT;
+typedef std::list<int> CFG_LIST;
+
 template <typename T>
 struct Entry {};
 
 enum PARAM_TYPE {
     SEARCH = 0x1,
-    RANGE = 0x2,
-    TRAIN = 0x4,
+    TRAIN = 0x2,
 };
 
 template <>
-struct Entry<std::string> {
-    Entry<std::string>(std::string* v) {
+struct Entry<CFG_STRING> {
+    Entry<CFG_STRING>(CFG_STRING* v) {
         val = v;
         type = 0x0;
         default_val = std::nullopt;
         desc = std::nullopt;
     }
-    Entry<std::string>() {
+    Entry<CFG_STRING>() {
         val = nullptr;
         type = 0x0;
         default_val = std::nullopt;
         desc = std::nullopt;
     }
-    std::string* val;
+    CFG_STRING* val;
     uint32_t type;
-    std::optional<std::string> default_val;
-    std::optional<std::string> desc;
+    std::optional<CFG_STRING> default_val;
+    std::optional<CFG_STRING> desc;
 };
 
 template <>
-struct Entry<float> {
-    Entry<float>(float* v) {
+struct Entry<CFG_FLOAT> {
+    Entry<CFG_FLOAT>(CFG_FLOAT* v) {
         val = v;
         default_val = std::nullopt;
         type = 0x0;
         range = std::nullopt;
         desc = std::nullopt;
     }
-    Entry<float>() {
-        val = nullptr;
-        default_val = std::nullopt;
-        type = 0x0;
-        range = std::nullopt;
-        desc = std::nullopt;
-    }
-
-    float* val;
-    std::optional<float> default_val;
-    uint32_t type;
-    std::optional<std::pair<float, float>> range;
-    std::optional<std::string> desc;
-};
-
-template <>
-struct Entry<int> {
-    Entry<int>(int* v) {
-        val = v;
-        default_val = std::nullopt;
-        type = 0x0;
-        range = std::nullopt;
-        desc = std::nullopt;
-    }
-    Entry<int>() {
+    Entry<CFG_FLOAT>() {
         val = nullptr;
         default_val = std::nullopt;
         type = 0x0;
@@ -83,11 +64,57 @@ struct Entry<int> {
         desc = std::nullopt;
     }
 
-    int* val;
-    std::optional<int> default_val;
+    CFG_FLOAT* val;
+    std::optional<CFG_FLOAT> default_val;
     uint32_t type;
-    std::optional<std::pair<int, int>> range;
-    std::optional<std::string> desc;
+    std::optional<std::pair<CFG_FLOAT, CFG_FLOAT>> range;
+    std::optional<CFG_STRING> desc;
+};
+
+template <>
+struct Entry<CFG_INT> {
+    Entry<CFG_INT>(CFG_INT* v) {
+        val = v;
+        default_val = std::nullopt;
+        type = 0x0;
+        range = std::nullopt;
+        desc = std::nullopt;
+    }
+    Entry<CFG_INT>() {
+        val = nullptr;
+        default_val = std::nullopt;
+        type = 0x0;
+        range = std::nullopt;
+        desc = std::nullopt;
+    }
+
+    CFG_INT* val;
+    std::optional<CFG_INT> default_val;
+    uint32_t type;
+    std::optional<std::pair<CFG_INT, CFG_INT>> range;
+    std::optional<CFG_STRING> desc;
+};
+
+template <>
+struct Entry<CFG_LIST> {
+    Entry<CFG_LIST>(CFG_LIST* v) {
+        val = v;
+        default_val = std::nullopt;
+        type = 0x0;
+        desc = std::nullopt;
+    }
+
+    Entry<CFG_LIST>() {
+        val = nullptr;
+        default_val = std::nullopt;
+        type = 0x0;
+        desc = std::nullopt;
+    }
+
+    CFG_LIST* val;
+    std::optional<CFG_LIST> default_val;
+    uint32_t type;
+    std::optional<CFG_STRING> desc;
 };
 
 template <typename T>
@@ -109,7 +136,7 @@ class EntryAccess {
     }
 
     EntryAccess&
-    description(const std::string& desc) {
+    description(const CFG_STRING& desc) {
         entry->desc = desc;
         return *this;
     }
@@ -124,14 +151,8 @@ class EntryAccess {
         return *this;
     }
     EntryAccess&
-    for_range() {
-        entry->type |= PARAM_TYPE::RANGE;
-        return *this;
-    }
-    EntryAccess&
     for_all() {
         entry->type |= PARAM_TYPE::SEARCH;
-        entry->type |= PARAM_TYPE::RANGE;
         entry->type |= PARAM_TYPE::TRAIN;
         return *this;
     }
@@ -148,15 +169,15 @@ class Config {
         for (auto it = cfg.__DICT__.begin(); it != cfg.__DICT__.end(); ++it) {
             const auto& var = it->second;
 
-            if (const Entry<int>* ptr = std::get_if<Entry<int>>(&var)) {
+            if (const Entry<CFG_INT>* ptr = std::get_if<Entry<CFG_INT>>(&var)) {
                 json[it->first] = *ptr->val;
             }
 
-            if (const Entry<std::string>* ptr = std::get_if<Entry<std::string>>(&var)) {
+            if (const Entry<CFG_STRING>* ptr = std::get_if<Entry<CFG_STRING>>(&var)) {
                 json[it->first] = *ptr->val;
             }
 
-            if (const Entry<float>* ptr = std::get_if<Entry<float>>(&var)) {
+            if (const Entry<CFG_FLOAT>* ptr = std::get_if<Entry<CFG_FLOAT>>(&var)) {
                 json[it->first] = *ptr->val;
             }
         }
@@ -166,15 +187,13 @@ class Config {
 
     static Error
     Load(Config& cfg, const Json& json, PARAM_TYPE type) {
-        auto cfg_bak = cfg;
         for (auto it = cfg.__DICT__.begin(); it != cfg.__DICT__.end(); ++it) {
             const auto& var = it->second;
 
-            if (const Entry<int>* ptr = std::get_if<Entry<int>>(&var)) {
+            if (const Entry<CFG_INT>* ptr = std::get_if<Entry<CFG_INT>>(&var)) {
                 if (!(type & ptr->type))
                     continue;
                 if (json.find(it->first) == json.end() && !ptr->default_val.has_value()) {
-                    cfg = cfg_bak;
                     return Error::invalid_param_in_json;
                 }
                 if (json.find(it->first) == json.end()) {
@@ -182,7 +201,6 @@ class Config {
                     continue;
                 }
                 if (!json[it->first].is_number_integer()) {
-                    cfg = cfg_bak;
                     return Error::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
@@ -190,7 +208,6 @@ class Config {
                     if (ptr->range.value().first <= v && v <= ptr->range.value().second) {
                         *ptr->val = v;
                     } else {
-                        cfg = cfg_bak;
                         return Error::out_of_range_in_json;
                     }
                 } else {
@@ -198,11 +215,10 @@ class Config {
                 }
             }
 
-            if (const Entry<float>* ptr = std::get_if<Entry<float>>(&var)) {
+            if (const Entry<CFG_FLOAT>* ptr = std::get_if<Entry<CFG_FLOAT>>(&var)) {
                 if (!(type & ptr->type))
                     continue;
                 if (json.find(it->first) == json.end() && !ptr->default_val.has_value()) {
-                    cfg = cfg_bak;
                     return Error::invalid_param_in_json;
                 }
                 if (json.find(it->first) == json.end()) {
@@ -210,7 +226,6 @@ class Config {
                     continue;
                 }
                 if (!json[it->first].is_number_float()) {
-                    cfg = cfg_bak;
                     return Error::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
@@ -218,7 +233,6 @@ class Config {
                     if (ptr->range.value().first <= v && v <= ptr->range.value().second) {
                         *ptr->val = v;
                     } else {
-                        cfg = cfg_bak;
                         return Error::out_of_range_in_json;
                     }
                 } else {
@@ -226,11 +240,10 @@ class Config {
                 }
             }
 
-            if (const Entry<std::string>* ptr = std::get_if<Entry<std::string>>(&var)) {
+            if (const Entry<CFG_STRING>* ptr = std::get_if<Entry<CFG_STRING>>(&var)) {
                 if (!(type & ptr->type))
                     continue;
                 if (json.find(it->first) == json.end() && !ptr->default_val.has_value()) {
-                    cfg = cfg_bak;
                     return Error::invalid_param_in_json;
                 }
                 if (json.find(it->first) == json.end()) {
@@ -238,18 +251,36 @@ class Config {
                     continue;
                 }
                 if (!json[it->first].is_string()) {
-                    cfg = cfg_bak;
                     return Error::type_conflict_in_json;
                 }
                 *ptr->val = json[it->first];
+            }
+
+            if (const Entry<CFG_LIST>* ptr = std::get_if<Entry<CFG_LIST>>(&var)) {
+                if (!(type & ptr->type))
+                    continue;
+                if (json.find(it->first) == json.end() && !ptr->default_val.has_value()) {
+                    return Error::invalid_param_in_json;
+                }
+                if (json.find(it->first) == json.end()) {
+                    *ptr->val = ptr->default_val.value();
+                    continue;
+                }
+                if (!json[it->first].is_array()) {
+                    return Error::type_conflict_in_json;
+                }
+                for (auto&& i : json[it->first]) ptr->val->push_back(i);
             }
         }
 
         return Error::success;
     }
 
-    typedef std::variant<Entry<std::string>, Entry<float>, Entry<int>> VarEntry;
-    std::unordered_map<std::string, VarEntry> __DICT__;
+    virtual ~Config() {
+    }
+
+    typedef std::variant<Entry<CFG_STRING>, Entry<CFG_FLOAT>, Entry<CFG_INT>, Entry<CFG_LIST>> VarEntry;
+    std::unordered_map<CFG_STRING, VarEntry> __DICT__;
 };
 
 #define KNOHWERE_DECLARE_CONFIG(CONFIG) CONFIG()
@@ -261,10 +292,9 @@ class Config {
 
 class BaseConfig : public Config {
  public:
-    int dim;
+    CFG_INT dim;
     std::string metric_type;
-    int k;
-    float radius;
+    CFG_INT k;
     KNOHWERE_DECLARE_CONFIG(BaseConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(dim).description("vector dims.").for_all();
         KNOWHERE_CONFIG_DECLARE_FIELD(metric_type).set_default("L2").description("distance metric type.").for_all();
@@ -273,7 +303,6 @@ class BaseConfig : public Config {
             .description("search for top k similar vector.")
             .for_search()
             .for_train();
-        KNOWHERE_CONFIG_DECLARE_FIELD(radius).set_default(0.0f).description("range search radius.").for_range();
     }
 };
 
