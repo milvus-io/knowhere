@@ -803,7 +803,7 @@ namespace diskann {
 
     if (long_node) {
       for (_u64 node_id = 0; node_id < npts_64; ++node_id) {
-        memset(sector_buf.get(), 0, sector_buf_size);  
+        memset(sector_buf.get(), 0, sector_buf_size);
         char *nnbrs = sector_buf.get() + ndims_64 * sizeof(T);
         char *nhood_buf =
             sector_buf.get() + (ndims_64 * sizeof(T)) + sizeof(unsigned);
@@ -816,7 +816,7 @@ namespace diskann {
         assert(*nnbrs <= width_u32);
 
         // read node's nhood
-        vamana_reader.read(nhood_buf, (*nnbrs) * sizeof(unsigned));
+        vamana_reader.read(nhood_buf, *((unsigned *)nnbrs) * sizeof(unsigned));
 
         // write coords of node first
         base_reader.read((char *) sector_buf.get(), sizeof(T) * ndims_64);
@@ -851,7 +851,7 @@ namespace diskann {
         assert(*nnbrs <= width_u32);
 
         // read node's nhood
-        vamana_reader.read(nhood_buf, (*nnbrs) * sizeof(unsigned));
+        vamana_reader.read(nhood_buf, *((unsigned *)nnbrs) * sizeof(unsigned));
 
         // write coords of node first
         base_reader.read(sector_node_buf, sizeof(T) * ndims_64);
