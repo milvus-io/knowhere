@@ -60,29 +60,41 @@ class IvfGpuIndexNode : public IndexNode {
         auto metric = Str2FaissMetricType(ivf_gpu_cfg.metric_type);
         if (!metric.has_value())
             return metric.error();
+        faiss::Index* gpu_index;
         try {
             auto qzr = new (std::nothrow) faiss::IndexFlat(ivf_gpu_cfg.dim, metric.value());
+            if (qzr == nullptr)
+                return Error::malloc_error;
+            std::unique_ptr<faiss::IndexFlat> auto_delele_qzr(qzr);
             T* host_index = nullptr;
             if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
                 host_index =
                     new (std::nothrow) faiss::IndexIVFFlat(qzr, ivf_gpu_cfg.dim, ivf_gpu_cfg.nlist, metric.value());
+                if (host_index == nullptr)
+                    return Error::malloc_error;
             }
             if constexpr (std::is_same<T, faiss::IndexIVFPQ>::value) {
                 host_index = new (std::nothrow) faiss::IndexIVFPQ(qzr, ivf_gpu_cfg.dim, ivf_gpu_cfg.nlist,
                                                                   ivf_gpu_cfg.m, ivf_gpu_cfg.nbits, metric.value());
+                if (host_index == nullptr)
+                    return Error::malloc_error;
             }
             if constexpr (std::is_same<T, faiss::IndexIVFScalarQuantizer>::value) {
                 host_index = new (std::nothrow) faiss::IndexIVFScalarQuantizer(
                     qzr, ivf_gpu_cfg.dim, ivf_gpu_cfg.nlist, faiss::QuantizerType::QT_8bit, metric.value());
+                if (host_index == nullptr)
+                    return Error::malloc_error;
             }
-            this->gpu_index_ = faiss::gpu::index_cpu_to_gpu_multiple(this->res_, this->devs_, host_index);
-            this->gpu_index_->train(rows, reinterpret_cast<const float*>(tensor));
             std::unique_ptr<T> auto_delete_host_index(host_index);
-            std::unique_ptr<faiss::IndexFlat> auto_delele_qzr(qzr);
+            gpu_index = faiss::gpu::index_cpu_to_gpu_multiple(this->res_, this->devs_, host_index);
+            gpu_index->train(rows, reinterpret_cast<const float*>(tensor));
 
         } catch (std::exception& e) {
+            if (gpu_index)
+                delete gpu_index;
             return Error::faiss_inner_error;
         }
+        this->gpu_index_ = gpu_index;
         return Error::success;
     }
     virtual Error

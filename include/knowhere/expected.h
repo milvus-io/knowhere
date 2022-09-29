@@ -20,6 +20,7 @@ enum class Error {
     faiss_inner_error = 10,
     annoy_inner_error = 11,
     hnsw_inner_error = 12,
+    malloc_error = 13,
 };
 
 template <typename E>

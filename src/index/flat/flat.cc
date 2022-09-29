@@ -31,15 +31,20 @@ class FlatIndexNode : public IndexNode {
     }
     virtual Error
     Add(const DataSet& dataset, const Config& cfg) override {
-        if (!index_) {
-            delete index_;
-            index_ = nullptr;
-        }
+        T* index = nullptr;
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
         auto metric = Str2FaissMetricType(f_cfg.metric_type);
         if (!metric.has_value())
             return metric.error();
-        index_ = new (std::nothrow) T(f_cfg.dim, metric.value());
+        index = new (std::nothrow) T(f_cfg.dim, metric.value());
+
+        if (index == nullptr) {
+            return Error::malloc_error;
+        }
+
+        if (this->index_)
+            delete this->index_;
+        this->index_ = index;
 
         const void* x = dataset.GetTensor();
         const int64_t n = dataset.GetRows();

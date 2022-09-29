@@ -46,16 +46,21 @@ class GpuFlatIndexNode : public IndexNode {
             this->res_.push_back(new (std::nothrow) faiss::gpu::StandardGpuResources);
         }
 
-        auto host_index = std::make_unique<faiss::IndexFlat>(f_cfg.dim, metric.value());
-        gpu_index_ = faiss::gpu::index_cpu_to_gpu_multiple(this->res_, this->devs_, host_index.get());
-
         const void* x = dataset.GetTensor();
         const int64_t n = dataset.GetRows();
+        faiss::Index* gpu_index = nullptr;
         try {
-            gpu_index_->add(n, (const float*)x);
+            auto host_index = std::make_unique<faiss::IndexFlat>(f_cfg.dim, metric.value());
+            gpu_index = faiss::gpu::index_cpu_to_gpu_multiple(this->res_, this->devs_, host_index.get());
+            gpu_index->add(n, (const float*)x);
         } catch (const std::exception& e) {
+            if (gpu_index)
+                delete gpu_index;
             return Error::faiss_inner_error;
         }
+        if (this->gpu_index_)
+            delete this->gpu_index_;
+        this->gpu_index_ = gpu_index;
         return Error::success;
     }
     virtual expected<DataSetPtr, Error>

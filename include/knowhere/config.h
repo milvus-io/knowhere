@@ -293,7 +293,7 @@ class Config {
 class BaseConfig : public Config {
  public:
     CFG_INT dim;
-    std::string metric_type;
+    CFG_STRING metric_type;
     CFG_INT k;
     KNOHWERE_DECLARE_CONFIG(BaseConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(dim).description("vector dims.").for_all();

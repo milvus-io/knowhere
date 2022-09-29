@@ -9,19 +9,28 @@ class AnnoyIndexNode : public IndexNode {
  public:
     virtual Error
     Build(const DataSet& dataset, const Config& cfg) override {
-        if (index_)
-            return Error::index_already_trained;
-
         const AnnoyConfig& annoy_cfg = static_cast<const AnnoyConfig&>(cfg);
         metric_type_ = annoy_cfg.metric_type;
         auto dim = dataset.GetDim();
-        if (annoy_cfg.metric_type == "L2")
-            index_ =
+        AnnoyIndexInterface<int64_t, float>* index = nullptr;
+        if (annoy_cfg.metric_type == "L2") {
+            index =
                 new (std::nothrow) AnnoyIndex<int64_t, float, ::Euclidean, ::Kiss64Random, ThreadedBuildPolicy>(dim);
-        if (annoy_cfg.metric_type == "IP")
-            index_ =
+            if (index == nullptr)
+                return Error::malloc_error;
+        }
+
+        if (annoy_cfg.metric_type == "IP") {
+            index =
                 new (std::nothrow) AnnoyIndex<int64_t, float, ::DotProduct, ::Kiss64Random, ThreadedBuildPolicy>(dim);
-        if (index_) {
+            if (index == nullptr)
+                return Error::malloc_error;
+        }
+        if (index) {
+            if (this->index_)
+                delete this->index_;
+            this->index_ = index;
+
             auto p_data = dataset.GetTensor();
             auto rows = dataset.GetRows();
             for (int i = 0; i < rows; ++i) {
@@ -35,7 +44,7 @@ class AnnoyIndexNode : public IndexNode {
     }
     virtual Error
     Train(const DataSet& dataset, const Config& cfg) override {
-        return Error::not_implemented;
+        return Build(dataset, cfg);
     }
     virtual Error
     Add(const DataSet& dataset, const Config& cfg) override {

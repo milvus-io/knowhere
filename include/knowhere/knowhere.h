@@ -242,32 +242,6 @@ class IndexFactory {
     MapInstance();
 };
 
-/*
-class IndexWrap {
- public:
-    IndexWrap(const std::string& name) {
-        idx = IndexFactory::Instance().Create(name);
-    }
-
-    Error
-    Build(const DataSet& dataset, const Json& json) {
-        return idx.Build(dataset, json);
-    }
-
-    Error
-    Train(const DataSet& dataset, const Json& json) {
-        return idx.Train(dataset, json);
-    }
-    expected<DataSetPtr, Error>
-    Search(const DataSet& dataset, const Json& json) {
-        return idx.Search(dataset, json, nullptr);
-    }
-
- private:
-    Index<IndexNode> idx;
-};
-*/
-
 #define KNOWHERE_CONCAT(x, y) x##y
 #define KNOWHERE_REGISTER_GLOBAL(name, func) \
     const IndexFactory& KNOWHERE_CONCAT(index_factory_ref_, name) = IndexFactory::Instance().Register(#name, func)

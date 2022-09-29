@@ -19,8 +19,6 @@ class HnswIndexNode : public IndexNode {
     }
     virtual Error
     Train(const DataSet& dataset, const Config& cfg) override {
-        if (index_)
-            delete index_;
         auto rows = dataset.GetRows();
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
         hnswlib::SpaceInterface<float>* space = NULL;
@@ -33,7 +31,14 @@ class HnswIndexNode : public IndexNode {
         if (space == NULL)
             return Error::invalid_metric_type;
 
-        index_ = new (std::nothrow) hnswlib::HierarchicalNSW<float>(space, rows, hnsw_cfg.M, hnsw_cfg.efConstruction);
+        auto index =
+            new (std::nothrow) hnswlib::HierarchicalNSW<float>(space, rows, hnsw_cfg.M, hnsw_cfg.efConstruction);
+        if (index == nullptr)
+            return Error::malloc_error;
+        if (this->index_)
+            delete this->index_;
+        this->index_ = index;
+
         return Error::success;
     }
     virtual Error
