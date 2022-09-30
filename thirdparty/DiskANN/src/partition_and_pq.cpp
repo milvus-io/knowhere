@@ -639,8 +639,7 @@ int shard_data_into_clusters(const std::string data_file, float *pivots,
   base_reader.read((char *) &basedim32, sizeof(uint32_t));
   size_t num_points = npts32;
   if (basedim32 != dim) {
-    diskann::cout << "Error. dimensions dont match for train set and base set"
-                  << std::endl;
+    LOG(ERROR) << "Error. dimensions dont match for train set and base set";
     return -1;
   }
 
@@ -742,8 +741,7 @@ int shard_data_into_clusters_only_ids(const std::string data_file,
   base_reader.read((char *) &basedim32, sizeof(uint32_t));
   size_t num_points = npts32;
   if (basedim32 != dim) {
-    diskann::cout << "Error. dimensions dont match for train set and base set"
-                  << std::endl;
+    LOG(ERROR) << "Error. dimensions dont match for train set and base set";
     return -1;
   }
 
