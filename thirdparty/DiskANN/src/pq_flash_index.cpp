@@ -545,8 +545,7 @@ namespace diskann {
     this->disk_index_file = disk_index_file;
 
     if (pq_file_num_centroids != 256) {
-      diskann::cout << "Error. Number of PQ centroids is not 256. Exitting."
-                    << std::endl;
+      LOG(ERROR) << "Error. Number of PQ centroids is not 256. Exitting.";
       return -1;
     }
 
@@ -621,19 +620,18 @@ namespace diskann {
     size_t expected_file_size;
     READ_U64(index_metadata, expected_file_size);
     if (actual_index_size != expected_file_size) {
-      diskann::cout << "File size mismatch for " << disk_index_file
-                    << " (size: " << actual_index_size << ")"
-                    << " with meta-data size: " << expected_file_size
-                    << std::endl;
+      LOG(ERROR) << "File size mismatch for " << disk_index_file
+                 << " (size: " << actual_index_size << ")"
+                 << " with meta-data size: " << expected_file_size;
       return -1;
     }
 
     _u64 disk_nnodes;
     READ_U64(index_metadata, disk_nnodes);
     if (disk_nnodes != num_points) {
-      diskann::cout << "Mismatch in #points for compressed data file and disk "
-                       "index file: "
-                    << disk_nnodes << " vs " << num_points << std::endl;
+      LOG(ERROR) << "Mismatch in #points for compressed data file and disk "
+                    "index file: "
+                 << disk_nnodes << " vs " << num_points;
       return -1;
     }
 
