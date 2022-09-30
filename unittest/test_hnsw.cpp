@@ -146,7 +146,6 @@ TEST_P(HNSWTest, hnsw_slice) {
 
 TEST_P(HNSWTest, hnsw_range_search_l2) {
     knowhere::SetMetaMetricType(conf_, knowhere::metric::L2);
-    knowhere::SetIndexParamHNSWK(conf_, 20);
 
     index_->BuildAll(base_dataset, conf_);
 
@@ -175,7 +174,6 @@ TEST_P(HNSWTest, hnsw_range_search_l2) {
 
 TEST_P(HNSWTest, hnsw_range_search_ip) {
     knowhere::SetMetaMetricType(conf_, knowhere::metric::IP);
-    knowhere::SetIndexParamHNSWK(conf_, 20);
 
     index_->BuildAll(base_dataset, conf_);
 
@@ -304,7 +302,6 @@ TEST_P(HNSWTest, HNSW_trace_visit) {
 TEST_P(HNSWTest, HNSW_range_trace_visit) {
     index_->BuildAll(base_dataset, conf_);
 
-    knowhere::SetIndexParamHNSWK(conf_, 20);
     knowhere::SetMetaRadius(conf_, radius);
 
     knowhere::SetMetaTraceVisit(conf_, true);

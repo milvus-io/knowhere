@@ -53,7 +53,6 @@ constexpr const char* PQ_M = "PQM";     // PQ param for RHNSWPQ
 constexpr const char* EFCONSTRUCTION = "efConstruction";
 constexpr const char* HNSW_M = "M";
 constexpr const char* EF = "ef";
-constexpr const char* HNSW_K = "range_k";
 constexpr const char* OVERVIEW_LEVELS = "overview_levels";
 // Annoy Params
 constexpr const char* N_TREES = "n_trees";
@@ -161,9 +160,6 @@ DEFINE_CONFIG_SETTER(SetIndexParamHNSWM, indexparam::HNSW_M, int64_t)
 
 DEFINE_CONFIG_GETTER(GetIndexParamEf, indexparam::EF, int64_t)
 DEFINE_CONFIG_SETTER(SetIndexParamEf, indexparam::EF, int64_t)
-
-DEFINE_CONFIG_GETTER(GetIndexParamHNSWK, indexparam::HNSW_K, int64_t)
-DEFINE_CONFIG_SETTER(SetIndexParamHNSWK, indexparam::HNSW_K, int64_t)
 
 DEFINE_CONFIG_GETTER(GetIndexParamOverviewLevels, indexparam::OVERVIEW_LEVELS, int64_t)
 DEFINE_CONFIG_SETTER(SetIndexParamOverviewLevels, indexparam::OVERVIEW_LEVELS, int64_t)

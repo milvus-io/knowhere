@@ -297,7 +297,6 @@ IndexHNSW::QueryByRangeImpl(int64_t n,
         feder = std::make_unique<feder::hnsw::FederResult>();
     }
 
-    auto range_k = GetIndexParamHNSWK(config);
     size_t ef = GetIndexParamEf(config);
     hnswlib::SearchParam param{ef};
     bool is_IP = (index_->metric_type_ == 1);  // InnerProduct: 1
@@ -314,16 +313,24 @@ IndexHNSW::QueryByRangeImpl(int64_t n,
 #pragma omp parallel for
     for (unsigned int i = 0; i < n; ++i) {
         auto single_query = xq + i * Dim();
-
+        std::priority_queue<std::pair<float, hnswlib::labeltype>> rst;
         auto dummy_stat = hnswlib::StatisticsInfo();
-        auto rst = index_->searchRange(single_query, range_k, (is_IP ? 1.0f - radius : radius), bitset, dummy_stat,
-                                       &param, feder);
+        rst = index_->searchRange(single_query, (is_IP ? 1.0f - radius : radius), bitset, dummy_stat, &param,
+                                  feder);
 
-        for (auto& p : rst) {
-            result_dist_array[i].push_back(is_IP ? (1 - p.first) : p.first);
-            result_id_array[i].push_back(p.second);
+        size_t rst_size = rst.size();
+        result_size[i] = rst_size;
+
+        result_dist_array[i].resize(rst_size);
+        result_id_array[i].resize(rst_size);
+        size_t idx = rst_size - 1;
+        while (!rst.empty()) {
+            auto& it = rst.top();
+            rst.pop();
+            result_dist_array[i][idx] = (is_IP ? (1 - it.first) : it.first);
+            result_id_array[i][idx] = it.second;
+            idx--;
         }
-        result_size[i] = rst.size();
     }
     std::partial_sum(result_size.begin(), result_size.end(), result_lims.begin() + 1);
     LOG_KNOWHERE_DEBUG_ << "Range search radius: " << radius << ", result num: " << result_lims.back();
