@@ -1,6 +1,6 @@
 CMAKE_VERSION="v3.23"
 apt-get update && apt-get install -y --no-install-recommends wget curl g++ gcc ca-certificates \
-gpg make ccache python3-dev gfortran python3-setuptools swig pip python2\
+gpg make ccache python3-dev gfortran python3-setuptools swig pip python2 \
 libaio-dev libboost-program-options-dev clang-format \
 && wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc \
  2>/dev/null | gpg --dearmor - | tee \
