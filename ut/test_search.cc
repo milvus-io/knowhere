@@ -63,10 +63,12 @@ TEST_CASE("Test All Index Search.", "[search]") {
             make_tuple("IVFSQ", ivfsq_gen),
             make_tuple("IVFPQ", ivfpq_gen),
             make_tuple("HNSW", hnsw_gen),
+#ifdef USE_CUDA
             make_tuple("GPUFLAT", gpu_flat_gen),
             make_tuple("GPUIVFFLAT", ivfflat_gen),
             make_tuple("GPUIVFPQ", ivfpq_gen),
             make_tuple("GPUIVFSQ", ivfsq_gen),
+#endif
         }));
         auto idx = knowhere::IndexFactory::Instance().Create(name);
         auto cfg_json = gen().dump();
@@ -95,11 +97,12 @@ TEST_CASE("Test All Index Search.", "[search]") {
             make_tuple("IVFSQ", ivfsq_gen),
             make_tuple("IVFPQ", ivfpq_gen),
             make_tuple("HNSW", hnsw_gen),
+#ifdef USE_CUDA
             make_tuple("GPUFLAT", gpu_flat_gen),
             make_tuple("GPUIVFFLAT", ivfflat_gen),
             make_tuple("GPUIVFPQ", ivfpq_gen),
             make_tuple("GPUIVFSQ", ivfsq_gen),
-
+#endif
         }));
 
         auto idx = knowhere::IndexFactory::Instance().Create(name);

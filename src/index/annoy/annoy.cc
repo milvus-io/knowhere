@@ -85,6 +85,8 @@ class AnnoyIndexNode : public IndexNode {
         }
 
         auto results = std::make_shared<DataSet>();
+        results->SetDim(annoy_cfg.k);
+        results->SetRows(rows);
         results->SetIds(p_id);
         results->SetDistance(p_dist);
         return results;

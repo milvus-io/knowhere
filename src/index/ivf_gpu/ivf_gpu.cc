@@ -142,6 +142,8 @@ class IvfGpuIndexNode : public IndexNode {
             return unexpected(Error::faiss_inner_error);
         }
         auto results = std::make_shared<DataSet>();
+        results->SetDim(ivf_gpu_cfg.k);
+        results->SetRows(rows);
         results->SetIds(ids);
         results->SetDistance(dis);
         return results;

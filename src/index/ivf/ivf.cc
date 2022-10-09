@@ -206,7 +206,7 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
 
 template <typename T>
 Error
-IvfIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
+IvfIndexNode<T>::Add(const DataSet& dataset, const Config&) {
     if (!this->index_)
         return Error::empty_index;
     auto data = dataset.GetTensor();
@@ -249,7 +249,7 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
         return unexpected(Error::faiss_inner_error);
     }
     auto results = std::make_shared<DataSet>();
-    results->SetDim(ivf_cfg.dim);
+    results->SetDim(ivf_cfg.k);
     results->SetRows(rows);
     results->SetIds(ids);
     results->SetDistance(dis);
@@ -271,6 +271,7 @@ IvfIndexNode<faiss::IndexBinaryIVF>::Search(const DataSet& dataset, const Config
     float* dis(new (std::nothrow) float[rows * ivf_bin_cfg.k]);
     auto i_dis = reinterpret_cast<int32_t*>(dis);
     try {
+        index_->nprobe = ivf_bin_cfg.nprobe;
         index_->search(rows, (const uint8_t*)data, ivf_bin_cfg.k, i_dis, ids, bitset);
     } catch (const std::exception&) {
         delete[] ids;
@@ -278,7 +279,7 @@ IvfIndexNode<faiss::IndexBinaryIVF>::Search(const DataSet& dataset, const Config
         return unexpected(Error::faiss_inner_error);
     }
     auto results = std::make_shared<DataSet>();
-    results->SetDim(ivf_bin_cfg.dim);
+    results->SetDim(ivf_bin_cfg.k);
     results->SetRows(rows);
     results->SetIds(ids);
     if (index_->metric_type == faiss::METRIC_Hamming) {

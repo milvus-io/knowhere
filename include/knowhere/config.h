@@ -14,10 +14,25 @@ namespace knowhere {
 
 typedef nlohmann::json Json;
 
-typedef int32_t CFG_INT;
-typedef std::string CFG_STRING;
-typedef float CFG_FLOAT;
-typedef std::list<int> CFG_LIST;
+#ifndef CFG_INT
+#define CFG_INT int32_t
+#endif
+
+#ifndef CFG_STRING
+#define CFG_STRING std::string
+#endif
+
+#ifndef CFG_FLOAT
+#define CFG_FLOAT float
+#endif
+
+#ifndef CFG_LIST
+#define CFG_LIST std::list<int>
+#endif
+
+#ifndef CFG_BOOL
+#define CFG_BOOL bool
+#endif
 
 template <typename T>
 struct Entry {};
@@ -113,6 +128,28 @@ struct Entry<CFG_LIST> {
 
     CFG_LIST* val;
     std::optional<CFG_LIST> default_val;
+    uint32_t type;
+    std::optional<CFG_STRING> desc;
+};
+
+template <>
+struct Entry<CFG_BOOL> {
+    Entry<CFG_BOOL>(CFG_BOOL* v) {
+        val = v;
+        default_val = std::nullopt;
+        type = 0x0;
+        desc = std::nullopt;
+    }
+
+    Entry<CFG_BOOL>() {
+        val = nullptr;
+        default_val = std::nullopt;
+        type = 0x0;
+        desc = std::nullopt;
+    }
+
+    CFG_BOOL* val;
+    std::optional<CFG_BOOL> default_val;
     uint32_t type;
     std::optional<CFG_STRING> desc;
 };
@@ -270,6 +307,22 @@ class Config {
                     return Error::type_conflict_in_json;
                 }
                 for (auto&& i : json[it->first]) ptr->val->push_back(i);
+            }
+
+            if (const Entry<CFG_BOOL>* ptr = std::get_if<Entry<CFG_BOOL>>(&var)) {
+                if (!(type & ptr->type))
+                    continue;
+                if (json.find(it->first) == json.end() && !ptr->default_val.has_value()) {
+                    return Error::invalid_param_in_json;
+                }
+                if (json.find(it->first) == json.end()) {
+                    *ptr->val = ptr->default_val.value();
+                    continue;
+                }
+                if (!json[it->first].is_boolean()) {
+                    return Error::type_conflict_in_json;
+                }
+                *ptr->val = json[it->first];
             }
         }
 

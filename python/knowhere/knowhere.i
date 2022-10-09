@@ -66,7 +66,6 @@ import_array();
 
 %inline %{
 
-
 class IndexWrap {
  public:
     IndexWrap(const std::string& name) {
@@ -138,13 +137,32 @@ class IndexWrap {
 };
 
 DataSetPtr
-Array2DataSet(float* xb, int nb, int dim) {
+Array2DataSetF(float* xb, int nb, int dim) {
     auto ds = std::make_shared<DataSet>();
+    ds->SetIsOwner(false);
     ds->SetRows(nb);
     ds->SetDim(dim);
     ds->SetTensor(xb);
     return ds;
 };
+
+DataSetPtr
+Array2DataSetI(int *xb, int nb, int dim){
+    auto ds = std::make_shared<DataSet>();
+    ds->SetIsOwner(false);
+    ds->SetRows(nb);
+    ds->SetDim(dim*32);
+    ds->SetTensor(xb);
+    return ds;
+};
+
+int64_t DataSet_Rows(DataSetPtr results){
+    return results->GetRows();
+}
+
+int64_t DataSet_Dim(DataSetPtr results){
+    return results->GetDim();
+}
 
 void
 DataSet2Array(DataSetPtr result, float* dis, int nq_1, int k_1, int* ids, int nq_2, int k_2) {

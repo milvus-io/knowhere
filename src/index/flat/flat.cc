@@ -26,7 +26,7 @@ class FlatIndexNode : public IndexNode {
         return err;
     }
     virtual Error
-    Train(const DataSet& dataset, const Config& cfg) override {
+    Train(const DataSet&, const Config&) override {
         return Error::success;
     }
     virtual Error
@@ -88,7 +88,8 @@ class FlatIndexNode : public IndexNode {
             std::unique_ptr<float[]> auto_delete_dis(dis);
             return unexpected(Error::faiss_inner_error);
         }
-
+        results->SetDim(f_cfg.k);
+        results->SetRows(nq);
         results->SetIds(ids);
         results->SetDistance(dis);
         return results;

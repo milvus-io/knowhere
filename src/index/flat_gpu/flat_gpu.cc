@@ -86,6 +86,8 @@ class GpuFlatIndexNode : public IndexNode {
             return unexpected(Error::faiss_inner_error);
         }
 
+        results->SetDim(f_cfg.k);
+        results->SetRows(nq);
         results->SetIds(ids);
         results->SetDistance(dis);
         return results;

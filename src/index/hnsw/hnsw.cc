@@ -103,6 +103,8 @@ class HnswIndexNode : public IndexNode {
         }
 
         auto res = std::make_shared<DataSet>();
+        res->SetDim(k);
+        res->SetRows(rows);
         res->SetIds(p_id);
         res->SetDistance(p_dist);
         return res;

@@ -23,6 +23,8 @@ class DataSet {
     typedef std::variant<const float*, const size_t*, const int64_t*, const void*, int64_t> Var;
     DataSet() = default;
     ~DataSet() {
+        if (!is_owner)
+            return;
         for (auto&& x : this->data_) {
             {
                 auto ptr = std::get_if<0>(&x.second);
@@ -146,9 +148,16 @@ class DataSet {
         return 0;
     }
 
+    void
+    SetIsOwner(bool is_owner) {
+        std::unique_lock lock(mutex_);
+        this->is_owner = is_owner;
+    }
+
  private:
     mutable std::shared_mutex mutex_;
     std::map<std::string, Var> data_;
+    bool is_owner = true;
 };
 using DataSetPtr = std::shared_ptr<DataSet>;
 }  // namespace knowhere
