@@ -1,6 +1,6 @@
 CMAKE_VERSION="v3.23"
 apt-get update && apt-get install -y --no-install-recommends wget curl g++ gcc ca-certificates \
-gpg make ccache python3-dev gfortran python3-setuptools swig pip \
+gpg make ccache python3-dev gfortran python3-setuptools swig pip python2\
 libaio-dev libboost-program-options-dev clang-format \
 && wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc \
  2>/dev/null | gpg --dearmor - | tee \
@@ -32,7 +32,6 @@ make NO_STATIC=1 NO_LAPACK=1 NO_LAPACKE=1 NO_AFFINITY=1 USE_OPENMP=1 \
     NUM_THREADS=64 MAJOR_VERSION=3 libs shared && \
 make PREFIX=/usr/local NUM_THREADS=64 MAJOR_VERSION=3 install && \
 rm -f /usr/local/include/lapack* && \
-ln -s /usr/bin/python3 /usr/bin/python && \
 ln -s /usr/local/lib/libopenblasp-r0.3.21.so /lib/libblas.so && \
 ln -s /usr/local/lib/libopenblasp-r0.3.21.so /lib/libblas.so.3 && \
 ln -s /usr/local/lib/pkgconfig/openblas.pc /usr/local/lib/pkgconfig/blas.pc && \
