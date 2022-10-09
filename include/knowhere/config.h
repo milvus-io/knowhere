@@ -332,7 +332,8 @@ class Config {
     virtual ~Config() {
     }
 
-    typedef std::variant<Entry<CFG_STRING>, Entry<CFG_FLOAT>, Entry<CFG_INT>, Entry<CFG_LIST>> VarEntry;
+    typedef std::variant<Entry<CFG_STRING>, Entry<CFG_FLOAT>, Entry<CFG_INT>, Entry<CFG_LIST>, Entry<CFG_BOOL>>
+        VarEntry;
     std::unordered_map<CFG_STRING, VarEntry> __DICT__;
 };
 

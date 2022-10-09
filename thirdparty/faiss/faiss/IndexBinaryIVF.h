@@ -135,12 +135,30 @@ struct IndexBinaryIVF : IndexBinary {
             idx_t* labels,
             const BitsetView bitset = nullptr) const override;
 
+    void search_thread_safe(
+            idx_t n,
+            const uint8_t* x,
+            idx_t k,
+            int32_t* distances,
+            idx_t* labels,
+            size_t nprobe,
+            const BitsetView bitset) const;
+
     void range_search(
             idx_t n,
             const uint8_t* x,
             float radius,
             RangeSearchResult* result,
             const BitsetView bitset = nullptr) const override;
+
+    void search_and_reconstruct_thread_safe(
+            idx_t n,
+            const uint8_t* x,
+            idx_t k,
+            int32_t* distances,
+            idx_t* labels,
+            uint8_t* recons,
+            size_t nprobe) const;
 
     void range_search_preassigned(
             idx_t n,
@@ -215,6 +233,35 @@ struct IndexBinaryIVF : IndexBinary {
     void set_direct_map_type(DirectMap::Type type);
 
     void replace_invlists(InvertedLists* il, bool own = false);
+
+    void range_search_thread_safe(
+            idx_t n,
+            const uint8_t* x,
+            float radius,
+            RangeSearchResult* res,
+            size_t nprobe,
+            const BitsetView bitset) const;
+    void range_search_preassigned_thread_safe(
+            idx_t n,
+            const uint8_t* x,
+            float radius,
+            const idx_t* assign,
+            const int32_t* centroid_dis,
+            RangeSearchResult* res,
+            size_t nprobe,
+            const BitsetView bitset) const;
+    void search_preassigned_thread_safe(
+            idx_t n,
+            const uint8_t* x,
+            idx_t k,
+            const idx_t* idx,
+            const int32_t* coarse_dis,
+            int32_t* distances,
+            idx_t* labels,
+            bool store_pairs,
+            const IVFSearchParameters* params,
+            const size_t nprobe,
+            const BitsetView bitset) const;
 };
 
 struct BinaryInvertedListScanner {
