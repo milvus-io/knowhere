@@ -64,7 +64,7 @@ pull_request_rules:
   - name: Test passed for code changed
     conditions:
       - base=main
-      - "status-success=Unit Test on ubuntu-18.04"
+      - "status-success=Unit Test on ubuntu-20.04"
       - "status-success=Unit Test on centos7"
       - "status-success=Unit Test on macos-11"
       - "status-success=Unit Test on MSYS"
@@ -77,7 +77,7 @@ pull_request_rules:
   - name: Remove ci-passed label when ut failed
     conditions:
       - base=main
-      - "status-success!=Unit Test on ubuntu-18.04"
+      - "status-success!=Unit Test on ubuntu-20.04"
       - "status-success!=Unit Test on centos7"
       - "status-success!=Unit Test on macos-11"
       - "status-success!=Unit Test on MSYS"
