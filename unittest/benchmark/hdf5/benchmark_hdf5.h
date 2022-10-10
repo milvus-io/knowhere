@@ -13,13 +13,9 @@
 
 #include <assert.h>
 #include <hdf5.h>
-#include <sys/time.h>
-
 #include <unordered_set>
 #include <vector>
 
-#include "knowhere/index/IndexType.h"
-#include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 #include "unittest/benchmark/benchmark_base.h"
 
 /*****************************************************
