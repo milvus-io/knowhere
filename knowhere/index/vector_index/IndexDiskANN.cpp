@@ -406,10 +406,6 @@ IndexDiskANN<T>::Query(const DatasetPtr& dataset_ptr, const Config& config, cons
 template <typename T>
 DatasetPtr
 IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& config, const faiss::BitsetView bitset) {
-    // TODO: the IP distance is negative in all cases now, need to fix it.
-    if (metric_ == diskann::INNER_PRODUCT) {
-        KNOWHERE_THROW_MSG("DiskANN doesn't support QueryByRange for IP now.");
-    }
     CheckPreparation(is_prepared_.load());
 
     // set thread number

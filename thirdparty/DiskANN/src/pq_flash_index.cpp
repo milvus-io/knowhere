@@ -1199,8 +1199,8 @@ namespace diskann {
       if (distances != nullptr) {
         distances[i] = full_retset[i].distance;
         if (metric == diskann::Metric::INNER_PRODUCT) {
-          // flip the sign to convert min to max
-          distances[i] = (-distances[i]);
+          // convert l2 distance to ip distance
+          distances[i] = 1.0 - distances[i] / 2.0;
           // rescale to revert back to original norms (cancelling the effect of
           // base and query pre-processing)
           if (max_base_norm != 0)
@@ -1246,11 +1246,20 @@ namespace diskann {
                                indices.data(), distances.data(), beam_width,
                                false, stats, bitset_view);
       for (_u32 i = 0; i < l_search; i++) {
-        if (distances[i] > (float) range || indices[i] == -1) {
+        if (indices[i] == -1) {
           res_count = i;
           break;
-        } else if (i == l_search - 1)
+        }
+        bool out_of_range = metric == diskann::Metric::INNER_PRODUCT
+                                ? distances[i] < (float) range
+                                : distances[i] > (float) range;
+        if (out_of_range) {
+          res_count = i;
+          break;
+        }
+        if (i == l_search - 1) {
           res_count = l_search;
+        }
       }
       if (res_count < (_u32)(l_search / 2.0))
         stop_flag = true;
