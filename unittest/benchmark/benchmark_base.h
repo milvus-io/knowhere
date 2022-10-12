@@ -11,7 +11,9 @@
 
 #pragma once
 
+#include <math.h>
 #include <string>
+#include <sys/time.h>
 
 #define CALC_TIME_SPAN(X)       \
     double t_start = elapsed(); \
@@ -131,6 +133,21 @@ class Benchmark_base {
             }
         }
         return (hit * 1.0f / lims[nq]);
+    }
+
+    int32_t
+    CalcHits(const int64_t* ids, const size_t* lims, int32_t start, int32_t num) {
+        int32_t hit = 0;
+        for (int32_t i = 0; i < num; i++) {
+            std::unordered_set<int32_t>
+                gt_ids_set(gt_ids_ + gt_lims_[start + i], gt_ids_ + gt_lims_[start + i + 1]);
+            for (auto j = lims[i]; j < lims[i + 1]; j++) {
+                if (gt_ids_set.count(ids[j]) > 0) {
+                    hit++;
+                }
+            }
+        }
+        return hit;
     }
 
     void
