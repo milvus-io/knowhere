@@ -17,18 +17,13 @@
 
 #include <vector>
 
-#include "unittest/benchmark/benchmark_sift.h"
+#include "benchmark_hdf5.h"
 #include "unittest/utils.h"
-
-#define CALC_TIME_SPAN(X)       \
-    double t_start = elapsed(); \
-    X;                          \
-    double t_diff = elapsed() - t_start;
 
 using idx_t = int64_t;
 using distance_t = float;
 
-class Benchmark_faiss : public Benchmark_sift {
+class Benchmark_faiss_float : public Benchmark_hdf5, public ::testing::Test {
  public:
     void
     write_index(const std::string& filename) {
@@ -168,7 +163,7 @@ class Benchmark_faiss : public Benchmark_sift {
     const std::vector<int32_t> EFs_ = {16, 32, 64, 128, 256, 512};
 };
 
-TEST_F(Benchmark_faiss, TEST_IDMAP) {
+TEST_F(Benchmark_faiss_float, TEST_IDMAP) {
     std::string index_type = "Flat";
 
     index_key_ = index_type;
@@ -177,7 +172,7 @@ TEST_F(Benchmark_faiss, TEST_IDMAP) {
     test_idmap();
 }
 
-TEST_F(Benchmark_faiss, TEST_IVF_FLAT) {
+TEST_F(Benchmark_faiss_float, TEST_IVF_FLAT) {
     std::string index_type = "Flat";
     for (auto nlist : NLISTs_) {
         index_key_ = "IVF" + std::to_string(nlist) + "," + index_type;
@@ -187,7 +182,7 @@ TEST_F(Benchmark_faiss, TEST_IVF_FLAT) {
     }
 }
 
-TEST_F(Benchmark_faiss, TEST_IVF_SQ8) {
+TEST_F(Benchmark_faiss_float, TEST_IVF_SQ8) {
     std::string index_type = "SQ8";
     for (auto nlist : NLISTs_) {
         index_key_ = "IVF" + std::to_string(nlist) + "," + index_type;
@@ -197,7 +192,7 @@ TEST_F(Benchmark_faiss, TEST_IVF_SQ8) {
     }
 }
 
-TEST_F(Benchmark_faiss, TEST_IVF_PQ) {
+TEST_F(Benchmark_faiss_float, TEST_IVF_PQ) {
     std::string index_type = "PQ";
     for (auto m : Ms_) {
         for (auto nlist : NLISTs_) {
@@ -211,7 +206,7 @@ TEST_F(Benchmark_faiss, TEST_IVF_PQ) {
     }
 }
 
-TEST_F(Benchmark_faiss, TEST_HNSW) {
+TEST_F(Benchmark_faiss_float, TEST_HNSW) {
     std::string index_type = "Flat";
     for (auto M : HNSW_Ms_) {
         index_key_ = "HNSW" + std::to_string(M) + "," + index_type;

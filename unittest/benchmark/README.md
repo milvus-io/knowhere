@@ -2,7 +2,7 @@
 
  Binary Name | Description
 -------------|------------
-benchmark_faiss | benchmark to test FAISS `Query` for IDMAP and IVF serial index types
+benchmark_faiss_float | benchmark to test FAISS `Query` for IDMAP and IVF serial index types
 benchmark_knowhere_binary | benchmark to test knowhere `Query` for all binary index types
 benchmark_knowhere_binary_range | benchmark to test knowhere `QueryByRange` for all supported binary index types
 benchmark_knowhere_float | benchmark to test knowhere `Query` for all float index types

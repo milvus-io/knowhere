@@ -12,9 +12,9 @@
 #include <gtest/gtest.h>
 #include <vector>
 
-#include "unittest/benchmark/benchmark_knowhere.h"
+#include "benchmark_knowhere.h"
 
-class Benchmark_knowhere_float : public Benchmark_knowhere {
+class Benchmark_knowhere_float : public Benchmark_knowhere, public ::testing::Test {
  public:
     void
     test_idmap(const knowhere::Config& cfg) {
