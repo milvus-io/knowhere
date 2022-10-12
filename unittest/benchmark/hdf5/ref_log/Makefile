@@ -3,15 +3,15 @@
 test_faiss_all: test_faiss_idmap test_faiss_ivf_flat test_faiss_ivf_sq8 test_faiss_ivf_pq test_faiss_hnsw
 
 test_faiss_idmap:
-	./benchmark_faiss --gtest_filter="Benchmark_faiss.TEST_IDMAP" | tee test_faiss_idmap.log
+	./benchmark_faiss_float --gtest_filter="Benchmark_faiss_float.TEST_IDMAP" | tee test_faiss_idmap.log
 test_faiss_ivf_flat:
-	./benchmark_faiss --gtest_filter="Benchmark_faiss.TEST_IVF_FLAT" | tee test_faiss_ivf_flat.log
+	./benchmark_faiss_float --gtest_filter="Benchmark_faiss_float.TEST_IVF_FLAT" | tee test_faiss_ivf_flat.log
 test_faiss_ivf_sq8:
-	./benchmark_faiss --gtest_filter="Benchmark_faiss.TEST_IVF_SQ8" | tee test_faiss_ivf_sq8.log
+	./benchmark_faiss_float --gtest_filter="Benchmark_faiss_float.TEST_IVF_SQ8" | tee test_faiss_ivf_sq8.log
 test_faiss_ivf_pq:
-	./benchmark_faiss --gtest_filter="Benchmark_faiss.TEST_IVF_PQ" | tee test_faiss_ivf_pq.log
+	./benchmark_faiss_float --gtest_filter="Benchmark_faiss_float.TEST_IVF_PQ" | tee test_faiss_ivf_pq.log
 test_faiss_hnsw:
-	./benchmark_faiss --gtest_filter="Benchmark_faiss.TEST_HNSW" | tee test_faiss_hnsw.log
+	./benchmark_faiss_float --gtest_filter="Benchmark_faiss_float.TEST_HNSW" | tee test_faiss_hnsw.log
 
 ###################################################################################################
 # Test Knowhere index

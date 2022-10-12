@@ -13,15 +13,15 @@
 
 #include <vector>
 
+#include "benchmark_hdf5.h"
 #include "knowhere/index/IndexType.h"
 #include "knowhere/index/VecIndexFactory.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
-#include "unittest/benchmark/benchmark_sift.h"
 #include "unittest/utils.h"
 
 const int32_t GPU_DEVICE_ID = 0;
 
-class Benchmark_knowhere : public Benchmark_sift {
+class Benchmark_knowhere : public Benchmark_hdf5 {
  public:
     void
     write_index(const std::string& filename, const knowhere::Config& conf) {
