@@ -141,7 +141,6 @@ TEST_P(BinaryIDMAPTest, binaryidmap_serialize) {
 }
 
 TEST_P(BinaryIDMAPTest, binaryidmap_slice) {
-    knowhere::SetMetaSliceSize(conf_, knowhere::index_file_slice_size);
     // serialize index
     index_->BuildAll(base_dataset, conf_);
     auto result1 = index_->Query(query_dataset, conf_, nullptr);

@@ -33,15 +33,6 @@ class KnowhereConfig {
     SetSimdType(const SimdType simd_type);
 
     /**
-     * set knowhere index_file_slice_size
-     */
-    static void
-    SetIndexFileSliceSize(const int64_t size);
-
-    static int64_t
-    GetIndexFileSliceSize();
-
-    /**
      * Set openblas threshold
      *   if nq < use_blas_threshold, calculated by omp
      *   else, calculated by openblas

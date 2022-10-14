@@ -22,7 +22,6 @@
 namespace knowhere {
 
 namespace meta {
-constexpr const char* SLICE_SIZE = "SLICE_SIZE";
 constexpr const char* METRIC_TYPE = "metric_type";
 constexpr const char* DIM = "dim";
 constexpr const char* TENSOR = "tensor";
@@ -102,9 +101,6 @@ SetValueToConfig(Config& cfg, const std::string& key, const T value) {
 
 ///////////////////////////////////////////////////////////////////////////////
 // APIs to access meta
-DEFINE_CONFIG_GETTER(GetMetaSliceSize, meta::SLICE_SIZE, int64_t)
-DEFINE_CONFIG_SETTER(SetMetaSliceSize, meta::SLICE_SIZE, int64_t)
-
 DEFINE_CONFIG_GETTER(GetMetaMetricType, meta::METRIC_TYPE, std::string)
 DEFINE_CONFIG_SETTER(SetMetaMetricType, meta::METRIC_TYPE, std::string)
 

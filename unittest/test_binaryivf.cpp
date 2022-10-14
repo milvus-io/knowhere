@@ -118,7 +118,6 @@ TEST_P(BinaryIVFTest, binaryivf_serialize) {
 }
 
 TEST_P(BinaryIVFTest, binaryivf_slice) {
-    knowhere::SetMetaSliceSize(conf_, knowhere::index_file_slice_size);
     // serialize index
     index_->BuildAll(base_dataset, conf_);
     auto binaryset = index_->Serialize(conf_);

@@ -14,7 +14,6 @@
 #include "archive/KnowhereConfig.h"
 #include "common/Log.h"
 #include "index/vector_index/Statistics.h"
-#include "index/vector_index/helpers/Slice.h"
 #include "faiss/Clustering.h"
 #include "faiss/FaissHook.h"
 #include "faiss/utils/distances.h"
@@ -60,17 +59,6 @@ KnowhereConfig::SetSimdType(const SimdType simd_type) {
     faiss::hook_init(simd_str);
     LOG_KNOWHERE_INFO_ << "FAISS hook " << simd_str;
     return simd_str;
-}
-
-void
-KnowhereConfig::SetIndexFileSliceSize(const int64_t size) {
-    LOG_KNOWHERE_INFO_ << "Set knowhere::index_file_slice_size to " << size;
-    knowhere::index_file_slice_size = size;
-}
-
-int64_t
-KnowhereConfig::GetIndexFileSliceSize() {
-    return knowhere::index_file_slice_size;
 }
 
 void

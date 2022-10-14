@@ -40,7 +40,6 @@ IndexHNSW::Serialize(const Config& config) {
 
         BinarySet res_set;
         res_set.Append("HNSW", data, writer.rp);
-        Disassemble(res_set, config);
         return res_set;
     } catch (std::exception& e) {
         KNOWHERE_THROW_MSG(e.what());
@@ -50,7 +49,6 @@ IndexHNSW::Serialize(const Config& config) {
 void
 IndexHNSW::Load(const BinarySet& index_binary) {
     try {
-        Assemble(const_cast<BinarySet&>(index_binary));
         auto binary = index_binary.GetByName("HNSW");
 
         MemoryIOReader reader;
