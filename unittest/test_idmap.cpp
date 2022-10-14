@@ -168,8 +168,6 @@ TEST_P(IDMAPTest, idmap_serialize) {
 }
 
 TEST_P(IDMAPTest, idmap_slice) {
-    knowhere::SetMetaSliceSize(conf_, knowhere::index_file_slice_size);
-
     index_->BuildAll(base_dataset, conf_);
 
 #ifdef KNOWHERE_GPU_VERSION

@@ -53,13 +53,11 @@ IVF_NM::Serialize(const Config& config) {
     }
 
     auto ret = SerializeImpl(index_type_);
-    Disassemble(ret, config);
     return ret;
 }
 
 void
 IVF_NM::Load(const BinarySet& binary_set) {
-    Assemble(const_cast<BinarySet&>(binary_set));
     LoadImpl(binary_set, index_type_);
 
     // Construct arranged data from original data

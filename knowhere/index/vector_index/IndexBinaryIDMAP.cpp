@@ -27,13 +27,11 @@ BinaryIDMAP::Serialize(const Config& config) {
     }
 
     auto ret = SerializeImpl(index_type_);
-    Disassemble(ret, config);
     return ret;
 }
 
 void
 BinaryIDMAP::Load(const BinarySet& index_binary) {
-    Assemble(const_cast<BinarySet&>(index_binary));
     LoadImpl(index_binary, index_type_);
 }
 
