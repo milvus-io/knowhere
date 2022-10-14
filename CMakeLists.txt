@@ -53,5 +53,5 @@ add_dependencies(knowhere faiss)
 target_link_libraries(knowhere PUBLIC faiss)
 
 if (WITH_UT)
-    add_subdirectory(ut)
+    add_subdirectory(tests/ut)
 endif()
