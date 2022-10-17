@@ -72,7 +72,9 @@ class Benchmark_ssnpp : public Benchmark_base {
 
         printf("Metadata: #gt_num = %d, #total_results = %d ...\n", gt_num, total_num);
 
-        size_t expected_file_size = 2 * sizeof(int32_t) + gt_num * sizeof(int32_t) + total_num * sizeof(int32_t);
+        // 2 * int32_t + len(lims) + len(ids) + len(distances)
+        size_t expected_file_size = 2 * sizeof(int32_t) + gt_num * sizeof(int32_t) + total_num * sizeof(int32_t) +
+                                    total_num * sizeof(float);
 
         assert(actual_file_size == expected_file_size);
 

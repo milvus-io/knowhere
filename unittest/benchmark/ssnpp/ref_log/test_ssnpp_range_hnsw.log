@@ -1,0 +1,37 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_ssnpp_float_range.TEST_HNSW
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_ssnpp_float_range
+[ RUN      ] Benchmark_ssnpp_float_range.TEST_HNSW
+[0.000 s] Opening bin file FB_ssnpp_database.1M.fbin ...
+Metadata: #rows = 1000000, #dims = 256 ...
+[0.621 s] Opening bin file FB_ssnpp_public_queries.fbin ...
+Metadata: #rows = 100000, #dims = 256 ...
+[0.680 s] Reading ground truth file ssnpp-1M-gt ...
+Metadata: #gt_num = 100000, #total_results = 7731 ...
+2022-10-17 18:56:51,788 INFO [default] [KNOWHERE][SetSimdType][benchmark_ssnpp] FAISS expect simdType::AVX2
+2022-10-17 18:56:51,788 INFO [default] [KNOWHERE][SetSimdType][benchmark_ssnpp] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.681 s] Creating CPU index "HNSW"
+[0.681 s] Reading index file: ssnpp-256-euclidean_HNSW_16_200_20.index
+[0.681 s] Building all on 1000000 vectors
+[264.820 s] Writing index file: ssnpp-256-euclidean_HNSW_16_200_20.index
+
+[266.111 s] ssnpp-256-euclidean | HNSW | M=16 | efConstruction=200, radius=310.221
+================================================================================
+  ef =   16, nq = 10000, elapse =  0.306s, R@ = 0.3778, A@ = 1.0000
+  ef =   32, nq = 10000, elapse =  0.462s, R@ = 0.5083, A@ = 1.0000
+  ef =   64, nq = 10000, elapse =  0.876s, R@ = 0.6750, A@ = 1.0000
+  ef =  128, nq = 10000, elapse =  1.799s, R@ = 0.7556, A@ = 1.0000
+  ef =  256, nq = 10000, elapse =  3.258s, R@ = 0.8361, A@ = 1.0000
+  ef =  512, nq = 10000, elapse =  6.428s, R@ = 0.8792, A@ = 1.0000
+================================================================================
+[279.245 s] Test 'ssnpp-256-euclidean/HNSW' done
+
+[       OK ] Benchmark_ssnpp_float_range.TEST_HNSW (279295 ms)
+[----------] 1 test from Benchmark_ssnpp_float_range (279295 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (279295 ms total)
+[  PASSED  ] 1 test.
