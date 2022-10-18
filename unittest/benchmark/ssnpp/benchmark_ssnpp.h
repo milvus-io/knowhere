@@ -57,7 +57,7 @@ class Benchmark_ssnpp : public Benchmark_base {
     }
 
     void
-    load_range_truthset(const std::string& bin_file, int32_t*& gt_ids, int32_t*& gt_lims, int32_t& gt_num) {
+    load_truthset(const std::string& bin_file, int32_t*& gt_ids, float*& gt_dist, int32_t& gt_num) {
         std::ifstream reader;
         reader.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
@@ -66,7 +66,35 @@ class Benchmark_ssnpp : public Benchmark_base {
         size_t actual_file_size = reader.tellg();
         reader.seekg(0);
 
-        int total_num;
+        reader.read((char*)&gt_num, sizeof(int));
+        reader.read((char*)&gt_k_, sizeof(int));
+
+        printf("Metadata: #gt_num = %d, #gt_topk = %d ...\n", gt_num, gt_k_);
+
+        int64_t total_num = gt_num * gt_k_;
+        // 2 * int32_t + len(ids) + len(distances)
+        size_t expected_file_size = 2 * sizeof(int32_t) + total_num * sizeof(int32_t) + total_num * sizeof(float);
+
+        assert(actual_file_size == expected_file_size);
+
+        gt_ids = new int32_t[total_num];
+        reader.read((char*)gt_ids, total_num * sizeof(int32_t));
+
+        gt_dist = new float[total_num];
+        reader.read((char*)gt_dist, total_num * sizeof(float));
+    }
+
+    void
+    load_range_truthset(const std::string& bin_file, int32_t*& gt_ids, float*& gt_dist, int32_t*& gt_lims, int32_t& gt_num) {
+        std::ifstream reader;
+        reader.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+
+        reader.open(bin_file, std::ios::binary | std::ios::ate);
+        printf("[%.3f s] Reading ground truth file %s ...\n", get_time_diff(), bin_file.c_str());
+        size_t actual_file_size = reader.tellg();
+        reader.seekg(0);
+
+        int32_t total_num;
         reader.read((char*)&gt_num, sizeof(int));
         reader.read((char*)&total_num, sizeof(int));
 
@@ -87,8 +115,10 @@ class Benchmark_ssnpp : public Benchmark_base {
         int32_t total_elem = gt_lims[gt_num];
         gt_ids = new int32_t[total_elem];
         reader.read((char*)gt_ids, total_elem * sizeof(int32_t));
-    }
 
+        gt_dist = new float[total_elem];
+        reader.read((char*)gt_dist, total_elem * sizeof(float));
+    }
 
     void
     load_range_radius(const std::string& bin_file, float*& gt_radius, int32_t& gt_num) {
