@@ -1,0 +1,41 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_ssnpp_float.TEST_IVF_FLAT_NM
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_ssnpp_float
+[ RUN      ] Benchmark_ssnpp_float.TEST_IVF_FLAT_NM
+[0.000 s] Opening bin file FB_ssnpp_database.1M.fbin ...
+Metadata: #rows = 1000000, #dims = 256 ...
+[0.319 s] Opening bin file FB_ssnpp_public_queries.fbin ...
+Metadata: #rows = 100000, #dims = 256 ...
+[0.347 s] Reading ground truth file ssnpp-1M-gt ...
+Metadata: #gt_num = 100000, #gt_topk = 100 ...
+2022-10-18 17:20:03,220 INFO [default] [KNOWHERE][SetSimdType][benchmark_ssnpp] FAISS expect simdType::AVX2
+2022-10-18 17:20:03,220 INFO [default] [KNOWHERE][SetSimdType][benchmark_ssnpp] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.371 s] Creating CPU index "IVF_FLAT"
+[0.371 s] Reading index file: ssnpp-256-euclidean_IVF_FLAT_1024.index
+[0.371 s] Building all on 1000000 vectors
+[29.831 s] Writing index file: ssnpp-256-euclidean_IVF_FLAT_1024.index
+
+[30.312 s] ssnpp-256-euclidean | IVF_FLAT | nlist=1024
+================================================================================
+  nprobe =    1, nq = 10000, k =  100, elapse =  0.441s, R@ = 0.0471
+  nprobe =    2, nq = 10000, k =  100, elapse =  0.804s, R@ = 0.0716
+  nprobe =    4, nq = 10000, k =  100, elapse =  1.505s, R@ = 0.1037
+  nprobe =    8, nq = 10000, k =  100, elapse =  2.886s, R@ = 0.1474
+  nprobe =   16, nq = 10000, k =  100, elapse =  5.539s, R@ = 0.2066
+  nprobe =   32, nq = 10000, k =  100, elapse = 10.717s, R@ = 0.2863
+  nprobe =   64, nq = 10000, k =  100, elapse = 20.935s, R@ = 0.3945
+  nprobe =  128, nq = 10000, k =  100, elapse = 41.123s, R@ = 0.5341
+  nprobe =  256, nq = 10000, k =  100, elapse = 81.570s, R@ = 0.7036
+  nprobe =  512, nq = 10000, k =  100, elapse = 163.698s, R@ = 0.8808
+================================================================================
+[360.192 s] Test 'ssnpp-256-euclidean/IVF_FLAT' done
+
+[       OK ] Benchmark_ssnpp_float.TEST_IVF_FLAT_NM (360253 ms)
+[----------] 1 test from Benchmark_ssnpp_float (360253 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (360253 ms total)
+[  PASSED  ] 1 test.

@@ -52,4 +52,5 @@ benchmark_test(benchmark_knowhere_float         hdf5/benchmark_knowhere_float.cp
 benchmark_test(benchmark_knowhere_float_range   hdf5/benchmark_knowhere_float_range.cpp)
 benchmark_test(benchmark_knowhere_perf          hdf5/benchmark_knowhere_perf.cpp)
 
+benchmark_test(benchmark_ssnpp_float            ssnpp/benchmark_ssnpp_float.cpp)
 benchmark_test(benchmark_ssnpp_float_range      ssnpp/benchmark_ssnpp_float_range.cpp)

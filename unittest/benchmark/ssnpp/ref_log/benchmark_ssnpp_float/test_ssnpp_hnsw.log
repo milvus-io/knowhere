@@ -1,0 +1,37 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_ssnpp_float.TEST_HNSW
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_ssnpp_float
+[ RUN      ] Benchmark_ssnpp_float.TEST_HNSW
+[0.000 s] Opening bin file FB_ssnpp_database.1M.fbin ...
+Metadata: #rows = 1000000, #dims = 256 ...
+[0.320 s] Opening bin file FB_ssnpp_public_queries.fbin ...
+Metadata: #rows = 100000, #dims = 256 ...
+[0.348 s] Reading ground truth file ssnpp-1M-gt ...
+Metadata: #gt_num = 100000, #gt_topk = 100 ...
+2022-10-18 17:26:03,481 INFO [default] [KNOWHERE][SetSimdType][benchmark_ssnpp] FAISS expect simdType::AVX2
+2022-10-18 17:26:03,481 INFO [default] [KNOWHERE][SetSimdType][benchmark_ssnpp] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.373 s] Creating CPU index "HNSW"
+[0.373 s] Reading index file: ssnpp-256-euclidean_HNSW_16_200.index
+[0.373 s] Building all on 1000000 vectors
+[268.388 s] Writing index file: ssnpp-256-euclidean_HNSW_16_200.index
+
+[269.701 s] ssnpp-256-euclidean | HNSW | M=16 | efConstruction=200
+================================================================================
+  ef =   16, nq = 10000, k =  100, elapse =  1.346s, R@ = 0.1763
+  ef =   32, nq = 10000, k =  100, elapse =  1.416s, R@ = 0.1763
+  ef =   64, nq = 10000, k =  100, elapse =  1.351s, R@ = 0.1763
+  ef =  128, nq = 10000, k =  100, elapse =  1.697s, R@ = 0.1985
+  ef =  256, nq = 10000, k =  100, elapse =  3.388s, R@ = 0.2732
+  ef =  512, nq = 10000, k =  100, elapse =  6.403s, R@ = 0.3646
+================================================================================
+[285.700 s] Test 'ssnpp-256-euclidean/HNSW' done
+
+[       OK ] Benchmark_ssnpp_float.TEST_HNSW (285768 ms)
+[----------] 1 test from Benchmark_ssnpp_float (285768 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (285768 ms total)
+[  PASSED  ] 1 test.
