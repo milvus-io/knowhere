@@ -26,7 +26,6 @@ set(external_srcs
         common/Exception.cpp
         common/Timer.cpp
         common/Log.cpp
-        common/Utils.cpp
         ${KNOWHERE_THIRDPARTY_SRC}/easyloggingpp/easylogging++.cc
         )
 
