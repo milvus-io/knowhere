@@ -1,23 +1,11 @@
-/**
- * Copyright (c) Facebook, Inc. and its affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
-// -*- c++ -*-
-
-#include "distances_simd_sse.h"
+#if defined(__x86_64__)
+#include "distances_sse.h"
 
 #include <immintrin.h>
 
-#include <algorithm>
 #include <cassert>
-#include <cmath>
-#include <cstdio>
-#include <cstring>
 
-#include "distances_simd.h"
+#include "distances_ref.h"
 
 namespace faiss {
 
@@ -208,7 +196,10 @@ fvec_L2sqr_ny_sse(float* dis, const float* x, const float* y, size_t d, size_t n
         DISPATCH(8)
         DISPATCH(12)
         default:
-            fvec_L2sqr_ny_ref(dis, x, y, d, ny);
+            for (size_t i = 0; i < ny; i++) {
+                dis[i] = fvec_L2sqr_sse(x, y, d);
+                y += d;
+            }
             return;
     }
 #undef DISPATCH
@@ -228,7 +219,10 @@ fvec_inner_products_ny_sse(float* dis, const float* x, const float* y, size_t d,
         DISPATCH(8)
         DISPATCH(12)
         default:
-            fvec_inner_products_ny_ref(dis, x, y, d, ny);
+            for (size_t i = 0; i < ny; i++) {
+                dis[i] = fvec_inner_product_sse(x, y, d);
+                y += d;
+            }
             return;
     }
 #undef DISPATCH
@@ -372,3 +366,4 @@ fvec_madd_and_argmin_sse(size_t n, const float* a, float bf, const float* b, flo
 }
 
 }  // namespace faiss
+#endif

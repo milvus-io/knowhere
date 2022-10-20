@@ -7,7 +7,7 @@
 
 #include <faiss/MetricType.h>
 #include <faiss/impl/ScalarQuantizer.h>
-#include <simd/FaissHookFvec.h>
+#include <simd/hook.h>
 
 namespace faiss {
 

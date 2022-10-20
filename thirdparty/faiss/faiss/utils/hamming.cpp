@@ -37,7 +37,6 @@
 #include <faiss/impl/FaissAssert.h>
 #include <faiss/utils/Heap.h>
 #include <faiss/utils/utils.h>
-#include <simd/distances_simd.h>
 
 static const size_t BLOCKSIZE_QUERY = 8192;
 static const size_t size_1M = 1 * 1024 * 1024;

@@ -16,9 +16,7 @@
 #define FAISS_JACCARD_INL_H
 
 #include <faiss/utils/BinaryDistance.h>
-#include <simd/distances_simd_avx.h>
-#include <simd/distances_simd_avx512.h>
-
+#include <faiss/utils/simdlib.h>
 namespace faiss {
 
 struct JaccardComputer8 {
@@ -454,46 +452,6 @@ struct JaccardComputerDefault {
 
     float compute(const uint8_t* b8) const {
         return bvec_jaccard(a, b8, n);
-    }
-};
-
-struct JaccardComputerAVX2 {
-    const uint8_t* a;
-    int n;
-
-    JaccardComputerAVX2() {}
-
-    JaccardComputerAVX2(const uint8_t* a8, int code_size) {
-        set(a8, code_size);
-    }
-
-    void set(const uint8_t* a8, int code_size) {
-        a = a8;
-        n = code_size;
-    }
-
-    float compute(const uint8_t* b8) const {
-        return jaccard_AVX2(a, b8, n);
-    }
-};
-
-struct JaccardComputerAVX512 {
-    const uint8_t* a;
-    int n;
-
-    JaccardComputerAVX512() {}
-
-    JaccardComputerAVX512(const uint8_t* a8, int code_size) {
-        set(a8, code_size);
-    }
-
-    void set(const uint8_t* a8, int code_size) {
-        a = a8;
-        n = code_size;
-    }
-
-    float compute(const uint8_t* b8) const {
-        return jaccard_AVX512(a, b8, n);
     }
 };
 

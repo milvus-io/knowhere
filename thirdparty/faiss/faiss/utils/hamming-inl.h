@@ -6,9 +6,7 @@
  */
 
 #include <faiss/utils/BinaryDistance.h>
-#include <simd/distances_simd_avx.h>
-#include <simd/distances_simd_avx512.h>
-
+#include <faiss/utils/simdlib.h>
 namespace faiss {
 
 extern const uint8_t hamdis_tab_ham_bytes[256];
@@ -237,46 +235,6 @@ struct HammingComputerDefault {
 
     int compute(const uint8_t* b8) const {
         return xor_popcnt(a8, b8, n);
-    }
-};
-
-struct HammingComputerAVX2 {
-    const uint8_t* a8;
-    int n;
-
-    HammingComputerAVX2() {}
-
-    HammingComputerAVX2(const uint8_t* a8, int code_size) {
-        set(a8, code_size);
-    }
-
-    void set(const uint8_t* a8, int code_size) {
-        this->a8 = a8;
-        this->n = code_size;
-    }
-
-    int compute(const uint8_t* b8) const {
-        return xor_popcnt_AVX2_lookup(a8, b8, n);
-    }
-};
-
-struct HammingComputerAVX512 {
-    const uint8_t* a8;
-    int n;
-
-    HammingComputerAVX512() {}
-
-    HammingComputerAVX512(const uint8_t* a8, int code_size) {
-        set(a8, code_size);
-    }
-
-    void set(const uint8_t* a8, int code_size) {
-        this->a8 = a8;
-        this->n = code_size;
-    }
-
-    int compute(const uint8_t* b8) const {
-        return xor_popcnt_AVX512VBMI_lookup(a8, b8, n);
     }
 };
 

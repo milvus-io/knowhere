@@ -1,20 +1,8 @@
-/**
- * Copyright (c) Facebook, Inc. and its affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
+#ifndef DISTANCES_SSE_H
+#define DISTANCES_SSE_H
 
-#pragma once
-
-#include <stdint.h>
-
-#include <cstddef>
+#include <cstdio>
 namespace faiss {
-
-/*********************************************************
- * Optimized distance/norm/inner prod computations
- *********************************************************/
 
 /// Squared L2 distance between two vectors
 float
@@ -48,3 +36,5 @@ int
 fvec_madd_and_argmin_sse(size_t n, const float* a, float bf, const float* b, float* c);
 
 }  // namespace faiss
+
+#endif /* DISTANCES_SSE_H */

@@ -35,7 +35,7 @@
 typedef int32_t hamdis_t;
 
 namespace faiss {
-
+extern uint8_t lookup8bit[256];
 /**************************************************
  * General bit vector functions
  **************************************************/
