@@ -1,0 +1,35 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_knowhere_float_range_qps.TEST_IVF_SQ8
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_knowhere_float_range_qps
+[ RUN      ] Benchmark_knowhere_float_range_qps.TEST_IVF_SQ8
+[0.000 s] Loading HDF5 file: sift-128-euclidean-range.hdf5
+[0.000 s] Loading train data
+[0.178 s] Loading test data
+[0.180 s] Loading ground truth data
+2022-10-20 17:05:37,718 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-10-20 17:05:37,718 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.183 s] Creating CPU index "IVF_SQ8"
+[0.183 s] Reading index file: sift-128-euclidean-range_IVF_SQ8_1024.index
+[0.183 s] Building all on 1000000 vectors
+[12.971 s] Writing index file: sift-128-euclidean-range_IVF_SQ8_1024.index
+
+[13.189 s] sift-128-euclidean-range | IVF_SQ8 | nlist=1024
+           nprobe=8, k=100, radius=186.000
+================================================================================
+  thread_num = 10, elapse =  1.281s, QPS = 7804.970
+  thread_num = 20, elapse =  1.217s, QPS = 8217.806
+  thread_num = 30, elapse =  1.177s, QPS = 8497.528
+  thread_num = 40, elapse =  1.177s, QPS = 8499.131
+  thread_num = 50, elapse =  1.171s, QPS = 8536.517
+================================================================================
+[19.212 s] Test 'sift-128-euclidean-range/IVF_SQ8' done
+
+[       OK ] Benchmark_knowhere_float_range_qps.TEST_IVF_SQ8 (19235 ms)
+[----------] 1 test from Benchmark_knowhere_float_range_qps (19235 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (19235 ms total)
+[  PASSED  ] 1 test.
