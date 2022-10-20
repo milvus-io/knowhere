@@ -17,10 +17,18 @@
 
 namespace knowhere::utils {
 
-void
-SetBuildOmpThread(const Config& conf);
+inline void
+SetBuildOmpThread(const Config& conf) {
+    int32_t omp_num =
+        CheckKeyInConfig(conf, meta::BUILD_INDEX_OMP_NUM) ? GetMetaBuildIndexOmpNum(conf) : omp_get_max_threads();
+    omp_set_num_threads(omp_num);
+}
 
-void
-SetQueryOmpThread(const Config& conf);
+inline void
+SetQueryOmpThread(const Config& conf) {
+    int32_t omp_num =
+        CheckKeyInConfig(conf, meta::QUERY_OMP_NUM) ? GetMetaQueryOmpNum(conf) : omp_get_max_threads();
+    omp_set_num_threads(omp_num);
+}
 
 }  // namespace knowhere::utils
