@@ -6,30 +6,30 @@ Note: Google Test filter = Benchmark_knowhere_float_range.TEST_HNSW
 [ RUN      ] Benchmark_knowhere_float_range.TEST_HNSW
 [0.000 s] Loading HDF5 file: sift-128-euclidean-range.hdf5
 [0.000 s] Loading train data
-[0.175 s] Loading test data
-[0.177 s] Loading ground truth data
-2022-10-19 11:24:57,475 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
-2022-10-19 11:24:57,475 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+[0.186 s] Loading test data
+[0.187 s] Loading ground truth data
+2022-10-20 15:58:38,884 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-10-20 15:58:38,884 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
 faiss::distance_compute_blas_threshold: 16384
-[0.180 s] Creating CPU index "HNSW"
-[0.180 s] Reading index file: sift-128-euclidean-range_HNSW_16_200_20.index
-[0.180 s] Building all on 1000000 vectors
-[92.546 s] Writing index file: sift-128-euclidean-range_HNSW_16_200_20.index
+[0.190 s] Creating CPU index "HNSW"
+[0.190 s] Reading index file: sift-128-euclidean-range_HNSW_16_200.index
+[0.190 s] Building all on 1000000 vectors
+[96.177 s] Writing index file: sift-128-euclidean-range_HNSW_16_200.index
 
-[93.311 s] sift-128-euclidean-range | HNSW | M=16 | efConstruction=200, radius=186.000
+[96.970 s] sift-128-euclidean-range | HNSW | M=16 | efConstruction=200, radius=186.000
 ================================================================================
-  ef =   16, nq = 10000, elapse =  0.366s, R@ = 0.9969, A@ = 1.0000
-  ef =   32, nq = 10000, elapse =  0.428s, R@ = 0.9976, A@ = 1.0000
-  ef =   64, nq = 10000, elapse =  0.591s, R@ = 0.9982, A@ = 1.0000
-  ef =  128, nq = 10000, elapse =  0.897s, R@ = 0.9983, A@ = 1.0000
-  ef =  256, nq = 10000, elapse =  1.428s, R@ = 0.9984, A@ = 1.0000
-  ef =  512, nq = 10000, elapse =  2.445s, R@ = 0.9984, A@ = 1.0000
+  range_k =  20, ef =   16, nq = 10000, elapse =  0.384s, R@ = 0.9969, A@ = 1.0000
+  range_k =  20, ef =   32, nq = 10000, elapse =  0.442s, R@ = 0.9976, A@ = 1.0000
+  range_k =  20, ef =   64, nq = 10000, elapse =  0.611s, R@ = 0.9982, A@ = 1.0000
+  range_k =  20, ef =  128, nq = 10000, elapse =  0.918s, R@ = 0.9983, A@ = 1.0000
+  range_k =  20, ef =  256, nq = 10000, elapse =  1.487s, R@ = 0.9984, A@ = 1.0000
+  range_k =  20, ef =  512, nq = 10000, elapse =  2.509s, R@ = 0.9984, A@ = 1.0000
 ================================================================================
-[100.568 s] Test 'sift-128-euclidean-range/HNSW' done
+[104.463 s] Test 'sift-128-euclidean-range/HNSW' done
 
-[       OK ] Benchmark_knowhere_float_range.TEST_HNSW (100605 ms)
-[----------] 1 test from Benchmark_knowhere_float_range (100605 ms total)
+[       OK ] Benchmark_knowhere_float_range.TEST_HNSW (104500 ms)
+[----------] 1 test from Benchmark_knowhere_float_range (104500 ms total)
 
 [----------] Global test environment tear-down
-[==========] 1 test from 1 test suite ran. (100605 ms total)
+[==========] 1 test from 1 test suite ran. (104500 ms total)
 [  PASSED  ] 1 test.

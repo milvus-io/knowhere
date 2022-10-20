@@ -78,17 +78,20 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere, public ::testi
         printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld, radius=%.3f\n", get_time_diff(),
                ann_test_name_.c_str(), index_type_.c_str(), M, efConstruction, radius);
         printf("================================================================================\n");
-        for (auto ef : EFs_) {
-            knowhere::SetIndexParamEf(conf, ef);
-            for (auto nq : NQs_) {
-                knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
-                CALC_TIME_SPAN(auto result = index_->QueryByRange(ds_ptr, conf, nullptr));
-                auto ids = knowhere::GetDatasetIDs(result);
-                auto lims = knowhere::GetDatasetLims(result);
-                float recall = CalcRecall(ids, lims, nq);
-                float accuracy = CalcAccuracy(ids, lims, nq);
-                printf("  ef = %4d, nq = %4d, elapse = %6.3fs, R@ = %.4f, A@ = %.4f\n",
-                       ef, nq, t_diff, recall, accuracy);
+        for (auto range_k : HNSW_Ks_) {
+            knowhere::SetIndexParamHNSWK(conf, range_k);
+            for (auto ef : EFs_) {
+                knowhere::SetIndexParamEf(conf, ef);
+                for (auto nq : NQs_) {
+                    knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
+                    CALC_TIME_SPAN(auto result = index_->QueryByRange(ds_ptr, conf, nullptr));
+                    auto ids = knowhere::GetDatasetIDs(result);
+                    auto lims = knowhere::GetDatasetLims(result);
+                    float recall = CalcRecall(ids, lims, nq);
+                    float accuracy = CalcAccuracy(ids, lims, nq);
+                    printf("  range_k = %3d, ef = %4d, nq = %4d, elapse = %6.3fs, R@ = %.4f, A@ = %.4f\n",
+                           range_k, ef, nq, t_diff, recall, accuracy);
+                }
             }
         }
         printf("================================================================================\n");
@@ -252,14 +255,11 @@ TEST_F(Benchmark_knowhere_float_range, TEST_HNSW) {
         knowhere::SetIndexParamHNSWM(conf, M);
         for (auto efc : EFCONs_) {
             knowhere::SetIndexParamEfConstruction(conf, efc);
-            for (auto k : HNSW_Ks_) {
-                knowhere::SetIndexParamHNSWK(conf, k);
-                std::string index_file_name = get_index_name({M, efc, k});
-                create_index(index_file_name, conf);
-                index_->Load(binary_set_);
-                binary_set_.clear();
-                test_hnsw(conf);
-            }
+            std::string index_file_name = get_index_name({M, efc});
+            create_index(index_file_name, conf);
+            index_->Load(binary_set_);
+            binary_set_.clear();
+            test_hnsw(conf);
         }
     }
 }
