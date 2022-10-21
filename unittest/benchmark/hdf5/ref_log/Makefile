@@ -64,3 +64,24 @@ test_knowhere_binary_range_idmap:
 test_knowhere_binary_range_ivf_flat:
 	./benchmark_knowhere_binary_range --gtest_filter="Benchmark_knowhere_binary_range.TEST_BINARY_IVF_FLAT" | tee test_knowhere_binary_range_ivf_flat.log
 
+###################################################################################################
+# Test Knowhere index qps
+test_knowhere_qps_all: test_knowhere_qps_ivf_flat_nm test_knowhere_qps_ivf_sq8 test_knowhere_qps_hnsw
+
+test_knowhere_qps_ivf_flat_nm:
+	./benchmark_knowhere_float_qps --gtest_filter="Benchmark_knowhere_float_qps.TEST_IVF_FLAT_NM" | tee test_knowhere_qps_ivf_flat_nm.log
+test_knowhere_qps_ivf_sq8:
+	./benchmark_knowhere_float_qps --gtest_filter="Benchmark_knowhere_float_qps.TEST_IVF_SQ8" | tee test_knowhere_qps_ivf_sq8.log
+test_knowhere_qps_hnsw:
+	./benchmark_knowhere_float_qps --gtest_filter="Benchmark_knowhere_float_qps.TEST_HNSW" | tee test_knowhere_qps_hnsw.log
+
+###################################################################################################
+# Test Knowhere index range qps
+test_knowhere_range_qps_all: test_knowhere_range_qps_ivf_flat_nm test_knowhere_range_qps_ivf_sq8 test_knowhere_range_qps_hnsw
+
+test_knowhere_range_qps_ivf_flat_nm:
+	./benchmark_knowhere_float_range_qps --gtest_filter="Benchmark_knowhere_float_range_qps.TEST_IVF_FLAT_NM" | tee test_knowhere_range_qps_ivf_flat_nm.log
+test_knowhere_range_qps_ivf_sq8:
+	./benchmark_knowhere_float_range_qps --gtest_filter="Benchmark_knowhere_float_range_qps.TEST_IVF_SQ8" | tee test_knowhere_range_qps_ivf_sq8.log
+test_knowhere_range_qps_hnsw:
+	./benchmark_knowhere_float_range_qps --gtest_filter="Benchmark_knowhere_float_range_qps.TEST_HNSW" | tee test_knowhere_range_qps_hnsw.log
