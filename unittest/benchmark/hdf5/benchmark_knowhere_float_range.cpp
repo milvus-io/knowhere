@@ -78,20 +78,17 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere, public ::testi
         printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld, radius=%.3f\n", get_time_diff(),
                ann_test_name_.c_str(), index_type_.c_str(), M, efConstruction, radius);
         printf("================================================================================\n");
-        for (auto range_k : HNSW_Ks_) {
-            knowhere::SetIndexParamHNSWK(conf, range_k);
-            for (auto ef : EFs_) {
-                knowhere::SetIndexParamEf(conf, ef);
-                for (auto nq : NQs_) {
-                    knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
-                    CALC_TIME_SPAN(auto result = index_->QueryByRange(ds_ptr, conf, nullptr));
-                    auto ids = knowhere::GetDatasetIDs(result);
-                    auto lims = knowhere::GetDatasetLims(result);
-                    float recall = CalcRecall(ids, lims, nq);
-                    float accuracy = CalcAccuracy(ids, lims, nq);
-                    printf("  range_k = %3d, ef = %4d, nq = %4d, elapse = %6.3fs, R@ = %.4f, A@ = %.4f\n",
-                           range_k, ef, nq, t_diff, recall, accuracy);
-                }
+        for (auto ef : EFs_) {
+            knowhere::SetIndexParamEf(conf, ef);
+            for (auto nq : NQs_) {
+                knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
+                CALC_TIME_SPAN(auto result = index_->QueryByRange(ds_ptr, conf, nullptr));
+                auto ids = knowhere::GetDatasetIDs(result);
+                auto lims = knowhere::GetDatasetLims(result);
+                float recall = CalcRecall(ids, lims, nq);
+                float accuracy = CalcAccuracy(ids, lims, nq);
+                printf("  ef = %4d, nq = %4d, elapse = %6.3fs, R@ = %.4f, A@ = %.4f\n", ef, nq, t_diff, recall,
+                       accuracy);
             }
         }
         printf("================================================================================\n");
@@ -141,7 +138,6 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere, public ::testi
     const std::vector<int32_t> HNSW_Ms_ = {16};
     const std::vector<int32_t> EFCONs_ = {200};
     const std::vector<int32_t> EFs_ = {16, 32, 64, 128, 256, 512};
-    const std::vector<int32_t> HNSW_Ks_ = {20};
 };
 
 // This testcase can be used to generate HDF5 file

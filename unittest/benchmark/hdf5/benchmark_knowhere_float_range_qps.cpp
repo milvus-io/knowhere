@@ -46,7 +46,6 @@ class Benchmark_knowhere_float_range_qps : public Benchmark_knowhere, public ::t
         auto M = knowhere::GetIndexParamHNSWM(conf);
         auto efConstruction = knowhere::GetIndexParamEfConstruction(conf);
         auto radius = knowhere::GetMetaRadius(conf);
-        knowhere::SetIndexParamHNSWK(conf, range_k_);
         knowhere::SetIndexParamEf(conf, ef_);
         knowhere::SetMetaTopk(conf, topk_);
 
@@ -125,7 +124,6 @@ class Benchmark_knowhere_float_range_qps : public Benchmark_knowhere, public ::t
     // HNSW index params
     const int32_t M_ = 16;
     const int32_t EFCON_ = 200;
-    const int32_t range_k_ = 20;
     const int32_t ef_ = 16;     // recall 0.9969
 };
 

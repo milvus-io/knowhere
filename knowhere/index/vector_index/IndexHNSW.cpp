@@ -295,7 +295,6 @@ IndexHNSW::QueryByRangeImpl(int64_t n,
         feder = std::make_unique<feder::hnsw::FederResult>();
     }
 
-    auto range_k = GetIndexParamHNSWK(config);
     size_t ef = GetIndexParamEf(config);
     hnswlib::SearchParam param{ef};
     bool is_IP = (index_->metric_type_ == 1);  // InnerProduct: 1
@@ -314,8 +313,8 @@ IndexHNSW::QueryByRangeImpl(int64_t n,
         auto single_query = xq + i * Dim();
 
         auto dummy_stat = hnswlib::StatisticsInfo();
-        auto rst = index_->searchRange(single_query, range_k, (is_IP ? 1.0f - radius : radius), bitset, dummy_stat,
-                                       &param, feder);
+        auto rst = index_->searchRange(single_query, (is_IP ? 1.0f - radius : radius), bitset, dummy_stat, &param,
+                                       feder);
 
         for (auto& p : rst) {
             result_dist_array[i].push_back(is_IP ? (1 - p.first) : p.first);
