@@ -121,7 +121,6 @@ class Benchmark_ssnpp_float_range : public Benchmark_knowhere, public ::testing:
     const std::vector<int32_t> HNSW_Ms_ = {16};
     const std::vector<int32_t> EFCONs_ = {200};
     const std::vector<int32_t> EFs_ = {16, 32, 64, 128, 256, 512};
-    const std::vector<int32_t> HNSW_Ks_ = {20};
 };
 
 // This testcase can be used to generate HDF5 file
@@ -166,14 +165,11 @@ TEST_F(Benchmark_ssnpp_float_range, TEST_HNSW) {
         knowhere::SetIndexParamHNSWM(conf, M);
         for (auto efc : EFCONs_) {
             knowhere::SetIndexParamEfConstruction(conf, efc);
-            for (auto k : HNSW_Ks_) {
-                knowhere::SetIndexParamHNSWK(conf, k);
-                std::string index_file_name = get_index_name({M, efc, k});
-                create_index(index_file_name, conf);
-                index_->Load(binary_set_);
-                binary_set_.clear();
-                test_hnsw_range(conf);
-            }
+            std::string index_file_name = get_index_name({M, efc});
+            create_index(index_file_name, conf);
+            index_->Load(binary_set_);
+            binary_set_.clear();
+            test_hnsw_range(conf);
         }
     }
 }
