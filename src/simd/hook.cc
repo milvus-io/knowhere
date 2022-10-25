@@ -76,6 +76,7 @@ fvec_hook(std::string& simd_type) {
         fvec_madd_and_argmin = fvec_madd_and_argmin_sse;
 
         simd_type = "AVX512";
+        return;
     }
     if (use_avx2 && cpu_support_avx2()) {
         fvec_inner_product = fvec_inner_product_avx;
@@ -90,6 +91,7 @@ fvec_hook(std::string& simd_type) {
         fvec_madd_and_argmin = fvec_madd_and_argmin_sse;
 
         simd_type = "AVX2";
+        return;
     }
     if (use_sse4_2 && cpu_support_sse4_2()) {
         fvec_inner_product = fvec_inner_product_sse;
@@ -124,5 +126,12 @@ fvec_hook(std::string& simd_type) {
 
 #endif
 }
+
+static int init_hook_ = []() {
+    std::string simd_type;
+    fvec_hook(simd_type);
+    std::cout << simd_type << std::endl;
+    return 0;
+}();
 
 }  // namespace faiss
