@@ -21,24 +21,27 @@ class Benchmark_ssnpp_float_range : public Benchmark_knowhere, public ::testing:
     test_ivf_range(const knowhere::Config& cfg) {
         auto conf = cfg;
         auto nlist = knowhere::GetIndexParamNlist(conf);
-        auto radius = knowhere::GetMetaRadius(conf);
 
-        printf("\n[%0.3f s] %s | %s | nlist=%ld, radius=%.3f\n", get_time_diff(), ann_test_name_.c_str(),
-               index_type_.c_str(), nlist, radius);
+        printf("\n[%0.3f s] %s | %s | nlist=%ld\n", get_time_diff(), ann_test_name_.c_str(),
+               index_type_.c_str(), nlist);
         printf("================================================================================\n");
         for (auto nprobe : NPROBEs_) {
             knowhere::SetIndexParamNprobe(conf, nprobe);
-            for (auto nq : NQs_) {
-                knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
+            double span = 0.0;
+            int64_t hits = 0, total_gt = 0;
+            for (int i = 0; i < nq_; i += nq_ / NQ_) {
+                knowhere::SetMetaRadius(conf, std::sqrt(gt_radius_[i]));
+                knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(1, dim_, (const float*)xq_ + (i * dim_));
+                total_gt += gt_lims_[i + 1] - gt_lims_[i];
                 CALC_TIME_SPAN(auto result = index_->QueryByRange(ds_ptr, conf, nullptr));
+                span += t_diff;
                 auto ids = knowhere::GetDatasetIDs(result);
                 auto lims = knowhere::GetDatasetLims(result);
-                float recall = CalcRecall(ids, lims, nq);
-                float accuracy = CalcAccuracy(ids, lims, nq);
-                printf("  nprobe = %4d, nq = %4d, elapse = %6.3fs, R@ = %.4f, A@ = %.4f\n",
-                       nprobe, nq, t_diff, recall, accuracy);
-                fflush(stdout);
+                hits += CalcHits(ids, lims, i, 1);
             }
+            printf("  nprobe = %4d, nq = %4d, elapse = %6.3fs, R@ = %.4f\n", nprobe, NQ_, span,
+                   (hits * 1.0f / total_gt));
+            fflush(stdout);
         }
         printf("================================================================================\n");
         printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(),
@@ -50,24 +53,27 @@ class Benchmark_ssnpp_float_range : public Benchmark_knowhere, public ::testing:
         auto conf = cfg;
         auto M = knowhere::GetIndexParamHNSWM(conf);
         auto efConstruction = knowhere::GetIndexParamEfConstruction(conf);
-        auto radius = knowhere::GetMetaRadius(conf);
 
-        printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld, radius=%.3f\n", get_time_diff(),
-               ann_test_name_.c_str(), index_type_.c_str(), M, efConstruction, radius);
+        printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld\n", get_time_diff(),
+               ann_test_name_.c_str(), index_type_.c_str(), M, efConstruction);
         printf("================================================================================\n");
         for (auto ef : EFs_) {
             knowhere::SetIndexParamEf(conf, ef);
-            for (auto nq : NQs_) {
-                knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
+            double span = 0.0;
+            int32_t hits = 0, total_gt = 0;
+            for (int i = 0; i < nq_; i += nq_ / NQ_) {
+                knowhere::SetMetaRadius(conf, std::sqrt(gt_radius_[i]));
+                knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(1, dim_, (const float*)xq_ + (i * dim_));
+                total_gt += gt_lims_[i + 1] - gt_lims_[i];
                 CALC_TIME_SPAN(auto result = index_->QueryByRange(ds_ptr, conf, nullptr));
+                span += t_diff;
                 auto ids = knowhere::GetDatasetIDs(result);
                 auto lims = knowhere::GetDatasetLims(result);
-                float recall = CalcRecall(ids, lims, nq);
-                float accuracy = CalcAccuracy(ids, lims, nq);
-                printf("  ef = %4d, nq = %4d, elapse = %6.3fs, R@ = %.4f, A@ = %.4f\n",
-                       ef, nq, t_diff, recall, accuracy);
-                fflush(stdout);
+                hits += CalcHits(ids, lims, i, 1);
             }
+            printf("  ef = %4d, nq = %4d, elapse = %6.3fs, R@ = %.4f\n", ef, NQ_, span,
+                   (hits * 1.0f / total_gt));
+            fflush(stdout);
         }
         printf("================================================================================\n");
         printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(),
@@ -81,7 +87,7 @@ class Benchmark_ssnpp_float_range : public Benchmark_knowhere, public ::testing:
         set_ann_test_name("ssnpp-256-euclidean-range");
 
         // load base dataset
-        load_bin<float>("FB_ssnpp_database.1M.fbin", xb_, nb_, dim_);
+        load_bin<float>("FB_ssnpp_database.10M.fbin", xb_, nb_, dim_);
 
         // load query dataset
         int32_t dim;
@@ -89,13 +95,20 @@ class Benchmark_ssnpp_float_range : public Benchmark_knowhere, public ::testing:
         assert(dim_ == dim);
 
         int32_t gt_num;
+        // std::vector<std::string> gt_array = {"SSNPP-radius-exponential", "SSNPP-gt-exponential"};
+        std::vector<std::string> gt_array = {"SSNPP-radius-norm", "SSNPP-gt-norm"};
+        // std::vector<std::string> gt_array = {"SSNPP-radius-poisson", "SSNPP-gt-poisson"};
+        // std::vector<std::string> gt_array = {"SSNPP-radius-uniform", "SSNPP-gt-uniform"};
+        // load ground truth radius
+        load_range_radius(gt_array[0], gt_radius_, gt_num);
+        assert(gt_num == nq_);
+
         // load ground truth ids
-        load_range_truthset("ssnpp-1M-range-gt", gt_ids_, gt_dist_, gt_lims_, gt_num);
+        load_range_truthset(gt_array[1], gt_ids_, gt_lims_, gt_num);
         assert(gt_num == nq_);
 
         metric_type_ = knowhere::metric::L2;
 
-        knowhere::SetMetaRadius(cfg_, std::sqrt(96237.0f));
         knowhere::SetMetaMetricType(cfg_, metric_type_);
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX2);
         printf("faiss::distance_compute_blas_threshold: %ld\n", knowhere::KnowhereConfig::GetBlasThreshold());
@@ -107,7 +120,7 @@ class Benchmark_ssnpp_float_range : public Benchmark_knowhere, public ::testing:
     }
 
  protected:
-    const std::vector<int32_t> NQs_ = {10000};
+    const int32_t NQ_ = 1000;
 
     // IVF index params
     const std::vector<int32_t> NLISTs_ = {1024};
@@ -151,6 +164,20 @@ TEST_F(Benchmark_ssnpp_float_range, TEST_IVF_FLAT_NM) {
         bin->size = (size_t)dim_ * nb_ * sizeof(float);
         binary_set_.Append(RAW_DATA, bin);
 
+        index_->Load(binary_set_);
+        binary_set_.clear();
+        test_ivf_range(conf);
+    }
+}
+
+TEST_F(Benchmark_ssnpp_float_range, TEST_IVF_SQ8) {
+    index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFSQ8;
+
+    knowhere::Config conf = cfg_;
+    for (auto nlist : NLISTs_) {
+        std::string index_file_name = get_index_name({nlist});
+        knowhere::SetIndexParamNlist(conf, nlist);
+        create_index(index_file_name, conf);
         index_->Load(binary_set_);
         binary_set_.clear();
         test_ivf_range(conf);
