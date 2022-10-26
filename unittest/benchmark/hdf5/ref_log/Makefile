@@ -47,6 +47,21 @@ test_knowhere_range_hnsw:
 	./benchmark_knowhere_float_range --gtest_filter="Benchmark_knowhere_float_range.TEST_HNSW" | tee test_knowhere_range_hnsw.log
 
 ###################################################################################################
+# Test Knowhere index range multi
+test_knowhere_range_multi_all: test_knowhere_range_multi_idmap test_knowhere_range_multi_ivf_flat_nm test_knowhere_range_multi_ivf_sq8 test_knowhere_range_multi_ivf_pq test_knowhere_range_multi_hnsw
+
+test_knowhere_range_multi_idmap:
+	./benchmark_knowhere_float_range_multi --gtest_filter="Benchmark_knowhere_float_range_multi.TEST_IDMAP" | tee test_knowhere_range_multi_idmap.log
+test_knowhere_range_multi_ivf_flat_nm:
+	./benchmark_knowhere_float_range_multi --gtest_filter="Benchmark_knowhere_float_range_multi.TEST_IVF_FLAT_NM" | tee test_knowhere_range_multi_ivf_flat_nm.log
+test_knowhere_range_multi_ivf_sq8:
+	./benchmark_knowhere_float_range_multi --gtest_filter="Benchmark_knowhere_float_range_multi.TEST_IVF_SQ8" | tee test_knowhere_range_multi_ivf_sq8.log
+test_knowhere_range_multi_ivf_pq:
+	./benchmark_knowhere_float_range_multi --gtest_filter="Benchmark_knowhere_float_range_multi.TEST_IVF_PQ" | tee test_knowhere_range_multi_ivf_pq.log
+test_knowhere_range_multi_hnsw:
+	./benchmark_knowhere_float_range_multi --gtest_filter="Benchmark_knowhere_float_range_multi.TEST_HNSW" | tee test_knowhere_range_multi_hnsw.log
+
+###################################################################################################
 # Test Knowhere binary index
 test_knowhere_binary_all: test_knowhere_binary_idmap test_knowhere_binary_ivf_flat
 
@@ -85,3 +100,14 @@ test_knowhere_range_qps_ivf_sq8:
 	./benchmark_knowhere_float_range_qps --gtest_filter="Benchmark_knowhere_float_range_qps.TEST_IVF_SQ8" | tee test_knowhere_range_qps_ivf_sq8.log
 test_knowhere_range_qps_hnsw:
 	./benchmark_knowhere_float_range_qps --gtest_filter="Benchmark_knowhere_float_range_qps.TEST_HNSW" | tee test_knowhere_range_qps_hnsw.log
+
+###################################################################################################
+# Test Knowhere index range multi qps
+test_knowhere_range_multi_qps_all: test_knowhere_range_multi_qps_ivf_flat_nm test_knowhere_range_multi_qps_ivf_sq8 test_knowhere_range_multi_qps_hnsw
+
+test_knowhere_range_multi_qps_ivf_flat_nm:
+	./benchmark_knowhere_float_range_multi_qps --gtest_filter="Benchmark_knowhere_float_range_multi_qps.TEST_IVF_FLAT_NM" | tee test_knowhere_range_multi_qps_ivf_flat_nm.log
+test_knowhere_range_multi_qps_ivf_sq8:
+	./benchmark_knowhere_float_range_multi_qps --gtest_filter="Benchmark_knowhere_float_range_multi_qps.TEST_IVF_SQ8" | tee test_knowhere_range_multi_qps_ivf_sq8.log
+test_knowhere_range_multi_qps_hnsw:
+	./benchmark_knowhere_float_range_multi_qps --gtest_filter="Benchmark_knowhere_float_range_multi_qps.TEST_HNSW" | tee test_knowhere_range_multi_qps_hnsw.log

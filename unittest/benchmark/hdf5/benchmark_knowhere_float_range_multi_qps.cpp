@@ -15,18 +15,17 @@
 #include "benchmark_knowhere.h"
 #include "unittest/range_utils.h"
 
-class Benchmark_knowhere_float_range_qps : public Benchmark_knowhere, public ::testing::Test {
+class Benchmark_knowhere_float_range_multi_qps : public Benchmark_knowhere, public ::testing::Test {
  public:
     void
     test_ivf(const knowhere::Config& cfg) {
         auto conf = cfg;
         auto nlist = knowhere::GetIndexParamNlist(conf);
-        auto radius = knowhere::GetMetaRadius(conf);
 
         knowhere::SetIndexParamNprobe(conf, nprobe_);
 
-        printf("\n[%0.3f s] %s | %s | nlist=%ld, nprobe=%d, radius=%.3f\n", get_time_diff(),
-               ann_test_name_.c_str(), index_type_.c_str(), nlist, nprobe_, radius);
+        printf("\n[%0.3f s] %s | %s | nlist=%ld, nprobe=%d\n", get_time_diff(), ann_test_name_.c_str(),
+               index_type_.c_str(), nlist, nprobe_);
         printf("================================================================================\n");
         for (auto thread_num : THREAD_NUMs_) {
             CALC_TIME_SPAN(task(conf, nq_, thread_num));
@@ -43,11 +42,10 @@ class Benchmark_knowhere_float_range_qps : public Benchmark_knowhere, public ::t
         auto conf = cfg;
         auto M = knowhere::GetIndexParamHNSWM(conf);
         auto efConstruction = knowhere::GetIndexParamEfConstruction(conf);
-        auto radius = knowhere::GetMetaRadius(conf);
         knowhere::SetIndexParamEf(conf, ef_);
 
-        printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld, ef=%d, radius=%.3f\n", get_time_diff(),
-               ann_test_name_.c_str(), index_type_.c_str(), M, efConstruction, ef_, radius);
+        printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld, ef=%d\n", get_time_diff(), ann_test_name_.c_str(),
+               index_type_.c_str(), M, efConstruction, ef_);
         printf("================================================================================\n");
         for (auto thread_num : THREAD_NUMs_) {
             CALC_TIME_SPAN(task(conf, nq_, thread_num));
@@ -64,9 +62,11 @@ class Benchmark_knowhere_float_range_qps : public Benchmark_knowhere, public ::t
     task(const knowhere::Config& conf, int32_t task_num, int32_t worker_num) {
         auto worker = [&](int32_t idx_start, int32_t num) {
             for (int32_t i = 0; i < num; i++) {
+                knowhere::Config config = conf;
+                knowhere::SetMetaRadius(config, gt_radius_[idx_start + i]);
                 knowhere::DatasetPtr ds_ptr =
                     knowhere::GenDataset(1, dim_, (const float*)xq_ + ((idx_start + i) * dim_));
-                index_->QueryByRange(ds_ptr, conf, nullptr);
+                index_->QueryByRange(ds_ptr, config, nullptr);
             }
         };
 
@@ -92,14 +92,13 @@ class Benchmark_knowhere_float_range_qps : public Benchmark_knowhere, public ::t
     void
     SetUp() override {
         T0_ = elapsed();
-        set_ann_test_name("sift-128-euclidean-range");
-        parse_ann_test_name_with_range();
-        load_hdf5_data_range<false>();
+        set_ann_test_name("sift-128-euclidean-range-multi");
+        parse_ann_test_name_with_range_multi();
+        load_hdf5_data_range_multi<false>();
 
         assert(metric_str_ == METRIC_IP_STR || metric_str_ == METRIC_L2_STR);
         metric_type_ = (metric_str_ == METRIC_IP_STR) ? knowhere::metric::IP : knowhere::metric::L2;
         knowhere::SetMetaMetricType(cfg_, metric_type_);
-        knowhere::SetMetaRadius(cfg_, *gt_radius_);
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX2);
         printf("faiss::distance_compute_blas_threshold: %ld\n", knowhere::KnowhereConfig::GetBlasThreshold());
     }
@@ -114,15 +113,15 @@ class Benchmark_knowhere_float_range_qps : public Benchmark_knowhere, public ::t
 
     // IVF index params
     const int32_t NLIST_ = 1024;
-    const int32_t nprobe_ = 8; // ivf_flat recall: 0.9700, ivf_sq8 recall: 0.9659
+    const int32_t nprobe_ = 32; // ivf_flat recall: 0.9564, ivf_sq8 recall: 0.9429
 
     // HNSW index params
     const int32_t M_ = 16;
     const int32_t EFCON_ = 200;
-    const int32_t ef_ = 16;     // recall 0.9969
+    const int32_t ef_ = 128;    // recall 0.9487
 };
 
-TEST_F(Benchmark_knowhere_float_range_qps, TEST_IVF_FLAT_NM) {
+TEST_F(Benchmark_knowhere_float_range_multi_qps, TEST_IVF_FLAT_NM) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
 
     knowhere::Config conf = cfg_;
@@ -142,7 +141,7 @@ TEST_F(Benchmark_knowhere_float_range_qps, TEST_IVF_FLAT_NM) {
     test_ivf(conf);
 }
 
-TEST_F(Benchmark_knowhere_float_range_qps, TEST_IVF_SQ8) {
+TEST_F(Benchmark_knowhere_float_range_multi_qps, TEST_IVF_SQ8) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFSQ8;
 
     knowhere::Config conf = cfg_;
@@ -155,7 +154,7 @@ TEST_F(Benchmark_knowhere_float_range_qps, TEST_IVF_SQ8) {
     test_ivf(conf);
 }
 
-TEST_F(Benchmark_knowhere_float_range_qps, TEST_HNSW) {
+TEST_F(Benchmark_knowhere_float_range_multi_qps, TEST_HNSW) {
     index_type_ = knowhere::IndexEnum::INDEX_HNSW;
 
     knowhere::Config conf = cfg_;
