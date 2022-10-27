@@ -15,7 +15,7 @@
 #include "benchmark_knowhere.h"
 #include "unittest/range_utils.h"
 
-class Benchmark_ssnpp_float_range : public Benchmark_knowhere, public ::testing::Test {
+class Benchmark_ssnpp_float_range_multi : public Benchmark_knowhere, public ::testing::Test {
  public:
     void
     test_ivf_range(const knowhere::Config& cfg) {
@@ -149,7 +149,7 @@ TEST_F(Benchmark_ssnpp_float_range, TEST_CREATE_HDF5) {
 }
 #endif
 
-TEST_F(Benchmark_ssnpp_float_range, TEST_IVF_FLAT_NM) {
+TEST_F(Benchmark_ssnpp_float_range_multi, TEST_IVF_FLAT_NM) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
 
     knowhere::Config conf = cfg_;
@@ -170,7 +170,7 @@ TEST_F(Benchmark_ssnpp_float_range, TEST_IVF_FLAT_NM) {
     }
 }
 
-TEST_F(Benchmark_ssnpp_float_range, TEST_IVF_SQ8) {
+TEST_F(Benchmark_ssnpp_float_range_multi, TEST_IVF_SQ8) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFSQ8;
 
     knowhere::Config conf = cfg_;
@@ -184,7 +184,7 @@ TEST_F(Benchmark_ssnpp_float_range, TEST_IVF_SQ8) {
     }
 }
 
-TEST_F(Benchmark_ssnpp_float_range, TEST_HNSW) {
+TEST_F(Benchmark_ssnpp_float_range_multi, TEST_HNSW) {
     index_type_ = knowhere::IndexEnum::INDEX_HNSW;
 
     knowhere::Config conf = cfg_;
