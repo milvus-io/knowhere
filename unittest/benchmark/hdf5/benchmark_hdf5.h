@@ -58,8 +58,8 @@ class Benchmark_hdf5 : public Benchmark_base {
         ann_test_name_ = test_name;
     }
 
-    void
-    parse_ann_test_name() {
+    int32_t
+    parse_name_and_dim() {
         size_t pos1, pos2;
 
         assert(!ann_test_name_.empty() || !"ann_test_name not set");
@@ -70,27 +70,35 @@ class Benchmark_hdf5 : public Benchmark_base {
         assert(pos2 != std::string::npos);
 
         dim_ = std::stoi(ann_test_name_.substr(pos1 + 1, pos2 - pos1 - 1));
-        metric_str_ = ann_test_name_.substr(pos2 + 1);
+        return (pos2 + 1);
     }
 
     void
-    parse_ann_range_test_name() {
-        size_t pos1, pos2, pos3;
+    parse_ann_test_name() {
+        auto pos = parse_name_and_dim();
+        metric_str_ = ann_test_name_.substr(pos);
+    }
 
-        assert(!ann_test_name_.empty() || !"ann_test_name not set");
-        pos1 = ann_test_name_.find_first_of('-', 0);
-        assert(pos1 != std::string::npos);
+    void
+    parse_ann_test_name_with_range() {
+        auto pos1 = parse_name_and_dim();
 
-        pos2 = ann_test_name_.find_first_of('-', pos1 + 1);
+        auto pos2 = ann_test_name_.find_first_of('-', pos1);
         assert(pos2 != std::string::npos);
+        metric_str_ = ann_test_name_.substr(pos1, pos2 - pos1);
 
-        dim_ = std::stoi(ann_test_name_.substr(pos1 + 1, pos2 - pos1 - 1));
+        assert("range" == ann_test_name_.substr(pos2 + 1));
+    }
 
-        pos3 = ann_test_name_.find_first_of('-', pos2 + 1);
-        assert(pos3 != std::string::npos);
-        metric_str_ = ann_test_name_.substr(pos2 + 1, pos3 - pos2 -1);
+    void
+    parse_ann_test_name_with_range_multi() {
+        auto pos1 = parse_name_and_dim();
 
-        assert("range" == ann_test_name_.substr(pos3 + 1));
+        auto pos2 = ann_test_name_.find_first_of('-', pos1);
+        assert(pos2 != std::string::npos);
+        metric_str_ = ann_test_name_.substr(pos1, pos2 - pos1);
+
+        assert("range-multi" == ann_test_name_.substr(pos2 + 1));
     }
 
     template <bool is_binary>
@@ -184,6 +192,60 @@ class Benchmark_hdf5 : public Benchmark_base {
         printf("[%.3f s] Loading ground truth data\n", get_time_diff());
         gt_radius_ = (float*)hdf5_read(ann_file_name, HDF5_DATASET_RADIUS, H5T_FLOAT, cols, rows);
         assert((cols == 1 && rows == 1) || !"incorrect ground truth radius");
+
+        gt_lims_ = (int32_t*)hdf5_read(ann_file_name, HDF5_DATASET_LIMS, H5T_INTEGER, cols, rows);
+        assert((cols == nq_+1 && rows == 1) || !"incorrect dims of ground truth lims");
+
+        gt_ids_ = (int32_t*)hdf5_read(ann_file_name, HDF5_DATASET_NEIGHBORS, H5T_INTEGER, cols, rows);
+        assert((cols == gt_lims_[nq_] && rows == 1) || !"incorrect dims of ground truth labels");
+
+        gt_dist_ = (float*)hdf5_read(ann_file_name, HDF5_DATASET_DISTANCES, H5T_FLOAT, cols, rows);
+        assert((cols == gt_lims_[nq_] && rows == 1) || !"incorrect dims of ground truth distances");
+    }
+
+    template <bool is_binary>
+    void
+    load_hdf5_data_range_multi() {
+        const std::string ann_file_name = ann_test_name_ + HDF5_POSTFIX;
+        int32_t dim;
+
+        printf("[%.3f s] Loading HDF5 file: %s\n", get_time_diff(), ann_file_name.c_str());
+
+        /* load train data */
+        printf("[%.3f s] Loading train data\n", get_time_diff());
+        if (!is_binary) {
+            xb_ = hdf5_read(ann_file_name, HDF5_DATASET_TRAIN, H5T_FLOAT, dim, nb_);
+            assert(dim == dim_ || !"train dataset has incorrect dimension");
+        } else {
+            xb_ = hdf5_read(ann_file_name, HDF5_DATASET_TRAIN, H5T_INTEGER, dim, nb_);
+            assert(dim * 32 == dim_ || !"train dataset has incorrect dimension");
+        }
+
+        if (metric_str_ == METRIC_IP_STR) {
+            printf("[%.3f s] Normalizing train dataset \n", get_time_diff());
+            normalize((float*)xb_, nb_, dim_);
+        }
+
+        /* load test data */
+        printf("[%.3f s] Loading test data\n", get_time_diff());
+        if (!is_binary) {
+            xq_ = hdf5_read(ann_file_name, HDF5_DATASET_TEST, H5T_FLOAT, dim, nq_);
+            assert(dim == dim_ || !"test dataset has incorrect dimension");
+        } else {
+            xq_ = hdf5_read(ann_file_name, HDF5_DATASET_TEST, H5T_INTEGER, dim, nq_);
+            assert(dim * 32 == dim_ || !"test dataset has incorrect dimension");
+        }
+
+        if (metric_str_ == METRIC_IP_STR) {
+            printf("[%.3f s] Normalizing test dataset \n", get_time_diff());
+            normalize((float*)xq_, nq_, dim_);
+        }
+
+        /* load ground-truth data */
+        int32_t cols, rows;
+        printf("[%.3f s] Loading ground truth data\n", get_time_diff());
+        gt_radius_ = (float*)hdf5_read(ann_file_name, HDF5_DATASET_RADIUS, H5T_FLOAT, cols, rows);
+        assert((cols == nq_ && rows == 1) || !"incorrect ground truth radius");
 
         gt_lims_ = (int32_t*)hdf5_read(ann_file_name, HDF5_DATASET_LIMS, H5T_INTEGER, cols, rows);
         assert((cols == nq_+1 && rows == 1) || !"incorrect dims of ground truth lims");
@@ -355,6 +417,62 @@ class Benchmark_hdf5 : public Benchmark_base {
 
         /* write ground-truth radius */
         write_hdf5_dataset(file, HDF5_DATASET_RADIUS, H5T_NATIVE_FLOAT, 1, 1, &radius);
+
+        /* write ground-truth lims dataset */
+        write_hdf5_dataset(file, HDF5_DATASET_LIMS, H5T_NATIVE_INT32, 1, nq+1, g_lims);
+
+        /* write ground-truth labels dataset */
+        write_hdf5_dataset(file, HDF5_DATASET_NEIGHBORS, H5T_NATIVE_INT32, 1, ((int32_t*)g_lims)[nq], g_ids);
+
+        /* write ground-truth distance dataset */
+        write_hdf5_dataset(file, HDF5_DATASET_DISTANCES, H5T_NATIVE_FLOAT, 1, ((int32_t*)g_lims)[nq], g_dist);
+
+        /* Close/release resources. */
+        H5Fclose(file);
+    }
+
+    // For binary vector, dim should be divided by 32, since we use int32 to store binary vector data */
+    // Write HDF5 file with following dataset:
+    //    HDF5_DATASET_RADIUS    - H5T_NATIVE_FLOAT, [1, nq]
+    //    HDF5_DATASET_LIMS      - H5T_NATIVE_INT32, [1, nq+1]
+    //    HDF5_DATASET_NEIGHBORS - H5T_NATIVE_INT32, [1, lims[nq]]
+    //    HDF5_DATASET_DISTANCES - H5T_NATIVE_FLOAT, [1, lims[nq]]
+    template <bool is_binary>
+    void
+    hdf5_write_range(const char* file_name, const int32_t dim, const void* xb, const int32_t nb, const void* xq,
+                     const int32_t nq, const float* g_radius, const void* g_lims, const void* g_ids, const void* g_dist) {
+        /* Open the file and the dataset. */
+        hid_t file = H5Fcreate(file_name, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+
+        auto write_hdf5_dataset = [](hid_t file, const char* dataset_name, hid_t type_id, int32_t rows, int32_t cols,
+                                     const void* data) {
+            hsize_t dims[2];
+            dims[0] = rows;
+            dims[1] = cols;
+            auto dataspace = H5Screate_simple(2, dims, NULL);
+            auto dataset = H5Dcreate2(file, dataset_name, type_id, dataspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+            auto err = H5Dwrite(dataset, type_id, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+            assert(err == 0);
+            H5Dclose(dataset);
+            H5Sclose(dataspace);
+        };
+
+        /* write train dataset */
+        if (!is_binary) {
+            write_hdf5_dataset(file, HDF5_DATASET_TRAIN, H5T_NATIVE_FLOAT, nb, dim, xb);
+        } else {
+            write_hdf5_dataset(file, HDF5_DATASET_TRAIN, H5T_NATIVE_INT32, nb, dim, xb);
+        }
+
+        /* write test dataset */
+        if (!is_binary) {
+            write_hdf5_dataset(file, HDF5_DATASET_TEST, H5T_NATIVE_FLOAT, nq, dim, xq);
+        } else {
+            write_hdf5_dataset(file, HDF5_DATASET_TEST, H5T_NATIVE_INT32, nq, dim, xq);
+        }
+
+        /* write ground-truth radius */
+        write_hdf5_dataset(file, HDF5_DATASET_RADIUS, H5T_NATIVE_FLOAT, 1, nq, g_radius);
 
         /* write ground-truth lims dataset */
         write_hdf5_dataset(file, HDF5_DATASET_LIMS, H5T_NATIVE_INT32, 1, nq+1, g_lims);

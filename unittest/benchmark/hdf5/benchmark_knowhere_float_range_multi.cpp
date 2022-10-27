@@ -15,27 +15,26 @@
 #include "benchmark_knowhere.h"
 #include "unittest/range_utils.h"
 
-class Benchmark_knowhere_float_range : public Benchmark_knowhere, public ::testing::Test {
+class Benchmark_knowhere_float_range_multi : public Benchmark_knowhere, public ::testing::Test {
  public:
     void
     test_idmap(const knowhere::Config& cfg) {
         auto conf = cfg;
-        auto radius = knowhere::GetMetaRadius(conf);
 
-        printf("\n[%0.3f s] %s | %s, radius=%.3f \n", get_time_diff(), ann_test_name_.c_str(),
-               index_type_.c_str(), radius);
+        printf("\n[%0.3f s] %s | %s\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
         printf("================================================================================\n");
-        for (auto nq : NQs_) {
-            knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
+        double span = 0.0;
+        int64_t hits = 0;
+        for (int32_t i = 0; i < nq_; i++) {
+            knowhere::SetMetaRadius(conf, gt_radius_[i]);
+            knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(1, dim_, (const float*)xq_ + (i * dim_));
             CALC_TIME_SPAN(auto result = index_->QueryByRange(ds_ptr, conf, nullptr));
+            span += t_diff;
             auto ids = knowhere::GetDatasetIDs(result);
-            auto distances = knowhere::GetDatasetDistance(result);
             auto lims = knowhere::GetDatasetLims(result);
-            CheckDistance(metric_type_, ids, distances, lims, nq);
-            float recall = CalcRecall(ids, lims, nq);
-            float accuracy = CalcAccuracy(ids, lims, nq);
-            printf("  nq = %4d, elapse = %6.3fs, R@ = %.4f, A@ = %.4f\n", nq, t_diff, recall, accuracy);
+            hits += CalcHits(ids, lims, i, 1);
         }
+        printf("  nq = %4d, elapse = %6.3fs, R@ = %.4f\n", nq_, span, (hits * 1.0f) / gt_lims_[nq_]);
         printf("================================================================================\n");
         printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(),
                std::string(index_type_).c_str());
@@ -45,23 +44,26 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere, public ::testi
     test_ivf(const knowhere::Config& cfg) {
         auto conf = cfg;
         auto nlist = knowhere::GetIndexParamNlist(conf);
-        auto radius = knowhere::GetMetaRadius(conf);
 
-        printf("\n[%0.3f s] %s | %s | nlist=%ld, radius=%.3f\n", get_time_diff(), ann_test_name_.c_str(),
-               index_type_.c_str(), nlist, radius);
+        printf("\n[%0.3f s] %s | %s | nlist=%ld\n", get_time_diff(), ann_test_name_.c_str(),
+               index_type_.c_str(), nlist);
         printf("================================================================================\n");
         for (auto nprobe : NPROBEs_) {
             knowhere::SetIndexParamNprobe(conf, nprobe);
-            for (auto nq : NQs_) {
-                knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
+            double span = 0.0;
+            int64_t hits = 0;
+            for (int32_t i = 0; i < nq_; i++) {
+                knowhere::SetMetaRadius(conf, gt_radius_[i]);
+                knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(1, dim_, (const float*)xq_ + (i * dim_));
                 CALC_TIME_SPAN(auto result = index_->QueryByRange(ds_ptr, conf, nullptr));
+                span += t_diff;
                 auto ids = knowhere::GetDatasetIDs(result);
                 auto lims = knowhere::GetDatasetLims(result);
-                float recall = CalcRecall(ids, lims, nq);
-                float accuracy = CalcAccuracy(ids, lims, nq);
-                printf("  nprobe = %4d, nq = %4d, elapse = %6.3fs, R@ = %.4f, A@ = %.4f\n",
-                       nprobe, nq, t_diff, recall, accuracy);
+                hits += CalcHits(ids, lims, i, 1);
             }
+            printf("  nprobe = %4d, nq = %4d, elapse = %6.3fs, R@ = %.4f\n", nprobe, nq_, span,
+                   (hits * 1.0f) / gt_lims_[nq_]);
+            fflush(stdout);
         }
         printf("================================================================================\n");
         printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(),
@@ -73,23 +75,26 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere, public ::testi
         auto conf = cfg;
         auto M = knowhere::GetIndexParamHNSWM(conf);
         auto efConstruction = knowhere::GetIndexParamEfConstruction(conf);
-        auto radius = knowhere::GetMetaRadius(conf);
 
-        printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld, radius=%.3f\n", get_time_diff(),
-               ann_test_name_.c_str(), index_type_.c_str(), M, efConstruction, radius);
+        printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld\n", get_time_diff(),
+               ann_test_name_.c_str(), index_type_.c_str(), M, efConstruction);
         printf("================================================================================\n");
         for (auto ef : EFs_) {
             knowhere::SetIndexParamEf(conf, ef);
-            for (auto nq : NQs_) {
-                knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
+            double span = 0.0;
+            int64_t hits = 0;
+            for (int32_t i = 0; i < nq_; i++) {
+                knowhere::SetMetaRadius(conf, gt_radius_[i]);
+                knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(1, dim_, (const float*)xq_ + (i * dim_));
                 CALC_TIME_SPAN(auto result = index_->QueryByRange(ds_ptr, conf, nullptr));
+                span += t_diff;
                 auto ids = knowhere::GetDatasetIDs(result);
                 auto lims = knowhere::GetDatasetLims(result);
-                float recall = CalcRecall(ids, lims, nq);
-                float accuracy = CalcAccuracy(ids, lims, nq);
-                printf("  ef = %4d, nq = %4d, elapse = %6.3fs, R@ = %.4f, A@ = %.4f\n", ef, nq, t_diff, recall,
-                       accuracy);
+                hits += CalcHits(ids, lims, i, 1);
             }
+            printf("  ef = %4d, nq = %4d, elapse = %6.3fs, R@ = %.4f\n", ef, nq_, span,
+                   (hits * 1.0f) / gt_lims_[nq_]);
+            fflush(stdout);
         }
         printf("================================================================================\n");
         printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(),
@@ -105,15 +110,14 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere, public ::testi
         parse_ann_test_name();
         load_hdf5_data<false>();
 #else
-        set_ann_test_name("sift-128-euclidean-range");
-        parse_ann_test_name_with_range();
-        load_hdf5_data_range<false>();
+        set_ann_test_name("sift-128-euclidean-range-multi");
+        parse_ann_test_name_with_range_multi();
+        load_hdf5_data_range_multi<false>();
 #endif
 
         assert(metric_str_ == METRIC_IP_STR || metric_str_ == METRIC_L2_STR);
         metric_type_ = (metric_str_ == METRIC_IP_STR) ? knowhere::metric::IP : knowhere::metric::L2;
         knowhere::SetMetaMetricType(cfg_, metric_type_);
-        knowhere::SetMetaRadius(cfg_, *gt_radius_);
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX2);
         printf("faiss::distance_compute_blas_threshold: %ld\n", knowhere::KnowhereConfig::GetBlasThreshold());
     }
@@ -145,41 +149,29 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere, public ::testi
 //   1. set_ann_test_name, eg. "sift-128-euclidean" or "glove-200-angular"
 //   2. use parse_ann_test_name() and load_hdf5_data<false>()
 //   3. comment SetMetaRadius()
-//   4. set radius to a right value
-//   5. use RunFloatRangeSearchBF<CMin<float>> for L2, or RunFloatRangeSearchBF<CMax<float>> for IP
-//   6. specify the hdf5 file name to generate
-//   7. run this testcase
+//   4. use the last element in the gt_dist_ as its radius for each nq
+//   5. specify the hdf5 file name to generate
+//   6. run this testcase
 #if 0
-TEST_F(Benchmark_knowhere_float_range, TEST_CREATE_HDF5) {
-    // set this radius to get about 1M result dataset for 10k nq
-    const float radius = 186.0;
-
-    std::vector<int64_t> golden_labels;
-    std::vector<float> golden_distances;
-    std::vector<size_t> golden_lims;
-    RunFloatRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, metric_type_,
-                                       (const float*)xb_, nb_, (const float*)xq_, nq_, dim_, radius, nullptr);
-
-    // convert golden_lims and golden_ids to int32
-    std::vector<int32_t> golden_lims_int(nq_ + 1);
-    for (int32_t i = 0; i <= nq_; i++) {
-        golden_lims_int[i] = golden_lims[i];
+TEST_F(Benchmark_knowhere_float_range_multi, TEST_CREATE_HDF5_WITH_MULTI_RADIUS) {
+    std::vector<float> golden_radius(nq_);
+    for (int32_t i = 0; i < nq_; i++) {
+        golden_radius[i] = gt_dist_[(i + 1) * gt_k_ - 1] + 0.01;
     }
 
-    auto elem_cnt = golden_lims[nq_];
-    std::vector<int32_t> golden_ids_int(elem_cnt);
-    for (int32_t i = 0; i < elem_cnt; i++) {
-        golden_ids_int[i] = golden_labels[i];
+    std::vector<int32_t> golden_lims(nq_ + 1);
+    for (int32_t i = 0; i <= nq_; i++) {
+        golden_lims[i] = i * gt_k_;
     }
 
     assert(dim_ == 128);
     assert(nq_ == 10000);
-    hdf5_write_range<false>("sift-128-euclidean-range.hdf5", dim_, xb_, nb_, xq_, nq_, radius,
-                            golden_lims_int.data(), golden_ids_int.data(), golden_distances.data());
+    hdf5_write_range<false>("sift-128-euclidean-range-multi.hdf5", dim_, xb_, nb_, xq_, nq_,
+                            golden_radius.data(), golden_lims.data(), gt_ids_, gt_dist_);
 }
 #endif
 
-TEST_F(Benchmark_knowhere_float_range, TEST_IDMAP) {
+TEST_F(Benchmark_knowhere_float_range_multi, TEST_IDMAP) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IDMAP;
 
     knowhere::Config conf = cfg_;
@@ -190,7 +182,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IDMAP) {
     test_idmap(conf);
 }
 
-TEST_F(Benchmark_knowhere_float_range, TEST_IVF_FLAT_NM) {
+TEST_F(Benchmark_knowhere_float_range_multi, TEST_IVF_FLAT_NM) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
 
     knowhere::Config conf = cfg_;
@@ -211,7 +203,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IVF_FLAT_NM) {
     }
 }
 
-TEST_F(Benchmark_knowhere_float_range, TEST_IVF_SQ8) {
+TEST_F(Benchmark_knowhere_float_range_multi, TEST_IVF_SQ8) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFSQ8;
 
     knowhere::Config conf = cfg_;
@@ -225,7 +217,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IVF_SQ8) {
     }
 }
 
-TEST_F(Benchmark_knowhere_float_range, TEST_IVF_PQ) {
+TEST_F(Benchmark_knowhere_float_range_multi, TEST_IVF_PQ) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFPQ;
 
     knowhere::Config conf = cfg_;
@@ -243,7 +235,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IVF_PQ) {
     }
 }
 
-TEST_F(Benchmark_knowhere_float_range, TEST_HNSW) {
+TEST_F(Benchmark_knowhere_float_range_multi, TEST_HNSW) {
     index_type_ = knowhere::IndexEnum::INDEX_HNSW;
 
     knowhere::Config conf = cfg_;

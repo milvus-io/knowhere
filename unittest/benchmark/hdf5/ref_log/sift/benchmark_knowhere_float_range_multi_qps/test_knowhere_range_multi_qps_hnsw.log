@@ -1,0 +1,34 @@
+Running main() from /home/caiyd/vec/knowhere/cmake_build/thirdparty/gtest/googletest-src/googletest/src/gtest_main.cc
+Note: Google Test filter = Benchmark_knowhere_float_range_multi_qps.TEST_HNSW
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from Benchmark_knowhere_float_range_multi_qps
+[ RUN      ] Benchmark_knowhere_float_range_multi_qps.TEST_HNSW
+[0.000 s] Loading HDF5 file: sift-128-euclidean-range-multi.hdf5
+[0.000 s] Loading train data
+[0.198 s] Loading test data
+[0.200 s] Loading ground truth data
+2022-10-27 16:08:33,004 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS expect simdType::AVX2
+2022-10-27 16:08:33,004 INFO [default] [KNOWHERE][SetSimdType][benchmark_knowh] FAISS hook AVX2
+faiss::distance_compute_blas_threshold: 16384
+[0.203 s] Creating CPU index "HNSW"
+[0.203 s] Reading index file: sift-128-euclidean-range-multi_HNSW_16_200.index
+[0.203 s] Building all on 1000000 vectors
+[94.819 s] Writing index file: sift-128-euclidean-range-multi_HNSW_16_200.index
+
+[95.696 s] sift-128-euclidean-range-multi | HNSW | M=16 | efConstruction=200, ef=128
+================================================================================
+  thread_num = 10, elapse =  1.348s, QPS = 7417.033
+  thread_num = 20, elapse =  1.356s, QPS = 7372.310
+  thread_num = 30, elapse =  1.330s, QPS = 7518.904
+  thread_num = 40, elapse =  1.337s, QPS = 7478.643
+  thread_num = 50, elapse =  1.428s, QPS = 7004.150
+================================================================================
+[102.495 s] Test 'sift-128-euclidean-range-multi/HNSW' done
+
+[       OK ] Benchmark_knowhere_float_range_multi_qps.TEST_HNSW (102562 ms)
+[----------] 1 test from Benchmark_knowhere_float_range_multi_qps (102562 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (102562 ms total)
+[  PASSED  ] 1 test.

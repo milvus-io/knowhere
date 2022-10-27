@@ -76,7 +76,7 @@ class Benchmark_knowhere_binary_range : public Benchmark_knowhere, public ::test
         load_hdf5_data<false>();
 #else
         set_ann_test_name("sift-4096-hamming-range");
-        parse_ann_range_test_name();
+        parse_ann_test_name_with_range();
         load_hdf5_data_range<true>();
 #endif
 
