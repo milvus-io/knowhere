@@ -121,6 +121,20 @@ class Benchmark_base {
         return hit;
     }
 
+    int32_t
+    CalcHits(const int64_t* ids, const size_t* lims, int32_t start, int32_t num) {
+        int32_t hit = 0;
+        for (int32_t i = 0; i < num; i++) {
+            std::unordered_set<int64_t> gt_ids_set(gt_ids_ + gt_lims_[start + i], gt_ids_ + gt_lims_[start + i + 1]);
+            for (auto j = lims[i]; j < lims[i + 1]; j++) {
+                if (gt_ids_set.count(ids[j]) > 0) {
+                    hit++;
+                }
+            }
+        }
+        return hit;
+    }
+
     float
     CalcRecall(const int64_t* ids, const size_t* lims, int32_t nq) {
         int32_t hit = CalcHits(ids, lims, nq);

@@ -55,3 +55,4 @@ benchmark_test(benchmark_knowhere_float_range_qps   hdf5/benchmark_knowhere_floa
 
 benchmark_test(benchmark_ssnpp_float                ssnpp/benchmark_ssnpp_float.cpp)
 benchmark_test(benchmark_ssnpp_float_range          ssnpp/benchmark_ssnpp_float_range.cpp)
+benchmark_test(benchmark_ssnpp_float_range_qps      ssnpp/benchmark_ssnpp_float_range_qps.cpp)

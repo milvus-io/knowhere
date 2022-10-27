@@ -85,7 +85,7 @@ class Benchmark_ssnpp : public Benchmark_base {
     }
 
     void
-    load_range_truthset(const std::string& bin_file, int32_t*& gt_ids, float*& gt_dist, int32_t*& gt_lims, int32_t& gt_num) {
+    load_range_truthset(const std::string& bin_file, int32_t*& gt_ids, int32_t*& gt_lims, int32_t& gt_num) {
         std::ifstream reader;
         reader.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
@@ -101,8 +101,7 @@ class Benchmark_ssnpp : public Benchmark_base {
         printf("Metadata: #gt_num = %d, #total_results = %d ...\n", gt_num, total_num);
 
         // 2 * int32_t + len(lims) + len(ids) + len(distances)
-        size_t expected_file_size = 2 * sizeof(int32_t) + gt_num * sizeof(int32_t) + total_num * sizeof(int32_t) +
-                                    total_num * sizeof(float);
+        size_t expected_file_size = 2 * sizeof(int32_t) + gt_num * sizeof(int32_t) + total_num * sizeof(int32_t);
 
         assert(actual_file_size == expected_file_size);
 
@@ -115,9 +114,6 @@ class Benchmark_ssnpp : public Benchmark_base {
         int32_t total_elem = gt_lims[gt_num];
         gt_ids = new int32_t[total_elem];
         reader.read((char*)gt_ids, total_elem * sizeof(int32_t));
-
-        gt_dist = new float[total_elem];
-        reader.read((char*)gt_dist, total_elem * sizeof(float));
     }
 
     void
