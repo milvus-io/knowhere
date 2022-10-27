@@ -9,11 +9,11 @@ test_ssnpp_hnsw:
 
 ###################################################################################################
 # Test Knowhere index range
-test_ssnpp_range_all: test_ssnpp_range_ivf_flat_nm test_ssnpp_range_ivf_sq8 test_ssnpp_range_hnsw
+test_ssnpp_range_multi_all: test_ssnpp_range_multi_ivf_flat_nm test_ssnpp_range_multi_ivf_sq8 test_ssnpp_multi_range_hnsw
 
-test_ssnpp_range_ivf_flat_nm:
-	./benchmark_ssnpp_float_range --gtest_filter="Benchmark_ssnpp_float_range.TEST_IVF_FLAT_NM" | tee test_ssnpp_range_ivf_flat_nm.log
-test_ssnpp_range_ivf_sq8:
-	./benchmark_ssnpp_float_range --gtest_filter="Benchmark_ssnpp_float_range.TEST_IVF_SQ8" | tee test_ssnpp_range_ivf_sq8.log
-test_ssnpp_range_hnsw:
-	./benchmark_ssnpp_float_range --gtest_filter="Benchmark_ssnpp_float_range.TEST_HNSW" | tee test_ssnpp_range_hnsw.log
+test_ssnpp_range_multi_ivf_flat_nm:
+	./benchmark_ssnpp_float_multi_range --gtest_filter="Benchmark_ssnpp_float_range_multi.TEST_IVF_FLAT_NM" | tee test_ssnpp_range_multi_ivf_flat_nm.log
+test_ssnpp_range_multi_ivf_sq8:
+	./benchmark_ssnpp_float_multi_range --gtest_filter="Benchmark_ssnpp_float_range_multi.TEST_IVF_SQ8" | tee test_ssnpp_range_multi_ivf_sq8.log
+test_ssnpp_range_multi_hnsw:
+	./benchmark_ssnpp_float_multi_range --gtest_filter="Benchmark_ssnpp_float_range_multi.TEST_HNSW" | tee test_ssnpp_range_multi_hnsw.log
