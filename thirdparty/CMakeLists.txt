@@ -151,6 +151,7 @@ macro(build_diskann)
             "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
             "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
             "-DCMAKE_CXX_FLAGS=-O3 -DELPP_THREAD_SAFE -fpermissive -I ${KNOWHERE_SOURCE_DIR} -I ${KNOWHERE_SOURCE_DIR}/thirdparty -I ${CMAKE_INSTALL_PREFIX}/include"       
+            "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
             )
     message( STATUS "Building DISKANN with configure args -${DISKANN_CMAKE_ARGS}" )
     set( DISKANN_BUILD_DIR "${DISKANN_SOURCE_DIR}/build")
