@@ -219,6 +219,11 @@ install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/easyloggingpp/"
         PATTERN "*.h" 
 )
 
+install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/ctpl/"
+        DESTINATION "include/ctpl"
+        FILES_MATCHING 
+        PATTERN "*.h" 
+)
 
 if ( KNOWHERE_WITH_DISKANN AND TARGET diskann)
     install( DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/DiskANN/"

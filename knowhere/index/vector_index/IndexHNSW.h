@@ -14,6 +14,7 @@
 #include <memory>
 #include <unordered_set>
 
+#include "ctpl/ctpl-std.h"
 #include "hnswlib/hnswlib/hnswlib.h"
 #include "knowhere/common/Exception.h"
 #include "knowhere/feder/HNSW.h"
@@ -23,10 +24,24 @@ namespace knowhere {
 
 class IndexHNSW : public VecIndex {
  public:
-    IndexHNSW() {
+    IndexHNSW() : IndexHNSW(std::thread::hardware_concurrency()) {
+    }
+
+    explicit IndexHNSW(uint32_t num_threads) {
         index_type_ = IndexEnum::INDEX_HNSW;
         stats = std::make_shared<LibHNSWStatistics>(index_type_);
+        pool_ = std::make_unique<ctpl::thread_pool>(num_threads);
     }
+
+    IndexHNSW(const IndexHNSW& index_hnsw) = delete;
+
+    IndexHNSW&
+    operator=(const IndexHNSW& index_hnsw) = delete;
+
+    IndexHNSW(IndexHNSW&& index_hnsw) noexcept = default;
+
+    IndexHNSW&
+    operator=(IndexHNSW&& index_hnsw) noexcept = default;
 
     BinarySet
     Serialize(const Config&) override;
@@ -74,7 +89,8 @@ class IndexHNSW : public VecIndex {
     UpdateLevelLinkList(int32_t, feder::hnsw::HNSWMeta&, std::unordered_set<int64_t>&);
 
  private:
-    std::shared_ptr<hnswlib::HierarchicalNSW<float>> index_;
+    std::unique_ptr<ctpl::thread_pool> pool_;
+    std::unique_ptr<hnswlib::HierarchicalNSW<float>> index_;
 };
 
 }  // namespace knowhere
