@@ -9,6 +9,7 @@
 #include "tsl/robin_map.h"
 #include "tsl/robin_set.h"
 
+#include <knowhere/feder/DiskANN.h>
 #include <knowhere/utils/BitsetView.h>
 
 #include "aligned_file_reader.h"
@@ -95,6 +96,7 @@ namespace diskann {
         const T *query, const _u64 k_search, const _u64 l_search, _s64 *res_ids,
         float *res_dists, const _u64 beam_width,
         const bool use_reorder_data = false, QueryStats *stats = nullptr,
+        const knowhere::feder::diskann::FederResultUniq& feder = nullptr,
         faiss::BitsetView bitset_view = nullptr);
 
 
@@ -115,6 +117,10 @@ namespace diskann {
     DISKANN_DLLEXPORT _u64 get_data_dim() const noexcept;
 
     DISKANN_DLLEXPORT _u64 get_max_degree() const noexcept;
+
+    DISKANN_DLLEXPORT _u32* get_medoids() const noexcept;
+
+    DISKANN_DLLEXPORT size_t get_num_medoids() const noexcept;
 
    protected:
     DISKANN_DLLEXPORT void use_medoids_data_as_centroids();
