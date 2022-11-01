@@ -204,6 +204,9 @@ namespace diskann {
 #else
     ::_aligned_free(ptr);
 #endif
+    if (malloc_trim(0) == 0) {
+      LOG(DEBUG) << "Failed to release free memory from the heap.";
+    }
   }
 
   inline void GenRandom(std::mt19937& rng, unsigned* addr, unsigned size,
