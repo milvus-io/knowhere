@@ -29,6 +29,11 @@
 #include <future>
 #include <mutex>
 #include <queue>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 
 
@@ -72,12 +77,17 @@ namespace ctpl {
 
     public:
 
-        thread_pool() { this->init(); }
-        thread_pool(int nThreads) { this->init(); this->resize(nThreads); }
+        thread_pool() { 
+            this->init(); 
+        }
+        thread_pool(int nThreads) { 
+            this->init(); 
+            this->resize(nThreads); 
+        }
 
         // the destructor waits for all the functions in the queue to be finished
         ~thread_pool() {
-            this->stop(true);
+            this->stop();
         }
 
         // get the number of running threads in the pool
@@ -99,6 +109,7 @@ namespace ctpl {
 
                     for (int i = oldNThreads; i < nThreads; ++i) {
                         this->flags[i] = std::make_shared<std::atomic<bool>>(false);
+                        std::cout << "liliutest thread set " << std::endl;
                         this->set_thread(i);
                     }
                 }
@@ -159,8 +170,9 @@ namespace ctpl {
                 this->cv.notify_all();  // stop all waiting threads
             }
             for (int i = 0; i < static_cast<int>(this->threads.size()); ++i) {  // wait for the computing threads to finish
-                    if (this->threads[i]->joinable())
+                    if (this->threads[i]->joinable()) {
                         this->threads[i]->join();
+                    }
             }
             // if there were no threads in the pool but some functors in the queue, the functors are not deleted by the threads
             // therefore delete them here
@@ -216,18 +228,24 @@ namespace ctpl {
                     while (isPop) {  // if there is anything in the queue
                         std::unique_ptr<std::function<void(int id)>> func(_f); // at return, delete the function even if an exception occurred
                         (*_f)(i);
-                        if (_flag)
+                        if (_flag) {
+                            std::cout << "liliutest thread stop 1 " << std::endl;
                             return;  // the thread is wanted to stop, return even if the queue is not empty yet
+                        }
                         else
                             isPop = this->q.pop(_f);
                     }
                     // the queue is empty here, wait for the next command
                     std::unique_lock<std::mutex> lock(this->mutex);
                     ++this->nWaiting;
+                    std::cout << "liliutest thread " << i << " go wait with lock " << lock.owns_lock() << std::endl;
                     this->cv.wait(lock, [this, &_f, &isPop, &_flag](){ isPop = this->q.pop(_f); return isPop || this->isDone || _flag; });
+                    std::cout << "liliutest thread " << i << " wakeup with lock " << lock.owns_lock() << std::endl;
                     --this->nWaiting;
-                    if (!isPop)
+                    if (!isPop) {
+                        std::cout << "liliutest thread stop 2 " << std::endl;
                         return;  // if the queue is empty and this->isDone == true or *flag then return
+                    }
                 }
             };
             this->threads[i].reset(new std::thread(f)); // compiler may not support std::make_unique()

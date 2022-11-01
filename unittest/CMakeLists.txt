@@ -49,16 +49,16 @@ set( ALL_INDEXING_SRCS
 
 set(ALL_INDEXING_SRCS
         ${ALL_INDEXING_SRCS}
-        test_annoy.cpp
-        test_async.cpp
-        test_binaryidmap.cpp
-        test_binaryivf.cpp
-        test_bruteforce.cpp
+        # test_annoy.cpp
+        # test_async.cpp
+        # test_binaryidmap.cpp
+        # test_binaryivf.cpp
+        # test_bruteforce.cpp
         test_hnsw.cpp
-        test_idmap.cpp
-        test_ivf.cpp
-        test_ivf_nm.cpp
-        test_vecindex.cpp
+        # test_idmap.cpp
+        # test_ivf.cpp
+        # test_ivf_nm.cpp
+        # test_vecindex.cpp
         )
 
 if ( LINUX OR MSYS )

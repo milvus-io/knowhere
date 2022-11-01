@@ -103,99 +103,99 @@ TEST_P(HNSWTest, HNSW_basic) {
     }
 }
 
-TEST_P(HNSWTest, HNSW_serialize) {
-    auto serialize = [](const std::string& filename, knowhere::BinaryPtr& bin, uint8_t* ret) {
-        {
-            FileIOWriter writer(filename);
-            writer(static_cast<void*>(bin->data.get()), bin->size);
-        }
-        FileIOReader reader(filename);
-        reader(ret, bin->size);
-    };
+// TEST_P(HNSWTest, HNSW_serialize) {
+//     auto serialize = [](const std::string& filename, knowhere::BinaryPtr& bin, uint8_t* ret) {
+//         {
+//             FileIOWriter writer(filename);
+//             writer(static_cast<void*>(bin->data.get()), bin->size);
+//         }
+//         FileIOReader reader(filename);
+//         reader(ret, bin->size);
+//     };
 
-    index_->BuildAll(base_dataset, conf_);
-    auto binaryset = index_->Serialize(conf_);
-    auto bin = binaryset.GetByName("HNSW");
+//     index_->BuildAll(base_dataset, conf_);
+//     auto binaryset = index_->Serialize(conf_);
+//     auto bin = binaryset.GetByName("HNSW");
 
-    std::string filename = temp_path("/tmp/HNSW_test_serialize.bin");
-    auto load_data = new uint8_t[bin->size];
-    serialize(filename, bin, load_data);
+//     std::string filename = temp_path("/tmp/HNSW_test_serialize.bin");
+//     auto load_data = new uint8_t[bin->size];
+//     serialize(filename, bin, load_data);
 
-    binaryset.clear();
-    std::shared_ptr<uint8_t[]> data(load_data);
-    binaryset.Append("HNSW", data, bin->size);
+//     binaryset.clear();
+//     std::shared_ptr<uint8_t[]> data(load_data);
+//     binaryset.Append("HNSW", data, bin->size);
 
-    index_->Load(binaryset);
-    EXPECT_EQ(index_->Count(), nb);
-    EXPECT_EQ(index_->Dim(), dim);
-    auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, k);
-}
+//     index_->Load(binaryset);
+//     EXPECT_EQ(index_->Count(), nb);
+//     EXPECT_EQ(index_->Dim(), dim);
+//     auto result = index_->Query(query_dataset, conf_, nullptr);
+//     AssertAnns(result, nq, k);
+// }
 
-TEST_P(HNSWTest, hnsw_slice) {
-    // serialize index
-    index_->BuildAll(base_dataset, conf_);
-    auto binaryset = index_->Serialize(knowhere::Config());
-    index_->Load(binaryset);
-    ASSERT_EQ(index_->Count(), nb);
-    ASSERT_EQ(index_->Dim(), dim);
-    auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, knowhere::GetMetaTopk(conf_));
-}
+// TEST_P(HNSWTest, hnsw_slice) {
+//     // serialize index
+//     index_->BuildAll(base_dataset, conf_);
+//     auto binaryset = index_->Serialize(knowhere::Config());
+//     index_->Load(binaryset);
+//     ASSERT_EQ(index_->Count(), nb);
+//     ASSERT_EQ(index_->Dim(), dim);
+//     auto result = index_->Query(query_dataset, conf_, nullptr);
+//     AssertAnns(result, nq, knowhere::GetMetaTopk(conf_));
+// }
 
-TEST_P(HNSWTest, hnsw_range_search_l2) {
-    knowhere::SetMetaMetricType(conf_, knowhere::metric::L2);
-    index_->BuildAll(base_dataset, conf_);
+// TEST_P(HNSWTest, hnsw_range_search_l2) {
+//     knowhere::SetMetaMetricType(conf_, knowhere::metric::L2);
+//     index_->BuildAll(base_dataset, conf_);
 
-    auto qd = knowhere::GenDataset(nq, dim, xq.data());
+//     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
-    auto test_range_search_l2 = [&](float radius, const faiss::BitsetView bitset) {
-        std::vector<int64_t> golden_labels;
-        std::vector<float> golden_distances;
-        std::vector<size_t> golden_lims;
-        RunFloatRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, knowhere::metric::L2,
-                                           xb.data(), nb, xq.data(), nq, dim, radius, bitset);
+//     auto test_range_search_l2 = [&](float radius, const faiss::BitsetView bitset) {
+//         std::vector<int64_t> golden_labels;
+//         std::vector<float> golden_distances;
+//         std::vector<size_t> golden_lims;
+//         RunFloatRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, knowhere::metric::L2,
+//                                            xb.data(), nb, xq.data(), nq, dim, radius, bitset);
 
-        auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
-        ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
+//         auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
+//         ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
 
-        auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, nq, radius * radius, golden_labels.data(), golden_lims.data(), false, bitset);
-    };
+//         auto result = index_->QueryByRange(qd, conf_, bitset);
+//         CheckRangeSearchResult<CMin<float>>(result, nq, radius * radius, golden_labels.data(), golden_lims.data(), false, bitset);
+//     };
 
-    for (float radius: {4.1f, 4.2f, 4.3f}) {
-        knowhere::SetMetaRadius(conf_, radius);
-        test_range_search_l2(radius, nullptr);
-        test_range_search_l2(radius, *bitset);
-    }
-}
+//     for (float radius: {4.1f, 4.2f, 4.3f}) {
+//         knowhere::SetMetaRadius(conf_, radius);
+//         test_range_search_l2(radius, nullptr);
+//         test_range_search_l2(radius, *bitset);
+//     }
+// }
 
-TEST_P(HNSWTest, hnsw_range_search_ip) {
-    knowhere::SetMetaMetricType(conf_, knowhere::metric::IP);
-    index_->BuildAll(base_dataset, conf_);
+// TEST_P(HNSWTest, hnsw_range_search_ip) {
+//     knowhere::SetMetaMetricType(conf_, knowhere::metric::IP);
+//     index_->BuildAll(base_dataset, conf_);
 
-    auto qd = knowhere::GenDataset(nq, dim, xq.data());
+//     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
-    auto test_range_search_ip = [&](float radius, const faiss::BitsetView bitset) {
-        std::vector<int64_t> golden_labels;
-        std::vector<float> golden_distances;
-        std::vector<size_t> golden_lims;
-        RunFloatRangeSearchBF<CMax<float>>(golden_labels, golden_distances, golden_lims, knowhere::metric::IP,
-                                           xb.data(), nb, xq.data(), nq, dim, radius, bitset);
+//     auto test_range_search_ip = [&](float radius, const faiss::BitsetView bitset) {
+//         std::vector<int64_t> golden_labels;
+//         std::vector<float> golden_distances;
+//         std::vector<size_t> golden_lims;
+//         RunFloatRangeSearchBF<CMax<float>>(golden_labels, golden_distances, golden_lims, knowhere::metric::IP,
+//                                            xb.data(), nb, xq.data(), nq, dim, radius, bitset);
 
-        auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
-        ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
+//         auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
+//         ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
 
-        auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMax<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false, bitset);
-    };
+//         auto result = index_->QueryByRange(qd, conf_, bitset);
+//         CheckRangeSearchResult<CMax<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false, bitset);
+//     };
 
-    for (float radius: {42.0f, 43.0f, 44.0f}) {
-        knowhere::SetMetaRadius(conf_, radius);
-        test_range_search_ip(radius, nullptr);
-        test_range_search_ip(radius, *bitset);
-    }
-}
+//     for (float radius: {42.0f, 43.0f, 44.0f}) {
+//         knowhere::SetMetaRadius(conf_, radius);
+//         test_range_search_ip(radius, nullptr);
+//         test_range_search_ip(radius, *bitset);
+//     }
+// }
 
 TEST_P(HNSWTest, HNSW_get_meta) {
     assert(!xb.empty());
@@ -244,67 +244,67 @@ TEST_P(HNSWTest, HNSW_get_meta) {
     }
 }
 
-void
-CheckFederResult(const knowhere::DatasetPtr result, int64_t nb) {
-    auto json_info = knowhere::GetDatasetJsonInfo(result);
-    auto json_id_set = knowhere::GetDatasetJsonIdSet(result);
-    //std::cout << json_info << std::endl;
-    std::cout << "json_info size = " << json_info.size() << std::endl;
-    std::cout << "json_id_set size = " << json_id_set.size() << std::endl;
+// void
+// CheckFederResult(const knowhere::DatasetPtr result, int64_t nb) {
+//     auto json_info = knowhere::GetDatasetJsonInfo(result);
+//     auto json_id_set = knowhere::GetDatasetJsonIdSet(result);
+//     //std::cout << json_info << std::endl;
+//     std::cout << "json_info size = " << json_info.size() << std::endl;
+//     std::cout << "json_id_set size = " << json_id_set.size() << std::endl;
 
-    // check HNSWVisitInfo
-    knowhere::feder::hnsw::HNSWVisitInfo visit_info;
-    knowhere::Config j1 = nlohmann::json::parse(json_info);
-    ASSERT_NO_THROW(nlohmann::from_json(j1, visit_info));
+//     // check HNSWVisitInfo
+//     knowhere::feder::hnsw::HNSWVisitInfo visit_info;
+//     knowhere::Config j1 = nlohmann::json::parse(json_info);
+//     ASSERT_NO_THROW(nlohmann::from_json(j1, visit_info));
 
-    for (auto& level_visit_record : visit_info.GetInfos()) {
-        auto& records = level_visit_record.GetRecords();
-        for (auto& record : records) {
-            auto id_from = std::get<0>(record);
-            auto id_to = std::get<1>(record);
-            auto dist = std::get<2>(record);
-            ASSERT_GE(id_from, 0);
-            ASSERT_GE(id_to, 0);
-            ASSERT_LT(id_from, nb);
-            ASSERT_LT(id_to, nb);
-            ASSERT_TRUE(dist >= 0.0 || dist == -1.0);
-        }
-    }
+//     for (auto& level_visit_record : visit_info.GetInfos()) {
+//         auto& records = level_visit_record.GetRecords();
+//         for (auto& record : records) {
+//             auto id_from = std::get<0>(record);
+//             auto id_to = std::get<1>(record);
+//             auto dist = std::get<2>(record);
+//             ASSERT_GE(id_from, 0);
+//             ASSERT_GE(id_to, 0);
+//             ASSERT_LT(id_from, nb);
+//             ASSERT_LT(id_to, nb);
+//             ASSERT_TRUE(dist >= 0.0 || dist == -1.0);
+//         }
+//     }
 
-    // check IDSet
-    std::unordered_set<int64_t> id_set;
-    knowhere::Config j2 = nlohmann::json::parse(json_id_set);
-    ASSERT_NO_THROW(nlohmann::from_json(j2, id_set));
-    std::cout << "id_set num = " << id_set.size() << std::endl;
-    for (auto id : id_set) {
-        ASSERT_GE(id, 0);
-        ASSERT_LT(id, nb);
-    }
-}
+//     // check IDSet
+//     std::unordered_set<int64_t> id_set;
+//     knowhere::Config j2 = nlohmann::json::parse(json_id_set);
+//     ASSERT_NO_THROW(nlohmann::from_json(j2, id_set));
+//     std::cout << "id_set num = " << id_set.size() << std::endl;
+//     for (auto id : id_set) {
+//         ASSERT_GE(id, 0);
+//         ASSERT_LT(id, nb);
+//     }
+// }
 
-TEST_P(HNSWTest, HNSW_trace_visit) {
-    assert(!xb.empty());
+// TEST_P(HNSWTest, HNSW_trace_visit) {
+//     assert(!xb.empty());
 
-    index_->BuildAll(base_dataset, conf_);
+//     index_->BuildAll(base_dataset, conf_);
 
-    knowhere::SetMetaTraceVisit(conf_, true);
-    ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
+//     knowhere::SetMetaTraceVisit(conf_, true);
+//     ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
 
-    auto qd = knowhere::GenDataset(1, dim, xq.data());
-    auto result = index_->Query(qd, conf_, nullptr);
+//     auto qd = knowhere::GenDataset(1, dim, xq.data());
+//     auto result = index_->Query(qd, conf_, nullptr);
 
-    CheckFederResult(result, nb);
-}
+//     CheckFederResult(result, nb);
+// }
 
-TEST_P(HNSWTest, HNSW_range_trace_visit) {
-    index_->BuildAll(base_dataset, conf_);
+// TEST_P(HNSWTest, HNSW_range_trace_visit) {
+//     index_->BuildAll(base_dataset, conf_);
 
-    knowhere::SetMetaRadius(conf_, radius);
-    knowhere::SetMetaTraceVisit(conf_, true);
-    ASSERT_ANY_THROW(index_->QueryByRange(query_dataset, conf_, nullptr));
+//     knowhere::SetMetaRadius(conf_, radius);
+//     knowhere::SetMetaTraceVisit(conf_, true);
+//     ASSERT_ANY_THROW(index_->QueryByRange(query_dataset, conf_, nullptr));
 
-    auto qd = knowhere::GenDataset(1, dim, xq.data());
-    auto result = index_->QueryByRange(qd, conf_, nullptr);
+//     auto qd = knowhere::GenDataset(1, dim, xq.data());
+//     auto result = index_->QueryByRange(qd, conf_, nullptr);
 
-    CheckFederResult(result, nb);
-}
+//     CheckFederResult(result, nb);
+// }
