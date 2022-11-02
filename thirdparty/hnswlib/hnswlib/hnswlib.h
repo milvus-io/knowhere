@@ -169,13 +169,6 @@ class SpaceInterface {
     virtual ~SpaceInterface() {}
 };
 
-class StatisticsInfo {
- public:
-    StatisticsInfo(): target_level_(1) {}
-    size_t target_level_;
-    std::vector<uint32_t> accessed_points_;
-};
-
 struct SearchParam {
     size_t ef_;
 };
@@ -186,16 +179,16 @@ class AlgorithmInterface {
     virtual void addPoint(const void *datapoint, labeltype label)=0;
 
     virtual std::priority_queue<std::pair<dist_t, labeltype>>
-    searchKnn(const void*, size_t, const faiss::BitsetView, hnswlib::StatisticsInfo&, const SearchParam*,
+    searchKnn(const void*, size_t, const faiss::BitsetView, const SearchParam*,
               const knowhere::feder::hnsw::FederResultUniq&) const = 0;
 
     virtual std::vector<std::pair<dist_t, labeltype>>
-    searchRange(const void*, float, const faiss::BitsetView, hnswlib::StatisticsInfo&, const SearchParam*,
+    searchRange(const void*, float, const faiss::BitsetView, const SearchParam*,
                 const knowhere::feder::hnsw::FederResultUniq&) const = 0;
 
     // Return k nearest neighbor in the order of closer fist
     virtual std::vector<std::pair<dist_t, labeltype>>
-        searchKnnCloserFirst(const void* query_data, size_t k, const faiss::BitsetView, hnswlib::StatisticsInfo&) const;
+        searchKnnCloserFirst(const void* query_data, size_t k, const faiss::BitsetView) const;
 
     virtual void saveIndex(const std::string &location)=0;
     virtual ~AlgorithmInterface(){
@@ -204,12 +197,12 @@ class AlgorithmInterface {
 
 template<typename dist_t>
 std::vector<std::pair<dist_t, labeltype>>
-AlgorithmInterface<dist_t>::searchKnnCloserFirst(const void* query_data, size_t k, const faiss::BitsetView bitset,
-                                                 hnswlib::StatisticsInfo& stats) const {
+AlgorithmInterface<dist_t>::searchKnnCloserFirst(const void* query_data, size_t k,
+                                                 const faiss::BitsetView bitset) const {
     std::vector<std::pair<dist_t, labeltype>> result;
 
     // here searchKnn returns the result in the order of further first
-    auto ret = searchKnn(query_data, k, bitset, stats, nullptr, nullptr);
+    auto ret = searchKnn(query_data, k, bitset, nullptr, nullptr);
     {
         size_t sz = ret.size();
         result.resize(sz);
