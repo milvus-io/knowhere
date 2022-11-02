@@ -16,7 +16,7 @@
 
 #include "hnswlib/hnswlib/hnswlib.h"
 #include "knowhere/common/Exception.h"
-#include "knowhere/common/ThreadPoolHolder.h"
+#include "knowhere/common/ThreadPool.h"
 #include "knowhere/feder/HNSW.h"
 #include "knowhere/index/VecIndex.h"
 
@@ -27,7 +27,7 @@ class IndexHNSW : public VecIndex {
     IndexHNSW() {
         index_type_ = IndexEnum::INDEX_HNSW;
         stats = std::make_shared<LibHNSWStatistics>(index_type_);
-        pool_ = ThreadPoolHolder::GetInstance().GetThreadPool();
+        pool_ = ThreadPool::GetGlobalThreadPool();
     }
 
     IndexHNSW(const IndexHNSW& index_hnsw) = delete;
@@ -86,7 +86,7 @@ class IndexHNSW : public VecIndex {
     UpdateLevelLinkList(int32_t, feder::hnsw::HNSWMeta&, std::unordered_set<int64_t>&);
 
  private:
-    std::shared_ptr<ctpl::thread_pool> pool_;
+    std::shared_ptr<ThreadPool> pool_;
     std::unique_ptr<hnswlib::HierarchicalNSW<float>> index_;
 };
 

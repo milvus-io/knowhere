@@ -52,6 +52,7 @@ IndexDiskANN<T>::IndexDiskANN(std::string index_prefix, MetricType metric_type,
 
 namespace {
 static constexpr float kCacheExpansionRate = 1.2;
+static constexpr uint32_t kLinuxAioMaxnrLimit = 65536;
 void
 CheckPreparation(bool is_prepared) {
     if (!is_prepared) {
@@ -237,6 +238,20 @@ IndexDiskANN<T>::Prepare(const Config& config) {
         }
     }
 
+    // set thread pool
+    auto num_thread_max_value = kLinuxAioMaxnrLimit / prep_conf.aio_maxnr;
+    pool_ = ThreadPool::GetGlobalThreadPool();
+
+    // The number of threads used for preparing and searching. Threads run in parallel and one thread handles one query
+    // at a time. More threads will result in higher aggregate query throughput, but will also use more IOs/second
+    // across the system, which may lead to higher per-query latency. So find the balance depending on the maximum
+    // number of IOPs supported by the SSD.
+    if (num_thread_max_value < pool_->size()) {
+        LOG_KNOWHERE_ERROR_ << "The global thread pool is to large for DiskANN. Expected max: " << num_thread_max_value
+                            << ", actual: " << pool_->size();
+        return false;
+    }
+
     // load PQ file
     LOG_KNOWHERE_INFO_ << "Loading PQ from disk.";
     std::shared_ptr<AlignedFileReader> reader = nullptr;
@@ -308,10 +323,6 @@ IndexDiskANN<T>::Prepare(const Config& config) {
         }
     }
 
-    // set thread number
-    omp_set_num_threads(prep_conf.num_threads);
-    num_threads_ = prep_conf.num_threads;
-
     // warmup
     if (prep_conf.warm_up) {
         LOG_KNOWHERE_INFO_ << "Warming up.";
@@ -365,9 +376,6 @@ DatasetPtr
 IndexDiskANN<T>::Query(const DatasetPtr& dataset_ptr, const Config& config, const faiss::BitsetView bitset) {
     CheckPreparation(is_prepared_.load());
 
-    // set thread number
-    omp_set_num_threads(num_threads_);
-
     auto query_conf = DiskANNQueryConfig::Get(config);
     auto& k = query_conf.k;
 
@@ -376,28 +384,18 @@ IndexDiskANN<T>::Query(const DatasetPtr& dataset_ptr, const Config& config, cons
     auto p_id = new int64_t[k * rows];
     auto p_dist = new float[k * rows];
 
-    std::optional<KnowhereException> ex = std::nullopt;
-#pragma omp parallel for schedule(dynamic, 1)
+    std::vector<std::future<void>> futures;
+    futures.reserve(rows);
     for (int64_t row = 0; row < rows; ++row) {
-        // Openmp can not throw exception out.
-        try {
-            TryDiskANNCallAndThrow<void>([&]() -> void {
-                pq_flash_index_->cached_beam_search(query + (row * dim), k, query_conf.search_list_size,
-                                                    p_id + (row * k), p_dist + (row * k), query_conf.beamwidth, false,
-                                                    nullptr, bitset);
-            });
-        } catch (const KnowhereException& e) {
-#pragma omp critical
-            {
-                if (ex == std::nullopt) {
-                    ex = std::make_optional<KnowhereException>(e);
-                }
-            }
-        }
+        futures.push_back(pool_->push([&, index = row]() {
+            pq_flash_index_->cached_beam_search(query + (index * dim), k, query_conf.search_list_size,
+                                                p_id + (index * k), p_dist + (index * k), query_conf.beamwidth, false,
+                                                nullptr, bitset);
+        }));
     }
 
-    if (ex.has_value()) {
-        throw ex.value();
+    for (auto& future : futures) {
+        future.get();
     }
 
     return GenResultDataset(p_id, p_dist);
@@ -407,9 +405,6 @@ template <typename T>
 DatasetPtr
 IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& config, const faiss::BitsetView bitset) {
     CheckPreparation(is_prepared_.load());
-
-    // set thread number
-    omp_set_num_threads(num_threads_);
 
     auto query_conf = DiskANNQueryByRangeConfig::Get(config);
     auto& radius = query_conf.radius;
@@ -422,39 +417,29 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
     auto p_lims = new size_t[rows + 1];
     *p_lims = 0;
 
-    std::optional<KnowhereException> ex = std::nullopt;
-#pragma omp parallel for schedule(dynamic, 1)
+    std::vector<std::future<void>> futures;
+    futures.reserve(rows);
     for (int64_t row = 0; row < rows; ++row) {
-        std::vector<int64_t> indices;
-        std::vector<float> distances;
+        futures.push_back(pool_->push([&, index = row]() {
+            std::vector<int64_t> indices;
+            std::vector<float> distances;
 
-        auto res_count = 0;
-        try {
-            res_count = TryDiskANNCallAndThrow<uint32_t>([&]() -> uint32_t {
-                return pq_flash_index_->range_search(query + (row * dim), radius, query_conf.min_k, query_conf.max_k,
-                                                     indices, distances, query_conf.beamwidth,
-                                                     query_conf.search_list_and_k_ratio, bitset);
-            });
-        } catch (const KnowhereException& e) {
-#pragma omp critical
-            {
-                if (ex == std::nullopt) {
-                    ex = std::make_optional<KnowhereException>(e);
-                }
+            auto res_count = pq_flash_index_->range_search(query + (index * dim), radius, query_conf.min_k,
+                                                           query_conf.max_k, indices, distances, query_conf.beamwidth,
+                                                           query_conf.search_list_and_k_ratio, bitset);
+
+            result_id_array[index].resize(res_count);
+            result_dist_array[index].resize(res_count);
+            for (int32_t res_num = 0; res_num < res_count; ++res_num) {
+                result_id_array[index][res_num] = indices[res_num];
+                result_dist_array[index][res_num] = distances[res_num];
             }
-        }
-
-        result_id_array[row].resize(res_count);
-        result_dist_array[row].resize(res_count);
-        for (int32_t res_num = 0; res_num < res_count; ++res_num) {
-            result_id_array[row][res_num] = indices[res_num];
-            result_dist_array[row][res_num] = distances[res_num];
-        }
-        *(p_lims + row + 1) = res_count;
+            *(p_lims + index + 1) = res_count;
+        }));
     }
 
-    if (ex.has_value()) {
-        throw ex.value();
+    for (auto& future : futures) {
+        future.get();
     }
 
     for (int64_t row = 0; row < rows; ++row) {

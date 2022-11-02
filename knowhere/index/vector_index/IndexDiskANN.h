@@ -18,6 +18,7 @@
 #include "DiskANN/include/pq_flash_index.h"
 #include "knowhere/common/FileManager.h"
 #include "knowhere/index/VecIndex.h"
+#include "knowhere/common/ThreadPool.h"
 
 namespace knowhere {
 
@@ -110,10 +111,10 @@ class IndexDiskANN : public VecIndex {
     std::unique_ptr<diskann::PQFlashIndex<T>> pq_flash_index_;
 
     std::atomic_bool is_prepared_ = false;
-    int32_t num_threads_ = 0;
     std::mutex preparation_lock_;
     std::atomic_int64_t dim_ = -1;
     std::atomic_int64_t count_ = -1;
+    std::shared_ptr<ThreadPool> pool_;
 };
 
 }  // namespace knowhere
