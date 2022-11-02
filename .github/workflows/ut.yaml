@@ -112,6 +112,3 @@ jobs:
         shell: msys2 {0}
         run: |
           ./build.sh -t Release -u
-          cp -fr output/lib/*.dll output/unittest/
-          ./output/unittest/faiss_test
-          ./output/unittest/test_knowhere
