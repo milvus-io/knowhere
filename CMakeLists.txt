@@ -60,6 +60,11 @@ if(WITH_UT)
     add_subdirectory(tests/ut)
 endif()
 
+if(WITH_BENCHMARK)
+    add_subdirectory(thirdparty/gtest)
+    add_subdirectory(benchmark)
+endif()
+
 install(TARGETS knowhere DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/knowhere"
         DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}")
