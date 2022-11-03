@@ -30,7 +30,8 @@ constexpr const char* IDS = "ids";
 constexpr const char* DISTANCE = "distance";
 constexpr const char* LIMS = "lims";
 constexpr const char* TOPK = "k";
-constexpr const char* RADIUS = "radius";
+constexpr const char* RADIUS_LOW_BOUND = "radius_low_bound";
+constexpr const char* RADIUS_HIGH_BOUND = "radius_high_bound";
 constexpr const char* INPUT_IDS = "input_ids";
 constexpr const char* OUTPUT_TENSOR = "output_tensor";
 constexpr const char* DEVICE_ID = "gpu_id";
@@ -112,8 +113,11 @@ DEFINE_CONFIG_SETTER(SetMetaDim, meta::DIM, int64_t)
 DEFINE_CONFIG_GETTER(GetMetaTopk, meta::TOPK, int64_t)
 DEFINE_CONFIG_SETTER(SetMetaTopk, meta::TOPK, int64_t)
 
-DEFINE_CONFIG_GETTER(GetMetaRadius, meta::RADIUS, float)
-DEFINE_CONFIG_SETTER(SetMetaRadius, meta::RADIUS, float)
+DEFINE_CONFIG_GETTER(GetMetaRadiusLowBound, meta::RADIUS_LOW_BOUND, float)
+DEFINE_CONFIG_SETTER(SetMetaRadiusLowBound, meta::RADIUS_LOW_BOUND, float)
+
+DEFINE_CONFIG_GETTER(GetMetaRadiusHighBound, meta::RADIUS_HIGH_BOUND, float)
+DEFINE_CONFIG_SETTER(SetMetaRadiusHighBound, meta::RADIUS_HIGH_BOUND, float)
 
 DEFINE_CONFIG_GETTER(GetMetaDeviceID, meta::DEVICE_ID, int64_t)
 DEFINE_CONFIG_SETTER(SetMetaDeviceID, meta::DEVICE_ID, int64_t)

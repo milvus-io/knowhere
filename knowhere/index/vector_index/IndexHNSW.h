@@ -79,8 +79,8 @@ class IndexHNSW : public VecIndex {
               const faiss::BitsetView);
 
     void
-    QueryByRangeImpl(int64_t, const float*, float, float*&, int64_t*&, size_t*&, feder::hnsw::FederResultUniq&,
-                     const Config&, const faiss::BitsetView);
+    QueryByRangeImpl(int64_t, const float*, float*&, int64_t*&, size_t*&, feder::hnsw::FederResultUniq&, const Config&,
+                     const faiss::BitsetView);
 
     void
     UpdateLevelLinkList(int32_t, feder::hnsw::HNSWMeta&, std::unordered_set<int64_t>&);

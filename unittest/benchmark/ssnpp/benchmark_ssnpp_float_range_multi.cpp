@@ -30,7 +30,8 @@ class Benchmark_ssnpp_float_range_multi : public Benchmark_knowhere, public ::te
             double span = 0.0;
             int64_t hits = 0, total_gt = 0;
             for (int i = 0; i < nq_; i += nq_ / NQ_) {
-                knowhere::SetMetaRadius(conf, std::sqrt(gt_radius_[i]));
+                knowhere::SetMetaRadiusLowBound(conf, 0.0f);
+                knowhere::SetMetaRadiusHighBound(conf, std::sqrt(gt_radius_[i]));
                 knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(1, dim_, (const float*)xq_ + (i * dim_));
                 total_gt += gt_lims_[i + 1] - gt_lims_[i];
                 CALC_TIME_SPAN(auto result = index_->QueryByRange(ds_ptr, conf, nullptr));
@@ -62,7 +63,8 @@ class Benchmark_ssnpp_float_range_multi : public Benchmark_knowhere, public ::te
             double span = 0.0;
             int32_t hits = 0, total_gt = 0;
             for (int i = 0; i < nq_; i += nq_ / NQ_) {
-                knowhere::SetMetaRadius(conf, std::sqrt(gt_radius_[i]));
+                knowhere::SetMetaRadiusLowBound(conf, 0.0f);
+                knowhere::SetMetaRadiusHighBound(conf, std::sqrt(gt_radius_[i]));
                 knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(1, dim_, (const float*)xq_ + (i * dim_));
                 total_gt += gt_lims_[i + 1] - gt_lims_[i];
                 CALC_TIME_SPAN(auto result = index_->QueryByRange(ds_ptr, conf, nullptr));

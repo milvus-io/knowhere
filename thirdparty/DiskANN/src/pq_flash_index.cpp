@@ -1278,8 +1278,8 @@ namespace diskann {
           break;
         }
         bool out_of_range = metric == diskann::Metric::INNER_PRODUCT
-                                ? distances[i] < (float) range
-                                : distances[i] > (float) range;
+                                ? distances[i] <= (float) range
+                                : distances[i] >= (float) range;
         if (out_of_range) {
           res_count = i;
           break;
@@ -1322,6 +1322,11 @@ namespace diskann {
   template<typename T>
   size_t PQFlashIndex<T>::get_num_medoids() const noexcept {
     return num_medoids;
+  }
+
+  template<typename T>
+  diskann::Metric PQFlashIndex<T>::get_metric() const noexcept {
+    return metric;
   }
 
 #ifdef EXEC_ENV_OLS

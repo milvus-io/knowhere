@@ -29,6 +29,7 @@
 #include "knowhere/feder/DiskANN.h"
 #include "knowhere/index/vector_index/IndexDiskANNConfig.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
+#include "knowhere/index/vector_index/helpers/RangeUtil.h"
 
 namespace knowhere {
 
@@ -428,15 +429,20 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
     CheckPreparation(is_prepared_.load());
 
     auto query_conf = DiskANNQueryByRangeConfig::Get(config);
-    auto& radius = query_conf.radius;
+    auto low_bound = query_conf.radius_low_bound;
+    auto high_bound = query_conf.radius_high_bound;
+    bool is_L2 = (pq_flash_index_->get_metric() == diskann::Metric::L2);
+    if (is_L2) {
+        low_bound *= low_bound;
+        high_bound *= high_bound;
+    }
+    float radius = (is_L2 ? high_bound : low_bound);
 
     GET_TENSOR_DATA_DIM(dataset_ptr);
     auto query = static_cast<const T*>(p_data);
 
     std::vector<std::vector<int64_t>> result_id_array(rows);
     std::vector<std::vector<float>> result_dist_array(rows);
-    auto p_lims = new size_t[rows + 1];
-    *p_lims = 0;
 
     std::vector<std::future<void>> futures;
     futures.reserve(rows);
@@ -446,16 +452,13 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
             std::vector<float> distances;
 
             auto res_count = pq_flash_index_->range_search(query + (index * dim), radius, query_conf.min_k,
-                                                           query_conf.max_k, indices, distances, query_conf.beamwidth,
+                                                           query_conf.max_k, result_id_array[index],
+                                                           result_dist_array[index], query_conf.beamwidth,
                                                            query_conf.search_list_and_k_ratio, bitset);
 
-            result_id_array[index].resize(res_count);
-            result_dist_array[index].resize(res_count);
-            for (int32_t res_num = 0; res_num < res_count; ++res_num) {
-                result_id_array[index][res_num] = indices[res_num];
-                result_dist_array[index][res_num] = distances[res_num];
-            }
-            *(p_lims + index + 1) = res_count;
+            // filter range search result
+            FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], !is_L2, low_bound,
+                                            high_bound);
         }));
     }
 
@@ -463,19 +466,11 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
         future.get();
     }
 
-    for (int64_t row = 0; row < rows; ++row) {
-        *(p_lims + row + 1) += *(p_lims + row);
-    }
+    size_t* p_lims = nullptr;
+    int64_t* p_id = nullptr;
+    float* p_dist = nullptr;
 
-    auto ans_size = *(p_lims + rows);
-    auto p_id = new int64_t[ans_size];
-    auto p_dist = new float[ans_size];
-
-    for (int64_t row = 0; row < rows; ++row) {
-        auto start = *(p_lims + row);
-        memcpy(p_id + start, result_id_array[row].data(), result_id_array[row].size() * sizeof(int64_t));
-        memcpy(p_dist + start, result_dist_array[row].data(), result_dist_array[row].size() * sizeof(float));
-    }
+    GetRangeSearchResult(result_dist_array, result_id_array, !is_L2, rows, low_bound, high_bound, p_dist, p_id, p_lims);
 
     return GenResultDataset(p_id, p_dist, p_lims);
 }

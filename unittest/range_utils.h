@@ -17,6 +17,7 @@
 
 #include <faiss/utils/BinaryDistance.h>
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
+#include "knowhere/index/vector_index/helpers/RangeUtil.h"
 #include "knowhere/utils/BitsetView.h"
 #include "knowhere/utils/distances_simd.h"
 
@@ -55,8 +56,7 @@ inline float binary_vec_dist(
     }
 }
 
-template <class C>
-void RunFloatRangeSearchBF(
+inline void RunFloatRangeSearchBF(
     std::vector<int64_t>& golden_ids,
     std::vector<float>& golden_distances,
     std::vector<size_t>& golden_lims,
@@ -66,9 +66,11 @@ void RunFloatRangeSearchBF(
     const float* xq,
     const int64_t nq,
     const int64_t dim,
-    const float radius,
+    const float low_bound,
+    const float high_bound,
     const faiss::BitsetView bitset) {
 
+    bool is_ip = (metric_type == knowhere::metric::IP);
     std::vector<std::vector<int64_t>> ids_v(nq);
     std::vector<std::vector<float>> distances_v(nq);
 
@@ -79,7 +81,7 @@ void RunFloatRangeSearchBF(
             if (bitset.empty() || !bitset.test(j)) {
                 const float* pb = xb + j * dim;
                 auto dist = float_vec_dist(metric_type, pq, pb, dim);
-                if (C::cmp(dist, radius)) {
+                if (knowhere::distance_in_range(dist, low_bound, high_bound, is_ip)) {
                     ids_v[i].push_back(j);
                     distances_v[i].push_back(dist);
                 }
@@ -95,8 +97,7 @@ void RunFloatRangeSearchBF(
     }
 }
 
-template <class C>
-void RunBinaryRangeSearchBF(
+inline void RunBinaryRangeSearchBF(
     std::vector<int64_t>& golden_ids,
     std::vector<float>& golden_distances,
     std::vector<size_t>& golden_lims,
@@ -106,7 +107,8 @@ void RunBinaryRangeSearchBF(
     const uint8_t* xq,
     const int64_t nq,
     const int64_t dim,
-    const float radius,
+    const float low_bound,
+    const float high_bound,
     const faiss::BitsetView bitset) {
 
     std::vector<std::vector<int64_t>> ids_v(nq);
@@ -119,7 +121,7 @@ void RunBinaryRangeSearchBF(
             if (bitset.empty() || !bitset.test(j)) {
                 const uint8_t* pb = xb + j * dim / 8;
                 auto dist = binary_vec_dist(metric_type, pq, pb, dim/8);
-                if (C::cmp(dist, radius)) {
+                if (knowhere::distance_in_range(dist, low_bound, high_bound, false)) {
                     ids_v[i].push_back(j);
                     distances_v[i].push_back(dist);
                 }
@@ -135,16 +137,18 @@ void RunBinaryRangeSearchBF(
     }
 }
 
-template <class C>
-void CheckRangeSearchResult(
+inline void CheckRangeSearchResult(
     const knowhere::DatasetPtr& result,
+    const knowhere::MetricType& metric_type,
     const int64_t nq,
-    const float radius,
+    const float low_bound,
+    const float high_bound,
     const int64_t* golden_ids,
     const size_t* golden_lims,
     const bool is_idmap,
     const faiss::BitsetView bitset) {
 
+    bool is_ip = (metric_type == knowhere::metric::IP);
     auto lims = knowhere::GetDatasetLims(result);
     auto ids = knowhere::GetDatasetIDs(result);
     auto distances = knowhere::GetDatasetDistance(result);
@@ -169,7 +173,7 @@ void CheckRangeSearchResult(
                 // only IDMAP always hit
                 ASSERT_TRUE(hit);
             }
-            ASSERT_TRUE(C::cmp(distances[j], radius));
+            ASSERT_TRUE(knowhere::distance_in_range(distances[j], low_bound, high_bound, is_ip));
         }
 
         int64_t accuracy_cnt = 0;

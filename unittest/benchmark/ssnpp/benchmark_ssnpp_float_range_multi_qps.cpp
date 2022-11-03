@@ -67,7 +67,8 @@ class Benchmark_ssnpp_float_range_multi_qps : public Benchmark_knowhere, public 
         auto worker = [&](int32_t idx_start, int32_t num) {
             for (int32_t i = 0; i < num; i++) {
                 knowhere::Config config = conf;
-                knowhere::SetMetaRadius(config, std::sqrt(gt_radius_[idx_start + i]));
+                knowhere::SetMetaRadiusLowBound(config, 0.0f);
+                knowhere::SetMetaRadiusHighBound(config, std::sqrt(gt_radius_[idx_start + i]));
                 knowhere::DatasetPtr ds_ptr =
                     knowhere::GenDataset(1, dim_, (const float*)xq_ + ((idx_start + i) * dim_));
                 index_->QueryByRange(ds_ptr, config, nullptr);

@@ -144,56 +144,73 @@ TEST_P(HNSWTest, hnsw_slice) {
 }
 
 TEST_P(HNSWTest, hnsw_range_search_l2) {
-    knowhere::SetMetaMetricType(conf_, knowhere::metric::L2);
+    knowhere::MetricType metric_type = knowhere::metric::L2;
+    knowhere::SetMetaMetricType(conf_, metric_type);
+
     index_->BuildAll(base_dataset, conf_);
 
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
-    auto test_range_search_l2 = [&](float radius, const faiss::BitsetView bitset) {
+    auto test_range_search_l2 = [&](const float low_bound, const float high_bound, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        RunFloatRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, knowhere::metric::L2,
-                                           xb.data(), nb, xq.data(), nq, dim, radius, bitset);
+        RunFloatRangeSearchBF(golden_labels, golden_distances, golden_lims, knowhere::metric::L2,
+                              xb.data(), nb, xq.data(), nq, dim, low_bound, high_bound, bitset);
 
         auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
         ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMin<float>>(result, nq, radius * radius, golden_labels.data(), golden_lims.data(), false, bitset);
+        CheckRangeSearchResult(result, metric_type, nq, low_bound * low_bound, high_bound * high_bound,
+                               golden_labels.data(), golden_lims.data(), false, bitset);
     };
 
-    for (float radius: {4.1f, 4.2f, 4.3f}) {
-        knowhere::SetMetaRadius(conf_, radius);
-        test_range_search_l2(radius, nullptr);
-        test_range_search_l2(radius, *bitset);
+    for (std::pair<float, float> range: {
+             std::make_pair<float, float>(0, 4.1f),
+             std::make_pair<float, float>(4.1f, 4.2f),
+             std::make_pair<float, float>(4.2f, 4.3f)}) {
+        knowhere::SetMetaRadiusLowBound(conf_, range.first);
+        knowhere::SetMetaRadiusHighBound(conf_, range.second);
+        test_range_search_l2(range.first, range.second, nullptr);
+        test_range_search_l2(range.first, range.second, *bitset);
     }
 }
 
 TEST_P(HNSWTest, hnsw_range_search_ip) {
-    knowhere::SetMetaMetricType(conf_, knowhere::metric::IP);
+    knowhere::MetricType metric_type = knowhere::metric::IP;
+    knowhere::SetMetaMetricType(conf_, metric_type);
+
+    normalize(xb.data(), nb, dim);
+    normalize(xq.data(), nq, dim);
+
     index_->BuildAll(base_dataset, conf_);
 
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
-    auto test_range_search_ip = [&](float radius, const faiss::BitsetView bitset) {
+    auto test_range_search_ip = [&](const float low_bound, const float high_bound, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
-        RunFloatRangeSearchBF<CMax<float>>(golden_labels, golden_distances, golden_lims, knowhere::metric::IP,
-                                           xb.data(), nb, xq.data(), nq, dim, radius, bitset);
+        RunFloatRangeSearchBF(golden_labels, golden_distances, golden_lims, knowhere::metric::IP,
+                              xb.data(), nb, xq.data(), nq, dim, low_bound, high_bound, bitset);
 
         auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
         ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult<CMax<float>>(result, nq, radius, golden_labels.data(), golden_lims.data(), false, bitset);
+        CheckRangeSearchResult(result, metric_type, nq, low_bound, high_bound,
+                               golden_labels.data(), golden_lims.data(), false, bitset);
     };
 
-    for (float radius: {42.0f, 43.0f, 44.0f}) {
-        knowhere::SetMetaRadius(conf_, radius);
-        test_range_search_ip(radius, nullptr);
-        test_range_search_ip(radius, *bitset);
+    for (std::pair<float, float> range: {
+        std::make_pair<float, float>(0.70f, 0.75f),
+        std::make_pair<float, float>(0.75f, 0.80f),
+        std::make_pair<float, float>(0.80f, 1.01f)}) {
+        knowhere::SetMetaRadiusLowBound(conf_, range.first);
+        knowhere::SetMetaRadiusHighBound(conf_, range.second);
+        test_range_search_ip(range.first, range.second, nullptr);
+        test_range_search_ip(range.first, range.second, *bitset);
     }
 }
 
@@ -299,7 +316,9 @@ TEST_P(HNSWTest, HNSW_trace_visit) {
 TEST_P(HNSWTest, HNSW_range_trace_visit) {
     index_->BuildAll(base_dataset, conf_);
 
-    knowhere::SetMetaRadius(conf_, radius);
+    knowhere::SetMetaRadiusLowBound(conf_, 0.0f);
+    knowhere::SetMetaRadiusHighBound(conf_, 4.1f);
+
     knowhere::SetMetaTraceVisit(conf_, true);
     ASSERT_ANY_THROW(index_->QueryByRange(query_dataset, conf_, nullptr));
 

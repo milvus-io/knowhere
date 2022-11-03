@@ -101,7 +101,8 @@ struct DiskANNQueryConfig {
 };
 
 struct DiskANNQueryByRangeConfig {
-    float radius;
+    float radius_low_bound;
+    float radius_high_bound;
     // DiskANN uses TopK search to simulate range search by double the K in every round. This is the start K.
     uint64_t min_k = 100;
     // DiskANN uses TopK search to simulate range search by double the K in every round. This is the largest K.

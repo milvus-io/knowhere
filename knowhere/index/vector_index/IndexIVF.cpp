@@ -35,6 +35,7 @@
 #include "index/vector_index/IndexIVF.h"
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/IndexParameter.h"
+#include "index/vector_index/helpers/RangeUtil.h"
 #ifdef KNOWHERE_GPU_VERSION
 #include "index/vector_index/gpu/IndexGPUIVF.h"
 #include "index/vector_index/helpers/FaissGpuResourceMgr.h"
@@ -171,7 +172,6 @@ IVF::QueryByRange(const DatasetPtr& dataset,
     GET_TENSOR_DATA(dataset)
 
     utils::SetQueryOmpThread(config);
-    auto radius = GetMetaRadius(config);
 
     int64_t* p_id = nullptr;
     float* p_dist = nullptr;
@@ -190,7 +190,7 @@ IVF::QueryByRange(const DatasetPtr& dataset,
     };
 
     try {
-        QueryByRangeImpl(rows, reinterpret_cast<const float*>(p_data), radius, p_dist, p_id, p_lims, config, bitset);
+        QueryByRangeImpl(rows, reinterpret_cast<const float*>(p_data), p_dist, p_id, p_lims, config, bitset);
         return GenResultDataset(p_id, p_dist, p_lims);
     } catch (faiss::FaissException& e) {
         release_when_exception();
@@ -349,7 +349,6 @@ IVF::QueryImpl(int64_t n,
 void
 IVF::QueryByRangeImpl(int64_t n,
                       const float* xq,
-                      float radius,
                       float*& distances,
                       int64_t*& labels,
                       size_t*& lims,
@@ -366,22 +365,18 @@ IVF::QueryByRangeImpl(int64_t n,
     }
     size_t max_codes = 0;
 
-    if (index_->metric_type == faiss::MetricType::METRIC_L2) {
-        radius *= radius;
+    float low_bound = GetMetaRadiusLowBound(config);
+    float high_bound = GetMetaRadiusHighBound(config);
+    bool is_L2 = (ivf_index->metric_type == faiss::METRIC_L2);
+    if (is_L2) {
+        low_bound *= low_bound;
+        high_bound *= high_bound;
     }
+    float radius = (is_L2 ? high_bound : low_bound);
 
     faiss::RangeSearchResult res(n);
     ivf_index->range_search_thread_safe(n, xq, radius, &res, params->nprobe, parallel_mode, max_codes, bitset);
-
-    distances = res.distances;
-    labels = res.labels;
-    lims = res.lims;
-
-    LOG_KNOWHERE_DEBUG_ << "Range search radius: " << radius << ", result num: " << lims[n];
-
-    res.distances = nullptr;
-    res.labels = nullptr;
-    res.lims = nullptr;
+    GetRangeSearchResult(res, !is_L2, n, low_bound, high_bound, distances, labels, lims, bitset);
 }
 
 void

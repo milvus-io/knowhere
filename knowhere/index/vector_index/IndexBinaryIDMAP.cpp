@@ -17,6 +17,7 @@
 #include "common/Utils.h"
 #include "index/vector_index/IndexBinaryIDMAP.h"
 #include "index/vector_index/adapter/VectorAdapter.h"
+#include "index/vector_index/helpers/RangeUtil.h"
 
 namespace knowhere {
 
@@ -114,7 +115,6 @@ BinaryIDMAP::QueryByRange(const DatasetPtr& dataset,
     GET_TENSOR_DATA(dataset)
 
     utils::SetQueryOmpThread(config);
-    auto radius = GetMetaRadius(config);
 
     int64_t* p_id = nullptr;
     float* p_dist = nullptr;
@@ -133,7 +133,7 @@ BinaryIDMAP::QueryByRange(const DatasetPtr& dataset,
     };
 
     try {
-        QueryByRangeImpl(rows, reinterpret_cast<const uint8_t*>(p_data), radius, p_dist, p_id, p_lims, config, bitset);
+        QueryByRangeImpl(rows, reinterpret_cast<const uint8_t*>(p_data), p_dist, p_id, p_lims, config, bitset);
         return GenResultDataset(p_id, p_dist, p_lims);
     } catch (faiss::FaissException& e) {
         release_when_exception();
@@ -213,26 +213,19 @@ BinaryIDMAP::QueryImpl(int64_t n,
 void
 BinaryIDMAP::QueryByRangeImpl(int64_t n,
                               const uint8_t* data,
-                              float radius,
                               float*& distances,
                               int64_t*& labels,
                               size_t*& lims,
                               const Config& config,
                               const faiss::BitsetView bitset) {
-    auto binary_idmap_index = dynamic_cast<faiss::IndexBinaryFlat*>(index_.get());
+    auto index = dynamic_cast<faiss::IndexBinaryFlat*>(index_.get());
+    float low_bound = GetMetaRadiusLowBound(config);
+    float high_bound = GetMetaRadiusHighBound(config);
 
     faiss::RangeSearchResult res(n);
-    binary_idmap_index->range_search(n, data, radius, &res, bitset);
-
-    distances = res.distances;
-    labels = res.labels;
-    lims = res.lims;
-
-    LOG_KNOWHERE_DEBUG_ << "Range search radius: " << radius << ", result num: " << lims[n];
-
-    res.distances = nullptr;
-    res.labels = nullptr;
-    res.lims = nullptr;
+    index->range_search(n, data, high_bound, &res, bitset);
+    GetRangeSearchResult(res, (index->metric_type == faiss::METRIC_INNER_PRODUCT), n, low_bound, high_bound,
+                         distances, labels, lims, bitset);
 }
 
 }  // namespace knowhere

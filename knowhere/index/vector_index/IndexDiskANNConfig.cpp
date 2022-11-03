@@ -38,7 +38,8 @@ static constexpr const char* kAioMaxnr = "aio_maxnr";
 static constexpr const char* kK = "k";
 static constexpr const char* kBeamwidth = "beamwidth";
 
-static constexpr const char* kRadius = "radius";
+static constexpr const char* kRadiusLowBound = "radius_low_bound";
+static constexpr const char* kRadiusHighBound = "radius_high_bound";
 static constexpr const char* kMinK = "min_k";
 static constexpr const char* kMaxK = "max_k";
 static constexpr const char* kSearchListAndKRatio = "search_list_and_k_ratio";
@@ -141,7 +142,7 @@ CheckNumericParamAndSet(const Config& config, const std::string& key, std::optio
  */
 template <typename T>
 void
-CheckNonNumbericParamAndSet(const Config& config, const std::string& key, T& to_be_set) {
+CheckNonNumericParamAndSet(const Config& config, const std::string& key, T& to_be_set) {
     if (!config.contains(key)) {
         KNOWHERE_THROW_FORMAT("Param '%s' not exist", key.data());
     }
@@ -164,7 +165,7 @@ to_json(Config& config, const DiskANNBuildConfig& build_conf) {
 
 void
 from_json(const Config& config, DiskANNBuildConfig& build_conf) {
-    CheckNonNumbericParamAndSet<std::string>(config, kDataPath, build_conf.data_path);
+    CheckNonNumericParamAndSet<std::string>(config, kDataPath, build_conf.data_path);
     CheckNumericParamAndSet<uint32_t>(config, kMaxDegree, kMaxDegreeMinValue, kMaxDegreeMaxValue,
                                       build_conf.max_degree);
     CheckNumericParamAndSet<uint32_t>(config, kSearchListSize, kBuildSearchListSizeMinValue,
@@ -177,7 +178,7 @@ from_json(const Config& config, DiskANNBuildConfig& build_conf) {
                                       build_conf.num_threads);
     CheckNumericParamAndSet<uint32_t>(config, kDiskPqBytes, kDiskPqBytesMinValue, kDiskPqBytesMaxValue,
                                       build_conf.disk_pq_dims);
-    CheckNonNumbericParamAndSet<bool>(config, kAccelerateBuild, build_conf.accelerate_build);
+    CheckNonNumericParamAndSet<bool>(config, kAccelerateBuild, build_conf.accelerate_build);
 }
 
 void
@@ -198,8 +199,8 @@ from_json(const Config& config, DiskANNPrepareConfig& prep_conf) {
 
     CheckNumericParamAndSet<float>(config, kCacheDramBudgetGb, kCacheDramBudgetGbMinValue, kCacheDramBudgetGbMaxValue,
                                    prep_conf.search_cache_budget_gb);
-    CheckNonNumbericParamAndSet<bool>(config, kWarmUp, prep_conf.warm_up);
-    CheckNonNumbericParamAndSet<bool>(config, kUseBfsCache, prep_conf.use_bfs_cache);
+    CheckNonNumericParamAndSet<bool>(config, kWarmUp, prep_conf.warm_up);
+    CheckNonNumericParamAndSet<bool>(config, kUseBfsCache, prep_conf.use_bfs_cache);
 }
 
 void
@@ -220,7 +221,8 @@ from_json(const Config& config, DiskANNQueryConfig& query_conf) {
 
 void
 to_json(Config& config, const DiskANNQueryByRangeConfig& query_conf) {
-    config = Config{{kRadius, query_conf.radius},
+    config = Config{{kRadiusLowBound, query_conf.radius_low_bound},
+                    {kRadiusHighBound, query_conf.radius_high_bound},
                     {kMinK, query_conf.min_k},
                     {kMaxK, query_conf.max_k},
                     {kBeamwidth, query_conf.beamwidth},
@@ -229,7 +231,10 @@ to_json(Config& config, const DiskANNQueryByRangeConfig& query_conf) {
 
 void
 from_json(const Config& config, DiskANNQueryByRangeConfig& query_conf) {
-    CheckNumericParamAndSet<float>(config, kRadius, kRadiusMinValue, kRadiusMaxValue, query_conf.radius);
+    CheckNumericParamAndSet<float>(config, kRadiusLowBound, kRadiusMinValue, kRadiusMaxValue,
+                                   query_conf.radius_low_bound);
+    CheckNumericParamAndSet<float>(config, kRadiusHighBound, kRadiusMinValue, kRadiusMaxValue,
+                                   query_conf.radius_high_bound);
     CheckNumericParamAndSet<uint64_t>(config, kMinK, kMinKMinValue, kMinKMaxValue, query_conf.min_k);
     CheckNumericParamAndSet<uint64_t>(config, kMaxK, query_conf.min_k, kMaxKMaxValue, query_conf.max_k);
     CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, kBeamwidthMinValue, kBeamwidthMaxValue, query_conf.beamwidth);
