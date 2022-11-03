@@ -30,9 +30,8 @@ namespace {
     // break-up requests into chunks of size maxnr each
     uint64_t n_iters = ROUND_UP(read_reqs.size(), maxnr) / maxnr;
     for (uint64_t iter = 0; iter < n_iters; iter++) {
-      uint64_t n_ops =
-          std::min((uint64_t) read_reqs.size() - (iter * maxnr),
-                   (uint64_t) maxnr);
+      uint64_t n_ops = std::min((uint64_t) read_reqs.size() - (iter * maxnr),
+                                (uint64_t) maxnr);
       std::vector<iocb_t *>    cbs(n_ops, nullptr);
       std::vector<io_event_t>  evts(n_ops);
       std::vector<struct iocb> cb(n_ops);
@@ -90,9 +89,9 @@ namespace {
   }
 }  // namespace
 
-LinuxAlignedFileReader::LinuxAlignedFileReader(uint64_t maxnr) {
-  this->maxnr = maxnr;
+LinuxAlignedFileReader::LinuxAlignedFileReader() {
   this->file_desc = -1;
+  this->ctx_pool_ = AioContextPool::GetGlobalAioPool();
 }
 
 LinuxAlignedFileReader::~LinuxAlignedFileReader() {
@@ -112,67 +111,6 @@ LinuxAlignedFileReader::~LinuxAlignedFileReader() {
     }
   }
 }
-
-io_context_t &LinuxAlignedFileReader::get_ctx() {
-  std::unique_lock<std::mutex> lk(ctx_mut);
-  // perform checks only in DEBUG mode
-  if (ctx_map.find(std::this_thread::get_id()) == ctx_map.end()) {
-    std::cerr << "bad thread access; returning -1 as io_context_t" << std::endl;
-    return this->bad_ctx;
-  } else {
-    return ctx_map[std::this_thread::get_id()];
-  }
-}
-
-void LinuxAlignedFileReader::register_thread() {
-  auto                         my_id = std::this_thread::get_id();
-  std::unique_lock<std::mutex> lk(ctx_mut);
-  if (ctx_map.find(my_id) != ctx_map.end()) {
-    std::cerr << "multiple calls to register_thread from the same thread"
-              << std::endl;
-    return;
-  }
-  io_context_t ctx = 0;
-  int          ret = io_setup(this->maxnr, &ctx);
-  if (ret != 0) {
-    assert(-ret != EAGAIN);
-    assert(-ret != ENOMEM);
-    std::cerr << "io_setup() failed; returned " << ret << ", errno=" << -ret
-              << ":" << ::strerror(-ret) << std::endl;
-  } else {
-    LOG(DEBUG) << "allocating ctx: " << ctx << " to thread-id:" << my_id;
-    ctx_map[my_id] = ctx;
-  }
-}
-
-void LinuxAlignedFileReader::deregister_thread() {
-  auto                         my_id = std::this_thread::get_id();
-  std::unique_lock<std::mutex> lk(ctx_mut);
-  assert(ctx_map.find(my_id) != ctx_map.end());
-
-  lk.unlock();
-  io_context_t ctx = this->get_ctx();
-  io_destroy(ctx);
-  //  assert(ret == 0);
-  lk.lock();
-  ctx_map.erase(my_id);
-  std::cerr << "returned ctx from thread-id:" << my_id << std::endl;
-}
-
-void LinuxAlignedFileReader::deregister_all_threads() {
-  std::unique_lock<std::mutex> lk(ctx_mut);
-  for (auto x = ctx_map.begin(); x != ctx_map.end(); x++) {
-    io_context_t ctx = x.value();
-    io_destroy(ctx);
-    //  assert(ret == 0);
-    //  lk.lock();
-    //  ctx_map.erase(my_id);
-    //  std::cerr << "returned ctx from thread-id:" << my_id << std::endl;
-  }
-  ctx_map.clear();
-  //  lk.unlock();
-}
-
 
 void LinuxAlignedFileReader::open(const std::string &fname) {
   int flags = O_DIRECT | O_RDONLY | O_LARGEFILE;
@@ -194,14 +132,15 @@ void LinuxAlignedFileReader::close() {
 }
 
 void LinuxAlignedFileReader::read(std::vector<AlignedRead> &read_reqs,
-                                  io_context_t &ctx, bool async) {
-                                    if (async == true) {
-                                      diskann::cout<<"Async currently not supported in linux." << std::endl;
-                                    }
+                                  IOContext& ctx, bool async) {
+  if (async == true) {
+    diskann::cout << "Async currently not supported in linux." << std::endl;
+  }
   assert(this->file_desc != -1);
   //#pragma omp critical
   //	std::cout << "thread: " << std::this_thread::get_id() << ", crtx: " <<
   // ctx
   //<< "\n";
-  execute_io(ctx, this->maxnr, this->file_desc, read_reqs);
+  execute_io(ctx, this->ctx_pool_->max_events_per_ctx(), this->file_desc,
+             read_reqs);
 }

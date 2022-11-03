@@ -90,6 +90,9 @@ class KnowhereConfig {
      */
     static void
     FreeGPUResource();
+
+    static void
+    SetAioContextPool(size_t num_ctx, size_t max_events);
 };
 
 }  // namespace knowhere

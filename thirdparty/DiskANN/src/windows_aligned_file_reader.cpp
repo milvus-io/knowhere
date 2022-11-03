@@ -52,22 +52,8 @@ void WindowsAlignedFileReader::register_thread() {
   this->ctx_map.insert(std::make_pair(std::this_thread::get_id(), ctx));
 }
 
-IOContext& WindowsAlignedFileReader::get_ctx() {
-  std::unique_lock<std::mutex> lk(this->ctx_mut);
-  if (ctx_map.find(std::this_thread::get_id()) == ctx_map.end()) {
-    std::stringstream stream;
-    stream << "unable to find IOContext for thread_id : "
-           << std::this_thread::get_id() << "\n";
-    throw diskann::ANNException(stream.str(), -2, __FUNCSIG__, __FILE__,
-                                __LINE__);
-  }
-  IOContext& ctx = ctx_map[std::this_thread::get_id()];
-  lk.unlock();
-  return ctx;
-}
-
 void WindowsAlignedFileReader::read(std::vector<AlignedRead>& read_reqs,
-                                    IOContext& ctx, bool async) {
+                                    bool async) {
   using namespace std::chrono_literals;
   // execute each request sequentially
   _u64 n_reqs = read_reqs.size();
