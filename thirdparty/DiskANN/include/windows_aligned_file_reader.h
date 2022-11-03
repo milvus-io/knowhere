@@ -34,13 +34,10 @@ class WindowsAlignedFileReader : public AlignedFileReader {
   DISKANN_DLLEXPORT virtual void close() override;
 
   DISKANN_DLLEXPORT virtual void register_thread() override;
-  DISKANN_DLLEXPORT virtual void deregister_thread() override {
-      // TODO: Needs implementation.
-  }
+
   DISKANN_DLLEXPORT virtual void deregister_all_threads() override {
       // TODO: Needs implementation.
   }
-  DISKANN_DLLEXPORT virtual IOContext &get_ctx() override;
 
   // process batch of aligned requests in parallel
   // NOTE :: blocking call for the calling thread, but can thread-safe

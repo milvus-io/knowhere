@@ -243,7 +243,7 @@ IndexDiskANN<T>::Prepare(const Config& config) {
 #ifdef _WINDOWS
     reader.reset(new WindowsAlignedFileReader());
 #else
-    reader.reset(new LinuxAlignedFileReader(prep_conf.aio_maxnr));
+    reader.reset(new LinuxAlignedFileReader());
 #endif
 
     pq_flash_index_ = std::make_unique<diskann::PQFlashIndex<T>>(reader, metric_);

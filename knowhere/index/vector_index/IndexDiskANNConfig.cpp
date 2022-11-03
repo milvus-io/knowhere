@@ -33,7 +33,6 @@ static constexpr const char* kAccelerateBuild = "accelerate_build";
 static constexpr const char* kCacheDramBudgetGb = "search_cache_budget_gb";
 static constexpr const char* kWarmUp = "warm_up";
 static constexpr const char* kUseBfsCache = "use_bfs_cache";
-static constexpr const char* kAioMaxnr = "aio_maxnr";
 
 static constexpr const char* kK = "k";
 static constexpr const char* kBeamwidth = "beamwidth";
@@ -65,10 +64,6 @@ static constexpr uint32_t kBeamwidthMinValue = 1;
 static constexpr uint32_t kBeamwidthMaxValue = 128;
 static constexpr uint64_t kKMinValue = 1;
 static constexpr std::optional<uint64_t> kKMaxValue = std::nullopt;
-static constexpr uint64_t kAioMaxnrMinValue = 1;
-static constexpr uint64_t kAioMaxnrMaxValue = 2 * kBeamwidthMaxValue;
-static constexpr uint64_t kAioMaxnrDefaultValue = 32;
-static constexpr uint32_t kLinuxAioMaxnrLimit = 65536;
 static constexpr uint32_t kSearchNumThreadsMinValue = 1;
 static constexpr float kCacheDramBudgetGbMinValue = 0;
 static constexpr std::optional<float> kCacheDramBudgetGbMaxValue = std::nullopt;
@@ -187,21 +182,12 @@ to_json(Config& config, const DiskANNPrepareConfig& prep_conf) {
     config = Config{{kNumThreads, prep_conf.num_threads},
                     {kCacheDramBudgetGb, prep_conf.search_cache_budget_gb},
                     {kWarmUp, prep_conf.warm_up},
-                    {kUseBfsCache, prep_conf.use_bfs_cache},
-                    {kAioMaxnr, prep_conf.aio_maxnr}};
+                    {kUseBfsCache, prep_conf.use_bfs_cache}};
 }
 
 void
 from_json(const Config& config, DiskANNPrepareConfig& prep_conf) {
-    if (config.contains(kAioMaxnr)) {
-        CheckNumericParamAndSet<uint64_t>(config, kAioMaxnr, kAioMaxnrMinValue, kAioMaxnrMaxValue, prep_conf.aio_maxnr);
-    } else {
-        prep_conf.aio_maxnr = kAioMaxnrDefaultValue;
-    }
-    // According to de definition of aio_maxnr in the IndexDiskANNConfig.h file.
-    auto num_thread_max_value = kLinuxAioMaxnrLimit / prep_conf.aio_maxnr;
-    CheckNumericParamAndSet<uint32_t>(config, kNumThreads, kSearchNumThreadsMinValue, num_thread_max_value,
-                                      prep_conf.num_threads);
+    CheckNumericParamAndSet<uint32_t>(config, kNumThreads, kSearchNumThreadsMinValue, 2048, prep_conf.num_threads);
     CheckNumericParamAndSet<float>(config, kCacheDramBudgetGb, kCacheDramBudgetGbMinValue, kCacheDramBudgetGbMaxValue,
                                    prep_conf.search_cache_budget_gb);
     CheckNonNumbericParamAndSet<bool>(config, kWarmUp, prep_conf.warm_up);

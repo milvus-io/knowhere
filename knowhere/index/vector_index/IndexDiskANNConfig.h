@@ -70,12 +70,7 @@ struct DiskANNPrepareConfig {
     // cached the nodes on the search paths; 2. do bfs from the entry point and cache them. The first method is suitable
     // for TopK query heavy circumstances and the second one performed better in range search.
     bool use_bfs_cache = false;
-    // The numebr of maximum parallel disk reads per thread. It should be set linearly proportional to `beam_width`.
-    // Suggested ratio of this and `beam_width` is 2:1.
-    // On Linux, the default limit of `aio-max-nr` is 65536, so the product of `num_threads` and `aio_maxnr` should
-    // not exceed this value.
-    // You can type `sudo sysctl -a | grep fs.aio-max-nr` on your terminal to see what is your default limit.
-    // If you want to raise the default limit, you can type `sudo sysctl -w fs.aio-max-nr=X` on your terminal.
+    // @deprecated
     uint64_t aio_maxnr = 32;
 
     static DiskANNPrepareConfig

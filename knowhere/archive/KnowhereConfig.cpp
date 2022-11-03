@@ -9,16 +9,20 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
+#include "archive/KnowhereConfig.h"
+
 #include <string>
 
-#include "archive/KnowhereConfig.h"
 #include "common/Log.h"
-#include "index/vector_index/Statistics.h"
-#include "index/vector_index/helpers/Slice.h"
 #include "faiss/Clustering.h"
 #include "faiss/FaissHook.h"
 #include "faiss/utils/distances.h"
 #include "faiss/utils/utils.h"
+#include "index/vector_index/Statistics.h"
+#include "index/vector_index/helpers/Slice.h"
+#ifdef KNOWHERE_WITH_DISKANN
+#include "DiskANN/include/aio_context_pool.h"
+#endif
 #ifdef KNOWHERE_GPU_VERSION
 #include "knowhere/index/vector_index/helpers/FaissGpuResourceMgr.h"
 #endif
@@ -138,6 +142,13 @@ KnowhereConfig::FreeGPUResource() {
 #ifdef KNOWHERE_GPU_VERSION
     LOG_KNOWHERE_INFO_ << "free GPU resource";
     knowhere::FaissGpuResourceMgr::GetInstance().Free();  // Release gpu resources.
+#endif
+}
+
+void
+KnowhereConfig::SetAioContextPool(size_t num_ctx, size_t max_events) {
+#ifdef KNOWHERE_WITH_DISKANN
+    AioContextPool::InitGlobalAioPool(num_ctx, max_events);
 #endif
 }
 
