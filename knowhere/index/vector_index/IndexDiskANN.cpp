@@ -14,6 +14,7 @@
 #include <omp.h>
 
 #include <limits>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -25,6 +26,7 @@
 #include "DiskANN/include/windows_aligned_file_reader.h"
 #endif
 #include "knowhere/common/Exception.h"
+#include "knowhere/feder/DiskANN.h"
 #include "knowhere/index/vector_index/IndexDiskANNConfig.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
 
@@ -384,18 +386,33 @@ IndexDiskANN<T>::Query(const DatasetPtr& dataset_ptr, const Config& config, cons
     auto p_id = new int64_t[k * rows];
     auto p_dist = new float[k * rows];
 
+    feder::diskann::FederResultUniq feder_result;
+    if (CheckKeyInConfig(config, meta::TRACE_VISIT) && GetMetaTraceVisit(config)) {
+        KNOWHERE_THROW_IF_NOT_MSG(rows == 1, "NQ must be 1 when Feder tracing");
+        feder_result = std::make_unique<feder::diskann::FederResult>();
+        feder_result->visit_info_.SetQueryConfig(query_conf);
+    }
+
     std::vector<std::future<void>> futures;
     futures.reserve(rows);
     for (int64_t row = 0; row < rows; ++row) {
         futures.push_back(pool_->push([&, index = row]() {
             pq_flash_index_->cached_beam_search(query + (index * dim), k, query_conf.search_list_size,
                                                 p_id + (index * k), p_dist + (index * k), query_conf.beamwidth, false,
-                                                nullptr, bitset);
+                                                nullptr, nullptr, bitset);
         }));
     }
 
     for (auto& future : futures) {
         future.get();
+    }
+
+    // set visit_info json string into result dataset
+    if (feder_result != nullptr) {
+        Config json_visit_info, json_id_set;
+        nlohmann::to_json(json_visit_info, feder_result->visit_info_);
+        nlohmann::to_json(json_id_set, feder_result->id_set_);
+        return GenResultDataset(p_id, p_dist, json_visit_info.dump(), json_id_set.dump());
     }
 
     return GenResultDataset(p_id, p_dist);
@@ -457,6 +474,22 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
     }
 
     return GenResultDataset(p_id, p_dist, p_lims);
+}
+
+template <typename T>
+DatasetPtr
+IndexDiskANN<T>::GetIndexMeta(const Config& config) {
+    std::vector<int64_t> entry_points;
+    for (size_t i = 0; i < pq_flash_index_->get_num_medoids(); i++) {
+        entry_points.push_back(pq_flash_index_->get_medoids()[i]);
+    }
+    feder::diskann::DiskANNMeta meta(DiskANNBuildConfig::Get(config), Count(), entry_points);
+    std::unordered_set<int64_t> id_set(entry_points.begin(), entry_points.end());
+
+    Config json_meta, json_id_set;
+    nlohmann::to_json(json_meta, meta);
+    nlohmann::to_json(json_id_set, id_set);
+    return GenResultDataset(json_meta.dump(), json_id_set.dump());
 }
 
 template <typename T>

@@ -28,6 +28,7 @@ error "Missing the <filesystem> header."
 #include <utility>
 #include <vector>
 
+#include "knowhere/feder/DiskANN.h"
 #include "knowhere/index/vector_index/IndexDiskANN.h"
 #include "knowhere/index/vector_index/IndexDiskANNConfig.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
@@ -869,4 +870,66 @@ TEST_P(DiskANNTest, generate_cache_list_test) {
 
     knowhere::DiskANNPrepareConfig::Set(cfg, prep_conf_to_test);
     EXPECT_THROW(diskann->Prepare(cfg), knowhere::KnowhereException);
+}
+
+TEST_P(DiskANNTest, get_meta) {
+    knowhere::Config cfg;
+    knowhere::DiskANNPrepareConfig::Set(cfg, prep_conf);
+    EXPECT_TRUE(diskann->Prepare(cfg));
+
+    knowhere::DiskANNBuildConfig::Set(cfg, build_conf);
+    auto result = diskann->GetIndexMeta(cfg);
+
+    auto json_info = knowhere::GetDatasetJsonInfo(result);
+    auto json_id_set = knowhere::GetDatasetJsonIdSet(result);
+    //std::cout << json_info << std::endl;
+    std::cout << "json_info size = " << json_info.size() << std::endl;
+    std::cout << "json_id_set size = " << json_id_set.size() << std::endl;
+
+    // check DiskANNMeta
+    knowhere::feder::diskann::DiskANNMeta meta;
+    knowhere::Config j1 = nlohmann::json::parse(json_info);
+    ASSERT_NO_THROW(nlohmann::from_json(j1, meta));
+    //std::cout << j1.dump(4) << std::endl;
+
+    // check IDSet
+    std::unordered_set<int64_t> id_set;
+    knowhere::Config j2 = nlohmann::json::parse(json_id_set);
+    ASSERT_NO_THROW(nlohmann::from_json(j2, id_set));
+    //std::cout << j2.dump(4) << std::endl;
+}
+
+TEST_P(DiskANNTest, trace_visit) {
+    knowhere::Config cfg;
+    knowhere::DiskANNPrepareConfig::Set(cfg, prep_conf);
+    EXPECT_TRUE(diskann->Prepare(cfg));
+
+    // test for knn search
+    cfg.clear();
+    knowhere::DiskANNQueryConfig::Set(cfg, query_conf);
+
+    knowhere::SetMetaTraceVisit(cfg, true);
+    knowhere::DatasetPtr data_set_ptr = knowhere::GenDataset(num_queries_, dim_, (void*)query_data_);
+    ASSERT_ANY_THROW(diskann->Query(data_set_ptr, cfg, nullptr));
+
+    data_set_ptr = knowhere::GenDataset(1, dim_, (void*)query_data_);
+    auto result = diskann->Query(data_set_ptr, cfg, nullptr);
+
+    auto json_info = knowhere::GetDatasetJsonInfo(result);
+    auto json_id_set = knowhere::GetDatasetJsonIdSet(result);
+    //std::cout << json_info << std::endl;
+    std::cout << "json_info size = " << json_info.size() << std::endl;
+    std::cout << "json_id_set size = " << json_id_set.size() << std::endl;
+
+    // check DiskANNVisitInfo
+    knowhere::feder::diskann::DiskANNVisitInfo visit_info;
+    knowhere::Config j1 = nlohmann::json::parse(json_info);
+    ASSERT_NO_THROW(nlohmann::from_json(j1, visit_info));
+    //std::cout << j1.dump(4) << std::endl;
+
+    // check IDSet
+    std::unordered_set<int64_t> id_set;
+    knowhere::Config j2 = nlohmann::json::parse(json_id_set);
+    ASSERT_NO_THROW(nlohmann::from_json(j2, id_set));
+    //std::cout << j2.dump(4) << std::endl;
 }
