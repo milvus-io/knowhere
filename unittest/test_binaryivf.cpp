@@ -117,19 +117,6 @@ TEST_P(BinaryIVFTest, binaryivf_serialize) {
     // PrintResult(result, nq, k);
 }
 
-TEST_P(BinaryIVFTest, binaryivf_slice) {
-    // serialize index
-    index_->BuildAll(base_dataset, conf_);
-    auto binaryset = index_->Serialize(conf_);
-
-    index_->Load(binaryset);
-    EXPECT_EQ(index_->Count(), nb);
-    EXPECT_EQ(index_->Dim(), dim);
-    auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, knowhere::GetMetaTopk(conf_));
-    // PrintResult(result, nq, k);
-}
-
 TEST_P(BinaryIVFTest, binaryivf_range_search_hamming) {
     knowhere::MetricType metric_type = knowhere::metric::HAMMING;
     knowhere::SetMetaMetricType(conf_, knowhere::metric::HAMMING);

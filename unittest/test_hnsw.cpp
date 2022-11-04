@@ -132,17 +132,6 @@ TEST_P(HNSWTest, HNSW_serialize) {
     AssertAnns(result, nq, k);
 }
 
-TEST_P(HNSWTest, hnsw_slice) {
-    // serialize index
-    index_->BuildAll(base_dataset, conf_);
-    auto binaryset = index_->Serialize(knowhere::Config());
-    index_->Load(binaryset);
-    ASSERT_EQ(index_->Count(), nb);
-    ASSERT_EQ(index_->Dim(), dim);
-    auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, knowhere::GetMetaTopk(conf_));
-}
-
 TEST_P(HNSWTest, hnsw_range_search_l2) {
     knowhere::MetricType metric_type = knowhere::metric::L2;
     knowhere::SetMetaMetricType(conf_, metric_type);

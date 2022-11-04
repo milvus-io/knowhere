@@ -134,14 +134,3 @@ TEST_P(AnnoyTest, annoy_serialize) {
     auto result = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result, nq, knowhere::GetMetaTopk(conf_));
 }
-
-TEST_P(AnnoyTest, annoy_slice) {
-    // serialize index
-    index_->BuildAll(base_dataset, conf_);
-    auto binaryset = index_->Serialize(knowhere::Config());
-    index_->Load(binaryset);
-    ASSERT_EQ(index_->Count(), nb);
-    ASSERT_EQ(index_->Dim(), dim);
-    auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, knowhere::GetMetaTopk(conf_));
-}

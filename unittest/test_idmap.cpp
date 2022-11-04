@@ -167,31 +167,6 @@ TEST_P(IDMAPTest, idmap_serialize) {
     // PrintResult(result, nq, k);
 }
 
-TEST_P(IDMAPTest, idmap_slice) {
-    index_->BuildAll(base_dataset, conf_);
-
-#ifdef KNOWHERE_GPU_VERSION
-    if (index_mode_ == knowhere::IndexMode::MODE_GPU) {
-        // cpu to gpu
-        index_ = std::dynamic_pointer_cast<knowhere::IDMAP>(index_->CopyCpuToGpu(DEVICE_ID, conf_));
-    }
-#endif
-
-    auto re_result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(re_result, nq, k);
-    // PrintResult(re_result, nq, k);
-    EXPECT_EQ(index_->Count(), nb);
-    EXPECT_EQ(index_->Dim(), dim);
-    auto binaryset = index_->Serialize(conf_);
-
-    index_->Load(binaryset);
-    EXPECT_EQ(index_->Count(), nb);
-    EXPECT_EQ(index_->Dim(), dim);
-    auto result = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result, nq, k);
-    // PrintResult(result, nq, k);
-}
-
 TEST_P(IDMAPTest, idmap_range_search_l2) {
     knowhere::MetricType metric_type = knowhere::metric::L2;
     knowhere::SetMetaMetricType(conf_, metric_type);

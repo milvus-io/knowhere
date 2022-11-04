@@ -140,24 +140,6 @@ TEST_P(BinaryIDMAPTest, binaryidmap_serialize) {
     AssertAnns(result_bs_1, nq, k, CheckMode::CHECK_NOT_EQUAL);
 }
 
-TEST_P(BinaryIDMAPTest, binaryidmap_slice) {
-    // serialize index
-    index_->BuildAll(base_dataset, conf_);
-    auto result1 = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result1, nq, k);
-    // PrintResult(result1, nq, k);
-    EXPECT_EQ(index_->Count(), nb);
-    EXPECT_EQ(index_->Dim(), dim);
-    auto binaryset = index_->Serialize(conf_);
-
-    index_->Load(binaryset);
-    EXPECT_EQ(index_->Count(), nb);
-    EXPECT_EQ(index_->Dim(), dim);
-    auto result2 = index_->Query(query_dataset, conf_, nullptr);
-    AssertAnns(result2, nq, k);
-    // PrintResult(result2, nq, k);
-}
-
 TEST_P(BinaryIDMAPTest, binaryidmap_range_search_hamming) {
     knowhere::MetricType metric_type = knowhere::metric::HAMMING;
     knowhere::SetMetaMetricType(conf_, metric_type);
