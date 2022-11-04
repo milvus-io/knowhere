@@ -58,7 +58,6 @@ IndexHNSW::Load(const BinarySet& index_binary) {
 
         hnswlib::SpaceInterface<float>* space = nullptr;
         index_ = std::make_unique<hnswlib::HierarchicalNSW<float>>(space);
-        index_->stats_enable_ = (STATISTICS_LEVEL >= 3);
         index_->loadIndex(reader);
     } catch (std::exception& e) {
         KNOWHERE_THROW_MSG(e.what());
@@ -81,7 +80,6 @@ IndexHNSW::Train(const DatasetPtr& dataset_ptr, const Config& config) {
         }
         index_ = std::make_unique<hnswlib::HierarchicalNSW<float>>(space, rows, GetIndexParamHNSWM(config),
                                                                    GetIndexParamEfConstruction(config));
-        index_->stats_enable_ = (STATISTICS_LEVEL >= 3);
     } catch (std::exception& e) {
         KNOWHERE_THROW_MSG(e.what());
     }
@@ -249,10 +247,9 @@ IndexHNSW::QueryImpl(int64_t n, const float* xq, int64_t k, float* distances, in
     std::vector<std::future<void>> futures;
     futures.reserve(n);
     for (unsigned int i = 0; i < n; ++i) {
-        auto dummy_stat = hnswlib::StatisticsInfo();
         futures.push_back(pool_->push([&, index = i]() {
             auto single_query = xq + index * Dim();
-            auto rst = index_->searchKnn(single_query, k, bitset, dummy_stat, &param, feder);
+            auto rst = index_->searchKnn(single_query, k, bitset, &param, feder);
             size_t rst_size = rst.size();
             auto p_single_dis = distances + index * k;
             auto p_single_id = labels + index * k;
@@ -303,10 +300,8 @@ IndexHNSW::QueryByRangeImpl(int64_t n, const float* xq, float radius, float*& di
     for (unsigned int i = 0; i < n; ++i) {
         futures.push_back(pool_->push([&, index = i]() {
             auto single_query = xq + index * Dim();
-
-            auto dummy_stat = hnswlib::StatisticsInfo();
             auto rst =
-                index_->searchRange(single_query, (is_IP ? 1.0f - radius : radius), bitset, dummy_stat, &param, feder);
+                index_->searchRange(single_query, (is_IP ? 1.0f - radius : radius), bitset, &param, feder);
 
             for (auto& p : rst) {
                 result_dist_array[index].push_back(is_IP ? (1 - p.first) : p.first);
