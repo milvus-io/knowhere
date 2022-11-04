@@ -56,10 +56,7 @@ struct DiskANNBuildConfig {
 };
 
 struct DiskANNPrepareConfig {
-    // The number of threads used for preparing and searching. Threads run in parallel and one thread handles one query
-    // at a time. More threads will result in higher aggregate query throughput, but will also use more IOs/second
-    // across the system, which may lead to higher per-query latency. So find the balance depending on the maximum
-    // number of IOPs supported by the SSD.
+    // @deprecated
     uint32_t num_threads = 8;
     // While serving the index, the entire graph is stored on SSD. For faster search performance, you can cache a few
     // frequently accessed nodes in memory.

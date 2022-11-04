@@ -773,14 +773,6 @@ TEST_P(DiskANNTest, config_test) {
     build_conf_to_test.num_threads = 129;
     CheckConfigError<knowhere::DiskANNBuildConfig>(build_conf_to_test);
 
-    // prepare config
-    knowhere::DiskANNPrepareConfig prep_conf_to_test = prep_conf;
-    prep_conf_to_test.num_threads = 0;
-    CheckConfigError<knowhere::DiskANNPrepareConfig>(prep_conf_to_test);
-
-    prep_conf_to_test.num_threads = 2049;
-    CheckConfigError<knowhere::DiskANNPrepareConfig>(prep_conf_to_test);
-
     // query config
     knowhere::DiskANNQueryConfig query_conf_to_test = query_conf;
     query_conf_to_test.k = 10;
