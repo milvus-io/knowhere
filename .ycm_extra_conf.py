@@ -54,6 +54,8 @@ flags = [
     "thirdparty/",
     "-I",
     "thirdparty/faiss",
+    "-I",
+    "thirdparty/spdlog/include"
 ]
 
 

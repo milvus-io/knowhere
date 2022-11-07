@@ -10,6 +10,7 @@
 #include "knowhere/bitsetview.h"
 #include "knowhere/config.h"
 #include "knowhere/dataset.h"
+#include "knowhere/log.h"
 namespace knowhere {
 
 class Object {
@@ -33,19 +34,19 @@ class Object {
 
 class IndexNode : public Object {
  public:
-    virtual Error
+    virtual Status
     Build(const DataSet& dataset, const Config& cfg) = 0;
-    virtual Error
+    virtual Status
     Train(const DataSet& dataset, const Config& cfg) = 0;
-    virtual Error
+    virtual Status
     Add(const DataSet& dataset, const Config& cfg) = 0;
-    virtual expected<DataSetPtr, Error>
+    virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const = 0;
-    virtual expected<DataSetPtr, Error>
+    virtual expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const = 0;
-    virtual Error
+    virtual Status
     Serialization(BinarySet& binset) const = 0;
-    virtual Error
+    virtual Status
     Deserialization(const BinarySet& binset) = 0;
     virtual std::unique_ptr<BaseConfig>
     CreateConfig() const = 0;
@@ -136,59 +137,104 @@ class Index {
         return Index(dynamic_cast<T2>(node));
     }
 
-    Error
+    Status
     Build(const DataSet& dataset, const Json& json) {
         auto cfg = this->node->CreateConfig();
         auto res = Config::Load(*cfg, json, knowhere::TRAIN);
-        if (res != Error::success)
+        KNOWHERE_INFO(json.dump());
+        if (res != Status::success) {
+            KNOWHERE_DUMP_BACKTRACE
             return res;
-        return this->node->Build(dataset, *cfg);
+        }
+        res = this->node->Build(dataset, *cfg);
+        if (res != Status::success) {
+            KNOWHERE_DUMP_BACKTRACE
+        }
+
+        return res;
     }
 
-    Error
+    Status
     Train(const DataSet& dataset, const Json& json) {
         auto cfg = this->node->CreateConfig();
         auto res = Config::Load(*cfg, json, knowhere::TRAIN);
-        if (res != Error::success)
+        KNOWHERE_INFO(json.dump());
+        if (res != Status::success) {
+            KNOWHERE_DUMP_BACKTRACE
             return res;
-        return this->node->Train(dataset, *cfg);
+        }
+        res = this->node->Train(dataset, *cfg);
+        if (res != Status::success) {
+            KNOWHERE_DUMP_BACKTRACE
+        }
+
+        return res;
     }
 
-    Error
+    Status
     Add(const DataSet& dataset, const Json& json) {
         auto cfg = this->node->CreateConfig();
         auto res = Config::Load(*cfg, json, knowhere::TRAIN);
-        if (res != Error::success)
+        if (res != Status::success) {
+            KNOWHERE_DUMP_BACKTRACE
             return res;
-        return this->node->Add(dataset, *cfg);
+        }
+        res = this->node->Add(dataset, *cfg);
+        if (res != Status::success) {
+            KNOWHERE_DUMP_BACKTRACE
+        }
+
+        return res;
     };
 
-    expected<DataSetPtr, Error>
+    expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Json& json, const BitsetView& bitset) const {
         auto cfg = this->node->CreateConfig();
         auto res = Config::Load(*cfg, json, knowhere::SEARCH);
-        if (res != Error::success)
+        if (res != Status::success) {
+            KNOWHERE_DUMP_BACKTRACE
             return unexpected(res);
-        return this->node->Search(dataset, *cfg, bitset);
+        }
+        auto ex = this->node->Search(dataset, *cfg, bitset);
+        if (!ex.has_value()) {
+            KNOWHERE_DUMP_BACKTRACE;
+        }
+        return ex;
     };
 
-    expected<DataSetPtr, Error>
+    expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Json& json) const {
         auto cfg = this->node->CreateConfig();
         auto res = Config::Load(*cfg, json, knowhere::SEARCH);
-        if (res != Error::success)
+        if (res != Status::success) {
+            KNOWHERE_DUMP_BACKTRACE
             return unexpected(res);
-        return this->node->GetVectorByIds(dataset, *cfg);
+        }
+        auto ex = this->node->GetVectorByIds(dataset, *cfg);
+        if (!ex.has_value()) {
+            KNOWHERE_DUMP_BACKTRACE;
+        }
+        return ex;
     };
 
-    Error
+    Status
     Serialization(BinarySet& binset) const {
-        return this->node->Serialization(binset);
+        auto res = this->node->Serialization(binset);
+        if (res != Status::success) {
+            KNOWHERE_DUMP_BACKTRACE
+        }
+
+        return res;
     };
 
-    Error
+    Status
     Deserialization(const BinarySet& binset) {
-        return this->node->Deserialization(binset);
+        auto res = this->node->Deserialization(binset);
+        if (res != Status::success) {
+            KNOWHERE_DUMP_BACKTRACE
+        }
+
+        return res;
     };
 
     int64_t

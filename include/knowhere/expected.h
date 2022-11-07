@@ -6,7 +6,7 @@
 #include <string>
 namespace knowhere {
 
-enum class Error {
+enum class Status {
     success = 0,
     invalid_args = 1,
     invalid_param_in_json = 2,
@@ -27,10 +27,10 @@ template <typename E>
 class unexpected {
  public:
     constexpr unexpected(const E& err) : err(err) {
-        static_assert(std::is_same<E, Error>::value);
+        static_assert(std::is_same<E, Status>::value);
     }
     constexpr unexpected(E&& err) : err(err) {
-        static_assert(std::is_same<E, Error>::value);
+        static_assert(std::is_same<E, Status>::value);
     }
     ~unexpected() = default;
 

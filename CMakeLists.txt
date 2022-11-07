@@ -8,11 +8,17 @@ include(cmake/utils/utils.cmake)
 knowhere_option(USE_CUDA "Build with CUDA" OFF)
 knowhere_option(WITH_UT "Build with UT test" OFF)
 knowhere_option(WITH_ASAN "Build with ASAN" OFF)
+knowhere_option(WITH_CONSOLE_LOG "Build with console log" ON)
+
 
 if(USE_CUDA)
     set(CMAKE_CUDA_ARCHITECTURES 75;70;61;60)
     enable_language(CUDA)
     find_package(CUDAToolkit REQUIRED)
+endif()
+
+if(WITH_CONSOLE_LOG)
+    add_definitions(-DCONSOLE_LOGGING)
 endif()
 
 include(cmake/utils/compile_flags.cmake)
@@ -22,6 +28,7 @@ include(cmake/libs/libannoy.cmake)
 include(cmake/libs/libhnsw.cmake)
 
 include_directories(${CMAKE_SOURCE_DIR})
+include_directories(thirdparty/spdlog/include)
 include_directories(thirdparty/faiss)
 include_directories(thirdparty/bitset)
 include_directories(thirdparty)

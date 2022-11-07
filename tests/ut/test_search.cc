@@ -48,11 +48,12 @@ TEST_CASE("Test All Index Search.", "[search]") {
         return json;
     };
 
+#ifdef USE_CUDA
     auto gpu_flat_gen = [&base_gen]() {
         auto json = base_gen();
         return json;
     };
-
+#endif
     SECTION("Test Cpu Index Search.") {
         using std::make_tuple;
         auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
@@ -78,7 +79,7 @@ TEST_CASE("Test All Index Search.", "[search]") {
         auto query_ds = GenDataSet(1000, 128, 42);
         REQUIRE(idx.Type() == name);
         auto res = idx.Build(*train_ds, json);
-        REQUIRE(res == knowhere::Error::success);
+        REQUIRE(res == knowhere::Status::success);
         auto results = idx.Search(*query_ds, json, nullptr);
         REQUIRE(results.has_value());
         auto ids = results.value()->GetIds();
@@ -113,7 +114,7 @@ TEST_CASE("Test All Index Search.", "[search]") {
         auto query_ds = GenDataSet(1000, 128, 42);
         REQUIRE(idx.Type() == name);
         auto res = idx.Build(*train_ds, json);
-        REQUIRE(res == knowhere::Error::success);
+        REQUIRE(res == knowhere::Status::success);
         knowhere::BinarySet bs;
         idx.Serialization(bs);
 

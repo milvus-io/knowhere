@@ -7,7 +7,7 @@ namespace knowhere {
 using ThreadedBuildPolicy = AnnoyIndexSingleThreadedBuildPolicy;
 class AnnoyIndexNode : public IndexNode {
  public:
-    virtual Error
+    virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
         const AnnoyConfig& annoy_cfg = static_cast<const AnnoyConfig&>(cfg);
         metric_type_ = annoy_cfg.metric_type;
@@ -16,15 +16,19 @@ class AnnoyIndexNode : public IndexNode {
         if (annoy_cfg.metric_type == "L2") {
             index =
                 new (std::nothrow) AnnoyIndex<int64_t, float, ::Euclidean, ::Kiss64Random, ThreadedBuildPolicy>(dim);
-            if (index == nullptr)
-                return Error::malloc_error;
+            if (index == nullptr) {
+                KNOWHERE_WARN("malloc memory error.");
+                return Status::malloc_error;
+            }
         }
 
         if (annoy_cfg.metric_type == "IP") {
             index =
                 new (std::nothrow) AnnoyIndex<int64_t, float, ::DotProduct, ::Kiss64Random, ThreadedBuildPolicy>(dim);
-            if (index == nullptr)
-                return Error::malloc_error;
+            if (index == nullptr) {
+                KNOWHERE_WARN("malloc memory error.");
+                return Status::malloc_error;
+            }
         }
         if (index) {
             if (this->index_)
@@ -36,24 +40,31 @@ class AnnoyIndexNode : public IndexNode {
             for (int i = 0; i < rows; ++i) {
                 index_->add_item(i, static_cast<const float*>(p_data) + dim * i);
             }
-            index_->build(annoy_cfg.n_trees);
-            return Error::success;
+            char* error_msg;
+            bool res = index_->build(annoy_cfg.n_trees, -1, &error_msg);
+            if (!res) {
+                KNOWHERE_WARN(error_msg);
+                return Status::annoy_inner_error;
+            }
+            return Status::success;
         }
 
-        return Error::invalid_metric_type;
+        KNOWHERE_WARN("invalid metric type in annoy {}", annoy_cfg.metric_type);
+
+        return Status::invalid_metric_type;
     }
-    virtual Error
+    virtual Status
     Train(const DataSet& dataset, const Config& cfg) override {
         return Build(dataset, cfg);
     }
-    virtual Error
+    virtual Status
     Add(const DataSet& dataset, const Config& cfg) override {
-        return Error::not_implemented;
+        return Status::not_implemented;
     }
-    virtual expected<DataSetPtr, Error>
+    virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
-            return unexpected(Error::empty_index);
+            return unexpected(Status::empty_index);
         }
 
         auto dim = dataset.GetDim();
@@ -92,10 +103,10 @@ class AnnoyIndexNode : public IndexNode {
         return results;
     }
 
-    virtual expected<DataSetPtr, Error>
+    virtual expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
         if (!index_) {
-            return unexpected(Error::empty_index);
+            return unexpected(Status::empty_index);
         }
 
         auto rows = dataset.GetRows();
@@ -112,7 +123,8 @@ class AnnoyIndexNode : public IndexNode {
             }
         } catch (const std::exception& e) {
             std::unique_ptr<float> auto_del(p_x);
-            return unexpected(Error::annoy_inner_error);
+            KNOWHERE_WARN("error in annoy, {}", e.what());
+            return unexpected(Status::annoy_inner_error);
         }
 
         auto results = std::make_shared<DataSet>();
@@ -120,10 +132,10 @@ class AnnoyIndexNode : public IndexNode {
 
         return results;
     }
-    virtual Error
+    virtual Status
     Serialization(BinarySet& binset) const override {
         if (!index_) {
-            return Error::empty_index;
+            return Status::empty_index;
         }
 
         auto metric_type_length = metric_type_.length();
@@ -142,9 +154,9 @@ class AnnoyIndexNode : public IndexNode {
         binset.Append("annoy_dim", dim_data, sizeof(uint64_t));
         binset.Append("annoy_index_data", index_data, index_length);
 
-        return Error::success;
+        return Status::success;
     }
-    virtual Error
+    virtual Status
     Deserialization(const BinarySet& binset) override {
         if (index_)
             delete index_;
@@ -168,10 +180,10 @@ class AnnoyIndexNode : public IndexNode {
         char* p = nullptr;
         if (!index_->load_index(reinterpret_cast<void*>(index_data->data.get()), index_data->size, &p)) {
             free(p);
-            return Error::annoy_inner_error;
+            return Status::annoy_inner_error;
         }
 
-        return Error::success;
+        return Status::success;
     }
 
     virtual std::unique_ptr<BaseConfig>
