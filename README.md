@@ -14,36 +14,49 @@ All Linux distributions are available for Knowhere development. However, a major
 
 Here's a list of verified OS types where Knowhere can successfully build and run:
 
-- Ubuntu 18.04
-- CentOS 7
+- Ubuntu 20.04 x86_64
+- Ubuntu 20.04 Aarch64
 - MacOS (x86_64)
 - MacOS (Apple Silicon)
-- MinGW64
 
 ## Building Knowhere From Source Code
 
 #### Install Dependencies
 
 ```bash
-$ ./scripts/install_deps.sh
+$ sudo apt install build-essential libopenblas-dev
 ```
 
 #### Build From Source Code
 
 ```bash
-$ ./build.sh -t Release
+#fetch submodule
+$ git submodule update --recursive --init
+
+$ mkdir build && cd build
+#DEBUG CPU
+$ cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_UT=ON -DWITH_CONSOLE_LOG=ON -G Ninja
+#RELEASE CPU
+$ cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_UT=ON -DWITH_CONSOLE_LOG=ON -G Ninja
+#DEBUG GPU
+$ cmake .. -DCMAKE_BUILD_TYPE=Debug -DUSE_CUDA=ON -DWITH_UT=ON -DWITH_CONSOLE_LOG=ON -G Ninja
+#RELEASE GPU
+$ cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_CUDA=ON -DWITH_UT=ON -DWITH_CONSOLE_LOG=ON -G Ninja
+#verbose compile
+$ninja -v
 ```
 
 #### Running Unit Tests
 
 ```bash
-$ ./build.sh -t Release -u && output/unittest/test_knowhere
+# in build directories
+$ ./tests/ut/knowhere_tests
 ```
 
 #### Clean up
 
 ```bash
-$ ./build.sh -r
+$ git clean -fxd
 ```
 
 ## GEN PYTHON WHEEL
