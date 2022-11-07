@@ -80,4 +80,19 @@ GenResultDataset(const int64_t* ids,
     return ret_ds;
 }
 
+DatasetPtr
+GenResultDataset(const int64_t* ids,
+                 const float* distance,
+                 const size_t* lims,
+                 const std::string& json_info,
+                 const std::string& json_id_set) {
+    auto ret_ds = std::make_shared<Dataset>();
+    SetDatasetIDs(ret_ds, ids);
+    SetDatasetDistance(ret_ds, distance);
+    SetDatasetLims(ret_ds, lims);
+    SetDatasetJsonInfo(ret_ds, json_info);
+    SetDatasetJsonIdSet(ret_ds, json_id_set);
+    return ret_ds;
+}
+
 }  // namespace knowhere

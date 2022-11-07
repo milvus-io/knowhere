@@ -388,7 +388,11 @@ IndexDiskANN<T>::Query(const DatasetPtr& dataset_ptr, const Config& config, cons
 
     feder::diskann::FederResultUniq feder_result;
     if (CheckKeyInConfig(config, meta::TRACE_VISIT) && GetMetaTraceVisit(config)) {
-        KNOWHERE_THROW_IF_NOT_MSG(rows == 1, "NQ must be 1 when Feder tracing");
+        if (rows != 1) {
+            delete[] p_id;
+            delete[] p_dist;
+            KNOWHERE_THROW_MSG("NQ must be 1 when Feder tracing");
+        }
         feder_result = std::make_unique<feder::diskann::FederResult>();
         feder_result->visit_info_.SetQueryConfig(query_conf);
     }

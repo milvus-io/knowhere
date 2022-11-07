@@ -99,4 +99,11 @@ GenResultDataset(const int64_t* ids,
                  const std::string& json_info,
                  const std::string& json_id_set);
 
+extern DatasetPtr
+GenResultDataset(const int64_t* ids,
+                 const float* distance,
+                 const size_t* lims,
+                 const std::string& json_info,
+                 const std::string& json_id_set);
+
 }  // namespace knowhere

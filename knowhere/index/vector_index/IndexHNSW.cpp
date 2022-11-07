@@ -175,7 +175,7 @@ IndexHNSW::QueryByRange(const DatasetPtr& dataset, const Config& config, const f
         Config json_visit_info, json_id_set;
         nlohmann::to_json(json_visit_info, feder_result->visit_info_);
         nlohmann::to_json(json_id_set, feder_result->id_set_);
-        return GenResultDataset(p_id, p_dist, json_visit_info.dump(), json_id_set.dump());
+        return GenResultDataset(p_id, p_dist, p_lims, json_visit_info.dump(), json_id_set.dump());
     }
     return GenResultDataset(p_id, p_dist, p_lims);
 }
@@ -236,7 +236,11 @@ void
 IndexHNSW::QueryImpl(int64_t n, const float* xq, int64_t k, float* distances, int64_t* labels,
                      feder::hnsw::FederResultUniq& feder, const Config& config, const faiss::BitsetView bitset) {
     if (CheckKeyInConfig(config, meta::TRACE_VISIT) && GetMetaTraceVisit(config)) {
-        KNOWHERE_THROW_IF_NOT_MSG(n == 1, "NQ must be 1 when Feder tracing");
+        if (n != 1) {
+            delete[] labels;
+            delete[] distances;
+            KNOWHERE_THROW_MSG("NQ must be 1 when Feder tracing");
+        }
         feder = std::make_unique<feder::hnsw::FederResult>();
     }
 
