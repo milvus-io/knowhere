@@ -17,7 +17,7 @@
 #include "distances_neon.h"
 #endif
 #include "distances_ref.h"
-
+#include "knowhere/log.h"
 namespace faiss {
 
 #if defined(__x86_64__)
@@ -130,7 +130,7 @@ fvec_hook(std::string& simd_type) {
 static int init_hook_ = []() {
     std::string simd_type;
     fvec_hook(simd_type);
-    std::cout << simd_type << std::endl;
+    KNOWHERE_INFO("simd type: {}", simd_type);
     return 0;
 }();
 

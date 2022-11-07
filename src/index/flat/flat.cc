@@ -17,47 +17,52 @@ class FlatIndexNode : public IndexNode {
         static_assert(std::is_same<T, faiss::IndexFlat>::value || std::is_same<T, faiss::IndexBinaryFlat>::value,
                       "not suppprt.");
     }
-    virtual Error
+    virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
         auto err = Train(dataset, cfg);
-        if (err != Error::success)
+        if (err != Status::success)
             return err;
         err = Add(dataset, cfg);
         return err;
     }
-    virtual Error
+    virtual Status
     Train(const DataSet&, const Config&) override {
-        return Error::success;
+        return Status::success;
     }
-    virtual Error
+    virtual Status
     Add(const DataSet& dataset, const Config& cfg) override {
         T* index = nullptr;
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
         auto metric = Str2FaissMetricType(f_cfg.metric_type);
-        if (!metric.has_value())
+        if (!metric.has_value()) {
+            KNOWHERE_DEBUG("please check metric type, {}.", f_cfg.metric_type);
             return metric.error();
+        }
         index = new (std::nothrow) T(f_cfg.dim, metric.value());
 
         if (index == nullptr) {
-            return Error::malloc_error;
+            KNOWHERE_DEBUG("memory malloc error.");
+            return Status::malloc_error;
         }
 
-        if (this->index_)
+        if (this->index_) {
             delete this->index_;
+            KNOWHERE_WARN("index not empty, deleted old index.");
+        }
         this->index_ = index;
-
         const void* x = dataset.GetTensor();
         const int64_t n = dataset.GetRows();
         if constexpr (std::is_same<T, faiss::IndexFlat>::value)
             index_->add(n, (const float*)x);
         if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value)
             index_->add(n, (const uint8_t*)x);
-        return Error::success;
+        return Status::success;
     }
-    virtual expected<DataSetPtr, Error>
+    virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
-            return unexpected(Error::empty_index);
+            KNOWHERE_WARN("search on empty index.");
+            return unexpected(Status::empty_index);
         }
 
         DataSetPtr results = std::make_shared<DataSet>();
@@ -83,10 +88,11 @@ class FlatIndexNode : public IndexNode {
                     }
                 }
             }
-        } catch (const std::exception&) {
+        } catch (const std::exception& e) {
             std::unique_ptr<int64_t[]> auto_delete_ids(ids);
             std::unique_ptr<float[]> auto_delete_dis(dis);
-            return unexpected(Error::faiss_inner_error);
+            KNOWHERE_WARN("error inner faiss, {}", e.what());
+            return unexpected(Status::faiss_inner_error);
         }
         results->SetDim(f_cfg.k);
         results->SetRows(nq);
@@ -95,7 +101,7 @@ class FlatIndexNode : public IndexNode {
         return results;
     }
 
-    virtual expected<DataSetPtr, Error>
+    virtual expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
         DataSetPtr results = std::make_shared<DataSet>();
         auto nq = dataset.GetRows();
@@ -110,8 +116,9 @@ class FlatIndexNode : public IndexNode {
                 }
                 results->SetTensor(xq);
                 return results;
-            } catch (const std::exception&) {
-                return unexpected(Error::faiss_inner_error);
+            } catch (const std::exception& e) {
+                KNOWHERE_WARN("error inner faiss, {}.", e.what());
+                return unexpected(Status::faiss_inner_error);
             }
         }
         if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
@@ -123,15 +130,16 @@ class FlatIndexNode : public IndexNode {
                 }
                 results->SetTensor(xq);
                 return results;
-            } catch (const std::exception&) {
-                return unexpected(Error::faiss_inner_error);
+            } catch (const std::exception& e) {
+                KNOWHERE_WARN("error inner faiss, {}.", e.what());
+                return unexpected(Status::faiss_inner_error);
             }
         }
     }
-    virtual Error
+    virtual Status
     Serialization(BinarySet& binset) const override {
         if (!index_)
-            return Error::empty_index;
+            return Status::empty_index;
         try {
             MemoryIOWriter writer;
             if constexpr (std::is_same<T, faiss::IndexFlat>::value)
@@ -143,12 +151,13 @@ class FlatIndexNode : public IndexNode {
                 binset.Append("FLAT", data, writer.rp);
             if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value)
                 binset.Append("BinaryIVF", data, writer.rp);
-            return Error::success;
-        } catch (const std::exception&) {
-            return Error::faiss_inner_error;
+            return Status::success;
+        } catch (const std::exception& e) {
+            KNOWHERE_WARN("error inner faiss, {}.", e.what());
+            return Status::faiss_inner_error;
         }
     }
-    virtual Error
+    virtual Status
     Deserialization(const BinarySet& binset) override {
         if (index_) {
             delete index_;
@@ -172,7 +181,7 @@ class FlatIndexNode : public IndexNode {
             faiss::IndexBinary* index = faiss::read_index_binary(&reader);
             index_ = static_cast<T*>(index);
         }
-        return Error::success;
+        return Status::success;
     }
 
     virtual std::unique_ptr<BaseConfig>

@@ -36,17 +36,19 @@ class IvfGpuIndexNode : public IndexNode {
         static_assert(std::is_same<T, faiss::IndexIVFFlat>::value || std::is_same<T, faiss::IndexIVFPQ>::value ||
                       std::is_same<T, faiss::IndexIVFScalarQuantizer>::value);
     }
-    virtual Error
+    virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
         auto err = Train(dataset, cfg);
-        if (err != Error::success)
+        if (err != Status::success)
             return err;
         return Add(dataset, cfg);
     }
-    virtual Error
+    virtual Status
     Train(const DataSet& dataset, const Config& cfg) override {
-        if (gpu_index_ && gpu_index_->is_trained)
-            return Error::index_already_trained;
+        if (gpu_index_ && gpu_index_->is_trained) {
+            KNOWHERE_WARN("index is already trained.");
+            return Status::index_already_trained;
+        }
 
         auto rows = dataset.GetRows();
         auto tensor = dataset.GetTensor();
@@ -58,32 +60,42 @@ class IvfGpuIndexNode : public IndexNode {
         }
 
         auto metric = Str2FaissMetricType(ivf_gpu_cfg.metric_type);
-        if (!metric.has_value())
+        if (!metric.has_value()) {
+            KNOWHERE_WARN("please check metric value, {}", ivf_gpu_cfg.metric_type);
             return metric.error();
+        }
         faiss::Index* gpu_index;
         try {
             auto qzr = new (std::nothrow) faiss::IndexFlat(ivf_gpu_cfg.dim, metric.value());
-            if (qzr == nullptr)
-                return Error::malloc_error;
+            if (qzr == nullptr) {
+                KNOWHERE_WARN("memory malloc error.");
+                return Status::malloc_error;
+            }
             std::unique_ptr<faiss::IndexFlat> auto_delele_qzr(qzr);
             T* host_index = nullptr;
             if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
                 host_index =
                     new (std::nothrow) faiss::IndexIVFFlat(qzr, ivf_gpu_cfg.dim, ivf_gpu_cfg.nlist, metric.value());
-                if (host_index == nullptr)
-                    return Error::malloc_error;
+                if (host_index == nullptr) {
+                    KNOWHERE_WARN("memory malloc error.");
+                    return Status::malloc_error;
+                }
             }
             if constexpr (std::is_same<T, faiss::IndexIVFPQ>::value) {
                 host_index = new (std::nothrow) faiss::IndexIVFPQ(qzr, ivf_gpu_cfg.dim, ivf_gpu_cfg.nlist,
                                                                   ivf_gpu_cfg.m, ivf_gpu_cfg.nbits, metric.value());
-                if (host_index == nullptr)
-                    return Error::malloc_error;
+                if (host_index == nullptr) {
+                    KNOWHERE_WARN("memory malloc error.");
+                    return Status::malloc_error;
+                }
             }
             if constexpr (std::is_same<T, faiss::IndexIVFScalarQuantizer>::value) {
                 host_index = new (std::nothrow) faiss::IndexIVFScalarQuantizer(
                     qzr, ivf_gpu_cfg.dim, ivf_gpu_cfg.nlist, faiss::QuantizerType::QT_8bit, metric.value());
-                if (host_index == nullptr)
-                    return Error::malloc_error;
+                if (host_index == nullptr) {
+                    KNOWHERE_WARN("memory malloc error.");
+                    return Status::malloc_error;
+                }
             }
             std::unique_ptr<T> auto_delete_host_index(host_index);
             gpu_index = faiss::gpu::index_cpu_to_gpu_multiple(this->res_, this->devs_, host_index);
@@ -92,27 +104,29 @@ class IvfGpuIndexNode : public IndexNode {
         } catch (std::exception& e) {
             if (gpu_index)
                 delete gpu_index;
-            return Error::faiss_inner_error;
+            KNOWHERE_WARN("faiss inner error, {}", e.what());
+            return Status::faiss_inner_error;
         }
         this->gpu_index_ = gpu_index;
-        return Error::success;
+        return Status::success;
     }
-    virtual Error
+    virtual Status
     Add(const DataSet& dataset, const Config& cfg) override {
         if (!gpu_index_)
-            return Error::empty_index;
+            return Status::empty_index;
         if (!gpu_index_->is_trained)
-            return Error::index_not_trained;
+            return Status::index_not_trained;
         auto rows = dataset.GetRows();
         auto tensor = dataset.GetTensor();
         try {
             gpu_index_->add(rows, (const float*)tensor);
         } catch (std::exception& e) {
-            return Error::faiss_inner_error;
+            KNOWHERE_WARN("faiss inner error, {}", e.what());
+            return Status::faiss_inner_error;
         }
-        return Error::success;
+        return Status::success;
     }
-    virtual expected<DataSetPtr, Error>
+    virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         auto ivf_gpu_cfg = static_cast<const typename KnowhereConfigType<T>::Type&>(cfg);
         if (auto ix = dynamic_cast<faiss::IndexReplicas*>(gpu_index_)) {
@@ -139,7 +153,8 @@ class IvfGpuIndexNode : public IndexNode {
         } catch (std::exception& e) {
             std::unique_ptr<float> auto_delete_dis(dis);
             std::unique_ptr<int64_t> auto_delete_ids(ids);
-            return unexpected(Error::faiss_inner_error);
+            KNOWHERE_WARN("faiss inner error, {}", e.what());
+            return unexpected(Status::faiss_inner_error);
         }
         auto results = std::make_shared<DataSet>();
         results->SetDim(ivf_gpu_cfg.k);
@@ -149,16 +164,16 @@ class IvfGpuIndexNode : public IndexNode {
         return results;
     }
 
-    virtual expected<DataSetPtr, Error>
+    virtual expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
-        return unexpected(Error::not_implemented);
+        return unexpected(Status::not_implemented);
     }
-    virtual Error
+    virtual Status
     Serialization(BinarySet& binset) const override {
         if (!this->gpu_index_)
-            return Error::empty_index;
+            return Status::empty_index;
         if (!this->gpu_index_->is_trained)
-            return Error::index_not_trained;
+            return Status::index_not_trained;
 
         try {
             MemoryIOWriter writer;
@@ -177,12 +192,13 @@ class IvfGpuIndexNode : public IndexNode {
             memcpy(buf + sizeof(dev_s), this->devs_.data(), sizeof(devs_[0]) * dev_s);
             binset.Append("device_ids", device_id_, sizeof(size_t) + sizeof(int) * dev_s);
         } catch (std::exception& e) {
-            return Error::faiss_inner_error;
+            KNOWHERE_WARN("faiss inner error, {}", e.what());
+            return Status::faiss_inner_error;
         }
 
-        return Error::success;
+        return Status::success;
     }
-    virtual Error
+    virtual Status
     Deserialization(const BinarySet& binset) override {
         auto binary = binset.GetByName("IVF");
         MemoryIOReader reader;
@@ -200,9 +216,10 @@ class IvfGpuIndexNode : public IndexNode {
                 this->res_.push_back(new (std::nothrow) faiss::gpu::StandardGpuResources);
             gpu_index_ = faiss::gpu::index_cpu_to_gpu_multiple(this->res_, this->devs_, index.get());
         } catch (std::exception& e) {
-            return Error::faiss_inner_error;
+            KNOWHERE_WARN("faiss inner error, {}", e.what());
+            return Status::faiss_inner_error;
         }
-        return Error::success;
+        return Status::success;
     }
 
     virtual std::unique_ptr<BaseConfig>

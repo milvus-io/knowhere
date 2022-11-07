@@ -18,12 +18,12 @@ pipeline {
     }
     stages {
         stage("Build"){
-           
+
             steps {
                 container("build"){
                     script{
                         def date = sh(returnStdout: true, script: 'date +%Y%m%d').trim()
-                        def gitShortCommit = sh(returnStdout: true, script: "echo ${env.GIT_COMMIT} | cut -b 1-7 ").trim()  
+                        def gitShortCommit = sh(returnStdout: true, script: "echo ${env.GIT_COMMIT} | cut -b 1-7 ").trim()
                         version="${env.CHANGE_ID}.${date}.${gitShortCommit}"
                         sh "./build.sh -d -t Release"
                         sh "cd python  && VERSION=${version} python3 setup.py bdist_wheel"
@@ -35,8 +35,8 @@ pipeline {
                         sh "echo ${knowhere_wheel} > knowhere.txt"
                         stash includes: 'knowhere.txt', name: 'knowhereWheel'
                     }
-                }   
-            } 
+                }
+            }
         }
         stage("Test"){
             steps {
@@ -51,8 +51,8 @@ pipeline {
                             }
                         }
                     }
-                    checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], 
-                    userRemoteConfigs: [[credentialsId: 'milvus-ci', url: 'https://github.com/milvus-io/knowhere-test.git']]])   
+                    checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [],
+                    userRemoteConfigs: [[credentialsId: 'milvus-ci', url: 'https://github.com/milvus-io/knowhere-test.git']]])
                     dir('tests'){
                       unarchive mapping: ["${knowhere_wheel}": "${knowhere_wheel}"]
                       sh "ls -lah"
@@ -69,8 +69,8 @@ pipeline {
                         archiveArtifacts artifacts: 'knowhere_ci.log', followSymlinks: false
                     }
                 }
-            }    
+            }
         }
-        
+
     }
 }

@@ -9,15 +9,15 @@ class HnswIndexNode : public IndexNode {
  public:
     HnswIndexNode() : index_(nullptr) {
     }
-    virtual Error
+    virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
         auto res = Train(dataset, cfg);
-        if (res != Error::success)
+        if (res != Status::success)
             return res;
         res = Add(dataset, cfg);
         return res;
     }
-    virtual Error
+    virtual Status
     Train(const DataSet& dataset, const Config& cfg) override {
         auto rows = dataset.GetRows();
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
@@ -28,23 +28,28 @@ class HnswIndexNode : public IndexNode {
         if (hnsw_cfg.metric_type == "IP") {
             space = new (std::nothrow) hnswlib::InnerProductSpace(hnsw_cfg.dim);
         }
-        if (space == NULL)
-            return Error::invalid_metric_type;
-
+        if (space == NULL) {
+            KNOWHERE_WARN("metric type not support in hnsw, {}.", hnsw_cfg.metric_type);
+            return Status::invalid_metric_type;
+        }
         auto index =
             new (std::nothrow) hnswlib::HierarchicalNSW<float>(space, rows, hnsw_cfg.M, hnsw_cfg.efConstruction);
-        if (index == nullptr)
-            return Error::malloc_error;
-        if (this->index_)
+        if (index == nullptr) {
+            KNOWHERE_WARN("memory malloc error.");
+            return Status::malloc_error;
+        }
+        if (this->index_) {
             delete this->index_;
+            KNOWHERE_WARN("index not empty, deleted old index.");
+        }
         this->index_ = index;
 
-        return Error::success;
+        return Status::success;
     }
-    virtual Error
+    virtual Status
     Add(const DataSet& dataset, const Config& cfg) override {
         if (!index_) {
-            return Error::empty_index;
+            return Status::empty_index;
         }
 
         auto rows = dataset.GetRows();
@@ -57,12 +62,13 @@ class HnswIndexNode : public IndexNode {
         for (int i = 1; i < rows; ++i) {
             index_->addPoint((static_cast<const float*>(tensor) + hnsw_cfg.dim * i), i);
         }
-        return Error::success;
+        return Status::success;
     }
-    virtual expected<DataSetPtr, Error>
+    virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
-            return unexpected(Error::empty_index);
+            KNOWHERE_WARN("search on empty index.");
+            return unexpected(Status::empty_index);
         }
 
         auto rows = dataset.GetRows();
@@ -109,10 +115,10 @@ class HnswIndexNode : public IndexNode {
         res->SetDistance(p_dist);
         return res;
     }
-    virtual expected<DataSetPtr, Error>
+    virtual expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
         if (!index_) {
-            return unexpected(Error::empty_index);
+            return unexpected(Status::empty_index);
         }
 
         auto dim = dataset.GetDim();
@@ -127,17 +133,19 @@ class HnswIndexNode : public IndexNode {
                 assert(id >= 0 && id < (int64_t)index_->cur_element_count);
                 memcpy(p_x + i * dim, index_->getDataByInternalId(id), dim * sizeof(float));
             }
-        } catch (...) {
+        } catch (std::exception& e) {
+            KNOWHERE_WARN("hnsw inner error, {}", e.what());
             std::unique_ptr<float> auto_delete_px(p_x);
+            return unexpected(Status::hnsw_inner_error);
         }
         auto res = std::make_shared<DataSet>();
         res->SetTensor(p_x);
         return res;
     }
-    virtual Error
+    virtual Status
     Serialization(BinarySet& binset) const override {
         if (!index_) {
-            return Error::empty_index;
+            return Status::empty_index;
         }
 
         try {
@@ -147,13 +155,14 @@ class HnswIndexNode : public IndexNode {
 
             binset.Append("HNSW", data, writer.rp);
 
-        } catch (...) {
-            return Error::hnsw_inner_error;
+        } catch (std::exception& e) {
+            KNOWHERE_WARN("hnsw inner error, {}", e.what());
+            return Status::hnsw_inner_error;
         }
 
-        return Error::success;
+        return Status::success;
     }
-    virtual Error
+    virtual Status
     Deserialization(const BinarySet& binset) override {
         if (index_)
             delete index_;
@@ -167,11 +176,12 @@ class HnswIndexNode : public IndexNode {
             hnswlib::SpaceInterface<float>* space = nullptr;
             index_ = new (std::nothrow) hnswlib::HierarchicalNSW<float>(space);
             index_->loadIndex(reader);
-        } catch (...) {
-            return Error::hnsw_inner_error;
+        } catch (std::exception& e) {
+            KNOWHERE_WARN("hnsw inner error, {}", e.what());
+            return Status::hnsw_inner_error;
         }
 
-        return Error::success;
+        return Status::success;
     }
 
     virtual std::unique_ptr<BaseConfig>

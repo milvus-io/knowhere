@@ -222,7 +222,7 @@ class Config {
         return json;
     }
 
-    static Error
+    static Status
     Load(Config& cfg, const Json& json, PARAM_TYPE type) {
         for (auto it = cfg.__DICT__.begin(); it != cfg.__DICT__.end(); ++it) {
             const auto& var = it->second;
@@ -231,21 +231,21 @@ class Config {
                 if (!(type & ptr->type))
                     continue;
                 if (json.find(it->first) == json.end() && !ptr->default_val.has_value()) {
-                    return Error::invalid_param_in_json;
+                    return Status::invalid_param_in_json;
                 }
                 if (json.find(it->first) == json.end()) {
                     *ptr->val = ptr->default_val.value();
                     continue;
                 }
                 if (!json[it->first].is_number_integer()) {
-                    return Error::type_conflict_in_json;
+                    return Status::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
                     auto v = json[it->first];
                     if (ptr->range.value().first <= v && v <= ptr->range.value().second) {
                         *ptr->val = v;
                     } else {
-                        return Error::out_of_range_in_json;
+                        return Status::out_of_range_in_json;
                     }
                 } else {
                     *ptr->val = json[it->first];
@@ -256,21 +256,21 @@ class Config {
                 if (!(type & ptr->type))
                     continue;
                 if (json.find(it->first) == json.end() && !ptr->default_val.has_value()) {
-                    return Error::invalid_param_in_json;
+                    return Status::invalid_param_in_json;
                 }
                 if (json.find(it->first) == json.end()) {
                     *ptr->val = ptr->default_val.value();
                     continue;
                 }
                 if (!json[it->first].is_number_float()) {
-                    return Error::type_conflict_in_json;
+                    return Status::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
                     auto v = json[it->first];
                     if (ptr->range.value().first <= v && v <= ptr->range.value().second) {
                         *ptr->val = v;
                     } else {
-                        return Error::out_of_range_in_json;
+                        return Status::out_of_range_in_json;
                     }
                 } else {
                     *ptr->val = json[it->first];
@@ -281,14 +281,14 @@ class Config {
                 if (!(type & ptr->type))
                     continue;
                 if (json.find(it->first) == json.end() && !ptr->default_val.has_value()) {
-                    return Error::invalid_param_in_json;
+                    return Status::invalid_param_in_json;
                 }
                 if (json.find(it->first) == json.end()) {
                     *ptr->val = ptr->default_val.value();
                     continue;
                 }
                 if (!json[it->first].is_string()) {
-                    return Error::type_conflict_in_json;
+                    return Status::type_conflict_in_json;
                 }
                 *ptr->val = json[it->first];
             }
@@ -297,14 +297,14 @@ class Config {
                 if (!(type & ptr->type))
                     continue;
                 if (json.find(it->first) == json.end() && !ptr->default_val.has_value()) {
-                    return Error::invalid_param_in_json;
+                    return Status::invalid_param_in_json;
                 }
                 if (json.find(it->first) == json.end()) {
                     *ptr->val = ptr->default_val.value();
                     continue;
                 }
                 if (!json[it->first].is_array()) {
-                    return Error::type_conflict_in_json;
+                    return Status::type_conflict_in_json;
                 }
                 for (auto&& i : json[it->first]) ptr->val->push_back(i);
             }
@@ -313,20 +313,20 @@ class Config {
                 if (!(type & ptr->type))
                     continue;
                 if (json.find(it->first) == json.end() && !ptr->default_val.has_value()) {
-                    return Error::invalid_param_in_json;
+                    return Status::invalid_param_in_json;
                 }
                 if (json.find(it->first) == json.end()) {
                     *ptr->val = ptr->default_val.value();
                     continue;
                 }
                 if (!json[it->first].is_boolean()) {
-                    return Error::type_conflict_in_json;
+                    return Status::type_conflict_in_json;
                 }
                 *ptr->val = json[it->first];
             }
         }
 
-        return Error::success;
+        return Status::success;
     }
 
     virtual ~Config() {

@@ -22,24 +22,26 @@ class GpuFlatIndexNode : public IndexNode {
  public:
     GpuFlatIndexNode() : gpu_index_(nullptr) {
     }
-    virtual Error
+    virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
         auto err = Train(dataset, cfg);
-        if (err != Error::success)
+        if (err != Status::success)
             return err;
         err = Add(dataset, cfg);
         return err;
     }
-    virtual Error
+    virtual Status
     Train(const DataSet& dataset, const Config& cfg) override {
-        return Error::success;
+        return Status::success;
     }
-    virtual Error
+    virtual Status
     Add(const DataSet& dataset, const Config& cfg) override {
         const GpuFlatConfig& f_cfg = static_cast<const GpuFlatConfig&>(cfg);
         auto metric = Str2FaissMetricType(f_cfg.metric_type);
-        if (!metric.has_value())
+        if (!metric.has_value()) {
+            KNOWHERE_WARN("metric type error, {}", f_cfg.metric_type);
             return metric.error();
+        }
 
         for (auto dev : f_cfg.gpu_ids) {
             this->devs_.push_back(dev);
@@ -56,17 +58,19 @@ class GpuFlatIndexNode : public IndexNode {
         } catch (const std::exception& e) {
             if (gpu_index)
                 delete gpu_index;
-            return Error::faiss_inner_error;
+            KNOWHERE_WARN("faiss inner error, {}", e.what());
+            return Status::faiss_inner_error;
         }
         if (this->gpu_index_)
             delete this->gpu_index_;
         this->gpu_index_ = gpu_index;
-        return Error::success;
+        return Status::success;
     }
-    virtual expected<DataSetPtr, Error>
+    virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!gpu_index_) {
-            return unexpected(Error::empty_index);
+            KNOWHERE_WARN("index not empty, deleted old index.");
+            return unexpected(Status::empty_index);
         }
 
         DataSetPtr results = std::make_shared<DataSet>();
@@ -83,7 +87,8 @@ class GpuFlatIndexNode : public IndexNode {
         } catch (const std::exception& e) {
             std::unique_ptr<int64_t[]> auto_delete_ids(ids);
             std::unique_ptr<float[]> auto_delete_dis(dis);
-            return unexpected(Error::faiss_inner_error);
+            KNOWHERE_WARN("faiss inner error, {}.", e.what());
+            return unexpected(Status::faiss_inner_error);
         }
 
         results->SetDim(f_cfg.k);
@@ -93,7 +98,7 @@ class GpuFlatIndexNode : public IndexNode {
         return results;
     }
 
-    virtual expected<DataSetPtr, Error>
+    virtual expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
         DataSetPtr results = std::make_shared<DataSet>();
         auto nq = dataset.GetRows();
@@ -107,15 +112,18 @@ class GpuFlatIndexNode : public IndexNode {
             }
             results->SetTensor(xq);
             return results;
-        } catch (...) {
-            return unexpected(Error::faiss_inner_error);
+        } catch (const std::exception& e) {
+            KNOWHERE_WARN("faiss inner error, {}.", e.what());
+            return unexpected(Status::faiss_inner_error);
         }
         return results;
     }
-    virtual Error
+    virtual Status
     Serialization(BinarySet& binset) const override {
-        if (!gpu_index_)
-            return Error::empty_index;
+        if (!gpu_index_) {
+            KNOWHERE_WARN("serilalization on empty index.");
+            return Status::empty_index;
+        }
         try {
             MemoryIOWriter writer;
             std::unique_ptr<faiss::Index> host_index(faiss::gpu::index_gpu_to_cpu(gpu_index_));
@@ -133,11 +141,12 @@ class GpuFlatIndexNode : public IndexNode {
             binset.Append("device_ids", device_id_, sizeof(size_t) + sizeof(int) * dev_s);
 
         } catch (const std::exception& e) {
-            return Error::faiss_inner_error;
+            KNOWHERE_WARN("faiss inner error, {}.", e.what());
+            return Status::faiss_inner_error;
         }
-        return Error::success;
+        return Status::success;
     }
-    virtual Error
+    virtual Status
     Deserialization(const BinarySet& binset) override {
         auto binary = binset.GetByName("FLAT");
         MemoryIOReader reader;
@@ -155,10 +164,11 @@ class GpuFlatIndexNode : public IndexNode {
                 this->res_.push_back(new (std::nothrow) faiss::gpu::StandardGpuResources);
             gpu_index_ = faiss::gpu::index_cpu_to_gpu_multiple(this->res_, this->devs_, index.get());
         } catch (const std::exception& e) {
-            return Error::faiss_inner_error;
+            KNOWHERE_WARN("faiss inner error, {}", e.what());
+            return Status::faiss_inner_error;
         }
 
-        return Error::success;
+        return Status::success;
     }
 
     virtual std::unique_ptr<BaseConfig>
