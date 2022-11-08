@@ -71,6 +71,7 @@ if(APPLE)
 endif()
 
 find_package(BLAS REQUIRED)
+find_package(LAPACK REQUIRED)
 
 if(__X86_64)
   add_library(faiss_avx512 OBJECT ${FAISS_AVX512_SRCS})
@@ -98,9 +99,10 @@ if(__X86_64)
     -Wno-unused-local-typedefs
     -Wno-unused-function -Wno-strict-aliasing>)
   target_link_libraries(
-    faiss PUBLIC OpenMP::OpenMP_CXX ${BLAS_LIBRARIES}
+    faiss PUBLIC OpenMP::OpenMP_CXX ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}
     faiss_avx512 knowhere_utils)
   target_compile_definitions(faiss PRIVATE FINTEGER=int)
 endif()
+
 
 
