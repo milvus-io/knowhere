@@ -36,6 +36,7 @@ INCLUDE_DIRS = [
     KNOWHERE_ROOT,
     os.path.join(KNOWHERE_ROOT, "include"),
     os.path.join(KNOWHERE_ROOT, "thirdparty"),
+    os.path.join(KNOWHERE_ROOT, "thirdparty/spdlog/include")
 ]
 
 LIBRARY_DIRS = [os.path.join(KNOWHERE_ROOT, "build")]

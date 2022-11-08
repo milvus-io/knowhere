@@ -72,17 +72,17 @@ class IndexWrap {
         idx = IndexFactory::Instance().Create(name);
     }
 
-    Error
+    Status
     Build(DataSetPtr dataset, const std::string& json) {
         return idx.Build(*dataset, knowhere::Json::parse(json));
     }
 
-    Error
+    Status
     Train(DataSetPtr dataset, const std::string& json) {
         return idx.Train(*dataset, knowhere::Json::parse(json));
     }
 
-    Error
+    Status
     Add(DataSetPtr dataset, const std::string& json) {
         return idx.Add(*dataset, knowhere::Json::parse(json));
     }
@@ -103,11 +103,12 @@ class IndexWrap {
         return nullptr;
     }
 
-    Error
+    Status
     Serialization(BinarySetPtr binset) {
         return idx.Serialization(*binset);
     }
-    Error
+
+    Status
     Deserialization(BinarySetPtr binset) {
         return idx.Deserialization(*binset);
     }
