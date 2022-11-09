@@ -56,7 +56,7 @@ jobs:
         with:
           name: release build
       - name: Create a Release          
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@v1.11.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -65,3 +65,4 @@ jobs:
           prerelease: true
           tag: "${{ github.event.inputs.tag }}"
           name: ${{ env.RELEASE_NAME }}
+          commit: "${{ github.ref_name }}"
