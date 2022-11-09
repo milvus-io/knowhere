@@ -78,7 +78,6 @@ class BinaryIDMAP : public VecIndex, public FaissBaseBinaryIndex {
     virtual void
     QueryByRangeImpl(int64_t n,
                      const uint8_t* data,
-                     float radius,
                      float*& distances,
                      int64_t*& labels,
                      size_t*& lims,

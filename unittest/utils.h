@@ -40,7 +40,6 @@ class DataGen {
     int dim = 128;
     int k = 10;
     int buffer_size = 16384;
-    float radius = 2.8;
     std::vector<float> xb;
     std::vector<float> xq;
     std::vector<uint8_t> xb_bin;

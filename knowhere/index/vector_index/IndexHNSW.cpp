@@ -25,6 +25,7 @@
 #include "hnswlib/hnswlib/hnswalg.h"
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/FaissIO.h"
+#include "index/vector_index/helpers/RangeUtil.h"
 
 namespace knowhere {
 
@@ -160,15 +161,13 @@ IndexHNSW::QueryByRange(const DatasetPtr& dataset, const Config& config, const f
     GET_TENSOR_DATA_DIM(dataset)
 
     utils::SetQueryOmpThread(config);
-    auto radius = GetMetaRadius(config);
 
     int64_t* p_id = nullptr;
     float* p_dist = nullptr;
     size_t* p_lims = nullptr;
 
     feder::hnsw::FederResultUniq feder_result;
-    QueryByRangeImpl(rows, reinterpret_cast<const float*>(p_data), radius, p_dist, p_id, p_lims, feder_result, config,
-                     bitset);
+    QueryByRangeImpl(rows, reinterpret_cast<const float*>(p_data), p_dist, p_id, p_lims, feder_result, config, bitset);
 
     // set visit_info json string into result dataset
     if (feder_result != nullptr) {
@@ -278,9 +277,8 @@ IndexHNSW::QueryImpl(int64_t n, const float* xq, int64_t k, float* distances, in
 }
 
 void
-IndexHNSW::QueryByRangeImpl(int64_t n, const float* xq, float radius, float*& distances, int64_t*& labels,
-                            size_t*& lims, feder::hnsw::FederResultUniq& feder, const Config& config,
-                            const faiss::BitsetView bitset) {
+IndexHNSW::QueryByRangeImpl(int64_t n, const float* xq, float*& distances, int64_t*& labels, size_t*& lims,
+                            feder::hnsw::FederResultUniq& feder, const Config& config, const faiss::BitsetView bitset) {
     if (CheckKeyInConfig(config, meta::TRACE_VISIT) && GetMetaTraceVisit(config)) {
         KNOWHERE_THROW_IF_NOT_MSG(n == 1, "NQ must be 1 when Feder tracing");
         feder = std::make_unique<feder::hnsw::FederResult>();
@@ -288,11 +286,15 @@ IndexHNSW::QueryByRangeImpl(int64_t n, const float* xq, float radius, float*& di
 
     size_t ef = GetIndexParamEf(config);
     hnswlib::SearchParam param{ef};
-    bool is_IP = (index_->metric_type_ == 1);  // InnerProduct: 1
 
-    if (!is_IP) {
-        radius *= radius;
+    float low_bound = GetMetaRadiusLowBound(config);
+    float high_bound = GetMetaRadiusHighBound(config);
+    bool is_L2 = (index_->metric_type_ == 0);  // L2: 0, InnerProduct: 1
+    if (is_L2) {
+        low_bound *= low_bound;
+        high_bound *= high_bound;
     }
+    float radius = (is_L2 ? high_bound : 1.0f - low_bound);
 
     std::vector<std::vector<int64_t>> result_id_array(n);
     std::vector<std::vector<float>> result_dist_array(n);
@@ -304,14 +306,20 @@ IndexHNSW::QueryByRangeImpl(int64_t n, const float* xq, float radius, float*& di
     for (unsigned int i = 0; i < n; ++i) {
         futures.push_back(pool_->push([&, index = i]() {
             auto single_query = xq + index * Dim();
-            auto rst =
-                index_->searchRange(single_query, (is_IP ? 1.0f - radius : radius), bitset, &param, feder);
-
-            for (auto& p : rst) {
-                result_dist_array[index].push_back(is_IP ? (1 - p.first) : p.first);
-                result_id_array[index].push_back(p.second);
+            auto rst = index_->searchRange(single_query, radius, bitset, &param, feder);
+            auto elem_cnt = rst.size();
+            result_dist_array[index].resize(elem_cnt);
+            result_id_array[index].resize(elem_cnt);
+            for (size_t j = 0; j < elem_cnt; j++) {
+                auto& p = rst[j];
+                result_dist_array[index][j] = (is_L2 ? p.first : (1 - p.first));
+                result_id_array[index][j] = p.second;
             }
             result_size[index] = rst.size();
+
+            // filter range search result
+            FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], !is_L2, low_bound,
+                                            high_bound);
         }));
     }
 
@@ -319,20 +327,7 @@ IndexHNSW::QueryByRangeImpl(int64_t n, const float* xq, float radius, float*& di
         future.get();
     }
 
-    std::partial_sum(result_size.begin(), result_size.end(), result_lims.begin() + 1);
-    LOG_KNOWHERE_DEBUG_ << "Range search radius: " << radius << ", result num: " << result_lims.back();
-
-    labels = new int64_t[result_lims.back()];
-    distances = new float[result_lims.back()];
-    lims = new size_t[n + 1];
-
-    for (int64_t i = 0; i < n; i++) {
-        size_t start = result_lims[i];
-        size_t size = result_lims[i + 1] - result_lims[i];
-        std::copy_n(result_id_array[i].data(), size, labels + start);
-        std::copy_n(result_dist_array[i].data(), size, distances + start);
-    }
-    std::copy_n(result_lims.data(), n + 1, lims);
+    GetRangeSearchResult(result_dist_array, result_id_array, !is_L2, n, low_bound, high_bound, distances, labels, lims);
 }
 
 void

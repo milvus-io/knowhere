@@ -78,17 +78,6 @@ struct DiskANNQueryConfig {
     NLOHMANN_DEFINE_TYPE_INTRUSIVE(DiskANNQueryConfig, k, search_list_size, beamwidth)
 };
 
-// duplicated with knowhere/index/vector_index/IndexDiskANNConfig.cpp:DiskANNQueryByRangeConfig
-struct DiskANNQueryByRangeConfig {
-    float radius;
-    uint64_t min_k;
-    uint64_t max_k;
-    uint32_t beamwidth;
-    float search_list_and_k_ratio;
-
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(DiskANNQueryByRangeConfig, radius, min_k, max_k, beamwidth, search_list_and_k_ratio)
-};
-
 class TopCandidateInfo {
  public:
     TopCandidateInfo() = default;

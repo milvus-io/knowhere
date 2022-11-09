@@ -27,6 +27,7 @@
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/FaissIO.h"
 #include "index/vector_index/helpers/IndexParameter.h"
+#include "index/vector_index/helpers/RangeUtil.h"
 #ifdef KNOWHERE_GPU_VERSION
 #include "index/vector_index/gpu/IndexGPUIDMAP.h"
 #include "index/vector_index/helpers/FaissGpuResourceMgr.h"
@@ -147,7 +148,6 @@ IDMAP::QueryByRange(const DatasetPtr& dataset,
     GET_TENSOR_DATA(dataset)
 
     utils::SetQueryOmpThread(config);
-    auto radius = GetMetaRadius(config);
 
     int64_t* p_id = nullptr;
     float* p_dist = nullptr;
@@ -166,7 +166,7 @@ IDMAP::QueryByRange(const DatasetPtr& dataset,
     };
 
     try {
-        QueryByRangeImpl(rows, reinterpret_cast<const float*>(p_data), radius, p_dist, p_id, p_lims, config, bitset);
+        QueryByRangeImpl(rows, reinterpret_cast<const float*>(p_data), p_dist, p_id, p_lims, config, bitset);
         return GenResultDataset(p_id, p_dist, p_lims);
     } catch (faiss::FaissException& e) {
         release_when_exception();
@@ -235,30 +235,24 @@ IDMAP::QueryImpl(int64_t n,
 void
 IDMAP::QueryByRangeImpl(int64_t n,
                         const float* data,
-                        float radius,
                         float*& distances,
                         int64_t*& labels,
                         size_t*& lims,
                         const Config& config,
                         const faiss::BitsetView bitset) {
     auto idmap_index = dynamic_cast<faiss::IndexFlat*>(index_.get());
-
-    if (index_->metric_type == faiss::MetricType::METRIC_L2) {
-        radius *= radius;
+    float low_bound = GetMetaRadiusLowBound(config);
+    float high_bound = GetMetaRadiusHighBound(config);
+    bool is_L2 = (idmap_index->metric_type == faiss::METRIC_L2);
+    if (is_L2) {
+        low_bound *= low_bound;
+        high_bound *= high_bound;
     }
+    float radius = (is_L2 ? high_bound : low_bound);
 
     faiss::RangeSearchResult res(n);
     idmap_index->range_search(n, reinterpret_cast<const float*>(data), radius, &res, bitset);
-
-    distances = res.distances;
-    labels = res.labels;
-    lims = res.lims;
-
-    LOG_KNOWHERE_DEBUG_ << "Range search radius: " << radius << ", result num: " << lims[n];
-
-    res.distances = nullptr;
-    res.labels = nullptr;
-    res.lims = nullptr;
+    GetRangeSearchResult(res, !is_L2, n, low_bound, high_bound, distances, labels, lims, bitset);
 }
 
 }  // namespace knowhere

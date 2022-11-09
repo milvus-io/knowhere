@@ -122,6 +122,8 @@ namespace diskann {
 
     DISKANN_DLLEXPORT size_t get_num_medoids() const noexcept;
 
+    DISKANN_DLLEXPORT diskann::Metric get_metric() const noexcept;
+
    protected:
     DISKANN_DLLEXPORT void use_medoids_data_as_centroids();
     DISKANN_DLLEXPORT void setup_thread_data(_u64 nthreads);

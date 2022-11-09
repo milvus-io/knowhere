@@ -90,8 +90,7 @@ class IVF : public VecIndex, public FaissBaseIndex {
     QueryImpl(int64_t, const float*, int64_t, float*, int64_t*, const Config&, const faiss::BitsetView);
 
     virtual void
-    QueryByRangeImpl(int64_t, const float*, float, float*&, int64_t*&, size_t*&, const Config&,
-                     const faiss::BitsetView);
+    QueryByRangeImpl(int64_t, const float*, float*&, int64_t*&, size_t*&, const Config&, const faiss::BitsetView);
 
     void
     SealImpl() override;

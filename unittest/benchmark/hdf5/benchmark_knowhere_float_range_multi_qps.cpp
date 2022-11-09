@@ -33,8 +33,7 @@ class Benchmark_knowhere_float_range_multi_qps : public Benchmark_knowhere, publ
             std::fflush(stdout);
         }
         printf("================================================================================\n");
-        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(),
-               std::string(index_type_).c_str());
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
     }
 
     void
@@ -53,8 +52,7 @@ class Benchmark_knowhere_float_range_multi_qps : public Benchmark_knowhere, publ
             std::fflush(stdout);
         }
         printf("================================================================================\n");
-        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(),
-               std::string(index_type_).c_str());
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
     }
 
  private:
@@ -63,7 +61,8 @@ class Benchmark_knowhere_float_range_multi_qps : public Benchmark_knowhere, publ
         auto worker = [&](int32_t idx_start, int32_t num) {
             for (int32_t i = 0; i < num; i++) {
                 knowhere::Config config = conf;
-                knowhere::SetMetaRadius(config, gt_radius_[idx_start + i]);
+                knowhere::SetMetaRadiusLowBound(config, 0.0f);
+                knowhere::SetMetaRadiusHighBound(config, gt_radius_[idx_start + i]);
                 knowhere::DatasetPtr ds_ptr =
                     knowhere::GenDataset(1, dim_, (const float*)xq_ + ((idx_start + i) * dim_));
                 index_->QueryByRange(ds_ptr, config, nullptr);
