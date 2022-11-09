@@ -65,3 +65,5 @@ jobs:
           prerelease: true
           tag: "${{ github.event.inputs.tag }}"
           name: ${{ env.RELEASE_NAME }}
+          # base on current workflow branch refs https://docs.github.com/cn/actions/learn-github-actions/environment-variables
+          commit: "${{env.GITHUB_REF_NAME}}"
