@@ -26,6 +26,10 @@ class SimpleIndexNode : public IndexNode {
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const {
         return unexpected(Status::not_implemented);
     }
+    expected<DataSetPtr, Status>
+    GetIndexMeta(const Config& cfg) const {
+        return unexpected(Status::not_implemented);
+    }
     Status
     Serialization(BinarySet& binset) const {
         return Status::not_implemented;
@@ -78,7 +82,6 @@ SimpleIndexNode::Train(const DataSet& dataset, const Config& cfg) {
 Status
 SimpleIndexNode::Add(const DataSet& dataset, const Config& cfg) {
     this->xb = (float*)dataset.GetTensor();
-    const SimpleConfig& s_cfg = static_cast<const SimpleConfig&>(cfg);
     this->dim = dataset.GetDim();
     this->nb = dataset.GetRows();
     return Status::success;
