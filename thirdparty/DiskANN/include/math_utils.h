@@ -10,6 +10,9 @@ namespace math_utils {
 
   float calc_distance(float* vec_1, float* vec_2, size_t dim);
 
+  void elkan_L2(const float* x, const float* y, size_t d, size_t nx, size_t ny,
+                uint32_t* ids);
+
   // compute l2-squared norms of data stored in row major num_points * dim,
   // needs
   // to be pre-allocated
