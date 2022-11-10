@@ -7,6 +7,8 @@ namespace knowhere {
 using ThreadedBuildPolicy = AnnoyIndexSingleThreadedBuildPolicy;
 class AnnoyIndexNode : public IndexNode {
  public:
+    AnnoyIndexNode(const Object& object) : index_(nullptr) {
+    }
     virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
         const AnnoyConfig& annoy_cfg = static_cast<const AnnoyConfig&>(cfg);
@@ -222,6 +224,6 @@ class AnnoyIndexNode : public IndexNode {
     std::string metric_type_;
 };
 
-KNOWHERE_REGISTER_GLOBAL(ANNOY, []() { return Index<AnnoyIndexNode>::Create(); });
+KNOWHERE_REGISTER_GLOBAL(ANNOY, [](const Object& object) { return Index<AnnoyIndexNode>::Create(object); });
 
 }  // namespace knowhere

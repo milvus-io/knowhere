@@ -20,7 +20,7 @@ GetGpuRes() {
 
 class GpuFlatIndexNode : public IndexNode {
  public:
-    GpuFlatIndexNode() : gpu_index_(nullptr) {
+    GpuFlatIndexNode(const Object& object) : gpu_index_(nullptr) {
     }
     virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
@@ -202,6 +202,6 @@ class GpuFlatIndexNode : public IndexNode {
     faiss::Index* gpu_index_;
 };
 
-KNOWHERE_REGISTER_GLOBAL(GPUFLAT, []() { return Index<GpuFlatIndexNode>::Create(); });
+KNOWHERE_REGISTER_GLOBAL(GPUFLAT, [](const Object& object) { return Index<GpuFlatIndexNode>::Create(object); });
 
 }  // namespace knowhere

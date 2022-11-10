@@ -7,7 +7,7 @@
 namespace knowhere {
 class HnswIndexNode : public IndexNode {
  public:
-    HnswIndexNode() : index_(nullptr) {
+    HnswIndexNode(const Object& object) : index_(nullptr) {
     }
     virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
@@ -219,6 +219,6 @@ class HnswIndexNode : public IndexNode {
     hnswlib::HierarchicalNSW<float>* index_;
 };
 
-KNOWHERE_REGISTER_GLOBAL(HNSW, []() { return Index<HnswIndexNode>::Create(); });
+KNOWHERE_REGISTER_GLOBAL(HNSW, [](const Object& object) { return Index<HnswIndexNode>::Create(object); });
 
 }  // namespace knowhere

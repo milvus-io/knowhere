@@ -32,7 +32,7 @@ struct KnowhereConfigType<faiss::IndexIVFScalarQuantizer> {
 template <typename T>
 class IvfGpuIndexNode : public IndexNode {
  public:
-    IvfGpuIndexNode() : devs_({}), res_{}, gpu_index_(nullptr) {
+    IvfGpuIndexNode(const Object& object) : devs_({}), res_{}, gpu_index_(nullptr) {
         static_assert(std::is_same<T, faiss::IndexIVFFlat>::value || std::is_same<T, faiss::IndexIVFPQ>::value ||
                       std::is_same<T, faiss::IndexIVFScalarQuantizer>::value);
     }
@@ -265,7 +265,13 @@ class IvfGpuIndexNode : public IndexNode {
     std::vector<faiss::gpu::GpuResourcesProvider*> res_;
     faiss::Index* gpu_index_;
 };
-KNOWHERE_REGISTER_GLOBAL(GPUIVFFLAT, []() { return Index<IvfGpuIndexNode<faiss::IndexIVFFlat>>::Create(); });
-KNOWHERE_REGISTER_GLOBAL(GPUIVFPQ, []() { return Index<IvfGpuIndexNode<faiss::IndexIVFPQ>>::Create(); });
-KNOWHERE_REGISTER_GLOBAL(GPUIVFSQ, []() { return Index<IvfGpuIndexNode<faiss::IndexIVFScalarQuantizer>>::Create(); });
+KNOWHERE_REGISTER_GLOBAL(GPUIVFFLAT, [](const Object& object) {
+    return Index<IvfGpuIndexNode<faiss::IndexIVFFlat>>::Create(object);
+});
+KNOWHERE_REGISTER_GLOBAL(GPUIVFPQ, [](const Object& object) {
+    return Index<IvfGpuIndexNode<faiss::IndexIVFPQ>>::Create(object);
+});
+KNOWHERE_REGISTER_GLOBAL(GPUIVFSQ, [](const Object& object) {
+    return Index<IvfGpuIndexNode<faiss::IndexIVFScalarQuantizer>>::Create(object);
+});
 }  // namespace knowhere
