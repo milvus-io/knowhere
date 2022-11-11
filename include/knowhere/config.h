@@ -177,6 +177,7 @@ class EntryAccess {
         entry->desc = desc;
         return *this;
     }
+
     EntryAccess&
     for_search() {
         entry->type |= PARAM_TYPE::SEARCH;

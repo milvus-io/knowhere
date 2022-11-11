@@ -23,15 +23,15 @@ InitLog() {
 int __init_log_status__ = InitLog();
 
 Index<IndexNode>
-IndexFactory::Create(const std::string& name) {
+IndexFactory::Create(const std::string& name, const Object& object) {
     auto& func_mapping_ = MapInstance();
     assert(func_mapping_.find(name) != func_mapping_.end());
     KNOWHERE_INFO("create knowhere index {}", name);
-    return func_mapping_[name]();
+    return func_mapping_[name](object);
 }
 
 const IndexFactory&
-IndexFactory::Register(const std::string& name, std::function<Index<IndexNode>()> func) {
+IndexFactory::Register(const std::string& name, std::function<Index<IndexNode>(const Object&)> func) {
     auto& func_mapping_ = MapInstance();
     func_mapping_[name] = func;
     return *this;

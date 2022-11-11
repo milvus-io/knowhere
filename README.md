@@ -90,4 +90,3 @@ rm -rf knowhere.egg-info
 rm knowhere/knowhere_wrap.cpp
 rm knowhere/swigknowhere.py
 ```
-

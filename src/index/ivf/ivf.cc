@@ -24,7 +24,7 @@ struct QuantizerT<faiss::IndexBinaryIVF> {
 template <typename T>
 class IvfIndexNode : public IndexNode {
  public:
-    IvfIndexNode() : index_(nullptr), qzr_(nullptr) {
+    IvfIndexNode(const Object& object) : index_(nullptr), qzr_(nullptr) {
         static_assert(std::is_same<T, faiss::IndexIVFFlat>::value || std::is_same<T, faiss::IndexIVFPQ>::value ||
                           std::is_same<T, faiss::IndexIVFScalarQuantizer>::value ||
                           std::is_same<T, faiss::IndexBinaryIVF>::value,
@@ -418,9 +418,15 @@ IvfIndexNode<T>::Deserialization(const BinarySet& binset) {
     return Status::success;
 }
 
-KNOWHERE_REGISTER_GLOBAL(IVFBIN, []() { return Index<IvfIndexNode<faiss::IndexBinaryIVF>>::Create(); });
-KNOWHERE_REGISTER_GLOBAL(IVFFLAT, []() { return Index<IvfIndexNode<faiss::IndexIVFFlat>>::Create(); });
-KNOWHERE_REGISTER_GLOBAL(IVFPQ, []() { return Index<IvfIndexNode<faiss::IndexIVFPQ>>::Create(); });
-KNOWHERE_REGISTER_GLOBAL(IVFSQ, []() { return Index<IvfIndexNode<faiss::IndexIVFScalarQuantizer>>::Create(); });
+KNOWHERE_REGISTER_GLOBAL(IVFBIN, [](const Object& object) {
+    return Index<IvfIndexNode<faiss::IndexBinaryIVF>>::Create(object);
+});
+KNOWHERE_REGISTER_GLOBAL(IVFFLAT,
+                         [](const Object& object) { return Index<IvfIndexNode<faiss::IndexIVFFlat>>::Create(object); });
+KNOWHERE_REGISTER_GLOBAL(IVFPQ,
+                         [](const Object& object) { return Index<IvfIndexNode<faiss::IndexIVFPQ>>::Create(object); });
+KNOWHERE_REGISTER_GLOBAL(IVFSQ, [](const Object& object) {
+    return Index<IvfIndexNode<faiss::IndexIVFScalarQuantizer>>::Create(object);
+});
 
 }  // namespace knowhere

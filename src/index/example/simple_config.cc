@@ -8,7 +8,7 @@ namespace knowhere {
 
 class SimpleIndexNode : public IndexNode {
  public:
-    SimpleIndexNode() : xb(nullptr), dim(0), nb(0) {
+    SimpleIndexNode(const Object& object) : xb(nullptr), dim(0), nb(0) {
     }
     Status
     Build(const DataSet& dataset, const Config& cfg);
@@ -123,5 +123,5 @@ SimpleIndexNode::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
     return unexpected(Status::not_implemented);
 }
 
-KNOWHERE_REGISTER_GLOBAL(SIMPLEINDEX, []() { return Index<SimpleIndexNode>(); });
+KNOWHERE_REGISTER_GLOBAL(SIMPLEINDEX, [](const Object& object) { return Index<SimpleIndexNode>::Create(object); });
 }  // namespace knowhere
