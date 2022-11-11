@@ -1152,7 +1152,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     };
 
     std::vector<std::pair<dist_t, labeltype>>
-    searchRange(const void* query_data, size_t range_k, float radius, const knowhere::BitsetView bitset,
+    searchRange(const void* query_data, float radius, const knowhere::BitsetView bitset,
                 const SearchParam* param = nullptr) const {
         if (cur_element_count == 0) {
             return {};
@@ -1192,13 +1192,9 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             top_candidates;
         size_t ef = param ? param->ef_ : this->ef_;
         if (!bitset.empty()) {
-            top_candidates = searchBaseLayerST<true, true>(currObj, query_data, std::max(ef, range_k), bitset);
+            top_candidates = searchBaseLayerST<true, true>(currObj, query_data, ef, bitset);
         } else {
-            top_candidates = searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, range_k), bitset);
-        }
-
-        while (top_candidates.size() > range_k) {
-            top_candidates.pop();
+            top_candidates = searchBaseLayerST<false, true>(currObj, query_data, ef, bitset);
         }
 
         if (top_candidates.size() == 0) {

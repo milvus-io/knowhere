@@ -38,8 +38,9 @@ template <typename T>
 struct Entry {};
 
 enum PARAM_TYPE {
-    SEARCH = 0x1,
-    TRAIN = 0x2,
+    TRAIN = 0x1,
+    SEARCH = 0x2,
+    RANGE_SEARCH = 0x4,
 };
 
 template <>
@@ -179,19 +180,28 @@ class EntryAccess {
     }
 
     EntryAccess&
-    for_search() {
-        entry->type |= PARAM_TYPE::SEARCH;
-        return *this;
-    }
-    EntryAccess&
     for_train() {
         entry->type |= PARAM_TYPE::TRAIN;
         return *this;
     }
+
+    EntryAccess&
+    for_search() {
+        entry->type |= PARAM_TYPE::SEARCH;
+        return *this;
+    }
+
+    EntryAccess&
+    for_range_search() {
+        entry->type |= PARAM_TYPE::RANGE_SEARCH;
+        return *this;
+    }
+
     EntryAccess&
     for_all() {
-        entry->type |= PARAM_TYPE::SEARCH;
         entry->type |= PARAM_TYPE::TRAIN;
+        entry->type |= PARAM_TYPE::SEARCH;
+        entry->type |= PARAM_TYPE::RANGE_SEARCH;
         return *this;
     }
 
@@ -350,6 +360,8 @@ class BaseConfig : public Config {
     CFG_INT dim;
     CFG_STRING metric_type;
     CFG_INT k;
+    CFG_FLOAT radius_low_bound;
+    CFG_FLOAT radius_high_bound;
     KNOHWERE_DECLARE_CONFIG(BaseConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(dim).description("vector dims.").for_all();
         KNOWHERE_CONFIG_DECLARE_FIELD(metric_type).set_default("L2").description("distance metric type.").for_all();
@@ -358,6 +370,14 @@ class BaseConfig : public Config {
             .description("search for top k similar vector.")
             .for_search()
             .for_train();
+        KNOWHERE_CONFIG_DECLARE_FIELD(radius_low_bound)
+            .set_default(-1.0)
+            .description("radius low bound for range search")
+            .for_range_search();
+        KNOWHERE_CONFIG_DECLARE_FIELD(radius_high_bound)
+            .set_default(std::numeric_limits<float>::max())
+            .description("radius high bound for range search")
+            .for_range_search();
     }
 };
 

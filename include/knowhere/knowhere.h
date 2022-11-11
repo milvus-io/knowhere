@@ -68,6 +68,8 @@ class IndexNode : public Object {
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const = 0;
     virtual expected<DataSetPtr, Status>
+    RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const = 0;
+    virtual expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const = 0;
     virtual Status
     Serialization(BinarySet& binset) const = 0;
@@ -221,6 +223,21 @@ class Index {
             return unexpected(res);
         }
         auto ex = this->node->Search(dataset, *cfg, bitset);
+        if (!ex.has_value()) {
+            KNOWHERE_DUMP_BACKTRACE;
+        }
+        return ex;
+    };
+
+    expected<DataSetPtr, Status>
+    RangeSearch(const DataSet& dataset, const Json& json, const BitsetView& bitset) const {
+        auto cfg = this->node->CreateConfig();
+        auto res = Config::Load(*cfg, json, knowhere::RANGE_SEARCH);
+        if (res != Status::success) {
+            KNOWHERE_DUMP_BACKTRACE
+            return unexpected(res);
+        }
+        auto ex = this->node->RangeSearch(dataset, *cfg, bitset);
         if (!ex.has_value()) {
             KNOWHERE_DUMP_BACKTRACE;
         }

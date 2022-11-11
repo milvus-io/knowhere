@@ -1,13 +1,12 @@
-#include <functional>
-#include <map>
-
 #include "common/metric.h"
+#include "common/range_util.h"
 #include "faiss/IndexBinaryFlat.h"
 #include "faiss/IndexFlat.h"
 #include "faiss/index_io.h"
 #include "index/flat/flat_config.h"
 #include "io/FaissIO.h"
 #include "knowhere/knowhere.h"
+
 namespace knowhere {
 
 template <typename T>
@@ -17,6 +16,7 @@ class FlatIndexNode : public IndexNode {
         static_assert(std::is_same<T, faiss::IndexFlat>::value || std::is_same<T, faiss::IndexBinaryFlat>::value,
                       "not suppprt.");
     }
+
     virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
         auto err = Train(dataset, cfg);
@@ -25,10 +25,12 @@ class FlatIndexNode : public IndexNode {
         err = Add(dataset, cfg);
         return err;
     }
+
     virtual Status
     Train(const DataSet&, const Config&) override {
         return Status::success;
     }
+
     virtual Status
     Add(const DataSet& dataset, const Config& cfg) override {
         T* index = nullptr;
@@ -58,6 +60,7 @@ class FlatIndexNode : public IndexNode {
             index_->add(n, (const uint8_t*)x);
         return Status::success;
     }
+
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
@@ -102,6 +105,52 @@ class FlatIndexNode : public IndexNode {
     }
 
     virtual expected<DataSetPtr, Status>
+    RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
+        if (!index_) {
+            KNOWHERE_WARN("range search on empty index.");
+            return unexpected(Status::empty_index);
+        }
+
+        const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
+        auto nq = dataset.GetRows();
+        auto xq = dataset.GetTensor();
+
+        int64_t* ids = nullptr;
+        float* distances = nullptr;
+        size_t* lims = nullptr;
+        try {
+            float low_bound = f_cfg.radius_low_bound;
+            float high_bound = f_cfg.radius_high_bound;
+
+            faiss::RangeSearchResult res(nq);
+            if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
+                bool is_L2 = (index_->metric_type == faiss::METRIC_L2);
+                if (is_L2) {
+                    low_bound *= low_bound;
+                    high_bound *= high_bound;
+                }
+                float radius = (is_L2 ? high_bound : low_bound);
+                index_->range_search(nq, (const float*)xq, radius, &res, bitset);
+                GetRangeSearchResult(res, !is_L2, nq, low_bound, high_bound, distances, ids, lims, bitset);
+            }
+            if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
+                index_->range_search(nq, (const uint8_t*)xq, high_bound, &res, bitset);
+                GetRangeSearchResult(res, false, nq, low_bound, high_bound, distances, ids, lims, bitset);
+            }
+        } catch (const std::exception& e) {
+            KNOWHERE_WARN("error inner faiss, {}", e.what());
+            return unexpected(Status::faiss_inner_error);
+        }
+
+        DataSetPtr results = std::make_shared<DataSet>();
+        results->SetRows(nq);
+        results->SetIds(ids);
+        results->SetDistance(distances);
+        results->SetLims(lims);
+        return results;
+    }
+
+    virtual expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
         DataSetPtr results = std::make_shared<DataSet>();
         auto nq = dataset.GetRows();
@@ -136,6 +185,7 @@ class FlatIndexNode : public IndexNode {
             }
         }
     }
+
     virtual Status
     Serialization(BinarySet& binset) const override {
         if (!index_)
@@ -157,6 +207,7 @@ class FlatIndexNode : public IndexNode {
             return Status::faiss_inner_error;
         }
     }
+
     virtual Status
     Deserialization(const BinarySet& binset) override {
         if (index_) {
@@ -188,18 +239,22 @@ class FlatIndexNode : public IndexNode {
     CreateConfig() const override {
         return std::make_unique<FlatConfig>();
     }
+
     virtual int64_t
     Dims() const override {
         return index_->d;
     }
+
     virtual int64_t
     Size() const override {
         return index_->ntotal * index_->d * sizeof(float);
     }
+
     virtual int64_t
     Count() const override {
         return index_->ntotal;
     }
+
     virtual std::string
     Type() const override {
         if constexpr (std::is_same<T, faiss::IndexFlat>::value)
@@ -207,6 +262,7 @@ class FlatIndexNode : public IndexNode {
         if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value)
             return "BINFLAT";
     }
+
     virtual ~FlatIndexNode() {
         if (index_)
             delete index_;

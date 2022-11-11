@@ -106,6 +106,11 @@ class AnnoyIndexNode : public IndexNode {
     }
 
     virtual expected<DataSetPtr, Status>
+    RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
+        return unexpected(Status::not_implemented);
+    }
+
+    virtual expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
         if (!index_) {
             return unexpected(Status::empty_index);
