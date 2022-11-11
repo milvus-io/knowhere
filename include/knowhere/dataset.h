@@ -10,12 +10,14 @@
 namespace knowhere {
 
 namespace meta {
+const std::string METRIC_TYPE = "metric_type";
 const std::string IDS = "ids";
 const std::string DISTANCE = "distance";
 const std::string LIMS = "lims";
 const std::string TENSOR = "tensor";
 const std::string ROWS = "rows";
 const std::string DIM = "dim";
+const std::string TOPK = "k";
 }  // namespace meta
 
 class DataSet {
