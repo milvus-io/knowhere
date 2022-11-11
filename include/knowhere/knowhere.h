@@ -10,11 +10,16 @@
 #include "knowhere/bitsetview.h"
 #include "knowhere/config.h"
 #include "knowhere/dataset.h"
+#include "knowhere/file_manager.h"
 #include "knowhere/log.h"
 namespace knowhere {
 
 class Object {
  public:
+    Object() = default;
+    Object(const std::nullptr_t value) {
+        assert(value == nullptr);
+    }
     inline uint32_t
     Ref() const {
         return ref_counts_.load(std::memory_order_relaxed);
@@ -27,9 +32,29 @@ class Object {
     IncRef() {
         ref_counts_.fetch_add(1, std::memory_order_relaxed);
     };
+    virtual ~Object(){};
 
  private:
     mutable std::atomic_uint32_t ref_counts_ = 1;
+};
+
+template <typename T>
+class Pack : public Object {
+    static_assert(std::is_same_v<T, std::shared_ptr<knowhere::FileManager>>,
+                  "IndexPack only support std::shared_ptr<knowhere::FileManager> by far.");
+
+ public:
+    Pack(){};
+    Pack(T package) : package_(package){};
+    T
+    GetPack() const {
+        return package_;
+    }
+    ~Pack() {
+    }
+
+ private:
+    T package_;
 };
 
 class IndexNode : public Object {
@@ -70,8 +95,8 @@ class Index {
     Index() : node(nullptr) {
     }
     static Index<T1>
-    Create() {
-        return Index(new (std::nothrow) T1());
+    Create(const Object& object) {
+        return Index(new (std::nothrow) T1(object));
     }
 
     template <typename T2>
@@ -274,15 +299,14 @@ class Index {
 class IndexFactory {
  public:
     Index<IndexNode>
-    Create(const std::string& name);
+    Create(const std::string& name, const Object& object = nullptr);
     const IndexFactory&
-    Register(const std::string& name, std::function<Index<IndexNode>()> func);
-
+    Register(const std::string& name, std::function<Index<IndexNode>(const Object&)> func);
     static IndexFactory&
     Instance();
 
  private:
-    typedef std::map<std::string, std::function<Index<IndexNode>()>> FuncMap;
+    typedef std::map<std::string, std::function<Index<IndexNode>(const Object&)>> FuncMap;
     IndexFactory();
     static FuncMap&
     MapInstance();

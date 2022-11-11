@@ -1,4 +1,8 @@
 knowhere_file_glob(GLOB_RECURSE KNOWHERE_UT_SRCS *.cc)
+if(NOT WITH_DISKANN)
+  knowhere_file_glob(GLOB_RECURSE KNOWHERE_DISKANN_TESTS test_diskann.cc)
+  list(REMOVE_ITEM KNOWHERE_UT_SRCS ${KNOWHERE_DISKANN_TESTS})
+endif()
 add_executable(knowhere_tests ${KNOWHERE_UT_SRCS})
 Include(FetchContent)
 FetchContent_Declare(
@@ -15,4 +19,4 @@ if(USE_CUDA)
   add_definitions(-DUSE_CUDA)
 endif()
 
-target_link_libraries(knowhere_tests PRIVATE Catch2::Catch2WithMain knowhere)
+target_link_libraries(knowhere_tests PRIVATE Catch2::Catch2WithMain knowhere stdc++fs)

@@ -21,6 +21,8 @@ enum class Status {
     annoy_inner_error = 11,
     hnsw_inner_error = 12,
     malloc_error = 13,
+    diskann_inner_error = 14,
+    diskann_file_error = 15,
 };
 
 template <typename E>

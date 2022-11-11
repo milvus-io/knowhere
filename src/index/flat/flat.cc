@@ -13,7 +13,7 @@ namespace knowhere {
 template <typename T>
 class FlatIndexNode : public IndexNode {
  public:
-    FlatIndexNode() : index_(nullptr) {
+    FlatIndexNode(const Object& object) : index_(nullptr) {
         static_assert(std::is_same<T, faiss::IndexFlat>::value || std::is_same<T, faiss::IndexBinaryFlat>::value,
                       "not suppprt.");
     }
@@ -216,8 +216,11 @@ class FlatIndexNode : public IndexNode {
     T* index_;
 };
 
-KNOWHERE_REGISTER_GLOBAL(FLAT, []() { return Index<FlatIndexNode<faiss::IndexFlat>>::Create(); });
-KNOWHERE_REGISTER_GLOBAL(BINFLAT, []() { return Index<FlatIndexNode<faiss::IndexBinaryFlat>>::Create(); });
+KNOWHERE_REGISTER_GLOBAL(FLAT,
+                         [](const Object& object) { return Index<FlatIndexNode<faiss::IndexFlat>>::Create(object); });
+KNOWHERE_REGISTER_GLOBAL(BINFLAT, [](const Object& object) {
+    return Index<FlatIndexNode<faiss::IndexBinaryFlat>>::Create(object);
+});
 
 }  // namespace knowhere
    //
