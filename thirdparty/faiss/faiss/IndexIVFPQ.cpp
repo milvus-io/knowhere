@@ -829,7 +829,9 @@ struct RangeSearchResults {
     inline void add(idx_t j, float dis, const BitsetView bitset = nullptr) {
         if (C::cmp(radius, dis)) {
             idx_t id = ids ? ids[j] : lo_build(key, j);
-            rres.add(dis, id);
+            if (bitset.empty() || !bitset.test(id)) {
+                rres.add(dis, id);
+            }
         }
     }
 };
