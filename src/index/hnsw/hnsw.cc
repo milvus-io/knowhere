@@ -3,12 +3,16 @@
 #include "hnswlib/hnswalg.h"
 #include "hnswlib/hnswlib.h"
 #include "index/hnsw/hnsw_config.h"
+#include "knowhere/ThreadPool.h"
 #include "knowhere/knowhere.h"
+
 namespace knowhere {
 class HnswIndexNode : public IndexNode {
  public:
     HnswIndexNode(const Object& object) : index_(nullptr) {
+        pool_ = ThreadPool::GetGlobalThreadPool();
     }
+
     virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
         auto res = Train(dataset, cfg);
@@ -17,6 +21,7 @@ class HnswIndexNode : public IndexNode {
         res = Add(dataset, cfg);
         return res;
     }
+
     virtual Status
     Train(const DataSet& dataset, const Config& cfg) override {
         auto rows = dataset.GetRows();
@@ -46,6 +51,7 @@ class HnswIndexNode : public IndexNode {
 
         return Status::success;
     }
+
     virtual Status
     Add(const DataSet& dataset, const Config& cfg) override {
         if (!index_) {
@@ -56,14 +62,14 @@ class HnswIndexNode : public IndexNode {
         auto tensor = dataset.GetTensor();
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
         index_->addPoint(tensor, 0);
-        if (hnsw_cfg.build_thread_num > 0)
-            omp_set_num_threads(hnsw_cfg.build_thread_num);
+
 #pragma omp parallel for
         for (int i = 1; i < rows; ++i) {
             index_->addPoint((static_cast<const float*>(tensor) + hnsw_cfg.dim * i), i);
         }
         return Status::success;
     }
+
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
@@ -72,7 +78,8 @@ class HnswIndexNode : public IndexNode {
         }
 
         auto rows = dataset.GetRows();
-        auto tensor = dataset.GetTensor();
+        const float* xq = static_cast<const float*>(dataset.GetTensor());
+
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
         auto dim = hnsw_cfg.dim;
         auto k = hnsw_cfg.k;
@@ -81,31 +88,33 @@ class HnswIndexNode : public IndexNode {
 
         hnswlib::SearchParam param{(size_t)hnsw_cfg.ef};
         bool transform = (index_->metric_type_ == 1);  // InnerProduct: 1
-        if (hnsw_cfg.query_thread_num > 0)
-            omp_set_num_threads(hnsw_cfg.query_thread_num);
-#pragma omp parallel for
+
+        std::vector<std::future<void>> futures;
+        futures.reserve(rows);
         for (unsigned int i = 0; i < rows; ++i) {
-            auto single_query = (float*)tensor + i * dim;
-            std::priority_queue<std::pair<float, hnswlib::labeltype>> rst;
-            auto dummy_stat = hnswlib::StatisticsInfo();
-            rst = index_->searchKnn(single_query, k, bitset, dummy_stat, &param);
-            size_t rst_size = rst.size();
-
-            auto p_single_dis = p_dist + i * k;
-            auto p_single_id = p_id + i * k;
-            int idx = rst_size - 1;
-            while (!rst.empty()) {
-                auto& it = rst.top();
-                p_single_dis[idx] = transform ? (1 - it.first) : it.first;
-                p_single_id[idx] = it.second;
-                rst.pop();
-                idx--;
-            }
-
-            for (idx = rst_size; idx < k; idx++) {
-                p_single_dis[idx] = float(1.0 / 0.0);
-                p_single_id[idx] = -1;
-            }
+            futures.push_back(pool_->push([&, index = i]() {
+                auto single_query = xq + index * dim;
+                auto dummy_stat = hnswlib::StatisticsInfo();
+                auto rst = index_->searchKnn(single_query, k, bitset, dummy_stat, &param);
+                size_t rst_size = rst.size();
+                auto p_single_dis = p_dist + index * k;
+                auto p_single_id = p_id + index * k;
+                size_t idx = rst_size - 1;
+                while (!rst.empty()) {
+                    auto& it = rst.top();
+                    p_single_dis[idx] = transform ? (1 - it.first) : it.first;
+                    p_single_id[idx] = it.second;
+                    rst.pop();
+                    idx--;
+                }
+                for (idx = rst_size; idx < (size_t)k; idx++) {
+                    p_single_dis[idx] = float(1.0 / 0.0);
+                    p_single_id[idx] = -1;
+                }
+            }));
+        }
+        for (auto& future : futures) {
+            future.get();
         }
 
         auto res = std::make_shared<DataSet>();
@@ -115,6 +124,7 @@ class HnswIndexNode : public IndexNode {
         res->SetDistance(p_dist);
         return res;
     }
+
     virtual expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
         if (!index_) {
@@ -142,6 +152,7 @@ class HnswIndexNode : public IndexNode {
         res->SetTensor(p_x);
         return res;
     }
+
     virtual Status
     Serialization(BinarySet& binset) const override {
         if (!index_) {
@@ -162,6 +173,7 @@ class HnswIndexNode : public IndexNode {
 
         return Status::success;
     }
+
     virtual Status
     Deserialization(const BinarySet& binset) override {
         if (index_)
@@ -188,28 +200,33 @@ class HnswIndexNode : public IndexNode {
     CreateConfig() const override {
         return std::make_unique<HnswConfig>();
     }
+
     virtual int64_t
     Dims() const override {
         if (!index_)
             return (*static_cast<size_t*>(index_->dist_func_param_));
         return 0;
     }
+
     virtual int64_t
     Size() const override {
         if (!index_)
             return 0;
         return index_->cal_size();
     }
+
     virtual int64_t
     Count() const override {
         if (!index_)
             return 0;
         return index_->cur_element_count;
     }
+
     virtual std::string
     Type() const override {
         return "HNSW";
     }
+
     virtual ~HnswIndexNode() {
         if (index_)
             delete index_;
@@ -217,6 +234,7 @@ class HnswIndexNode : public IndexNode {
 
  private:
     hnswlib::HierarchicalNSW<float>* index_;
+    std::shared_ptr<ThreadPool> pool_;
 };
 
 KNOWHERE_REGISTER_GLOBAL(HNSW, [](const Object& object) { return Index<HnswIndexNode>::Create(object); });
