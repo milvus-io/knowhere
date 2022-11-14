@@ -94,8 +94,7 @@ class HnswIndexNode : public IndexNode {
         for (unsigned int i = 0; i < rows; ++i) {
             futures.push_back(pool_->push([&, index = i]() {
                 auto single_query = xq + index * dim;
-                auto dummy_stat = hnswlib::StatisticsInfo();
-                auto rst = index_->searchKnn(single_query, k, bitset, dummy_stat, &param);
+                auto rst = index_->searchKnn(single_query, k, bitset, &param);
                 size_t rst_size = rst.size();
                 auto p_single_dis = p_dist + index * k;
                 auto p_single_id = p_id + index * k;
