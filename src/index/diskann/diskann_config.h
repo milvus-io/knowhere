@@ -2,6 +2,7 @@
 #define DISKANN_CONFIG_H
 
 #include "knowhere/config.h"
+
 namespace knowhere {
 class DiskANNConfig : public BaseConfig {
  public:

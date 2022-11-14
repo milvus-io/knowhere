@@ -8,20 +8,10 @@ class HnswConfig : public BaseConfig {
  public:
     int M;
     int efConstruction;
-    int build_thread_num;
-    int query_thread_num;
     int ef;
     KNOHWERE_DECLARE_CONFIG(HnswConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(M).description("hnsw M").set_default(16).for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(efConstruction).description("hnsw efConstruction").set_default(200).for_train();
-        KNOWHERE_CONFIG_DECLARE_FIELD(build_thread_num)
-            .description("hnsw build thread num")
-            .set_default(-1)
-            .for_train();
-        KNOWHERE_CONFIG_DECLARE_FIELD(query_thread_num)
-            .description("hnsw query thread num")
-            .set_default(-1)
-            .for_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(ef).description("hnsw ef").set_default(32).for_search();
     }
 };
