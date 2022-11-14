@@ -8,8 +8,10 @@
 #else
 #include "diskann/windows_aligned_file_reader.h"
 #endif
+#include "knowhere/ThreadPool.h"
 #include "knowhere/file_manager.h"
 #include "knowhere/knowhere.h"
+
 namespace knowhere {
 
 template <typename T>
@@ -24,37 +26,46 @@ class DiskANNIndexNode : public IndexNode {
         assert(diskann_index_pack != nullptr);
         file_manager_ = diskann_index_pack->GetPack();
     }
+
     virtual Status
     Build(const DataSet& dataset, const Config& cfg) {
         return Add(dataset, cfg);
     }
+
     virtual Status
     Train(const DataSet& dataset, const Config& cfg) {
         return Status::success;
     }
+
     virtual Status
     Add(const DataSet& dataset, const Config& cfg) override;
+
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
+
     virtual expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
         std::cout << "DiskANN doesn't support GetVectorById." << std::endl;
         return unexpected(Status::not_implemented);
     }
+
     virtual Status
     Serialization(BinarySet& binset) const override {
         std::cout << "DiskANN doesn't support Serialize." << std::endl;
         return Status::not_implemented;
     }
+
     virtual Status
     Deserialization(const BinarySet& binset) override {
         std::cout << "DiskANN doesn't support Deserialization." << std::endl;
         return Status::not_implemented;
     }
+
     virtual std::unique_ptr<BaseConfig>
     CreateConfig() const override {
         return std::make_unique<DiskANNConfig>();
     }
+
     Status
     SetFileManager(std::shared_ptr<FileManager> file_manager) {
         if (file_manager == nullptr) {
@@ -63,6 +74,7 @@ class DiskANNIndexNode : public IndexNode {
         file_manager_ = file_manager;
         return Status::success;
     }
+
     virtual int64_t
     Dims() const override {
         if (dim_.load() == -1) {
@@ -71,11 +83,13 @@ class DiskANNIndexNode : public IndexNode {
         }
         return dim_.load();
     }
+
     virtual int64_t
     Size() const override {
         std::cout << "Size() function has not been implemented yet." << std::endl;
         return 0;
     }
+
     virtual int64_t
     Count() const override {
         if (count_.load() == -1) {
@@ -84,6 +98,7 @@ class DiskANNIndexNode : public IndexNode {
         }
         return count_.load();
     }
+
     virtual std::string
     Type() const override {
         if (std::is_same_v<T, float>) {
@@ -104,6 +119,7 @@ class DiskANNIndexNode : public IndexNode {
         }
         return true;
     }
+
     bool
     AddFile(const std::string& filename) {
         if (!file_manager_->AddFile(filename)) {
@@ -112,8 +128,10 @@ class DiskANNIndexNode : public IndexNode {
         }
         return true;
     }
+
     bool
     Prepare(const Config& cfg);
+
     uint64_t
     GetCachedNodeNum(const float cache_dram_budget, const uint64_t data_dim, const uint64_t max_degree);
 
@@ -125,6 +143,7 @@ class DiskANNIndexNode : public IndexNode {
     std::unique_ptr<diskann::PQFlashIndex<T>> pq_flash_index_;
     std::atomic_int64_t dim_;
     std::atomic_int64_t count_;
+    std::shared_ptr<ThreadPool> pool_;
 };
 
 }  // namespace knowhere
@@ -132,6 +151,8 @@ class DiskANNIndexNode : public IndexNode {
 namespace knowhere {
 namespace {
 static constexpr float kCacheExpansionRate = 1.2;
+static constexpr uint32_t kLinuxAioMaxnrLimit = 65536;
+
 template <typename T>
 expected<T, Status>
 TryDiskANNCall(std::function<T()>&& diskann_call) {
@@ -269,6 +290,20 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
         }
     }
 
+    // set thread pool
+    auto num_thread_max_value = kLinuxAioMaxnrLimit / prep_conf.aio_maxnr;
+    pool_ = ThreadPool::GetGlobalThreadPool();
+
+    // The number of threads used for preparing and searching. Threads run in parallel and one thread handles one query
+    // at a time. More threads will result in higher aggregate query throughput, but will also use more IOs/second
+    // across the system, which may lead to higher per-query latency. So find the balance depending on the maximum
+    // number of IOPs supported by the SSD.
+    if (num_thread_max_value < pool_->size()) {
+        KNOWHERE_ERROR("The global thread pool is too large for DiskANN. Expected max: {}, actual: {}",
+                       num_thread_max_value, pool_->size());
+        return false;
+    }
+
     // load diskann pq code and meta info
     std::shared_ptr<AlignedFileReader> reader = nullptr;
 
@@ -398,8 +433,6 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
         std::cout << "Failed to load diskann." << std::endl;
         return unexpected(Status::empty_index);
     }
-    // set thread number
-    omp_set_num_threads(num_threads_);
 
     auto search_conf = static_cast<const DiskANNConfig&>(cfg);
     auto k = static_cast<uint64_t>(search_conf.k);
@@ -412,21 +445,17 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
     auto p_id = new int64_t[k * rows];
     auto p_dist = new float[k * rows];
 
-    bool all_searches_are_good = true;
-#pragma omp parallel for schedule(dynamic, 1)
+    std::vector<std::future<void>> futures;
+    futures.reserve(rows);
     for (int64_t row = 0; row < rows; ++row) {
-        auto one_search_stat = TryDiskANNCall<bool>([&]() -> bool {
-            pq_flash_index_->cached_beam_search(query_tensor + (row * dim), k, lsearch, p_id + (row * k),
-                                                p_dist + (row * k), beamwidth, false, nullptr, bitset);
-            return true;
-        });
-        if (!one_search_stat.has_value()) {
-            all_searches_are_good = false;
-        }
+        futures.push_back(pool_->push([&, index = row]() {
+            pq_flash_index_->cached_beam_search(query + (index * dim), k, query_conf.search_list_size,
+                                                p_id + (index * k), p_dist + (index * k), query_conf.beamwidth, false,
+                                                nullptr, bitset);
+        }));
     }
-
-    if (!all_searches_are_good) {
-        return unexpected(Status::diskann_inner_error);
+    for (auto& future : futures) {
+        future.get();
     }
 
     auto res = std::make_shared<DataSet>();
