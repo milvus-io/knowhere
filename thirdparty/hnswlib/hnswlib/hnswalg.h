@@ -84,9 +84,6 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         size_links_per_element_ = maxM_ * sizeof(tableint) + sizeof(linklistsizeint);
         mult_ = 1 / log(1.0 * M_);
         revSize_ = 1.0 / mult_;
-
-        level_stats_.resize(10);
-        stats_enable_ = false;
     }
 
     struct CompareByFirst {
@@ -143,9 +140,6 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     char* data_level0_memory_;
     char** linkLists_;
     std::vector<int> element_levels_;
-
-    std::vector<int> level_stats_;
-    bool stats_enable_ = false;
 
     size_t data_size_;
 
@@ -252,8 +246,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
     template <bool has_deletions, bool collect_metrics = false>
     std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
-    searchBaseLayerST(tableint ep_id, const void* data_point, size_t ef, const knowhere::BitsetView bitset,
-                      StatisticsInfo& stats) const {
+    searchBaseLayerST(tableint ep_id, const void* data_point, size_t ef, const knowhere::BitsetView bitset) const {
         VisitedList* vl = visited_list_pool_->getFreeVisitedList();
         vl_type* visited_array = vl->mass;
         vl_type visited_array_tag = vl->curV;
@@ -828,8 +821,6 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         if (linkLists_ == nullptr)
             throw std::runtime_error("Not enough memory: loadIndex failed to allocate linklists");
         element_levels_ = std::vector<int>(max_elements);
-        if (stats_enable_)
-            level_stats_ = std::vector<int>(maxlevel_ + 1, 0);
         revSize_ = 1.0 / mult_;
         ef_ = 10;
         for (size_t i = 0; i < cur_element_count; i++) {
@@ -837,14 +828,9 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             readBinaryPOD(input, linkListSize);
             if (linkListSize == 0) {
                 element_levels_[i] = 0;
-                if (stats_enable_)
-                    level_stats_[0]++;
-
                 linkLists_[i] = nullptr;
             } else {
                 element_levels_[i] = linkListSize / size_links_per_element_;
-                if (stats_enable_)
-                    level_stats_[element_levels_[i]]++;
                 linkLists_[i] = (char*)malloc(linkListSize);
                 if (linkLists_[i] == nullptr)
                     throw std::runtime_error("Not enough memory: loadIndex failed to allocate linklist");
@@ -1039,12 +1025,6 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         element_levels_[cur_c] = curlevel;
 
         std::unique_lock<std::mutex> templock(global);
-        if (stats_enable_) {
-            if (curlevel >= level_stats_.size()) {
-                level_stats_.resize(curlevel + 1, 0);
-            }
-            level_stats_[curlevel]++;
-        }
         int maxlevelcopy = maxlevel_;
         if (curlevel <= maxlevelcopy)
             templock.unlock();
@@ -1115,8 +1095,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     };
 
     std::priority_queue<std::pair<dist_t, labeltype>>
-    searchKnn(const void* query_data, size_t k, const knowhere::BitsetView bitset, StatisticsInfo& stats,
-              const SearchParam* param = nullptr) const {
+    searchKnn(const void* query_data, size_t k, const knowhere::BitsetView bitset, const SearchParam* param = nullptr)
+              const {
         std::priority_queue<std::pair<dist_t, labeltype>> result;
         if (cur_element_count == 0)
             return result;
@@ -1140,9 +1120,6 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                     tableint cand = datal[i];
                     if (cand < 0 || cand > max_elements_)
                         throw std::runtime_error("cand error");
-                    if (stats_enable_ && level == stats.target_level_) {
-                        stats.accessed_points_.push_back(cand);
-                    }
                     dist_t d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
 
                     if (d < curdist) {
@@ -1158,9 +1135,9 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             top_candidates;
         size_t ef = param ? param->ef_ : this->ef_;
         if (!bitset.empty()) {
-            top_candidates = searchBaseLayerST<true, true>(currObj, query_data, std::max(ef, k), bitset, stats);
+            top_candidates = searchBaseLayerST<true, true>(currObj, query_data, std::max(ef, k), bitset);
         } else {
-            top_candidates = searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), bitset, stats);
+            top_candidates = searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), bitset);
         }
 
         while (top_candidates.size() > k) {
@@ -1176,7 +1153,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
     std::vector<std::pair<dist_t, labeltype>>
     searchRange(const void* query_data, size_t range_k, float radius, const knowhere::BitsetView bitset,
-                StatisticsInfo& stats, const SearchParam* param = nullptr) const {
+                const SearchParam* param = nullptr) const {
         if (cur_element_count == 0) {
             return {};
         }
@@ -1215,9 +1192,9 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             top_candidates;
         size_t ef = param ? param->ef_ : this->ef_;
         if (!bitset.empty()) {
-            top_candidates = searchBaseLayerST<true, true>(currObj, query_data, std::max(ef, range_k), bitset, stats);
+            top_candidates = searchBaseLayerST<true, true>(currObj, query_data, std::max(ef, range_k), bitset);
         } else {
-            top_candidates = searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, range_k), bitset, stats);
+            top_candidates = searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, range_k), bitset);
         }
 
         while (top_candidates.size() > range_k) {
