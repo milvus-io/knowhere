@@ -1,9 +1,9 @@
 #include <omp.h>
 
+#include "common/thread_pool.h"
 #include "hnswlib/hnswalg.h"
 #include "hnswlib/hnswlib.h"
 #include "index/hnsw/hnsw_config.h"
-#include "knowhere/ThreadPool.h"
 #include "knowhere/knowhere.h"
 
 namespace knowhere {
