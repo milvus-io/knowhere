@@ -1,5 +1,6 @@
 #include <omp.h>
 
+#include "common/thread_pool.h"
 #include "diskann/aux_utils.h"
 #include "diskann/pq_flash_index.h"
 #include "index/diskann/diskann_config.h"
@@ -8,7 +9,6 @@
 #else
 #include "diskann/windows_aligned_file_reader.h"
 #endif
-#include "knowhere/ThreadPool.h"
 #include "knowhere/file_manager.h"
 #include "knowhere/knowhere.h"
 
