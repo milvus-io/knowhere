@@ -18,6 +18,8 @@ const std::string TENSOR = "tensor";
 const std::string ROWS = "rows";
 const std::string DIM = "dim";
 const std::string TOPK = "k";
+const std::string RADIUS_LOW_BOUND = "radius_low_bound";
+const std::string RADIUS_HIGH_BOUND = "radius_high_bound";
 }  // namespace meta
 
 class DataSet {

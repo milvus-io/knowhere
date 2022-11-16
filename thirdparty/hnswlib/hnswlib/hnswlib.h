@@ -201,7 +201,7 @@ class AlgorithmInterface {
     searchKnn(const void*, size_t, const knowhere::BitsetView, const SearchParam*) const = 0;
 
     virtual std::vector<std::pair<dist_t, labeltype>>
-    searchRange(const void*, size_t, float, const knowhere::BitsetView, const SearchParam*) const = 0;
+    searchRange(const void*, float, const knowhere::BitsetView, const SearchParam*) const = 0;
 
     // Return k nearest neighbor in the order of closer fist
     virtual std::vector<std::pair<dist_t, labeltype>>

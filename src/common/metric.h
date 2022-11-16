@@ -6,19 +6,21 @@
 #include <unordered_map>
 
 #include "faiss/MetricType.h"
+#include "knowhere/comp/metric_type.h"
 #include "knowhere/expected.h"
+
 namespace knowhere {
 
 inline expected<faiss::MetricType, Status>
 Str2FaissMetricType(std::string metric) {
     static const std::unordered_map<std::string, faiss::MetricType> metric_map = {
-        {"L2", faiss::MetricType::METRIC_L2},
-        {"IP", faiss::MetricType::METRIC_INNER_PRODUCT},
-        {"JACCARD", faiss::MetricType::METRIC_Jaccard},
-        {"TANIMOTO", faiss::MetricType::METRIC_Tanimoto},
-        {"HAMMING", faiss::MetricType::METRIC_Hamming},
-        {"SUBSTRUCTURE", faiss::MetricType::METRIC_Substructure},
-        {"SUPERSTRUCTURE", faiss::MetricType::METRIC_Superstructure},
+        {metric::L2, faiss::MetricType::METRIC_L2},
+        {metric::IP, faiss::MetricType::METRIC_INNER_PRODUCT},
+        {metric::HAMMING, faiss::MetricType::METRIC_Hamming},
+        {metric::JACCARD, faiss::MetricType::METRIC_Jaccard},
+        {metric::TANIMOTO, faiss::MetricType::METRIC_Tanimoto},
+        {metric::SUBSTRUCTURE, faiss::MetricType::METRIC_Substructure},
+        {metric::SUPERSTRUCTURE, faiss::MetricType::METRIC_Superstructure},
     };
 
     std::transform(metric.begin(), metric.end(), metric.begin(), toupper);
