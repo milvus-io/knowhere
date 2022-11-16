@@ -1,5 +1,6 @@
 #include <omp.h>
 
+#include "common/range_util.h"
 #include "common/thread_pool.h"
 #include "hnswlib/hnswalg.h"
 #include "hnswlib/hnswlib.h"
@@ -121,6 +122,74 @@ class HnswIndexNode : public IndexNode {
         res->SetRows(rows);
         res->SetIds(p_id);
         res->SetDistance(p_dist);
+        return res;
+    }
+
+    virtual expected<DataSetPtr, Status>
+    RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
+        if (!index_) {
+            KNOWHERE_WARN("range search on empty index.");
+            return unexpected(Status::empty_index);
+        }
+
+        auto nq = dataset.GetRows();
+        const float* xq = static_cast<const float*>(dataset.GetTensor());
+
+        auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
+        auto dim = hnsw_cfg.dim;
+
+        float low_bound = hnsw_cfg.radius_low_bound;
+        float high_bound = hnsw_cfg.radius_high_bound;
+        bool is_L2 = (index_->metric_type_ == 0);  // 0:L2, 1:IP
+        if (is_L2) {
+            low_bound *= low_bound;
+            high_bound *= high_bound;
+        }
+        float radius = (is_L2 ? high_bound : 1.0f - low_bound);
+
+        hnswlib::SearchParam param{(size_t)hnsw_cfg.ef};
+
+        int64_t* ids = nullptr;
+        float* dis = nullptr;
+        size_t* lims = nullptr;
+
+        std::vector<std::vector<int64_t>> result_id_array(nq);
+        std::vector<std::vector<float>> result_dist_array(nq);
+        std::vector<size_t> result_size(nq);
+        std::vector<size_t> result_lims(nq + 1);
+
+        std::vector<std::future<void>> futures;
+        futures.reserve(nq);
+        for (int64_t i = 0; i < nq; ++i) {
+            futures.push_back(pool_->push([&, index = i]() {
+                auto single_query = xq + index * dim;
+                auto rst = index_->searchRange(single_query, radius, bitset, &param);
+                auto elem_cnt = rst.size();
+                result_dist_array[index].resize(elem_cnt);
+                result_id_array[index].resize(elem_cnt);
+                for (size_t j = 0; j < elem_cnt; j++) {
+                    auto& p = rst[j];
+                    result_dist_array[index][j] = (is_L2 ? p.first : (1 - p.first));
+                    result_id_array[index][j] = p.second;
+                }
+                result_size[index] = rst.size();
+
+                // filter range search result
+                FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], !is_L2, low_bound,
+                                                high_bound);
+            }));
+        }
+        for (auto& future : futures) {
+            future.get();
+        }
+
+        GetRangeSearchResult(result_dist_array, result_id_array, !is_L2, nq, low_bound, high_bound, dis, ids, lims);
+
+        auto res = std::make_shared<DataSet>();
+        res->SetRows(nq);
+        res->SetIds(ids);
+        res->SetDistance(dis);
+        res->SetLims(lims);
         return res;
     }
 

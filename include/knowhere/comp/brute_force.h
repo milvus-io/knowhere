@@ -8,13 +8,13 @@ namespace knowhere {
 
 class BruteForce {
  public:
-    static DataSetPtr
+    static expected<DataSetPtr, Status>
     Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset, const Json& config,
-           const knowhere::BitsetView bitset);
+           const BitsetView& bitset);
 
-    static DataSetPtr
+    static expected<DataSetPtr, Status>
     RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_dataset, const Json& config,
-                const knowhere::BitsetView bitset);
+                const BitsetView& bitset);
 };
 
 }  // namespace knowhere

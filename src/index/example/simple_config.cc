@@ -19,7 +19,13 @@ class SimpleIndexNode : public IndexNode {
     expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const;
     expected<DataSetPtr, Status>
-    GetVectorByIds(const DataSet& dataset, const Config& cfg) const;
+    RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
+        return unexpected(Status::not_implemented);
+    }
+    expected<DataSetPtr, Status>
+    GetVectorByIds(const DataSet& dataset, const Config& cfg) const {
+        return unexpected(Status::not_implemented);
+    }
     Status
     Serialization(BinarySet& binset) const {
         return Status::not_implemented;
@@ -116,11 +122,6 @@ SimpleIndexNode::Search(const DataSet& dataset, const Config& cfg, const BitsetV
     ans->SetDim(dim);
     ans->SetRows(nq);
     return ans;
-}
-
-expected<DataSetPtr, Status>
-SimpleIndexNode::GetVectorByIds(const DataSet& dataset, const Config& cfg) const {
-    return unexpected(Status::not_implemented);
 }
 
 KNOWHERE_REGISTER_GLOBAL(SIMPLEINDEX, [](const Object& object) { return Index<SimpleIndexNode>::Create(object); });

@@ -19,27 +19,21 @@
 #include <vector>
 
 #include "common/metric.h"
+#include "common/range_util.h"
 #include "faiss/utils/BinaryDistance.h"
 #include "faiss/utils/distances.h"
 #include "knowhere/config.h"
-#include "knowhere/log.h"
+
 namespace knowhere {
 
 /** knowhere wrapper API to call faiss brute force search for all metric types
  */
 
-class BruteForiceConfig : public Config {
- public:
-    CFG_STRING metric_type;
-    CFG_INT k;
-    KNOHWERE_DECLARE_CONFIG(BruteForiceConfig) {
-        KNOWHERE_CONFIG_DECLARE_FIELD(metric_type).set_default("L2").description("distance metric type.").for_all();
-        KNOWHERE_CONFIG_DECLARE_FIELD(k).set_default(15).description("search for top k similar vector.").for_search();
-    }
-};
-DataSetPtr
+class BruteForceConfig : public BaseConfig {};
+
+expected<DataSetPtr, Status>
 BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset, const Json& config,
-                   const knowhere::BitsetView bitset) {
+                   const BitsetView& bitset) {
     auto xb = base_dataset->GetTensor();
     auto nb = base_dataset->GetRows();
     auto dim = base_dataset->GetDim();
@@ -47,17 +41,17 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
     auto xq = query_dataset->GetTensor();
     auto nq = query_dataset->GetRows();
 
-    BruteForiceConfig cfg;
+    BruteForceConfig cfg;
     Config::Load(cfg, config, knowhere::SEARCH);
 
     auto metric_type = Str2FaissMetricType(cfg.metric_type);
-    int topk = cfg.k;
+    if (!metric_type.has_value()) {
+        return unexpected(Status::invalid_metric_type);
+    }
 
+    int topk = cfg.k;
     auto labels = new int64_t[nq * topk];
     auto distances = new float[nq * topk];
-
-    if (!metric_type.has_value()) {
-    }
 
     auto faiss_metric_type = metric_type.value();
     switch (faiss_metric_type) {
@@ -102,7 +96,7 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
             break;
         }
         default:
-            KNOWHERE_THROW_MSG("BruteForce search not support metric type: " + cfg.metric_type);
+            return unexpected(Status::invalid_metric_type);
     }
 
     DataSetPtr results = std::make_shared<DataSet>();
@@ -113,56 +107,66 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
 
 /** knowhere wrapper API to call faiss brute force range search for all metric types
  */
-/*
-DataSetPtr
+expected<DataSetPtr, Status>
 BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_dataset, const Json& config,
-                        const BitsetView bitset) {
+                        const BitsetView& bitset) {
     auto xb = base_dataset->GetTensor();
     auto nb = base_dataset->GetRows();
     auto dim = base_dataset->GetDim();
 
     auto xq = query_dataset->GetTensor();
-    auto nq = query_dataset->GetRows()
-    auto nq = GetDatasetRows(query_dataset);
+    auto nq = query_dataset->GetRows();
 
-    auto metric_type = GetMetaMetricType(config);
-    auto radius = GetMetaRadius(config);
+    BruteForceConfig cfg;
+    Config::Load(cfg, config, knowhere::RANGE_SEARCH);
 
-    faiss::RangeSearchResult res(nq);
-    auto faiss_metric_type = GetFaissMetricType(metric_type);
-    switch (faiss_metric_type) {
-        case faiss::METRIC_L2:
-            faiss::range_search_L2sqr((const float*)xq, (const float*)xb, dim, nq, nb, radius * radius, &res, bitset);
-            break;
-        case faiss::METRIC_INNER_PRODUCT:
-            faiss::range_search_inner_product((const float*)xq, (const float*)xb, dim, nq, nb, radius, &res, bitset);
-            break;
-        case faiss::METRIC_Jaccard:
-            faiss::binary_range_search<faiss::CMin<float, int64_t>, float>(
-                faiss::METRIC_Jaccard, (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, radius, dim / 8, &res, bitset);
-            break;
-        case faiss::METRIC_Tanimoto:
-            faiss::binary_range_search<faiss::CMin<float, int64_t>, float>(
-                faiss::METRIC_Tanimoto, (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, radius, dim / 8, &res, bitset);
-            break;
-        case faiss::METRIC_Hamming:
-            faiss::binary_range_search<faiss::CMin<int, int64_t>, int>(faiss::METRIC_Hamming, (const uint8_t*)xq,
-                                                                       (const uint8_t*)xb, nq, nb, (int)radius, dim / 8,
-                                                                       &res, bitset);
-            break;
-        default:
-            KNOWHERE_THROW_MSG("BruteForce range search not support metric type: " + metric_type);
+    auto metric_type = Str2FaissMetricType(cfg.metric_type);
+    if (!metric_type.has_value()) {
+        return unexpected(Status::invalid_metric_type);
     }
 
-    auto result = GenResultDataset(res.labels, res.distances, res.lims);
+    auto low_bound = cfg.radius_low_bound;
+    auto high_bound = cfg.radius_high_bound;
 
-    LOG_KNOWHERE_DEBUG_ << "Range search radius: " << radius << ", result num: " << res.lims[nq];
+    faiss::RangeSearchResult res(nq);
+    auto faiss_metric_type = metric_type.value();
+    switch (faiss_metric_type) {
+        case faiss::METRIC_L2:
+            low_bound *= low_bound;
+            high_bound *= high_bound;
+            faiss::range_search_L2sqr((const float*)xq, (const float*)xb, dim, nq, nb, high_bound, &res, bitset);
+            break;
+        case faiss::METRIC_INNER_PRODUCT:
+            faiss::range_search_inner_product((const float*)xq, (const float*)xb, dim, nq, nb, low_bound, &res, bitset);
+            break;
+        case faiss::METRIC_Jaccard:
+            faiss::binary_range_search<faiss::CMin<float, int64_t>, float>(faiss::METRIC_Jaccard,
+                    (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, high_bound, dim / 8, &res, bitset);
+            break;
+        case faiss::METRIC_Tanimoto:
+            faiss::binary_range_search<faiss::CMin<float, int64_t>, float>(faiss::METRIC_Tanimoto,
+                    (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, high_bound, dim / 8, &res, bitset);
+            break;
+        case faiss::METRIC_Hamming:
+            faiss::binary_range_search<faiss::CMin<int, int64_t>, int>(faiss::METRIC_Hamming,
+                    (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, (int)high_bound, dim / 8, &res, bitset);
+            break;
+        default:
+            return unexpected(Status::invalid_metric_type);
+    }
 
-    res.labels = nullptr;
-    res.distances = nullptr;
-    res.lims = nullptr;
+    int64_t* labels = nullptr;
+    float* distances = nullptr;
+    size_t* lims = nullptr;
 
-    return result;
+    GetRangeSearchResult(res, (faiss_metric_type == faiss::METRIC_INNER_PRODUCT), nq, low_bound, high_bound,
+                         distances, labels, lims, bitset);
+
+    DataSetPtr results = std::make_shared<DataSet>();
+    results->SetRows(nq);
+    results->SetIds(labels);
+    results->SetDistance(distances);
+    results->SetLims(lims);
+    return results;
 }
-*/
 }  // namespace knowhere

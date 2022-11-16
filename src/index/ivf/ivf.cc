@@ -1,4 +1,5 @@
 #include "common/metric.h"
+#include "common/range_util.h"
 #include "faiss/IndexBinaryFlat.h"
 #include "faiss/IndexBinaryIVF.h"
 #include "faiss/IndexFlat.h"
@@ -9,6 +10,7 @@
 #include "index/ivf/ivf_config.h"
 #include "io/FaissIO.h"
 #include "knowhere/knowhere.h"
+
 namespace knowhere {
 
 template <typename T>
@@ -40,6 +42,8 @@ class IvfIndexNode : public IndexNode {
 
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
+    virtual expected<DataSetPtr, Status>
+    RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
     virtual expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override;
     virtual Status
@@ -267,6 +271,59 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
     return results;
 }
 
+template <typename T>
+expected<DataSetPtr, Status>
+IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
+    if (!this->index_) {
+        KNOWHERE_WARN("range search on empty index.");
+        return unexpected(Status::empty_index);
+    }
+    if (!this->index_->is_trained) {
+        KNOWHERE_WARN("index not trained.");
+        return unexpected(Status::index_not_trained);
+    }
+
+    auto nq = dataset.GetRows();
+    auto xq = dataset.GetTensor();
+    const IvfConfig& ivf_cfg = static_cast<const IvfConfig&>(cfg);
+
+    int parallel_mode = 0;
+    if (ivf_cfg.nprobe > 1 && nq <= 4) {
+        parallel_mode = 1;
+    }
+
+    float low_bound = ivf_cfg.radius_low_bound;
+    float high_bound = ivf_cfg.radius_high_bound;
+    bool is_L2 = (index_->metric_type == faiss::METRIC_L2);
+    if (is_L2) {
+        low_bound *= low_bound;
+        high_bound *= high_bound;
+    }
+    float radius = (is_L2 ? high_bound : low_bound);
+
+    int64_t* ids = nullptr;
+    float* distances = nullptr;
+    size_t* lims = nullptr;
+
+    try {
+        size_t max_codes = 0;
+        faiss::RangeSearchResult res(nq);
+        index_->range_search_thread_safe(nq, (const float*)xq, radius, &res, ivf_cfg.nprobe, parallel_mode, max_codes,
+                                         bitset);
+        GetRangeSearchResult(res, !is_L2, nq, low_bound, high_bound, distances, ids, lims, bitset);
+    } catch (const std::exception& e) {
+        KNOWHERE_WARN("faiss inner error, {}", e.what());
+        return unexpected(Status::faiss_inner_error);
+    }
+
+    auto results = std::make_shared<DataSet>();
+    results->SetRows(nq);
+    results->SetIds(ids);
+    results->SetDistance(distances);
+    results->SetLims(lims);
+    return results;
+}
+
 template <>
 expected<DataSetPtr, Status>
 IvfIndexNode<faiss::IndexBinaryIVF>::Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
@@ -305,6 +362,47 @@ IvfIndexNode<faiss::IndexBinaryIVF>::Search(const DataSet& dataset, const Config
         }
     }
     results->SetDistance(dis);
+    return results;
+}
+
+template <>
+expected<DataSetPtr, Status>
+IvfIndexNode<faiss::IndexBinaryIVF>::RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
+    if (!this->index_) {
+        KNOWHERE_WARN("range search on empty index.");
+        return unexpected(Status::empty_index);
+    }
+    if (!this->index_->is_trained) {
+        KNOWHERE_WARN("index not trained.");
+        return unexpected(Status::index_not_trained);
+    }
+
+    auto nq = dataset.GetRows();
+    auto xq = dataset.GetTensor();
+    auto ivf_bin_cfg = static_cast<const IvfBinConfig&>(cfg);
+
+    float low_bound = ivf_bin_cfg.radius_low_bound;
+    float high_bound = ivf_bin_cfg.radius_high_bound;
+
+    int64_t* ids = nullptr;
+    float* distances = nullptr;
+    size_t* lims = nullptr;
+
+    try {
+        index_->nprobe = ivf_bin_cfg.nprobe;
+        faiss::RangeSearchResult res(nq);
+        index_->range_search(nq, (const uint8_t*)xq, high_bound, &res, bitset);
+        GetRangeSearchResult(res, false, nq, low_bound, high_bound, distances, ids, lims, bitset);
+    } catch (const std::exception& e) {
+        KNOWHERE_WARN("faiss inner error, {}.", e.what());
+        return unexpected(Status::faiss_inner_error);
+    }
+
+    auto results = std::make_shared<DataSet>();
+    results->SetRows(nq);
+    results->SetIds(ids);
+    results->SetDistance(distances);
+    results->SetLims(lims);
     return results;
 }
 
