@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <future>
 #include <queue>
 #include <string>
 #include <unordered_set>
@@ -93,12 +94,19 @@ IndexHNSW::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) {
     }
 
     GET_TENSOR_DATA(dataset_ptr)
-    utils::SetBuildOmpThread(config);
+
     index_->addPoint(p_data, 0);
 
-#pragma omp parallel for
+    std::vector<std::future<void>> futures;
+    futures.reserve(rows - 1);
+
     for (int i = 1; i < rows; ++i) {
-        index_->addPoint((reinterpret_cast<const float*>(p_data) + Dim() * i), i);
+        futures.push_back(pool_->push(
+            [&, index = i] { index_->addPoint(reinterpret_cast<const float*>(p_data) + Dim() * index, index); }));
+    }
+
+    for (auto& future : futures) {
+        future.get();
     }
 }
 
