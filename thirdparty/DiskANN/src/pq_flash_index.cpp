@@ -1287,6 +1287,11 @@ namespace diskann {
     return max_degree;
   }
 
+  template<typename T>
+  diskann::Metric PQFlashIndex<T>::get_metric() const noexcept {
+    return metric;
+  }
+
 #ifdef EXEC_ENV_OLS
   template<typename T>
   char *PQFlashIndex<T>::getHeaderBytes() {
