@@ -1,5 +1,6 @@
 #include <omp.h>
 
+#include "common/range_util.h"
 #include "common/thread_pool.h"
 #include "diskann/aux_utils.h"
 #include "diskann/pq_flash_index.h"
@@ -42,6 +43,9 @@ class DiskANNIndexNode : public IndexNode {
 
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
+
+    virtual expected<DataSetPtr, Status>
+    RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
 
     virtual expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
@@ -440,18 +444,17 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
     auto beamwidth = static_cast<uint64_t>(search_conf.beamwidth);
 
     auto dim = search_conf.dim;
-    auto rows = dataset.GetRows();
-    auto query_tensor = static_cast<const T*>(dataset.GetTensor());
-    auto p_id = new int64_t[k * rows];
-    auto p_dist = new float[k * rows];
+    auto nq = dataset.GetRows();
+    auto xq = static_cast<const T*>(dataset.GetTensor());
+    auto p_id = new int64_t[k * nq];
+    auto p_dist = new float[k * nq];
 
     std::vector<std::future<void>> futures;
-    futures.reserve(rows);
-    for (int64_t row = 0; row < rows; ++row) {
+    futures.reserve(nq);
+    for (int64_t row = 0; row < nq; ++row) {
         futures.push_back(pool_->push([&, index = row]() {
-            pq_flash_index_->cached_beam_search(query + (index * dim), k, query_conf.search_list_size,
-                                                p_id + (index * k), p_dist + (index * k), query_conf.beamwidth, false,
-                                                nullptr, bitset);
+            pq_flash_index_->cached_beam_search(xq + (index * dim), k, lsearch, p_id + (index * k),
+                                                p_dist + (index * k), beamwidth, false, nullptr, bitset);
         }));
     }
     for (auto& future : futures) {
@@ -460,9 +463,71 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
 
     auto res = std::make_shared<DataSet>();
     res->SetDim(k);
-    res->SetRows(rows);
+    res->SetRows(nq);
     res->SetIds(p_id);
     res->SetDistance(p_dist);
+    return res;
+}
+
+template <typename T>
+expected<DataSetPtr, Status>
+DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
+    if (!is_prepared_.load()) {
+        const_cast<DiskANNIndexNode<T>*>(this)->Prepare(cfg);
+    }
+    if (!is_prepared_.load() || !pq_flash_index_) {
+        std::cout << "Failed to load diskann." << std::endl;
+        return unexpected(Status::empty_index);
+    }
+
+    auto search_conf = static_cast<const DiskANNConfig&>(cfg);
+    auto beamwidth = static_cast<uint64_t>(search_conf.beamwidth);
+    auto min_k = static_cast<uint64_t>(search_conf.min_k);
+    auto max_k = static_cast<uint64_t>(search_conf.max_k);
+    auto search_list_and_k_ratio = search_conf.search_list_and_k_ratio;
+
+    auto low_bound = search_conf.radius_low_bound;
+    auto high_bound = search_conf.radius_high_bound;
+    bool is_L2 = (pq_flash_index_->get_metric() == diskann::Metric::L2);
+    if (is_L2) {
+        low_bound *= low_bound;
+        high_bound *= high_bound;
+    }
+    float radius = (is_L2 ? high_bound : low_bound);
+
+    auto dim = search_conf.dim;
+    auto nq = dataset.GetRows();
+    auto xq = static_cast<const T*>(dataset.GetTensor());
+
+    int64_t* p_id = nullptr;
+    float* p_dist = nullptr;
+    size_t* p_lims = nullptr;
+
+    std::vector<std::vector<int64_t>> result_id_array(nq);
+    std::vector<std::vector<float>> result_dist_array(nq);
+
+    std::vector<std::future<void>> futures;
+    futures.reserve(nq);
+    for (int64_t row = 0; row < nq; ++row) {
+        futures.push_back(pool_->push([&, index = row]() {
+            std::vector<int64_t> indices;
+            std::vector<float> distances;
+            pq_flash_index_->range_search(xq + (index * dim), radius, min_k, max_k, result_id_array[index],
+                                          result_dist_array[index], beamwidth, search_list_and_k_ratio, bitset);
+            // filter range search result
+            FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], !is_L2, low_bound,
+                                            high_bound);
+        }));
+    }
+    for (auto& future : futures) {
+        future.get();
+    }
+
+    auto res = std::make_shared<DataSet>();
+    res->SetRows(nq);
+    res->SetIds(p_id);
+    res->SetDistance(p_dist);
+    res->SetLims(p_lims);
     return res;
 }
 
