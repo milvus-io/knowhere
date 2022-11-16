@@ -305,6 +305,7 @@ int generate_pq_pivots(const float *passed_train_data, size_t num_train,
 
   full_pivot_data.reset(new float[num_centers * dim]);
 
+#pragma omp parallel for schedule(dynamic)
   for (size_t i = 0; i < num_pq_chunks; i++) {
     size_t cur_chunk_size = chunk_offsets[i + 1] - chunk_offsets[i];
 
@@ -503,6 +504,7 @@ int generate_pq_data_from_pivots(const std::string data_file,
       }
     }
 
+#pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < num_pq_chunks; i++) {
       size_t cur_chunk_size = chunk_offsets[i + 1] - chunk_offsets[i];
       if (cur_chunk_size == 0)
@@ -515,23 +517,20 @@ int generate_pq_data_from_pivots(const std::string data_file,
       std::unique_ptr<uint32_t[]> closest_center =
           std::make_unique<uint32_t[]>(cur_blk_size);
 
-#pragma omp parallel for schedule(static, 8192)
       for (int64_t j = 0; j < (_s64) cur_blk_size; j++) {
         for (uint64_t k = 0; k < cur_chunk_size; k++)
           cur_data[j * cur_chunk_size + k] =
               block_data_float[j * dim + chunk_offsets[i] + k];
       }
 
-#pragma omp parallel for schedule(static, 1)
       for (int64_t j = 0; j < (_s64) num_centers; j++) {
         std::memcpy(cur_pivot_data.get() + j * cur_chunk_size,
                     full_pivot_data.get() + j * dim + chunk_offsets[i],
                     cur_chunk_size * sizeof(float));
       }
 
-      math_utils::compute_closest_centers(cur_data.get(), cur_blk_size,
-                                          cur_chunk_size, cur_pivot_data.get(),
-                                          num_centers, 1, closest_center.get());
+      math_utils::elkan_L2(cur_data.get(), cur_pivot_data.get(), cur_chunk_size, cur_blk_size,
+                           num_centers, closest_center.get());
 
 #pragma omp parallel for schedule(static, 8192)
       for (int64_t j = 0; j < (_s64) cur_blk_size; j++) {
