@@ -5,6 +5,7 @@
 #include "hnswlib/hnswalg.h"
 #include "hnswlib/hnswlib.h"
 #include "index/hnsw/hnsw_config.h"
+#include "knowhere/comp/metric_type.h"
 #include "knowhere/knowhere.h"
 
 namespace knowhere {
@@ -26,15 +27,14 @@ class HnswIndexNode : public IndexNode {
     virtual Status
     Train(const DataSet& dataset, const Config& cfg) override {
         auto rows = dataset.GetRows();
+        auto dim = dataset.GetDim();
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
         hnswlib::SpaceInterface<float>* space = NULL;
-        if (hnsw_cfg.metric_type == "L2") {
-            space = new (std::nothrow) hnswlib::L2Space(hnsw_cfg.dim);
-        }
-        if (hnsw_cfg.metric_type == "IP") {
-            space = new (std::nothrow) hnswlib::InnerProductSpace(hnsw_cfg.dim);
-        }
-        if (space == NULL) {
+        if (hnsw_cfg.metric_type == metric::L2) {
+            space = new (std::nothrow) hnswlib::L2Space(dim);
+        } else if (hnsw_cfg.metric_type == metric::IP) {
+            space = new (std::nothrow) hnswlib::InnerProductSpace(dim);
+        } else {
             KNOWHERE_WARN("metric type not support in hnsw, {}.", hnsw_cfg.metric_type);
             return Status::invalid_metric_type;
         }
@@ -60,13 +60,14 @@ class HnswIndexNode : public IndexNode {
         }
 
         auto rows = dataset.GetRows();
+        auto dim = dataset.GetDim();
         auto tensor = dataset.GetTensor();
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
         index_->addPoint(tensor, 0);
 
 #pragma omp parallel for
         for (int i = 1; i < rows; ++i) {
-            index_->addPoint((static_cast<const float*>(tensor) + hnsw_cfg.dim * i), i);
+            index_->addPoint((static_cast<const float*>(tensor) + dim * i), i);
         }
         return Status::success;
     }
@@ -79,10 +80,10 @@ class HnswIndexNode : public IndexNode {
         }
 
         auto rows = dataset.GetRows();
+        auto dim = dataset.GetDim();
         const float* xq = static_cast<const float*>(dataset.GetTensor());
 
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
-        auto dim = hnsw_cfg.dim;
         auto k = hnsw_cfg.k;
         auto p_id = new int64_t[k * rows];
         auto p_dist = new float[k * rows];
@@ -133,11 +134,10 @@ class HnswIndexNode : public IndexNode {
         }
 
         auto nq = dataset.GetRows();
+        auto dim = dataset.GetDim();
         const float* xq = static_cast<const float*>(dataset.GetTensor());
 
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
-        auto dim = hnsw_cfg.dim;
-
         float low_bound = hnsw_cfg.radius_low_bound;
         float high_bound = hnsw_cfg.radius_high_bound;
         bool is_L2 = (index_->metric_type_ == 0);  // 0:L2, 1:IP

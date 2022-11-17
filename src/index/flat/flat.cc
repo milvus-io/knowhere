@@ -40,7 +40,7 @@ class FlatIndexNode : public IndexNode {
             KNOWHERE_DEBUG("please check metric type, {}.", f_cfg.metric_type);
             return metric.error();
         }
-        index = new (std::nothrow) T(f_cfg.dim, metric.value());
+        index = new (std::nothrow) T(dataset.GetDim(), metric.value());
 
         if (index == nullptr) {
             KNOWHERE_DEBUG("memory malloc error.");
@@ -154,14 +154,14 @@ class FlatIndexNode : public IndexNode {
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
         DataSetPtr results = std::make_shared<DataSet>();
         auto nq = dataset.GetRows();
+        auto dim = dataset.GetDim();
         auto in_ids = dataset.GetIds();
-        const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
         if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
             try {
-                float* xq = new (std::nothrow) float[nq * f_cfg.dim];
+                float* xq = new (std::nothrow) float[nq * dim];
                 for (int64_t i = 0; i < nq; i++) {
                     int64_t id = in_ids[i];
-                    index_->reconstruct(id, xq + i * f_cfg.dim);
+                    index_->reconstruct(id, xq + i * dim);
                 }
                 results->SetTensor(xq);
                 return results;
@@ -172,10 +172,10 @@ class FlatIndexNode : public IndexNode {
         }
         if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
             try {
-                uint8_t* xq = new (std::nothrow) uint8_t[nq * f_cfg.dim / 8];
+                uint8_t* xq = new (std::nothrow) uint8_t[nq * dim / 8];
                 for (int64_t i = 0; i < nq; i++) {
                     int64_t id = in_ids[i];
-                    index_->reconstruct(id, xq + i * f_cfg.dim / 8);
+                    index_->reconstruct(id, xq + i * dim / 8);
                 }
                 results->SetTensor(xq);
                 return results;
