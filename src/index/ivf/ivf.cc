@@ -154,28 +154,29 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
         return Status::invalid_metric_type;
     decltype(this->qzr_) qzr = nullptr;
     decltype(this->index_) index = nullptr;
+    auto dim = dataset.GetDim();
     if constexpr (std::is_same<faiss::IndexIVFFlat, T>::value) {
         const IvfFlatConfig& ivf_flat_cfg = static_cast<const IvfFlatConfig&>(cfg);
-        qzr = new (std::nothrow) typename QuantizerT<T>::type(ivf_flat_cfg.dim, metric.value());
-        index = new (std::nothrow) T(qzr, ivf_flat_cfg.dim, ivf_flat_cfg.nlist, metric.value());
+        qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
+        index = new (std::nothrow) T(qzr, dim, ivf_flat_cfg.nlist, metric.value());
     }
     if constexpr (std::is_same<faiss::IndexIVFPQ, T>::value) {
         const IvfPqConfig& ivf_pq_cfg = static_cast<const IvfPqConfig&>(cfg);
-        qzr = new (std::nothrow) typename QuantizerT<T>::type(ivf_pq_cfg.dim, metric.value());
+        qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
         index =
-            new (std::nothrow) T(qzr, ivf_pq_cfg.dim, ivf_pq_cfg.nlist, ivf_pq_cfg.m, ivf_pq_cfg.nbits, metric.value());
+            new (std::nothrow) T(qzr, dim, ivf_pq_cfg.nlist, ivf_pq_cfg.m, ivf_pq_cfg.nbits, metric.value());
     }
     if constexpr (std::is_same<faiss::IndexIVFScalarQuantizer, T>::value) {
         const IvfSqConfig& ivf_sq_cfg = static_cast<const IvfSqConfig&>(cfg);
-        qzr = new (std::nothrow) typename QuantizerT<T>::type(ivf_sq_cfg.dim, metric.value());
+        qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
         index =
-            new (std::nothrow) T(qzr, ivf_sq_cfg.dim, ivf_sq_cfg.nlist, faiss::QuantizerType::QT_8bit, metric.value());
+            new (std::nothrow) T(qzr, dim, ivf_sq_cfg.nlist, faiss::QuantizerType::QT_8bit, metric.value());
     }
 
     if constexpr (std::is_same<faiss::IndexBinaryIVF, T>::value) {
         const IvfBinConfig& ivf_bin_cfg = static_cast<const IvfBinConfig&>(cfg);
-        qzr = new typename QuantizerT<T>::type(ivf_bin_cfg.dim, metric.value());
-        index = new (std::nothrow) T(qzr, ivf_bin_cfg.dim, ivf_bin_cfg.nlist, metric.value());
+        qzr = new typename QuantizerT<T>::type(dim, metric.value());
+        index = new (std::nothrow) T(qzr, dim, ivf_bin_cfg.nlist, metric.value());
     }
 
     if (qzr == nullptr || index == nullptr) {
@@ -414,15 +415,16 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
     if (!this->index_->is_trained)
         return unexpected(Status::index_not_trained);
     auto rows = dataset.GetRows();
+    auto dim = dataset.GetDim();
     const IvfConfig& ivf_cfg = static_cast<const IvfConfig&>(cfg);
-    float* p_x(new (std::nothrow) float[ivf_cfg.dim * rows]);
+    float* p_x(new (std::nothrow) float[dim * rows]);
     index_->make_direct_map(true);
     auto p_ids = dataset.GetIds();
     try {
         for (int64_t i = 0; i < rows; i++) {
             int64_t id = p_ids[i];
             assert(id >= 0 && id < index_->ntotal);
-            index_->reconstruct(id, p_x + i * ivf_cfg.dim);
+            index_->reconstruct(id, p_x + i * dim);
         }
     } catch (const std::exception& e) {
         std::unique_ptr<float> p_x_auto_delete(p_x);
@@ -444,15 +446,16 @@ IvfIndexNode<faiss::IndexBinaryIVF>::GetVectorByIds(const DataSet& dataset, cons
     if (!this->index_->is_trained)
         return unexpected(Status::index_not_trained);
     auto rows = dataset.GetRows();
+    auto dim = dataset.GetDim();
     const IvfConfig& ivf_cfg = static_cast<const IvfConfig&>(cfg);
-    uint8_t* p_x(new (std::nothrow) uint8_t[ivf_cfg.dim * rows / 8]);
+    uint8_t* p_x(new (std::nothrow) uint8_t[dim * rows / 8]);
     index_->make_direct_map(true);
     auto p_ids = dataset.GetIds();
     try {
         for (int64_t i = 0; i < rows; i++) {
             int64_t id = p_ids[i];
             assert(id >= 0 && id < index_->ntotal);
-            index_->reconstruct(id, p_x + i * ivf_cfg.dim / 8);
+            index_->reconstruct(id, p_x + i * dim / 8);
         }
     } catch (const std::exception& e) {
         std::unique_ptr<uint8_t> p_x_auto_delete(p_x);

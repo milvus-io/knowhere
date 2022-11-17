@@ -7,7 +7,6 @@ TEST_CASE("Test config json parse", "[config]") {
     SECTION("check flat index config") {
         knowhere::FlatConfig cfg;
         knowhere::Config::Load(cfg, json, knowhere::TRAIN);
-        CHECK(cfg.dim == 128);
         CHECK(cfg.metric_type == "L2");
     }
 }

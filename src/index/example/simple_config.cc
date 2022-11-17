@@ -79,7 +79,7 @@ Status
 SimpleIndexNode::Add(const DataSet& dataset, const Config& cfg) {
     this->xb = (float*)dataset.GetTensor();
     const SimpleConfig& s_cfg = static_cast<const SimpleConfig&>(cfg);
-    this->dim = s_cfg.dim;
+    this->dim = dataset.GetDim();
     this->nb = dataset.GetRows();
     return Status::success;
 }
