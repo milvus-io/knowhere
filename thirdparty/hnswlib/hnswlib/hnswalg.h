@@ -13,7 +13,7 @@
 #include "knowhere/index/vector_index/helpers/FaissIO.h"
 #include "visited_list_pool.h"
 
-#if defined (__SSE__)
+#if defined(__SSE__)
 #include <immintrin.h>
 #define USE_PREFETCH
 #endif
@@ -255,9 +255,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         if (feder_result != nullptr) {
             feder_result->visit_info_.AddLevelVisitRecord(0);
         }
-        VisitedList* vl = visited_list_pool_->getFreeVisitedList();
-        vl_type* visited_array = vl->mass;
-        vl_type visited_array_tag = vl->curV;
+
+        std::vector<bool> visited(cur_element_count);
 
         std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
             top_candidates;
@@ -275,7 +274,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             candidate_set.emplace(-lowerBound, ep_id);
         }
 
-        visited_array[ep_id] = visited_array_tag;
+        visited[ep_id] = true;
 
         while (!candidate_set.empty()) {
             std::pair<dist_t, tableint> current_node_pair = candidate_set.top();
@@ -295,23 +294,15 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             }
 
 #ifdef USE_PREFETCH
-            _mm_prefetch((char*)(visited_array + *(data + 1)), _MM_HINT_T0);
-            _mm_prefetch((char*)(visited_array + *(data + 1) + 64), _MM_HINT_T0);
-            _mm_prefetch(data_level0_memory_ + (*(data + 1)) * size_data_per_element_ + offsetData_, _MM_HINT_T0);
-            _mm_prefetch((char*)(data + 2), _MM_HINT_T0);
+            for (size_t j = 1; j <= size; ++j) {
+                _mm_prefetch(getDataByInternalId(data[j]), _MM_HINT_T0);
+            }
 #endif
 
             for (size_t j = 1; j <= size; j++) {
                 int candidate_id = *(data + j);
-                // if (candidate_id == 0) continue;
-#ifdef USE_PREFETCH
-                _mm_prefetch((char*)(visited_array + *(data + j + 1)), _MM_HINT_T0);
-                _mm_prefetch(data_level0_memory_ + (*(data + j + 1)) * size_data_per_element_ + offsetData_,
-                             _MM_HINT_T0);  ////////////
-#endif
-                if (!(visited_array[candidate_id] == visited_array_tag)) {
-                    visited_array[candidate_id] = visited_array_tag;
-
+                if (!visited[candidate_id]) {
+                    visited[candidate_id] = true;
                     char* currObj1 = (getDataByInternalId(candidate_id));
                     dist_t dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
                     if (feder_result != nullptr) {
@@ -322,12 +313,6 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
                     if (top_candidates.size() < ef || lowerBound > dist) {
                         candidate_set.emplace(-dist, candidate_id);
-#ifdef USE_PREFETCH
-                        _mm_prefetch(data_level0_memory_ + candidate_set.top().second * size_data_per_element_ +
-                                         offsetLevel0_,  ///////////
-                                     _MM_HINT_T0);       ////////////////////////
-#endif
-
                         if (!has_deletions || !bitset.test((int64_t)candidate_id))
                             top_candidates.emplace(dist, candidate_id);
 
@@ -347,7 +332,6 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             }
         }
 
-        visited_list_pool_->releaseVisitedList(vl);
         return top_candidates;
     }
 
@@ -1148,8 +1132,12 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                 int size = getListCount(data);
                 metric_hops++;
                 metric_distance_computations += size;
-
                 tableint* datal = (tableint*)(data + 1);
+#if defined(USE_PREFETCH)
+                for (int i = 0; i < size; ++i) {
+                    _mm_prefetch(getDataByInternalId(datal[i]), _MM_HINT_T0);
+                }
+#endif
                 for (int i = 0; i < size; i++) {
                     tableint cand = datal[i];
                     if (cand < 0 || cand > max_elements_)
