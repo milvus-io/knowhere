@@ -71,6 +71,8 @@ class IndexNode : public Object {
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const = 0;
     virtual expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const = 0;
+    virtual expected<DataSetPtr, Status>
+    GetIndexMeta(const Config& cfg) const = 0;
     virtual Status
     Serialization(BinarySet& binset) const = 0;
     virtual Status
@@ -96,6 +98,7 @@ class Index {
 
     Index() : node(nullptr) {
     }
+
     static Index<T1>
     Create(const Object& object) {
         return Index(new (std::nothrow) T1(object));
@@ -177,7 +180,6 @@ class Index {
         if (res != Status::success) {
             KNOWHERE_DUMP_BACKTRACE
         }
-
         return res;
     }
 
@@ -194,7 +196,6 @@ class Index {
         if (res != Status::success) {
             KNOWHERE_DUMP_BACKTRACE
         }
-
         return res;
     }
 
@@ -210,7 +211,6 @@ class Index {
         if (res != Status::success) {
             KNOWHERE_DUMP_BACKTRACE
         }
-
         return res;
     };
 
@@ -257,6 +257,21 @@ class Index {
             KNOWHERE_DUMP_BACKTRACE;
         }
         return ex;
+    };
+
+    expected<DataSetPtr, Status>
+    GetIndexMeta(const Json& json) const {
+        auto cfg = this->node->CreateConfig();
+        auto res = Config::Load(*cfg, json, knowhere::FEDER);
+        if (res != Status::success) {
+            KNOWHERE_DUMP_BACKTRACE
+            return unexpected(res);
+        }
+        auto ex = this->node->GetIndexMeta(*cfg);
+        if (!ex.has_value()) {
+            KNOWHERE_DUMP_BACKTRACE;
+        }
+        return ex.value();
     };
 
     Status

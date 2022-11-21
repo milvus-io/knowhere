@@ -799,7 +799,8 @@ namespace diskann {
   void PQFlashIndex<T>::cached_beam_search(
       const T *query1, const _u64 k_search, const _u64 l_search, _s64 *indices,
       float *distances, const _u64 beam_width, const bool use_reorder_data,
-      QueryStats *stats, knowhere::BitsetView bitset_view) {
+      QueryStats *stats, const knowhere::feder::diskann::FederResultUniq& feder,
+      knowhere::BitsetView bitset_view) {
     ThreadData<T> data = this->thread_data.pop();
     while (data.scratch.sector_scratch == nullptr) {
       this->thread_data.wait_for_push_notify();
@@ -1006,6 +1007,13 @@ namespace diskann {
         if (bitset_view.empty() || !bitset_view.test(cached_nhood.first)) {
           full_retset.push_back(
               Neighbor((unsigned) cached_nhood.first, cur_expanded_dist, true));
+
+          // add top candidate info into feder result
+          if (feder != nullptr) {
+            feder->visit_info_.AddTopCandidateInfo(cached_nhood.first,
+                                                   cur_expanded_dist);
+            feder->id_set_.insert(cached_nhood.first);
+          }
         }
         _u64      nnbrs = cached_nhood.second.first;
         unsigned *node_nbrs = cached_nhood.second.second;
@@ -1021,6 +1029,14 @@ namespace diskann {
         // process prefetched nhood
         for (_u64 m = 0; m < nnbrs; ++m) {
           unsigned id = node_nbrs[m];
+
+          // add neighbor info into feder result
+          if (feder != nullptr) {
+            feder->visit_info_.AddTopCandidateNeighbor(cached_nhood.first, id,
+                                                       dist_scratch[m]);
+            feder->id_set_.insert(id);
+          }
+
           if (visited.find(id) != visited.end()) {
             continue;
           } else {
@@ -1081,6 +1097,12 @@ namespace diskann {
         if (bitset_view.empty() || !bitset_view.test(frontier_nhood.first)) {
           full_retset.push_back(
               Neighbor(frontier_nhood.first, cur_expanded_dist, true));
+
+          // add top candidate info into feder result
+          if (feder != nullptr) {
+            feder->visit_info_.AddTopCandidateInfo(frontier_nhood.first, cur_expanded_dist);
+            feder->id_set_.insert(frontier_nhood.first);
+          }
         }
         unsigned *node_nbrs = (node_buf + 1);
         // compute node_nbrs <-> query dist in PQ space
@@ -1095,6 +1117,14 @@ namespace diskann {
         // process prefetch-ed nhood
         for (_u64 m = 0; m < nnbrs; ++m) {
           unsigned id = node_nbrs[m];
+
+          // add neighbor info into feder result
+          if (feder != nullptr) {
+            feder->visit_info_.AddTopCandidateNeighbor(frontier_nhood.first, id,
+                                                       dist_scratch[m]);
+            feder->id_set_.insert(frontier_nhood.first);
+          }
+
           if (visited.find(id) != visited.end()) {
             continue;
           } else {
@@ -1244,7 +1274,7 @@ namespace diskann {
         x = std::numeric_limits<float>::max();
       this->cached_beam_search(query1, l_search, l_k_ratio * l_search,
                                indices.data(), distances.data(), beam_width,
-                               false, stats, bitset_view);
+                               false, stats, nullptr, bitset_view);
       for (_u32 i = 0; i < l_search; i++) {
         if (indices[i] == -1) {
           res_count = i;
@@ -1285,6 +1315,16 @@ namespace diskann {
   template<typename T>
   _u64 PQFlashIndex<T>::get_max_degree() const noexcept {
     return max_degree;
+  }
+
+  template<typename T>
+  _u32* PQFlashIndex<T>::get_medoids() const noexcept {
+    return medoids;
+  }
+
+  template<typename T>
+  size_t PQFlashIndex<T>::get_num_medoids() const noexcept {
+    return num_medoids;
   }
 
   template<typename T>

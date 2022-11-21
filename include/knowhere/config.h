@@ -41,6 +41,7 @@ enum PARAM_TYPE {
     TRAIN = 0x1,
     SEARCH = 0x2,
     RANGE_SEARCH = 0x4,
+    FEDER = 0x8,
 };
 
 template <>
@@ -194,6 +195,12 @@ class EntryAccess {
     EntryAccess&
     for_range_search() {
         entry->type |= PARAM_TYPE::RANGE_SEARCH;
+        return *this;
+    }
+
+    EntryAccess&
+    for_feder() {
+        entry->type |= PARAM_TYPE::FEDER;
         return *this;
     }
 
@@ -361,6 +368,7 @@ class BaseConfig : public Config {
     CFG_INT k;
     CFG_FLOAT radius_low_bound;
     CFG_FLOAT radius_high_bound;
+    CFG_BOOL trace_visit;
     KNOHWERE_DECLARE_CONFIG(BaseConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(metric_type).set_default("L2").description("metric type").for_all();
         KNOWHERE_CONFIG_DECLARE_FIELD(k)
@@ -374,6 +382,11 @@ class BaseConfig : public Config {
         KNOWHERE_CONFIG_DECLARE_FIELD(radius_high_bound)
             .set_default(std::numeric_limits<float>::max())
             .description("radius high bound for range search")
+            .for_range_search();
+        KNOWHERE_CONFIG_DECLARE_FIELD(trace_visit)
+            .set_default(false)
+            .description("trace visit for feder")
+            .for_search()
             .for_range_search();
     }
 };
