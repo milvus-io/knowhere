@@ -9,6 +9,7 @@
 #include "faiss/index_io.h"
 #include "index/ivf/ivf_config.h"
 #include "io/FaissIO.h"
+#include "knowhere/feder/IVFFlat.h"
 #include "knowhere/knowhere.h"
 
 namespace knowhere {
@@ -36,16 +37,18 @@ class IvfIndexNode : public IndexNode {
     Build(const DataSet& dataset, const Config& cfg) override;
     virtual Status
     Train(const DataSet& dataset, const Config& cfg) override;
-
     virtual Status
     Add(const DataSet& dataset, const Config& cfg) override;
-
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
     virtual expected<DataSetPtr, Status>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
     virtual expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override;
+    virtual expected<DataSetPtr, Status>
+    GetIndexMeta(const Config& cfg) const override {
+        return unexpected(Status::not_implemented);
+    }
     virtual Status
     Serialization(BinarySet& binset) const override;
     virtual Status
@@ -145,6 +148,7 @@ IvfIndexNode<T>::Build(const DataSet& dataset, const Config& cfg) {
     err = Add(dataset, cfg);
     return err;
 }
+
 template <typename T>
 Status
 IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
@@ -416,7 +420,6 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
         return unexpected(Status::index_not_trained);
     auto rows = dataset.GetRows();
     auto dim = dataset.GetDim();
-    const IvfConfig& ivf_cfg = static_cast<const IvfConfig&>(cfg);
     float* p_x(new (std::nothrow) float[dim * rows]);
     index_->make_direct_map(true);
     auto p_ids = dataset.GetIds();
@@ -447,7 +450,6 @@ IvfIndexNode<faiss::IndexBinaryIVF>::GetVectorByIds(const DataSet& dataset, cons
         return unexpected(Status::index_not_trained);
     auto rows = dataset.GetRows();
     auto dim = dataset.GetDim();
-    const IvfConfig& ivf_cfg = static_cast<const IvfConfig&>(cfg);
     uint8_t* p_x(new (std::nothrow) uint8_t[dim * rows / 8]);
     index_->make_direct_map(true);
     auto p_ids = dataset.GetIds();
@@ -467,6 +469,49 @@ IvfIndexNode<faiss::IndexBinaryIVF>::GetVectorByIds(const DataSet& dataset, cons
     results->SetTensor(p_x);
 
     return results;
+}
+
+template <>
+expected<DataSetPtr, Status>
+IvfIndexNode<faiss::IndexIVFFlat>::GetIndexMeta(const Config& config) const {
+    if (!index_) {
+        KNOWHERE_WARN("get index meta on empty index.");
+        return unexpected(Status::empty_index);
+    }
+
+    auto ivf_index = dynamic_cast<faiss::IndexIVF*>(index_);
+    auto ivf_quantizer = dynamic_cast<faiss::IndexFlat*>(ivf_index->quantizer);
+
+    int64_t dim = ivf_index->d;
+    int64_t nlist = ivf_index->nlist;
+    int64_t ntotal = ivf_index->ntotal;
+
+    feder::ivfflat::IVFFlatMeta meta(nlist, dim, ntotal);
+    std::unordered_set<int64_t> id_set;
+
+    for (int32_t i = 0; i < nlist; i++) {
+        // copy from IndexIVF::search_preassigned_without_codes
+        std::unique_ptr<faiss::InvertedLists::ScopedIds> sids =
+            std::make_unique<faiss::InvertedLists::ScopedIds>(index_->invlists, i);
+
+        // node ids
+        auto node_num = index_->invlists->list_size(i);
+        auto node_id_codes = sids->get();
+
+        // centroid vector
+        auto centroid_vec = ivf_quantizer->get_xb() + i * dim;
+
+        meta.AddCluster(i, node_id_codes, node_num, centroid_vec, dim);
+    }
+
+    Json json_meta, json_id_set;
+    nlohmann::to_json(json_meta, meta);
+    nlohmann::to_json(json_id_set, id_set);
+
+    auto res = std::make_shared<DataSet>();
+    res->SetJsonInfo(json_meta.dump());
+    res->SetJsonIdSet(json_id_set.dump());
+    return res;
 }
 
 template <typename T>

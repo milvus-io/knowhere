@@ -20,11 +20,14 @@ const std::string DIM = "dim";
 const std::string TOPK = "k";
 const std::string RADIUS_LOW_BOUND = "radius_low_bound";
 const std::string RADIUS_HIGH_BOUND = "radius_high_bound";
+const std::string TRACE_VISIT = "trace_visit";
+const std::string JSON_INFO = "json_info";
+const std::string JSON_ID_SET = "json_id_set";
 }  // namespace meta
 
 class DataSet {
  public:
-    typedef std::variant<const float*, const size_t*, const int64_t*, const void*, int64_t> Var;
+    typedef std::variant<const float*, const size_t*, const int64_t*, const void*, int64_t, std::string> Var;
     DataSet() = default;
     ~DataSet() {
         if (!is_owner)
@@ -76,15 +79,29 @@ class DataSet {
         std::unique_lock lock(mutex_);
         this->data_[meta::TENSOR] = Var(std::in_place_index<3>, tensor);
     }
+
     void
     SetRows(const int64_t rows) {
         std::unique_lock lock(mutex_);
         this->data_[meta::ROWS] = Var(std::in_place_index<4>, rows);
     }
+
     void
     SetDim(const int64_t dim) {
         std::unique_lock lock(mutex_);
         this->data_[meta::DIM] = Var(std::in_place_index<4>, dim);
+    }
+
+    void
+    SetJsonInfo(const std::string& info) {
+        std::unique_lock lock(mutex_);
+        this->data_[meta::JSON_INFO] = Var(std::in_place_index<5>, info);
+    }
+
+    void
+    SetJsonIdSet(const std::string& idset) {
+        std::unique_lock lock(mutex_);
+        this->data_[meta::JSON_ID_SET] = Var(std::in_place_index<5>, idset);
     }
 
     const float*
@@ -130,6 +147,7 @@ class DataSet {
         }
         return nullptr;
     }
+
     int64_t
     GetRows() const {
         std::shared_lock lock(mutex_);
@@ -150,6 +168,28 @@ class DataSet {
             return res;
         }
         return 0;
+    }
+
+    std::string
+    GetJsonInfo() const {
+        std::shared_lock lock(mutex_);
+        auto it = this->data_.find(meta::JSON_INFO);
+        if (it != this->data_.end()) {
+            std::string res = *std::get_if<5>(&it->second);
+            return res;
+        }
+        return "";
+    }
+
+    std::string
+    GetJsonIdSet() const {
+        std::shared_lock lock(mutex_);
+        auto it = this->data_.find(meta::JSON_ID_SET);
+        if (it != this->data_.end()) {
+            std::string res = *std::get_if<5>(&it->second);
+            return res;
+        }
+        return "";
     }
 
     void

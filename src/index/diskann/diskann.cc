@@ -10,6 +10,7 @@
 #else
 #include "diskann/windows_aligned_file_reader.h"
 #endif
+#include "knowhere/feder/DiskANN.h"
 #include "knowhere/file_manager.h"
 #include "knowhere/knowhere.h"
 
@@ -52,6 +53,9 @@ class DiskANNIndexNode : public IndexNode {
         std::cout << "DiskANN doesn't support GetVectorById." << std::endl;
         return unexpected(Status::not_implemented);
     }
+
+    virtual expected<DataSetPtr, Status>
+    GetIndexMeta(const Config& cfg) const override;
 
     virtual Status
     Serialization(BinarySet& binset) const override {
@@ -443,9 +447,21 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
     auto lsearch = static_cast<uint64_t>(search_conf.search_list_size);
     auto beamwidth = static_cast<uint64_t>(search_conf.beamwidth);
 
-    auto dim = search_conf.dim;
+    auto dim = dataset.GetDim();
     auto nq = dataset.GetRows();
     auto xq = static_cast<const T*>(dataset.GetTensor());
+
+    feder::diskann::FederResultUniq feder_result;
+    if (search_conf.trace_visit) {
+        if (nq != 1) {
+            return unexpected(Status::invalid_args);
+        }
+        feder_result = std::make_unique<feder::diskann::FederResult>();
+        feder_result->visit_info_.SetQueryConfig(search_conf.k,
+                                                 search_conf.beamwidth,
+                                                 search_conf.search_list_size);
+    }
+
     auto p_id = new int64_t[k * nq];
     auto p_dist = new float[k * nq];
 
@@ -454,7 +470,7 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
     for (int64_t row = 0; row < nq; ++row) {
         futures.push_back(pool_->push([&, index = row]() {
             pq_flash_index_->cached_beam_search(xq + (index * dim), k, lsearch, p_id + (index * k),
-                                                p_dist + (index * k), beamwidth, false, nullptr, bitset);
+                                                p_dist + (index * k), beamwidth, false, nullptr, feder_result, bitset);
         }));
     }
     for (auto& future : futures) {
@@ -466,6 +482,15 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
     res->SetRows(nq);
     res->SetIds(p_id);
     res->SetDistance(p_dist);
+
+    // set visit_info json string into result dataset
+    if (feder_result != nullptr) {
+        Json json_visit_info, json_id_set;
+        nlohmann::to_json(json_visit_info, feder_result->visit_info_);
+        nlohmann::to_json(json_id_set, feder_result->id_set_);
+        res->SetJsonInfo(json_visit_info.dump());
+        res->SetJsonIdSet(json_id_set.dump());
+    }
     return res;
 }
 
@@ -495,7 +520,7 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
     }
     float radius = (is_L2 ? high_bound : low_bound);
 
-    auto dim = search_conf.dim;
+    auto dim = dataset.GetDim();
     auto nq = dataset.GetRows();
     auto xq = static_cast<const T*>(dataset.GetTensor());
 
@@ -528,6 +553,36 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
     res->SetIds(p_id);
     res->SetDistance(p_dist);
     res->SetLims(p_lims);
+    return res;
+}
+
+template <typename T>
+expected<DataSetPtr, Status>
+DiskANNIndexNode<T>::GetIndexMeta(const Config& cfg) const {
+    std::vector<int64_t> entry_points;
+    for (size_t i = 0; i < pq_flash_index_->get_num_medoids(); i++) {
+        entry_points.push_back(pq_flash_index_->get_medoids()[i]);
+    }
+    auto diskann_conf = static_cast<const DiskANNConfig&>(cfg);
+    feder::diskann::DiskANNMeta meta(diskann_conf.data_path,
+                                     diskann_conf.max_degree,
+                                     diskann_conf.search_list_size,
+                                     diskann_conf.pq_code_budget_gb,
+                                     diskann_conf.build_dram_budget_gb,
+                                     diskann_conf.num_threads,
+                                     diskann_conf.disk_pq_dims,
+                                     diskann_conf.accelerate_build,
+                                     Count(),
+                                     entry_points);
+    std::unordered_set<int64_t> id_set(entry_points.begin(), entry_points.end());
+
+    Json json_meta, json_id_set;
+    nlohmann::to_json(json_meta, meta);
+    nlohmann::to_json(json_id_set, id_set);
+
+    auto res = std::make_shared<DataSet>();
+    res->SetJsonInfo(json_meta.dump());
+    res->SetJsonIdSet(json_id_set.dump());
     return res;
 }
 

@@ -186,6 +186,11 @@ class FlatIndexNode : public IndexNode {
         }
     }
 
+    virtual expected<DataSetPtr, Status>
+    GetIndexMeta(const Config& cfg) const override {
+        return unexpected(Status::not_implemented);
+    }
+
     virtual Status
     Serialization(BinarySet& binset) const override {
         if (!index_)

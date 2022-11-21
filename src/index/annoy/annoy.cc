@@ -9,6 +9,7 @@ class AnnoyIndexNode : public IndexNode {
  public:
     AnnoyIndexNode(const Object& object) : index_(nullptr) {
     }
+
     virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
         const AnnoyConfig& annoy_cfg = static_cast<const AnnoyConfig&>(cfg);
@@ -55,14 +56,17 @@ class AnnoyIndexNode : public IndexNode {
 
         return Status::invalid_metric_type;
     }
+
     virtual Status
     Train(const DataSet& dataset, const Config& cfg) override {
         return Build(dataset, cfg);
     }
+
     virtual Status
     Add(const DataSet& dataset, const Config& cfg) override {
         return Status::not_implemented;
     }
+
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
@@ -139,6 +143,12 @@ class AnnoyIndexNode : public IndexNode {
 
         return results;
     }
+
+    virtual expected<DataSetPtr, Status>
+    GetIndexMeta(const Config& cfg) const override {
+        return unexpected(Status::not_implemented);
+    }
+
     virtual Status
     Serialization(BinarySet& binset) const override {
         if (!index_) {
@@ -163,6 +173,7 @@ class AnnoyIndexNode : public IndexNode {
 
         return Status::success;
     }
+
     virtual Status
     Deserialization(const BinarySet& binset) override {
         if (index_)
@@ -197,28 +208,33 @@ class AnnoyIndexNode : public IndexNode {
     CreateConfig() const override {
         return std::make_unique<AnnoyConfig>();
     }
+
     virtual int64_t
     Dims() const override {
         if (!index_)
             return 0;
         return index_->get_dim();
     }
+
     virtual int64_t
     Size() const override {
         if (!index_)
             return 0;
         return index_->cal_size();
     }
+
     virtual int64_t
     Count() const override {
         if (!index_)
             return 0;
         return index_->get_n_items();
     }
+
     virtual std::string
     Type() const override {
         return "ANNOY";
     }
+
     virtual ~AnnoyIndexNode() {
         if (index_)
             delete index_;
