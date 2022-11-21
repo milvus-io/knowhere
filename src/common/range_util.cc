@@ -16,7 +16,7 @@ namespace knowhere {
 
 ///////////////////////////////////////////////////////////////////////////////
 // For Faiss index types
-void
+size_t
 CountValidRangeSearchResult(const faiss::RangeSearchResult& res,
                             const bool is_ip,
                             const int64_t nq,
@@ -34,6 +34,7 @@ CountValidRangeSearchResult(const faiss::RangeSearchResult& res,
         }
         lims[i + 1] = lims[i] + valid;
     }
+    return lims[nq];
 }
 
 void
@@ -52,9 +53,6 @@ FilterRangeSearchResultForOneNq(const int64_t i_size,
         auto dis = i_distances[i];
         auto id = i_labels[i];
         KNOWHERE_THROW_IF_NOT_MSG(bitset.empty() || !bitset.test(id), "bitset invalid");
-        KNOWHERE_THROW_IF_NOT_FMT((is_ip && dis > low_bound) || (!is_ip && dis < high_bound),
-                                  "distance %f invalid, is_ip %s, low_bound %f, high_bound %f",
-                                  dis, (is_ip ? "true" : "false"), low_bound, high_bound);
         if (distance_in_range(dis, low_bound, high_bound, is_ip)) {
             o_labels[num] = id;
             o_distances[num] = dis;
@@ -74,9 +72,7 @@ GetRangeSearchResult(const faiss::RangeSearchResult& res,
                      int64_t*& labels,
                      size_t*& lims,
                      const BitsetView& bitset) {
-    CountValidRangeSearchResult(res, is_ip, nq, low_bound, high_bound, lims);
-
-    size_t total_valid = lims[nq];
+    auto total_valid = CountValidRangeSearchResult(res, is_ip, nq, low_bound, high_bound, lims);
     KNOWHERE_DEBUG("Range search metric type: {}, low_bound {}, high_bound {}, total result num: {}",
                    (is_ip ? "IP" : "L2"), low_bound, high_bound, total_valid);
 

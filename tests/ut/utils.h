@@ -1,6 +1,6 @@
 #include <random>
-
 #include "knowhere/dataset.h"
+
 inline std::unique_ptr<knowhere::DataSet>
 GenDataSet(int rows, int dim, int seed = 42) {
     std::mt19937 rng(seed);
@@ -13,4 +13,4 @@ GenDataSet(int rows, int dim, int seed = 42) {
     for (int i = 0; i < rows * dim; ++i) ts[i] = distrib(rng);
     ds->SetTensor(ts);
     return ds;
-};
+}
