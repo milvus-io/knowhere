@@ -20,8 +20,9 @@ class HnswIndexNode : public IndexNode {
     virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
         auto res = Train(dataset, cfg);
-        if (res != Status::success)
+        if (res != Status::success) {
             return res;
+        }
         res = Add(dataset, cfg);
         return res;
     }
@@ -51,7 +52,6 @@ class HnswIndexNode : public IndexNode {
             LOG_KNOWHERE_WARNING_ << "index not empty, deleted old index.";
         }
         this->index_ = index;
-
         return Status::success;
     }
 
@@ -295,26 +295,23 @@ class HnswIndexNode : public IndexNode {
         if (!index_) {
             return Status::empty_index;
         }
-
         try {
             MemoryIOWriter writer;
             index_->saveIndex(writer);
             std::shared_ptr<uint8_t[]> data(writer.data_);
-
             binset.Append("HNSW", data, writer.rp);
-
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "hnsw inner error, " << e.what();
             return Status::hnsw_inner_error;
         }
-
         return Status::success;
     }
 
     virtual Status
     Deserialization(const BinarySet& binset) override {
-        if (index_)
+        if (index_) {
             delete index_;
+        }
         try {
             auto binary = binset.GetByName("HNSW");
 
@@ -329,7 +326,6 @@ class HnswIndexNode : public IndexNode {
             LOG_KNOWHERE_WARNING_ << "hnsw inner error, " << e.what();
             return Status::hnsw_inner_error;
         }
-
         return Status::success;
     }
 
@@ -340,22 +336,25 @@ class HnswIndexNode : public IndexNode {
 
     virtual int64_t
     Dims() const override {
-        if (!index_)
-            return (*static_cast<size_t*>(index_->dist_func_param_));
-        return 0;
+        if (!index_) {
+            return 0;
+        }
+        return (*static_cast<size_t*>(index_->dist_func_param_));
     }
 
     virtual int64_t
     Size() const override {
-        if (!index_)
+        if (!index_) {
             return 0;
+        }
         return index_->cal_size();
     }
 
     virtual int64_t
     Count() const override {
-        if (!index_)
+        if (!index_) {
             return 0;
+        }
         return index_->cur_element_count;
     }
 
@@ -365,8 +364,9 @@ class HnswIndexNode : public IndexNode {
     }
 
     virtual ~HnswIndexNode() {
-        if (index_)
+        if (index_) {
             delete index_;
+        }
     }
 
  private:
