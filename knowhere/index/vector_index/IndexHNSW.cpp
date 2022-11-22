@@ -256,15 +256,12 @@ IndexHNSW::QueryImpl(int64_t n, const float* xq, int64_t k, float* distances, in
             size_t rst_size = rst.size();
             auto p_single_dis = distances + index * k;
             auto p_single_id = labels + index * k;
-            size_t idx = rst_size - 1;
-            while (!rst.empty()) {
-                auto& it = rst.top();
-                p_single_dis[idx] = transform ? (1 - it.first) : it.first;
-                p_single_id[idx] = it.second;
-                rst.pop();
-                idx--;
+            for (size_t idx = 0; idx < rst_size; ++idx) {
+                const auto& [dist, id] = rst[idx];
+                p_single_dis[idx] = transform ? (1 - dist) : dist;
+                p_single_id[idx] = id;
             }
-            for (idx = rst_size; idx < k; idx++) {
+            for (size_t idx = rst_size; idx < k; idx++) {
                 p_single_dis[idx] = float(1.0 / 0.0);
                 p_single_id[idx] = -1;
             }
