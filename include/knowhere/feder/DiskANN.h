@@ -12,12 +12,11 @@
 #pragma once
 
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <unordered_set>
 #include <utility>
 #include <vector>
-
-#include <nlohmann/json.hpp>
 
 namespace knowhere::feder::diskann {
 
@@ -42,25 +41,19 @@ class DiskANNMeta {
  public:
     DiskANNMeta() = default;
 
-    DiskANNMeta(const std::string& data_path,
-                const int32_t max_degree,
-                const int32_t search_list_size,
-                const float pq_code_budget_gb,
-                const float build_dram_budget_gb,
-                const int32_t num_threads,
-                const int32_t disk_pq_dims,
-                const bool accelerate_build,
-                const int64_t num_elem,
+    DiskANNMeta(const std::string& data_path, const int32_t max_degree, const int32_t search_list_size,
+                const float pq_code_budget_gb, const float build_dram_budget_gb, const int32_t num_threads,
+                const int32_t disk_pq_dims, const bool accelerate_build, const int64_t num_elem,
                 const std::vector<int64_t>& entry_points)
         : num_elem_(num_elem), entry_points_(entry_points) {
-        build_params_.data_path             = data_path;
-        build_params_.max_degree            = max_degree;
-        build_params_.search_list_size      = search_list_size;
-        build_params_.pq_code_budget_gb     = pq_code_budget_gb;
-        build_params_.build_dram_budget_gb  = build_dram_budget_gb;
-        build_params_.num_threads           = num_threads;
-        build_params_.disk_pq_dims          = disk_pq_dims;
-        build_params_.accelerate_build      = accelerate_build;
+        build_params_.data_path = data_path;
+        build_params_.max_degree = max_degree;
+        build_params_.search_list_size = search_list_size;
+        build_params_.pq_code_budget_gb = pq_code_budget_gb;
+        build_params_.build_dram_budget_gb = build_dram_budget_gb;
+        build_params_.num_threads = num_threads;
+        build_params_.disk_pq_dims = disk_pq_dims;
+        build_params_.accelerate_build = accelerate_build;
     }
 
     NLOHMANN_DEFINE_TYPE_INTRUSIVE(DiskANNMeta, build_params_, num_elem_, entry_points_)
@@ -89,11 +82,13 @@ class TopCandidateInfo {
     TopCandidateInfo(int64_t id, float dist) : id_(id), real_distance_from_q_(dist) {
     }
 
-    int64_t GetID() {
+    int64_t
+    GetID() {
         return id_;
     }
 
-    float GetDistance() {
+    float
+    GetDistance() {
         return real_distance_from_q_;
     }
 
@@ -120,12 +115,10 @@ class DiskANNVisitInfo {
     DiskANNVisitInfo() = default;
 
     void
-    SetQueryConfig(const int32_t k,
-                   const int32_t search_list_size,
-                   const int32_t beamwidth) {
-        query_params_.k                 = k;
-        query_params_.beamwidth         = beamwidth;
-        query_params_.search_list_size  = search_list_size;
+    SetQueryConfig(const int32_t k, const int32_t search_list_size, const int32_t beamwidth) {
+        query_params_.k = k;
+        query_params_.beamwidth = beamwidth;
+        query_params_.search_list_size = search_list_size;
     }
 
     const std::vector<TopCandidateInfo>&
@@ -158,4 +151,4 @@ struct FederResult {
 };
 using FederResultUniq = std::unique_ptr<FederResult>;
 
-} // namespace knowhere::feder::diskann
+}  // namespace knowhere::feder::diskann

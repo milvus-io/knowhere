@@ -140,16 +140,19 @@ BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_da
             faiss::range_search_inner_product((const float*)xq, (const float*)xb, dim, nq, nb, low_bound, &res, bitset);
             break;
         case faiss::METRIC_Jaccard:
-            faiss::binary_range_search<faiss::CMin<float, int64_t>, float>(faiss::METRIC_Jaccard,
-                    (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, high_bound, dim / 8, &res, bitset);
+            faiss::binary_range_search<faiss::CMin<float, int64_t>, float>(faiss::METRIC_Jaccard, (const uint8_t*)xq,
+                                                                           (const uint8_t*)xb, nq, nb, high_bound,
+                                                                           dim / 8, &res, bitset);
             break;
         case faiss::METRIC_Tanimoto:
-            faiss::binary_range_search<faiss::CMin<float, int64_t>, float>(faiss::METRIC_Tanimoto,
-                    (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, high_bound, dim / 8, &res, bitset);
+            faiss::binary_range_search<faiss::CMin<float, int64_t>, float>(faiss::METRIC_Tanimoto, (const uint8_t*)xq,
+                                                                           (const uint8_t*)xb, nq, nb, high_bound,
+                                                                           dim / 8, &res, bitset);
             break;
         case faiss::METRIC_Hamming:
-            faiss::binary_range_search<faiss::CMin<int, int64_t>, int>(faiss::METRIC_Hamming,
-                    (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, (int)high_bound, dim / 8, &res, bitset);
+            faiss::binary_range_search<faiss::CMin<int, int64_t>, int>(faiss::METRIC_Hamming, (const uint8_t*)xq,
+                                                                       (const uint8_t*)xb, nq, nb, (int)high_bound,
+                                                                       dim / 8, &res, bitset);
             break;
         default:
             return unexpected(Status::invalid_metric_type);
@@ -159,8 +162,8 @@ BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_da
     float* distances = nullptr;
     size_t* lims = nullptr;
 
-    GetRangeSearchResult(res, (faiss_metric_type == faiss::METRIC_INNER_PRODUCT), nq, low_bound, high_bound,
-                         distances, labels, lims, bitset);
+    GetRangeSearchResult(res, (faiss_metric_type == faiss::METRIC_INNER_PRODUCT), nq, low_bound, high_bound, distances,
+                         labels, lims, bitset);
 
     DataSetPtr results = std::make_shared<DataSet>();
     results->SetRows(nq);

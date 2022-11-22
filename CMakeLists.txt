@@ -8,8 +8,8 @@ include(cmake/utils/utils.cmake)
 knowhere_option(USE_CUDA "Build with CUDA" OFF)
 knowhere_option(WITH_UT "Build with UT test" OFF)
 knowhere_option(WITH_ASAN "Build with ASAN" OFF)
-knowhere_option(WITH_CONSOLE_LOG "Build with console log" ON)
 knowhere_option(WITH_DISKANN "Build with diskann index" OFF)
+knowhere_option(WITH_BENCHMARK "Build with benchmark" OFF)
 
 if(USE_CUDA)
     set(CMAKE_CUDA_ARCHITECTURES 75;70;61;60)
@@ -17,21 +17,20 @@ if(USE_CUDA)
     find_package(CUDAToolkit REQUIRED)
 endif()
 
-if(WITH_CONSOLE_LOG)
-    add_definitions(-DCONSOLE_LOGGING)
-endif()
-
+add_definitions(-DAUTO_INITIALIZE_EASYLOGGINGPP)
+add_definitions(-DELPP_THREAD_SAFE)
 include(cmake/utils/compile_flags.cmake)
 include(cmake/utils/platform_check.cmake)
 include(cmake/libs/libfaiss.cmake)
 include(cmake/libs/libannoy.cmake)
 include(cmake/libs/libhnsw.cmake)
+include(cmake/libs/libeasylogging.cmake)
 
 include_directories(${CMAKE_SOURCE_DIR})
-include_directories(thirdparty/spdlog/include)
 include_directories(thirdparty/faiss)
 include_directories(thirdparty/bitset)
 include_directories(thirdparty)
+
 find_package(OpenMP REQUIRED)
 
 if(OPENMP_FOUND)
@@ -55,11 +54,13 @@ endif()
 
 include_directories(src)
 include_directories(include)
-include_directories(.)
+include_directories(${CMAKE_SOURCE_DIR})
+
+
 
 add_library(knowhere SHARED ${KNOWHERE_SRCS})
-add_dependencies(knowhere faiss)
-target_link_libraries(knowhere PUBLIC faiss)
+add_dependencies(knowhere faiss easyloggingpp)
+target_link_libraries(knowhere PUBLIC faiss easyloggingpp)
 
 if (WITH_DISKANN)
     include(cmake/libs/libdiskann.cmake)
@@ -76,6 +77,8 @@ if(WITH_BENCHMARK)
     add_subdirectory(benchmark)
 endif()
 
-install(TARGETS knowhere DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+install(TARGETS knowhere DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
+install(FILES "${PROJECT_SOURCE_DIR}/thirdparty/easyloggingpp/src/easylogging++.h"
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/knowhere"
-        DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}")
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/include")

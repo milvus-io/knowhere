@@ -61,7 +61,7 @@ class ThreadPool {
     static void
     InitGlobalThreadPool(uint32_t num_threads) {
         if (num_threads <= 0) {
-            KNOWHERE_ERROR("num_threads should be bigger than 0");
+            LOG_KNOWHERE_ERROR_ << "num_threads should be bigger than 0";
             return;
         }
 
@@ -72,7 +72,8 @@ class ThreadPool {
                 return;
             }
         }
-        KNOWHERE_WARN("Global ThreadPool has already been initialized with threads num: {}", global_thread_pool_size_);
+        LOG_KNOWHERE_WARNING_ << "Global ThreadPool has already been initialized with threads num: "
+                              << global_thread_pool_size_;
     }
 
     /**
@@ -86,8 +87,8 @@ class ThreadPool {
             std::lock_guard<std::mutex> lock(global_thread_pool_mutex_);
             if (global_thread_pool_size_ == 0) {
                 global_thread_pool_size_ = std::thread::hardware_concurrency();
-                KNOWHERE_WARN("Global ThreadPool has not been initialized yet, init it with threads num: {}",
-                              global_thread_pool_size_);
+                LOG_KNOWHERE_WARNING_ << "Global ThreadPool has not been initialized yet, init it with threads num: "
+                                      << global_thread_pool_size_;
             }
         }
         static auto pool = std::make_shared<ThreadPool>(global_thread_pool_size_);

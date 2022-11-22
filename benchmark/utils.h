@@ -30,7 +30,8 @@ struct FileIOWriter {
         fs.close();
     }
 
-    size_t operator()(void* ptr, size_t size) {
+    size_t
+    operator()(void* ptr, size_t size) {
         fs.write(reinterpret_cast<char*>(ptr), size);
         return size;
     }
@@ -49,12 +50,14 @@ struct FileIOReader {
         fs.close();
     }
 
-    size_t operator()(void* ptr, size_t size) {
+    size_t
+    operator()(void* ptr, size_t size) {
         fs.read(reinterpret_cast<char*>(ptr), size);
         return size;
     }
 
-    size_t size() {
+    size_t
+    size() {
         fs.seekg(0, fs.end);
         size_t len = fs.tellg();
         fs.seekg(0, fs.beg);

@@ -167,14 +167,12 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
     if constexpr (std::is_same<faiss::IndexIVFPQ, T>::value) {
         const IvfPqConfig& ivf_pq_cfg = static_cast<const IvfPqConfig&>(cfg);
         qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
-        index =
-            new (std::nothrow) T(qzr, dim, ivf_pq_cfg.nlist, ivf_pq_cfg.m, ivf_pq_cfg.nbits, metric.value());
+        index = new (std::nothrow) T(qzr, dim, ivf_pq_cfg.nlist, ivf_pq_cfg.m, ivf_pq_cfg.nbits, metric.value());
     }
     if constexpr (std::is_same<faiss::IndexIVFScalarQuantizer, T>::value) {
         const IvfSqConfig& ivf_sq_cfg = static_cast<const IvfSqConfig&>(cfg);
         qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
-        index =
-            new (std::nothrow) T(qzr, dim, ivf_sq_cfg.nlist, faiss::QuantizerType::QT_8bit, metric.value());
+        index = new (std::nothrow) T(qzr, dim, ivf_sq_cfg.nlist, faiss::QuantizerType::QT_8bit, metric.value());
     }
 
     if constexpr (std::is_same<faiss::IndexBinaryIVF, T>::value) {
@@ -188,7 +186,7 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
             delete qzr;
         if (index)
             delete index;
-        KNOWHERE_WARN("memory malloc error.");
+        LOG_KNOWHERE_WARNING_ << "memory malloc error.";
         return Status::malloc_error;
     }
     auto data = dataset.GetTensor();
@@ -202,16 +200,16 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
     } catch (std::exception& e) {
         delete qzr;
         delete index;
-        KNOWHERE_WARN("faiss inner error, {}.", e.what());
+        LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return Status::faiss_inner_error;
     }
     if (this->index_) {
-        KNOWHERE_WARN("index not empty before train, delete old index.");
+        LOG_KNOWHERE_WARNING_ << "index not empty before train, delete old index";
         delete this->index_;
     }
     this->index_ = index;
     if (this->qzr_) {
-        KNOWHERE_WARN("quantizer not empty before train, delete old quantizer.");
+        LOG_KNOWHERE_WARNING_ << "quantizer not empty before train, delete old quantizer.";
         delete this->qzr_;
     }
     this->qzr_ = qzr;
@@ -232,7 +230,7 @@ IvfIndexNode<T>::Add(const DataSet& dataset, const Config&) {
             index_->add(rows, (const float*)data);
         }
     } catch (std::exception& e) {
-        KNOWHERE_WARN("faiss inner error, {}.", e.what());
+        LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return Status::faiss_inner_error;
     }
     return Status::success;
@@ -242,11 +240,11 @@ template <typename T>
 expected<DataSetPtr, Status>
 IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
     if (!this->index_) {
-        KNOWHERE_WARN("search on empty index.");
+        LOG_KNOWHERE_WARNING_ << "search on empty index";
         return unexpected(Status::empty_index);
     }
     if (!this->index_->is_trained) {
-        KNOWHERE_WARN("index not trained.");
+        LOG_KNOWHERE_WARNING_ << "index not trained";
         return unexpected(Status::index_not_trained);
     }
     auto rows = dataset.GetRows();
@@ -265,7 +263,7 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
     } catch (const std::exception& e) {
         delete[] ids;
         delete[] dis;
-        KNOWHERE_WARN("faiss inner error, {}", e.what());
+        LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return unexpected(Status::faiss_inner_error);
     }
     auto results = std::make_shared<DataSet>();
@@ -280,11 +278,11 @@ template <typename T>
 expected<DataSetPtr, Status>
 IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
     if (!this->index_) {
-        KNOWHERE_WARN("range search on empty index.");
+        LOG_KNOWHERE_WARNING_ << "range search on empty index.";
         return unexpected(Status::empty_index);
     }
     if (!this->index_->is_trained) {
-        KNOWHERE_WARN("index not trained.");
+        LOG_KNOWHERE_WARNING_ << "index not trained.";
         return unexpected(Status::index_not_trained);
     }
 
@@ -317,7 +315,7 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
                                          bitset);
         GetRangeSearchResult(res, !is_L2, nq, low_bound, high_bound, distances, ids, lims, bitset);
     } catch (const std::exception& e) {
-        KNOWHERE_WARN("faiss inner error, {}", e.what());
+        LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return unexpected(Status::faiss_inner_error);
     }
 
@@ -333,11 +331,11 @@ template <>
 expected<DataSetPtr, Status>
 IvfIndexNode<faiss::IndexBinaryIVF>::Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
     if (!this->index_) {
-        KNOWHERE_WARN("search on empty index.");
+        LOG_KNOWHERE_WARNING_ << "search on empty index";
         return unexpected(Status::empty_index);
     }
     if (!this->index_->is_trained) {
-        KNOWHERE_WARN("index not trained.");
+        LOG_KNOWHERE_WARNING_ << "index not trained";
         return unexpected(Status::index_not_trained);
     }
     auto rows = dataset.GetRows();
@@ -353,7 +351,7 @@ IvfIndexNode<faiss::IndexBinaryIVF>::Search(const DataSet& dataset, const Config
     } catch (const std::exception& e) {
         delete[] ids;
         delete[] dis;
-        KNOWHERE_WARN("faiss inner error, {}.", e.what());
+        LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return unexpected(Status::faiss_inner_error);
     }
     auto results = std::make_shared<DataSet>();
@@ -372,13 +370,14 @@ IvfIndexNode<faiss::IndexBinaryIVF>::Search(const DataSet& dataset, const Config
 
 template <>
 expected<DataSetPtr, Status>
-IvfIndexNode<faiss::IndexBinaryIVF>::RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
+IvfIndexNode<faiss::IndexBinaryIVF>::RangeSearch(const DataSet& dataset, const Config& cfg,
+                                                 const BitsetView& bitset) const {
     if (!this->index_) {
-        KNOWHERE_WARN("range search on empty index.");
+        LOG_KNOWHERE_WARNING_ << "range search on empty index.";
         return unexpected(Status::empty_index);
     }
     if (!this->index_->is_trained) {
-        KNOWHERE_WARN("index not trained.");
+        LOG_KNOWHERE_WARNING_ << "index not trained.";
         return unexpected(Status::index_not_trained);
     }
 
@@ -399,7 +398,7 @@ IvfIndexNode<faiss::IndexBinaryIVF>::RangeSearch(const DataSet& dataset, const C
         index_->range_search(nq, (const uint8_t*)xq, high_bound, &res, bitset);
         GetRangeSearchResult(res, false, nq, low_bound, high_bound, distances, ids, lims, bitset);
     } catch (const std::exception& e) {
-        KNOWHERE_WARN("faiss inner error, {}.", e.what());
+        LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return unexpected(Status::faiss_inner_error);
     }
 
@@ -431,7 +430,7 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
         }
     } catch (const std::exception& e) {
         std::unique_ptr<float> p_x_auto_delete(p_x);
-        KNOWHERE_WARN("faiss inner error, {}.", e.what());
+        LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return unexpected(Status::faiss_inner_error);
     }
 
@@ -461,7 +460,7 @@ IvfIndexNode<faiss::IndexBinaryIVF>::GetVectorByIds(const DataSet& dataset, cons
         }
     } catch (const std::exception& e) {
         std::unique_ptr<uint8_t> p_x_auto_delete(p_x);
-        KNOWHERE_WARN("faiss inner error, {}.", e.what());
+        LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return unexpected(Status::faiss_inner_error);
     }
 
@@ -475,7 +474,7 @@ template <>
 expected<DataSetPtr, Status>
 IvfIndexNode<faiss::IndexIVFFlat>::GetIndexMeta(const Config& config) const {
     if (!index_) {
-        KNOWHERE_WARN("get index meta on empty index.");
+        LOG_KNOWHERE_WARNING_ << "get index meta on empty index.";
         return unexpected(Status::empty_index);
     }
 
@@ -531,7 +530,7 @@ IvfIndexNode<T>::Serialization(BinarySet& binset) const {
         }
         return Status::success;
     } catch (const std::exception& e) {
-        KNOWHERE_WARN("faiss inner error, {}.", e.what());
+        LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return Status::faiss_inner_error;
     }
 }
@@ -549,7 +548,7 @@ IvfIndexNode<T>::Deserialization(const BinarySet& binset) {
     reader.total = binary->size;
     reader.data_ = binary->data.get();
     if (index_) {
-        KNOWHERE_WARN("index not empty, delte old index.");
+        LOG_KNOWHERE_WARNING_ << "index not empty, delte old index.";
         delete index_;
     }
     try {
@@ -558,7 +557,7 @@ IvfIndexNode<T>::Deserialization(const BinarySet& binset) {
         else
             index_ = static_cast<T*>(faiss::read_index(&reader));
     } catch (const std::exception& e) {
-        KNOWHERE_WARN("faiss inner error, {}", e.what());
+        LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return Status::faiss_inner_error;
     }
     return Status::success;

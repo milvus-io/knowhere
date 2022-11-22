@@ -130,7 +130,7 @@ fvec_hook(std::string& simd_type) {
 static int init_hook_ = []() {
     std::string simd_type;
     fvec_hook(simd_type);
-    KNOWHERE_INFO("simd type: {}", simd_type);
+    LOG_KNOWHERE_INFO_ << "simd type: " << simd_type;
     return 0;
 }();
 

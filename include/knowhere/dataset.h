@@ -27,7 +27,7 @@ const std::string JSON_ID_SET = "json_id_set";
 
 class DataSet {
  public:
-    typedef std::variant<const float*, const size_t*, const int64_t*, const void*, int64_t, std::string> Var;
+    typedef std::variant<const float*, const size_t*, const int64_t*, const void*, int64_t, std::string, std::any> Var;
     DataSet() = default;
     ~DataSet() {
         if (!is_owner)
@@ -198,11 +198,41 @@ class DataSet {
         this->is_owner = is_owner;
     }
 
+    // deprecated API
+    template <typename T>
+    void
+    Set(const std::string& k, T&& v) {
+        std::unique_lock lock(mutex_);
+        data_[k] = Var(std::in_place_type<std::any>, std::forward<T>(v));
+    }
+
+    template <typename T>
+    T
+    Get(const std::string& k) {
+        std::shared_lock lock(mutex_);
+        auto it = this->data_.find(k);
+        if (it != this->data_.end()) {
+            return *std::any_cast<T>(std::get_if<std::any>(&it->second));
+        }
+        return T();
+    }
+
  private:
     mutable std::shared_mutex mutex_;
     std::map<std::string, Var> data_;
     bool is_owner = true;
 };
 using DataSetPtr = std::shared_ptr<DataSet>;
+
+inline DataSetPtr
+GenDataSet(const int64_t nb, const int64_t dim, const void* xb) {
+    auto ret_ds = std::make_shared<DataSet>();
+    ret_ds->SetRows(nb);
+    ret_ds->SetDim(dim);
+    ret_ds->SetTensor(xb);
+    ret_ds->SetIsOwner(false);
+    return ret_ds;
+}
+
 }  // namespace knowhere
 #endif /* DATASET_H */

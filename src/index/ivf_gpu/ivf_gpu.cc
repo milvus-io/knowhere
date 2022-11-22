@@ -46,7 +46,7 @@ class IvfGpuIndexNode : public IndexNode {
     virtual Status
     Train(const DataSet& dataset, const Config& cfg) override {
         if (gpu_index_ && gpu_index_->is_trained) {
-            KNOWHERE_WARN("index is already trained.");
+            LOG_KNOWHERE_WARNING_ << "index is already trained";
             return Status::index_already_trained;
         }
 
@@ -68,7 +68,7 @@ class IvfGpuIndexNode : public IndexNode {
         try {
             auto qzr = new (std::nothrow) faiss::IndexFlat(ivf_gpu_cfg.dim, metric.value());
             if (qzr == nullptr) {
-                KNOWHERE_WARN("memory malloc error.");
+                LOG_KNOWHERE_WARNING_ << "memory malloc error";
                 return Status::malloc_error;
             }
             std::unique_ptr<faiss::IndexFlat> auto_delele_qzr(qzr);
@@ -77,7 +77,7 @@ class IvfGpuIndexNode : public IndexNode {
                 host_index =
                     new (std::nothrow) faiss::IndexIVFFlat(qzr, ivf_gpu_cfg.dim, ivf_gpu_cfg.nlist, metric.value());
                 if (host_index == nullptr) {
-                    KNOWHERE_WARN("memory malloc error.");
+                    LOG_KNOWHERE_WARNING_ << "memory malloc error";
                     return Status::malloc_error;
                 }
             }
@@ -85,7 +85,7 @@ class IvfGpuIndexNode : public IndexNode {
                 host_index = new (std::nothrow) faiss::IndexIVFPQ(qzr, ivf_gpu_cfg.dim, ivf_gpu_cfg.nlist,
                                                                   ivf_gpu_cfg.m, ivf_gpu_cfg.nbits, metric.value());
                 if (host_index == nullptr) {
-                    KNOWHERE_WARN("memory malloc error.");
+                    LOG_KNOWHERE_WARNING_ << "memory malloc error";
                     return Status::malloc_error;
                 }
             }
@@ -93,7 +93,7 @@ class IvfGpuIndexNode : public IndexNode {
                 host_index = new (std::nothrow) faiss::IndexIVFScalarQuantizer(
                     qzr, ivf_gpu_cfg.dim, ivf_gpu_cfg.nlist, faiss::QuantizerType::QT_8bit, metric.value());
                 if (host_index == nullptr) {
-                    KNOWHERE_WARN("memory malloc error.");
+                    LOG_KNOWHERE_WARNING_ << "memory malloc error";
                     return Status::malloc_error;
                 }
             }
@@ -104,7 +104,7 @@ class IvfGpuIndexNode : public IndexNode {
         } catch (std::exception& e) {
             if (gpu_index)
                 delete gpu_index;
-            KNOWHERE_WARN("faiss inner error, {}", e.what());
+            LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
             return Status::faiss_inner_error;
         }
         this->gpu_index_ = gpu_index;
@@ -121,7 +121,7 @@ class IvfGpuIndexNode : public IndexNode {
         try {
             gpu_index_->add(rows, (const float*)tensor);
         } catch (std::exception& e) {
-            KNOWHERE_WARN("faiss inner error, {}", e.what());
+            LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
             return Status::faiss_inner_error;
         }
         return Status::success;
@@ -153,7 +153,7 @@ class IvfGpuIndexNode : public IndexNode {
         } catch (std::exception& e) {
             std::unique_ptr<float> auto_delete_dis(dis);
             std::unique_ptr<int64_t> auto_delete_ids(ids);
-            KNOWHERE_WARN("faiss inner error, {}", e.what());
+            LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
         auto results = std::make_shared<DataSet>();
@@ -192,7 +192,7 @@ class IvfGpuIndexNode : public IndexNode {
             memcpy(buf + sizeof(dev_s), this->devs_.data(), sizeof(devs_[0]) * dev_s);
             binset.Append("device_ids", device_id_, sizeof(size_t) + sizeof(int) * dev_s);
         } catch (std::exception& e) {
-            KNOWHERE_WARN("faiss inner error, {}", e.what());
+            LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
             return Status::faiss_inner_error;
         }
 
@@ -216,7 +216,7 @@ class IvfGpuIndexNode : public IndexNode {
                 this->res_.push_back(new (std::nothrow) faiss::gpu::StandardGpuResources);
             gpu_index_ = faiss::gpu::index_cpu_to_gpu_multiple(this->res_, this->devs_, index.get());
         } catch (std::exception& e) {
-            KNOWHERE_WARN("faiss inner error, {}", e.what());
+            LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
             return Status::faiss_inner_error;
         }
         return Status::success;

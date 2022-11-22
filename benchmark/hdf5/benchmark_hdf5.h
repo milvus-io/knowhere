@@ -13,6 +13,7 @@
 
 #include <assert.h>
 #include <hdf5.h>
+
 #include <unordered_set>
 #include <vector>
 
@@ -33,9 +34,9 @@ static const char* HDF5_DATASET_RADIUS = "radius";
 
 static const char* METRIC_IP_STR = "angular";
 static const char* METRIC_L2_STR = "euclidean";
-//static const char* METRIC_HAM_STR = "hamming";
-//static const char* METRIC_JAC_STR = "jaccard";
-//static const char* METRIC_TAN_STR = "tanimoto";
+// static const char* METRIC_HAM_STR = "hamming";
+// static const char* METRIC_JAC_STR = "jaccard";
+// static const char* METRIC_TAN_STR = "tanimoto";
 
 /************************************************************************************
  * https://github.com/erikbern/ann-benchmarks
@@ -194,7 +195,7 @@ class Benchmark_hdf5 : public Benchmark_base {
         assert((cols == 1 && rows == 1) || !"incorrect ground truth radius");
 
         gt_lims_ = (int32_t*)hdf5_read(ann_file_name, HDF5_DATASET_LIMS, H5T_INTEGER, cols, rows);
-        assert((cols == nq_+1 && rows == 1) || !"incorrect dims of ground truth lims");
+        assert((cols == nq_ + 1 && rows == 1) || !"incorrect dims of ground truth lims");
 
         gt_ids_ = (int32_t*)hdf5_read(ann_file_name, HDF5_DATASET_NEIGHBORS, H5T_INTEGER, cols, rows);
         assert((cols == gt_lims_[nq_] && rows == 1) || !"incorrect dims of ground truth labels");
@@ -248,7 +249,7 @@ class Benchmark_hdf5 : public Benchmark_base {
         assert((cols == nq_ && rows == 1) || !"incorrect ground truth radius");
 
         gt_lims_ = (int32_t*)hdf5_read(ann_file_name, HDF5_DATASET_LIMS, H5T_INTEGER, cols, rows);
-        assert((cols == nq_+1 && rows == 1) || !"incorrect dims of ground truth lims");
+        assert((cols == nq_ + 1 && rows == 1) || !"incorrect dims of ground truth lims");
 
         gt_ids_ = (int32_t*)hdf5_read(ann_file_name, HDF5_DATASET_NEIGHBORS, H5T_INTEGER, cols, rows);
         assert((cols == gt_lims_[nq_] && rows == 1) || !"incorrect dims of ground truth labels");
@@ -419,7 +420,7 @@ class Benchmark_hdf5 : public Benchmark_base {
         write_hdf5_dataset(file, HDF5_DATASET_RADIUS, H5T_NATIVE_FLOAT, 1, 1, &radius);
 
         /* write ground-truth lims dataset */
-        write_hdf5_dataset(file, HDF5_DATASET_LIMS, H5T_NATIVE_INT32, 1, nq+1, g_lims);
+        write_hdf5_dataset(file, HDF5_DATASET_LIMS, H5T_NATIVE_INT32, 1, nq + 1, g_lims);
 
         /* write ground-truth labels dataset */
         write_hdf5_dataset(file, HDF5_DATASET_NEIGHBORS, H5T_NATIVE_INT32, 1, ((int32_t*)g_lims)[nq], g_ids);
@@ -440,7 +441,8 @@ class Benchmark_hdf5 : public Benchmark_base {
     template <bool is_binary>
     void
     hdf5_write_range(const char* file_name, const int32_t dim, const void* xb, const int32_t nb, const void* xq,
-                     const int32_t nq, const float* g_radius, const void* g_lims, const void* g_ids, const void* g_dist) {
+                     const int32_t nq, const float* g_radius, const void* g_lims, const void* g_ids,
+                     const void* g_dist) {
         /* Open the file and the dataset. */
         hid_t file = H5Fcreate(file_name, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
@@ -475,7 +477,7 @@ class Benchmark_hdf5 : public Benchmark_base {
         write_hdf5_dataset(file, HDF5_DATASET_RADIUS, H5T_NATIVE_FLOAT, 1, nq, g_radius);
 
         /* write ground-truth lims dataset */
-        write_hdf5_dataset(file, HDF5_DATASET_LIMS, H5T_NATIVE_INT32, 1, nq+1, g_lims);
+        write_hdf5_dataset(file, HDF5_DATASET_LIMS, H5T_NATIVE_INT32, 1, nq + 1, g_lims);
 
         /* write ground-truth labels dataset */
         write_hdf5_dataset(file, HDF5_DATASET_NEIGHBORS, H5T_NATIVE_INT32, 1, ((int32_t*)g_lims)[nq], g_ids);
