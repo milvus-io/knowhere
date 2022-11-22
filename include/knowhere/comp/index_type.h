@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "knowhere/comp/MetricType.h"
+#include "knowhere/comp/metric_type.h"
 namespace knowhere {
 
 using IndexType = std::string;

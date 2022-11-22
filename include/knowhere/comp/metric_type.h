@@ -1,11 +1,16 @@
-#pragma once
+/**
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
 
-#include <string>
+// -*- c++ -*-
+
+#ifndef KNOWHERE_METRIC_TYPE_H
+#define KNOWHERE_METRIC_TYPE_H
 
 namespace knowhere {
-
-using MetricType = std::string;
-
 namespace metric {
 constexpr const char* IP = "IP";
 constexpr const char* L2 = "L2";
@@ -17,3 +22,5 @@ constexpr const char* SUPERSTRUCTURE = "SUPERSTRUCTURE";
 }  // namespace metric
 
 }  // namespace knowhere
+
+#endif

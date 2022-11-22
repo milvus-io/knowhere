@@ -7,22 +7,19 @@
 #include <shared_mutex>
 #include <utility>
 #include <variant>
+
+#include "comp/index_type.h"
 namespace knowhere {
 
 namespace meta {
-const std::string METRIC_TYPE = "metric_type";
 const std::string IDS = "ids";
 const std::string DISTANCE = "distance";
 const std::string LIMS = "lims";
 const std::string TENSOR = "tensor";
 const std::string ROWS = "rows";
 const std::string DIM = "dim";
-const std::string TOPK = "k";
 const std::string RADIUS_LOW_BOUND = "radius_low_bound";
 const std::string RADIUS_HIGH_BOUND = "radius_high_bound";
-const std::string TRACE_VISIT = "trace_visit";
-const std::string JSON_INFO = "json_info";
-const std::string JSON_ID_SET = "json_id_set";
 }  // namespace meta
 
 class DataSet {
