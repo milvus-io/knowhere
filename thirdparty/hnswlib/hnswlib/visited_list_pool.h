@@ -1,38 +1,12 @@
 #pragma once
 
-#include <string.h>
-
-#include <deque>
-#include <mutex>
+#include <algorithm>
+#include <thread>
+#include <unordered_map>
+#include <vector>
 
 namespace hnswlib {
-typedef unsigned short int vl_type;
 
-class VisitedList {
- public:
-    vl_type curV;
-    vl_type* mass;
-    unsigned int numelements;
-
-    VisitedList(int numelements1) {
-        curV = -1;
-        numelements = numelements1;
-        mass = new vl_type[numelements];
-    }
-
-    void
-    reset() {
-        curV++;
-        if (curV == 0) {
-            memset(mass, 0, sizeof(vl_type) * numelements);
-            curV++;
-        }
-    };
-
-    ~VisitedList() {
-        delete[] mass;
-    }
-};
 ///////////////////////////////////////////////////////////
 //
 // Class for multi-threaded pool-management of VisitedLists
@@ -40,51 +14,28 @@ class VisitedList {
 /////////////////////////////////////////////////////////
 
 class VisitedListPool {
-    std::deque<VisitedList*> pool;
-    std::mutex poolguard;
     int numelements;
+    std::unordered_map<std::thread::id, std::vector<bool>> map;
 
  public:
-    VisitedListPool(int initmaxpools, int numelements1) {
+    VisitedListPool(int numelements1) {
         numelements = numelements1;
-        for (int i = 0; i < initmaxpools; i++) pool.push_front(new VisitedList(numelements));
     }
 
-    VisitedList*
+    std::vector<bool>&
     getFreeVisitedList() {
-        VisitedList* rez;
-        {
-            std::unique_lock<std::mutex> lock(poolguard);
-            if (pool.size() > 0) {
-                rez = pool.front();
-                pool.pop_front();
-            } else {
-                rez = new VisitedList(numelements);
-            }
+        auto& res = map[std::this_thread::get_id()];
+        if (res.size() != numelements) {
+            res.assign(numelements, false);
+        } else {
+            std::fill(res.begin(), res.end(), false);
         }
-        rez->reset();
-        return rez;
-    };
-
-    void
-    releaseVisitedList(VisitedList* vl) {
-        std::unique_lock<std::mutex> lock(poolguard);
-        pool.push_front(vl);
-    };
-
-    ~VisitedListPool() {
-        while (pool.size()) {
-            VisitedList* rez = pool.front();
-            pool.pop_front();
-            delete rez;
-        }
+        return res;
     };
 
     int64_t
     size() {
-        auto visit_list_size = sizeof(VisitedList) + numelements * sizeof(vl_type);
-        auto pool_size = pool.size() * (sizeof(VisitedList*) + visit_list_size);
-        return pool_size + sizeof(*this);
+        return numelements * (sizeof(std::thread::id) + numelements / 8) + sizeof(*this);
     }
 };
 }  // namespace hnswlib
