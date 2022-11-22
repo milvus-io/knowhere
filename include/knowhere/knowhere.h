@@ -23,16 +23,17 @@ class Object {
     inline uint32_t
     Ref() const {
         return ref_counts_.load(std::memory_order_relaxed);
-    };
+    }
     inline void
     DecRef() {
         ref_counts_.fetch_sub(1, std::memory_order_relaxed);
-    };
+    }
     inline void
     IncRef() {
         ref_counts_.fetch_add(1, std::memory_order_relaxed);
-    };
-    virtual ~Object(){};
+    }
+    virtual ~Object() {
+    }
 
  private:
     mutable std::atomic_uint32_t ref_counts_ = 1;
@@ -44,8 +45,10 @@ class Pack : public Object {
                   "IndexPack only support std::shared_ptr<knowhere::FileManager> by far.");
 
  public:
-    Pack(){};
-    Pack(T package) : package_(package){};
+    Pack() {
+    }
+    Pack(T package) : package_(package) {
+    }
     T
     GetPack() const {
         return package_;
@@ -87,7 +90,8 @@ class IndexNode : public Object {
     Count() const = 0;
     virtual std::string
     Type() const = 0;
-    virtual ~IndexNode(){};
+    virtual ~IndexNode() {
+    }
 };
 
 template <typename T1>
@@ -204,7 +208,7 @@ class Index {
             return res;
         }
         return this->node->Add(dataset, *cfg);
-    };
+    }
 
     expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Json& json, const BitsetView& bitset) const {
@@ -217,7 +221,7 @@ class Index {
             return unexpected(res);
         }
         return this->node->Search(dataset, *cfg, bitset);
-    };
+    }
 
     expected<DataSetPtr, Status>
     RangeSearch(const DataSet& dataset, const Json& json, const BitsetView& bitset) const {
@@ -230,7 +234,7 @@ class Index {
             return unexpected(res);
         }
         return this->node->RangeSearch(dataset, *cfg, bitset);
-    };
+    }
 
     expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Json& json) const {
@@ -243,7 +247,7 @@ class Index {
             return unexpected(res);
         }
         return this->node->GetVectorByIds(dataset, *cfg);
-    };
+    }
 
     expected<DataSetPtr, Status>
     GetIndexMeta(const Json& json) const {
@@ -256,26 +260,28 @@ class Index {
             return unexpected(res);
         }
         return this->node->GetIndexMeta(*cfg);
-    };
+    }
 
     Status
     Serialization(BinarySet& binset) const {
         return this->node->Serialization(binset);
-    };
+    }
 
     Status
     Deserialization(const BinarySet& binset) {
         return this->node->Deserialization(binset);
-    };
+    }
 
     int64_t
     Dims() const {
         return this->node->Dims();
-    };
+    }
+
     int64_t
     Size() const {
         return this->node->Size();
-    };
+    }
+
     int64_t
     Count() const {
         return this->node->Count();
