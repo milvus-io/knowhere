@@ -1,3 +1,5 @@
+#include "knowhere/feder/HNSW.h"
+
 #include <omp.h>
 
 #include "common/range_util.h"
@@ -6,7 +8,6 @@
 #include "hnswlib/hnswlib.h"
 #include "index/hnsw/hnsw_config.h"
 #include "knowhere/comp/metric_type.h"
-#include "knowhere/feder/HNSW.h"
 #include "knowhere/knowhere.h"
 
 namespace knowhere {
@@ -36,18 +37,18 @@ class HnswIndexNode : public IndexNode {
         } else if (hnsw_cfg.metric_type == metric::IP) {
             space = new (std::nothrow) hnswlib::InnerProductSpace(dim);
         } else {
-            KNOWHERE_WARN("metric type not support in hnsw, {}.", hnsw_cfg.metric_type);
+            LOG_KNOWHERE_WARNING_ << "metric type not support in hnsw, " << hnsw_cfg.metric_type;
             return Status::invalid_metric_type;
         }
         auto index =
             new (std::nothrow) hnswlib::HierarchicalNSW<float>(space, rows, hnsw_cfg.M, hnsw_cfg.efConstruction);
         if (index == nullptr) {
-            KNOWHERE_WARN("memory malloc error.");
+            LOG_KNOWHERE_WARNING_ << "memory malloc error.";
             return Status::malloc_error;
         }
         if (this->index_) {
             delete this->index_;
-            KNOWHERE_WARN("index not empty, deleted old index.");
+            LOG_KNOWHERE_WARNING_ << "index not empty, deleted old index.";
         }
         this->index_ = index;
 
@@ -76,7 +77,7 @@ class HnswIndexNode : public IndexNode {
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
-            KNOWHERE_WARN("search on empty index.");
+            LOG_KNOWHERE_WARNING_ << "search on empty index";
             return unexpected(Status::empty_index);
         }
 
@@ -148,7 +149,7 @@ class HnswIndexNode : public IndexNode {
     virtual expected<DataSetPtr, Status>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
-            KNOWHERE_WARN("range search on empty index.");
+            LOG_KNOWHERE_WARNING_ << "range search on empty index.";
             return unexpected(Status::empty_index);
         }
 
@@ -248,7 +249,7 @@ class HnswIndexNode : public IndexNode {
                 memcpy(p_x + i * dim, index_->getDataByInternalId(id), dim * sizeof(float));
             }
         } catch (std::exception& e) {
-            KNOWHERE_WARN("hnsw inner error, {}", e.what());
+            LOG_KNOWHERE_WARNING_ << "hnsw inner error, " << e.what();
             std::unique_ptr<float> auto_delete_px(p_x);
             return unexpected(Status::hnsw_inner_error);
         }
@@ -260,7 +261,7 @@ class HnswIndexNode : public IndexNode {
     expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const override {
         if (!index_) {
-            KNOWHERE_WARN("get index meta on empty index.");
+            LOG_KNOWHERE_WARNING_ << "get index meta on empty index.";
             return unexpected(Status::empty_index);
         }
 
@@ -303,7 +304,7 @@ class HnswIndexNode : public IndexNode {
             binset.Append("HNSW", data, writer.rp);
 
         } catch (std::exception& e) {
-            KNOWHERE_WARN("hnsw inner error, {}", e.what());
+            LOG_KNOWHERE_WARNING_ << "hnsw inner error, " << e.what();
             return Status::hnsw_inner_error;
         }
 
@@ -325,7 +326,7 @@ class HnswIndexNode : public IndexNode {
             index_ = new (std::nothrow) hnswlib::HierarchicalNSW<float>(space);
             index_->loadIndex(reader);
         } catch (std::exception& e) {
-            KNOWHERE_WARN("hnsw inner error, {}", e.what());
+            LOG_KNOWHERE_WARNING_ << "hnsw inner error, " << e.what();
             return Status::hnsw_inner_error;
         }
 

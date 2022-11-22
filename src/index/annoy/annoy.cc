@@ -20,7 +20,7 @@ class AnnoyIndexNode : public IndexNode {
             index =
                 new (std::nothrow) AnnoyIndex<int64_t, float, ::Euclidean, ::Kiss64Random, ThreadedBuildPolicy>(dim);
             if (index == nullptr) {
-                KNOWHERE_WARN("malloc memory error.");
+                LOG_KNOWHERE_WARNING_ << "malloc memory error.";
                 return Status::malloc_error;
             }
         }
@@ -29,7 +29,7 @@ class AnnoyIndexNode : public IndexNode {
             index =
                 new (std::nothrow) AnnoyIndex<int64_t, float, ::DotProduct, ::Kiss64Random, ThreadedBuildPolicy>(dim);
             if (index == nullptr) {
-                KNOWHERE_WARN("malloc memory error.");
+                LOG_KNOWHERE_WARNING_ << "malloc memory error.";
                 return Status::malloc_error;
             }
         }
@@ -46,13 +46,13 @@ class AnnoyIndexNode : public IndexNode {
             char* error_msg;
             bool res = index_->build(annoy_cfg.n_trees, -1, &error_msg);
             if (!res) {
-                KNOWHERE_WARN(error_msg);
+                LOG_KNOWHERE_WARNING_ << error_msg;
                 return Status::annoy_inner_error;
             }
             return Status::success;
         }
 
-        KNOWHERE_WARN("invalid metric type in annoy {}", annoy_cfg.metric_type);
+        LOG_KNOWHERE_WARNING_ << "invalid metric type in annoy " << annoy_cfg.metric_type;
 
         return Status::invalid_metric_type;
     }
@@ -134,7 +134,7 @@ class AnnoyIndexNode : public IndexNode {
             }
         } catch (const std::exception& e) {
             std::unique_ptr<float> auto_del(p_x);
-            KNOWHERE_WARN("error in annoy, {}", e.what());
+            LOG_KNOWHERE_WARNING_ << "error in annoy, " << e.what();
             return unexpected(Status::annoy_inner_error);
         }
 

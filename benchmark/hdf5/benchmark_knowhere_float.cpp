@@ -174,27 +174,27 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_FLAT) {
     }
 }
 
-//TEST_F(Benchmark_knowhere_float, TEST_IVF_FLAT_NM) {
-//    index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
+// TEST_F(Benchmark_knowhere_float, TEST_IVF_FLAT_NM) {
+//     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
 //
-//    knowhere::Config conf = cfg_;
-//    for (auto nlist : NLISTs_) {
-//        knowhere::SetIndexParamNlist(conf, nlist);
+//     knowhere::Config conf = cfg_;
+//     for (auto nlist : NLISTs_) {
+//         knowhere::SetIndexParamNlist(conf, nlist);
 //
-//        std::string index_file_name = get_index_name({nlist});
-//        create_index(index_file_name, conf);
+//         std::string index_file_name = get_index_name({nlist});
+//         create_index(index_file_name, conf);
 //
-//        // IVFFLAT_NM should load raw data
-//        knowhere::BinaryPtr bin = std::make_shared<knowhere::Binary>();
-//        bin->data = std::shared_ptr<uint8_t[]>((uint8_t*)xb_, [&](uint8_t*) {});
-//        bin->size = dim_ * nb_ * sizeof(float);
-//        binary_set_.Append(RAW_DATA, bin);
+//         // IVFFLAT_NM should load raw data
+//         knowhere::BinaryPtr bin = std::make_shared<knowhere::Binary>();
+//         bin->data = std::shared_ptr<uint8_t[]>((uint8_t*)xb_, [&](uint8_t*) {});
+//         bin->size = dim_ * nb_ * sizeof(float);
+//         binary_set_.Append(RAW_DATA, bin);
 //
-//        index_->Load(binary_set_);
-//        binary_set_.clear();
-//        test_ivf(conf);
-//    }
-//}
+//         index_->Load(binary_set_);
+//         binary_set_.clear();
+//         test_ivf(conf);
+//     }
+// }
 
 TEST_F(Benchmark_knowhere_float, TEST_IVF_SQ8) {
     index_type_ = "IVFSQ";

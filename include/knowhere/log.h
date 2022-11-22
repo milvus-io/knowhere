@@ -1,9 +1,20 @@
 #ifndef KNOWHERE_LOG_H
 #define KNOWHERE_LOG_H
 
-#include "spdlog/sinks/rotating_file_sink.h"
-#include "spdlog/sinks/stdout_sinks.h"
-#include "spdlog/spdlog.h"
+#include "easylogging++.h"
+#define KNOWHERE_MODULE_NAME "KNOWHERE"
+#define KNOWHERE_MODULE_CLASS_FUNCTION                                                                \
+    knowhere::LogOut("[%s][%s::%s][%s] ", KNOWHERE_MODULE_NAME, (typeid(*this).name()), __FUNCTION__, \
+                     knowhere::GetThreadName().c_str())
+#define KNOWHERE_MODULE_FUNCTION \
+    knowhere::LogOut("[%s][%s][%s] ", KNOWHERE_MODULE_NAME, __FUNCTION__, knowhere::GetThreadName().c_str())
+
+#define LOG_KNOWHERE_TRACE_ LOG(TRACE) << KNOWHERE_MODULE_FUNCTION
+#define LOG_KNOWHERE_DEBUG_ LOG(DEBUG) << KNOWHERE_MODULE_FUNCTION
+#define LOG_KNOWHERE_INFO_ LOG(INFO) << KNOWHERE_MODULE_FUNCTION
+#define LOG_KNOWHERE_WARNING_ LOG(WARNING) << KNOWHERE_MODULE_FUNCTION
+#define LOG_KNOWHERE_ERROR_ LOG(ERROR) << KNOWHERE_MODULE_FUNCTION
+#define LOG_KNOWHERE_FATAL_ LOG(FATAL) << KNOWHERE_MODULE_FUNCTION
 
 namespace knowhere {
 class KnowhereException : public std::exception {
@@ -17,34 +28,79 @@ class KnowhereException : public std::exception {
 
     std::string msg_;
 };
-}  // namespace knowhere
 
-#define BACKTRACE_SIZE 16
+inline std::string
+LogOut(const char* pattern, ...) {
+    size_t len = strnlen(pattern, 1024) + 256;
+    auto str_p = std::make_unique<char[]>(len);
+    memset(str_p.get(), 0, len);
 
-#define KNOWHERE_TO_STRING(x) #x
+    va_list vl;
+    va_start(vl, pattern);
+    vsnprintf(str_p.get(), len - 1, pattern, vl);  // NOLINT
+    va_end(vl);
 
-#if defined(CONSOLE_LOGGING)
-#define LOG_KEY_NAME KNOWHERE_TO_STRING(console)
-#else
-#define LOG_KEY_NAME KNOWHERE_TO_STRING(filelog)
+    return std::string(str_p.get());
+}
+
+inline void
+SetThreadName(const std::string& name) {
+#ifdef __APPLE__
+    pthread_setname_np(name.c_str());
+#elif defined(__linux__)
+    pthread_setname_np(pthread_self(), name.c_str());
 #endif
+}
 
-#define KNOWHERE_INFO(...) SPDLOG_LOGGER_INFO(spdlog::get(LOG_KEY_NAME), __VA_ARGS__)
-
-#define KNOWHERE_DEBUG(...) SPDLOG_LOGGER_DEBUG(spdlog::get(LOG_KEY_NAME), __VA_ARGS__)
-
-#define KNOWHERE_WARN(...) SPDLOG_LOGGER_WARN(spdlog::get(LOG_KEY_NAME), __VA_ARGS__)
-
-#define KNOWHERE_ERROR(...) SPDLOG_LOGGER_ERROR(spdlog::get(LOG_KEY_NAME), __VA_ARGS__)
-
-#define KNOWHERE_TRACE(...) SPDLOG_LOGGER_TRACE(spdlog::get(LOG_KEY_NAME), __VA_ARGS__)
-
-#define KNOWHERE_DUMP_BACKTRACE                                    \
-    {                                                              \
-        spdlog::get(LOG_KEY_NAME)->set_level(spdlog::level::info); \
-        spdlog::get(LOG_KEY_NAME)->dump_backtrace();               \
+inline std::string
+GetThreadName() {
+    std::string thread_name = "unamed";
+    char name[16];
+    size_t len = 16;
+    auto err = pthread_getname_np(pthread_self(), name, len);
+    if (not err) {
+        thread_name = name;
     }
 
+    return thread_name;
+}
+
+inline void
+log_trace_(const std::string& s) {
+    LOG_KNOWHERE_TRACE_ << s;
+}
+
+inline void
+log_debug_(const std::string& s) {
+    LOG_KNOWHERE_DEBUG_ << s;
+}
+
+inline void
+log_info_(const std::string& s) {
+    LOG_KNOWHERE_INFO_ << s;
+}
+
+inline void
+log_warning_(const std::string& s) {
+    LOG_KNOWHERE_WARNING_ << s;
+}
+
+inline void
+log_error_(const std::string& s) {
+    LOG_KNOWHERE_ERROR_ << s;
+}
+
+inline void
+log_fatal_(const std::string& s) {
+    LOG_KNOWHERE_FATAL_ << s;
+}
+
+/*
+ * Please use LOG_MODULE_LEVEL_C macro in member function of class
+ * and LOG_MODULE_LEVEL_ macro in other functions.
+ */
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
 #define KNOWHERE_CHECK(x) \
     if (!(x))             \
         KNOWHERE_ERROR("check failed, " #x);
@@ -86,4 +142,5 @@ class KnowhereException : public std::exception {
         }                                                                    \
     } while (false)
 
+}  // namespace knowhere
 #endif /* KNOWHERE_LOG_H */

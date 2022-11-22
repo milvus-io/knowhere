@@ -39,7 +39,7 @@ class GpuFlatIndexNode : public IndexNode {
         const GpuFlatConfig& f_cfg = static_cast<const GpuFlatConfig&>(cfg);
         auto metric = Str2FaissMetricType(f_cfg.metric_type);
         if (!metric.has_value()) {
-            KNOWHERE_WARN("metric type error, {}", f_cfg.metric_type);
+            LOG_KNOWHERE_WARNING_ << "metric type error, " << f_cfg.metric_type;
             return metric.error();
         }
 
@@ -58,7 +58,7 @@ class GpuFlatIndexNode : public IndexNode {
         } catch (const std::exception& e) {
             if (gpu_index)
                 delete gpu_index;
-            KNOWHERE_WARN("faiss inner error, {}", e.what());
+            LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
             return Status::faiss_inner_error;
         }
         if (this->gpu_index_)
@@ -69,7 +69,7 @@ class GpuFlatIndexNode : public IndexNode {
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!gpu_index_) {
-            KNOWHERE_WARN("index not empty, deleted old index.");
+            LOG_KNOWHERE_WARNING_ << "index not empty, deleted old index.";
             return unexpected(Status::empty_index);
         }
 
@@ -87,7 +87,7 @@ class GpuFlatIndexNode : public IndexNode {
         } catch (const std::exception& e) {
             std::unique_ptr<int64_t[]> auto_delete_ids(ids);
             std::unique_ptr<float[]> auto_delete_dis(dis);
-            KNOWHERE_WARN("faiss inner error, {}.", e.what());
+            LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
 
@@ -113,7 +113,7 @@ class GpuFlatIndexNode : public IndexNode {
             results->SetTensor(xq);
             return results;
         } catch (const std::exception& e) {
-            KNOWHERE_WARN("faiss inner error, {}.", e.what());
+            LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
         return results;
@@ -121,7 +121,7 @@ class GpuFlatIndexNode : public IndexNode {
     virtual Status
     Serialization(BinarySet& binset) const override {
         if (!gpu_index_) {
-            KNOWHERE_WARN("serilalization on empty index.");
+            LOG_KNOWHERE_WARNING_ << "serilalization on empty index.";
             return Status::empty_index;
         }
         try {
@@ -141,7 +141,7 @@ class GpuFlatIndexNode : public IndexNode {
             binset.Append("device_ids", device_id_, sizeof(size_t) + sizeof(int) * dev_s);
 
         } catch (const std::exception& e) {
-            KNOWHERE_WARN("faiss inner error, {}.", e.what());
+            LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
             return Status::faiss_inner_error;
         }
         return Status::success;
@@ -164,7 +164,7 @@ class GpuFlatIndexNode : public IndexNode {
                 this->res_.push_back(new (std::nothrow) faiss::gpu::StandardGpuResources);
             gpu_index_ = faiss::gpu::index_cpu_to_gpu_multiple(this->res_, this->devs_, index.get());
         } catch (const std::exception& e) {
-            KNOWHERE_WARN("faiss inner error, {}", e.what());
+            LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
             return Status::faiss_inner_error;
         }
 

@@ -46,10 +46,8 @@ GenRangeSearchResult(std::vector<std::vector<int64_t>>& labels, std::vector<std:
 }
 
 size_t
-CountValidRangeSearchResult(const std::vector<std::vector<float>>& distances,
-                            const float low_bound,
-                            const float high_bound,
-                            const bool is_ip) {
+CountValidRangeSearchResult(const std::vector<std::vector<float>>& distances, const float low_bound,
+                            const float high_bound, const bool is_ip) {
     int64_t valid = 0;
     for (size_t i = 0; i < distances.size(); i++) {
         for (size_t j = 0; j < distances[i].size(); j++) {
@@ -76,38 +74,25 @@ TEST_CASE("Test GetRangeSearchResult for HNSW/DiskANN", "[range search]") {
     size_t* lims;
 
     auto GetRangeSearchResult = [](std::vector<std::vector<float>>& result_distances,
-                                   std::vector<std::vector<int64_t>>& result_labels,
-                                   const bool is_ip,
-                                   const int64_t nq,
-                                   const float low_bound,
-                                   const float high_bound,
-                                   float*& distances,
-                                   int64_t*& labels,
+                                   std::vector<std::vector<int64_t>>& result_labels, const bool is_ip, const int64_t nq,
+                                   const float low_bound, const float high_bound, float*& distances, int64_t*& labels,
                                    size_t*& lims) {
         for (auto i = 0; i < nq; i++) {
-            knowhere::FilterRangeSearchResultForOneNq(result_distances[i], result_labels[i], is_ip, low_bound, high_bound);
+            knowhere::FilterRangeSearchResultForOneNq(result_distances[i], result_labels[i], is_ip, low_bound,
+                                                      high_bound);
         }
-        knowhere::GetRangeSearchResult(result_distances, result_labels, is_ip, nq, low_bound, high_bound, distances, labels, lims);
+        knowhere::GetRangeSearchResult(result_distances, result_labels, is_ip, nq, low_bound, high_bound, distances,
+                                       labels, lims);
     };
 
     std::vector<std::tuple<bool, float, float>> test_sets = {
-        std::make_tuple(false, -10.0, -1.0),
-        std::make_tuple(false, -10.0, 0.0),
-        std::make_tuple(false, -10.0, 50.0),
-        std::make_tuple(false, 0.0, 50.0),
-        std::make_tuple(false, 0.0, 100.0),
-        std::make_tuple(false, 50.0, 100.0),
-        std::make_tuple(false, 50.0, 200.0),
-        std::make_tuple(false, 100.0, 200.0),
+        std::make_tuple(false, -10.0, -1.0), std::make_tuple(false, -10.0, 0.0),   std::make_tuple(false, -10.0, 50.0),
+        std::make_tuple(false, 0.0, 50.0),   std::make_tuple(false, 0.0, 100.0),   std::make_tuple(false, 50.0, 100.0),
+        std::make_tuple(false, 50.0, 200.0), std::make_tuple(false, 100.0, 200.0),
 
-        std::make_tuple(true, -10.0, -1.0),
-        std::make_tuple(true, -10.0, 0.0),
-        std::make_tuple(true, -10.0, 50.0),
-        std::make_tuple(true, 0.0, 50.0),
-        std::make_tuple(true, 0.0, 100.0),
-        std::make_tuple(true, 50.0, 100.0),
-        std::make_tuple(true, 50.0, 200.0),
-        std::make_tuple(true, 100.0, 200.0),
+        std::make_tuple(true, -10.0, -1.0),  std::make_tuple(true, -10.0, 0.0),    std::make_tuple(true, -10.0, 50.0),
+        std::make_tuple(true, 0.0, 50.0),    std::make_tuple(true, 0.0, 100.0),    std::make_tuple(true, 50.0, 100.0),
+        std::make_tuple(true, 50.0, 200.0),  std::make_tuple(true, 100.0, 200.0),
     };
 
     for (auto& item : test_sets) {
@@ -175,23 +160,13 @@ TEST_CASE("Test GetRangeSearchResult for Faiss", "[range search]") {
     size_t* lims;
 
     std::vector<std::tuple<bool, float, float>> test_sets = {
-        std::make_tuple(false, -10.0, -1.0),
-        std::make_tuple(false, -10.0, 0.0),
-        std::make_tuple(false, -10.0, 50.0),
-        std::make_tuple(false, 0.0, 50.0),
-        std::make_tuple(false, 0.0, 100.0),
-        std::make_tuple(false, 50.0, 100.0),
-        std::make_tuple(false, 50.0, 200.0),
-        std::make_tuple(false, 100.0, 200.0),
+        std::make_tuple(false, -10.0, -1.0), std::make_tuple(false, -10.0, 0.0),   std::make_tuple(false, -10.0, 50.0),
+        std::make_tuple(false, 0.0, 50.0),   std::make_tuple(false, 0.0, 100.0),   std::make_tuple(false, 50.0, 100.0),
+        std::make_tuple(false, 50.0, 200.0), std::make_tuple(false, 100.0, 200.0),
 
-        std::make_tuple(true, -10.0, -1.0),
-        std::make_tuple(true, -10.0, 0.0),
-        std::make_tuple(true, -10.0, 50.0),
-        std::make_tuple(true, 0.0, 50.0),
-        std::make_tuple(true, 0.0, 100.0),
-        std::make_tuple(true, 50.0, 100.0),
-        std::make_tuple(true, 50.0, 200.0),
-        std::make_tuple(true, 100.0, 200.0),
+        std::make_tuple(true, -10.0, -1.0),  std::make_tuple(true, -10.0, 0.0),    std::make_tuple(true, -10.0, 50.0),
+        std::make_tuple(true, 0.0, 50.0),    std::make_tuple(true, 0.0, 100.0),    std::make_tuple(true, 50.0, 100.0),
+        std::make_tuple(true, 50.0, 200.0),  std::make_tuple(true, 100.0, 200.0),
     };
 
     for (auto& item : test_sets) {

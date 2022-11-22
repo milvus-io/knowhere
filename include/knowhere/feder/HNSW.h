@@ -12,12 +12,11 @@
 #pragma once
 
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <tuple>
 #include <unordered_set>
 #include <utility>
 #include <vector>
-
-#include <nlohmann/json.hpp>
 
 namespace knowhere::feder::hnsw {
 
@@ -68,12 +67,8 @@ class HNSWMeta {
  public:
     HNSWMeta() = default;
 
-    explicit HNSWMeta(int64_t ef_construction,
-             int64_t M,
-             int64_t num_elem,
-             int64_t num_levels,
-             int64_t enter_point_id,
-             int64_t num_overview_levels)
+    explicit HNSWMeta(int64_t ef_construction, int64_t M, int64_t num_elem, int64_t num_levels, int64_t enter_point_id,
+                      int64_t num_overview_levels)
         : ef_construction_(ef_construction),
           M_(M),
           num_elem_(num_elem),
@@ -209,4 +204,4 @@ struct FederResult {
 };
 using FederResultUniq = std::unique_ptr<FederResult>;
 
-} // namespace knowhere::feder::hnsw
+}  // namespace knowhere::feder::hnsw
