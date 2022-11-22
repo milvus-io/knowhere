@@ -376,13 +376,14 @@ namespace kmeans {
       residual = lloyds_iter(data, num_points, dim, centers, num_centers,
                              docs_l2sq, closest_docs, closest_center);
 
-      LOG(DEBUG) << "Lloyd's iter " << i << "  dist_sq residual: " << residual
-                 << std::endl;
+      LOG_KNOWHERE_DEBUG_ << "Lloyd's iter " << i
+                          << "  dist_sq residual: " << residual;
 
       if (((i != 0) && ((old_residual - residual) / residual) < 0.00001) ||
           (residual < std::numeric_limits<float>::epsilon())) {
-        LOG(DEBUG) << "Residuals unchanged: " << old_residual << " becomes "
-                   << residual << ". Early termination." << std::endl;
+        LOG_KNOWHERE_DEBUG_ << "Residuals unchanged: " << old_residual
+                            << " becomes " << residual
+                            << ". Early termination.";
         break;
       }
     }
@@ -404,9 +405,9 @@ namespace kmeans {
     std::unordered_set<size_t> picked;
     std::random_device         rd;
     auto                       x = rd();
-    LOG(DEBUG) << "Selecting " << num_centers << " pivots from " << num_points
-               << " points using "
-               << "random seed " << x;
+    LOG_KNOWHERE_DEBUG_ << "Selecting " << num_centers << " pivots from "
+                        << num_points << " points using "
+                        << "random seed " << x;
     std::mt19937                          generator(x);
     std::uniform_int_distribution<size_t> distribution(0, num_points - 1);
 
@@ -504,7 +505,7 @@ namespace kmeans {
         stream << "." << std::flush;
     }
     stream << "done.";
-    LOG(DEBUG) << stream.str();
+    LOG_KNOWHERE_DEBUG_ << stream.str();
     delete[] dist;
   }
 
