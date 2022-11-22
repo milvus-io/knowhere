@@ -566,11 +566,24 @@ IvfIndexNode<T>::Deserialization(const BinarySet& binset) {
 KNOWHERE_REGISTER_GLOBAL(IVFBIN, [](const Object& object) {
     return Index<IvfIndexNode<faiss::IndexBinaryIVF>>::Create(object);
 });
+
+KNOWHERE_REGISTER_GLOBAL(BIN_IVF_FLAT, [](const Object& object) {
+    return Index<IvfIndexNode<faiss::IndexBinaryIVF>>::Create(object);
+});
+
 KNOWHERE_REGISTER_GLOBAL(IVFFLAT,
+                         [](const Object& object) { return Index<IvfIndexNode<faiss::IndexIVFFlat>>::Create(object); });
+KNOWHERE_REGISTER_GLOBAL(IVF_FLAT,
                          [](const Object& object) { return Index<IvfIndexNode<faiss::IndexIVFFlat>>::Create(object); });
 KNOWHERE_REGISTER_GLOBAL(IVFPQ,
                          [](const Object& object) { return Index<IvfIndexNode<faiss::IndexIVFPQ>>::Create(object); });
+KNOWHERE_REGISTER_GLOBAL(IVF_PQ,
+                         [](const Object& object) { return Index<IvfIndexNode<faiss::IndexIVFPQ>>::Create(object); });
+
 KNOWHERE_REGISTER_GLOBAL(IVFSQ, [](const Object& object) {
+    return Index<IvfIndexNode<faiss::IndexIVFScalarQuantizer>>::Create(object);
+});
+KNOWHERE_REGISTER_GLOBAL(IVF_SQ8, [](const Object& object) {
     return Index<IvfIndexNode<faiss::IndexIVFScalarQuantizer>>::Create(object);
 });
 

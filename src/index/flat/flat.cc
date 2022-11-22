@@ -282,6 +282,9 @@ KNOWHERE_REGISTER_GLOBAL(FLAT,
 KNOWHERE_REGISTER_GLOBAL(BINFLAT, [](const Object& object) {
     return Index<FlatIndexNode<faiss::IndexBinaryFlat>>::Create(object);
 });
+KNOWHERE_REGISTER_GLOBAL(BIN_FLAT, [](const Object& object) {
+    return Index<FlatIndexNode<faiss::IndexBinaryFlat>>::Create(object);
+});
 
 }  // namespace knowhere
    //
