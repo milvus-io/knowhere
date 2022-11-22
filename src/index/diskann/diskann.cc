@@ -457,9 +457,7 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
             return unexpected(Status::invalid_args);
         }
         feder_result = std::make_unique<feder::diskann::FederResult>();
-        feder_result->visit_info_.SetQueryConfig(search_conf.k,
-                                                 search_conf.beamwidth,
-                                                 search_conf.search_list_size);
+        feder_result->visit_info_.SetQueryConfig(search_conf.k, search_conf.beamwidth, search_conf.search_list_size);
     }
 
     auto p_id = new int64_t[k * nq];
@@ -564,16 +562,10 @@ DiskANNIndexNode<T>::GetIndexMeta(const Config& cfg) const {
         entry_points.push_back(pq_flash_index_->get_medoids()[i]);
     }
     auto diskann_conf = static_cast<const DiskANNConfig&>(cfg);
-    feder::diskann::DiskANNMeta meta(diskann_conf.data_path,
-                                     diskann_conf.max_degree,
-                                     diskann_conf.search_list_size,
-                                     diskann_conf.pq_code_budget_gb,
-                                     diskann_conf.build_dram_budget_gb,
-                                     diskann_conf.num_threads,
-                                     diskann_conf.disk_pq_dims,
-                                     diskann_conf.accelerate_build,
-                                     Count(),
-                                     entry_points);
+    feder::diskann::DiskANNMeta meta(diskann_conf.data_path, diskann_conf.max_degree, diskann_conf.search_list_size,
+                                     diskann_conf.pq_code_budget_gb, diskann_conf.build_dram_budget_gb,
+                                     diskann_conf.num_threads, diskann_conf.disk_pq_dims, diskann_conf.accelerate_build,
+                                     Count(), entry_points);
     std::unordered_set<int64_t> id_set(entry_points.begin(), entry_points.end());
 
     Json json_meta, json_id_set;

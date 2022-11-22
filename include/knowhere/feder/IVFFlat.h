@@ -12,12 +12,11 @@
 #pragma once
 
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <tuple>
 #include <unordered_set>
 #include <utility>
 #include <vector>
-
-#include <nlohmann/json.hpp>
 
 namespace knowhere::feder::ivfflat {
 
@@ -30,11 +29,9 @@ struct ClusterInfo {
 
     ClusterInfo() = default;
 
-    explicit ClusterInfo(const int64_t id,
-                         const int64_t* node_id_addr,
-                         const int64_t node_num,
-                         const float* centroid_addr,
-                         const int64_t dim) : id_(id) {
+    explicit ClusterInfo(const int64_t id, const int64_t* node_id_addr, const int64_t node_num,
+                         const float* centroid_addr, const int64_t dim)
+        : id_(id) {
         node_ids_.resize(node_num);
         centroid_vec_.resize(dim);
         std::copy_n(node_id_addr, node_num, node_ids_.data());
@@ -48,8 +45,7 @@ class IVFFlatMeta {
  public:
     IVFFlatMeta() = default;
 
-    explicit IVFFlatMeta(int64_t nlist, int64_t dim, int64_t ntotal)
-        : nlist_(nlist), dim_(dim), ntotal_(ntotal) {
+    explicit IVFFlatMeta(int64_t nlist, int64_t dim, int64_t ntotal) : nlist_(nlist), dim_(dim), ntotal_(ntotal) {
     }
 
     int64_t
@@ -73,10 +69,7 @@ class IVFFlatMeta {
     }
 
     void
-    AddCluster(const int64_t id,
-               const int64_t* node_id_addr,
-               const int64_t node_num,
-               const float* centroid_addr,
+    AddCluster(const int64_t id, const int64_t* node_id_addr, const int64_t node_num, const float* centroid_addr,
                const int64_t dim) {
         assert(dim == dim_);
         clusters_.emplace_back(ClusterInfo(id, node_id_addr, node_num, centroid_addr, dim));
@@ -91,4 +84,4 @@ class IVFFlatMeta {
     std::vector<ClusterInfo> clusters_;
 };
 
-} // namespace knowhere::feder::ivfflat
+}  // namespace knowhere::feder::ivfflat

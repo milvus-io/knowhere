@@ -125,11 +125,11 @@ AVX512Capable() {
 
 #include <knowhere/bitsetview.h>
 #include <knowhere/feder/HNSW.h>
+#include <string.h>
 
 #include <fstream>
 #include <iostream>
 #include <queue>
-#include <string.h>
 #include <vector>
 
 namespace hnswlib {

@@ -14,8 +14,8 @@
 #include <exception>
 #include <vector>
 
-#include "benchmark_hdf5.h"
 #include "benchmark/utils.h"
+#include "benchmark_hdf5.h"
 #include "knowhere/binaryset.h"
 #include "knowhere/config.h"
 #include "knowhere/knowhere.h"
@@ -84,8 +84,7 @@ class Benchmark_knowhere : public Benchmark_hdf5 {
     }
 
     void
-    create_index(const std::string& index_file_name,
-                 const knowhere::Json& conf) {
+    create_index(const std::string& index_file_name, const knowhere::Json& conf) {
         printf("[%.3f s] Creating index \"%s\"\n", get_time_diff(), index_type_.c_str());
         index_ = knowhere::IndexFactory::Instance().Create(index_type_);
 

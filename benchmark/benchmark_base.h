@@ -12,8 +12,9 @@
 #pragma once
 
 #include <math.h>
-#include <string>
 #include <sys/time.h>
+
+#include <string>
 
 #define CALC_TIME_SPAN(X)       \
     double t_start = elapsed(); \
@@ -51,10 +52,7 @@ class Benchmark_base {
 
     /* Distance checking is only meaningful for binary index or FLAT index */
     void
-    CheckDistance(const std::string& metric_type,
-                  const int64_t* ids,
-                  const float* distances,
-                  const size_t* lims,
+    CheckDistance(const std::string& metric_type, const int64_t* ids, const float* distances, const size_t* lims,
                   int32_t nq) {
         const float FLOAT_DIFF = 0.00001;
         const bool is_L2 = (metric_type == "L2");

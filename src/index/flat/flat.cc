@@ -37,19 +37,19 @@ class FlatIndexNode : public IndexNode {
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
         auto metric = Str2FaissMetricType(f_cfg.metric_type);
         if (!metric.has_value()) {
-            KNOWHERE_DEBUG("please check metric type, {}.", f_cfg.metric_type);
+            LOG_KNOWHERE_WARNING_ << "please check metric type, " << f_cfg.metric_type;
             return metric.error();
         }
         index = new (std::nothrow) T(dataset.GetDim(), metric.value());
 
         if (index == nullptr) {
-            KNOWHERE_DEBUG("memory malloc error.");
+            LOG_KNOWHERE_WARNING_ << "memory malloc error";
             return Status::malloc_error;
         }
 
         if (this->index_) {
             delete this->index_;
-            KNOWHERE_WARN("index not empty, deleted old index.");
+            LOG_KNOWHERE_WARNING_ << "index not empty, deleted old index";
         }
         this->index_ = index;
         const void* x = dataset.GetTensor();
@@ -64,7 +64,7 @@ class FlatIndexNode : public IndexNode {
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
-            KNOWHERE_WARN("search on empty index.");
+            LOG_KNOWHERE_WARNING_ << "search on empty index";
             return unexpected(Status::empty_index);
         }
 
@@ -94,7 +94,7 @@ class FlatIndexNode : public IndexNode {
         } catch (const std::exception& e) {
             std::unique_ptr<int64_t[]> auto_delete_ids(ids);
             std::unique_ptr<float[]> auto_delete_dis(dis);
-            KNOWHERE_WARN("error inner faiss, {}", e.what());
+            LOG_KNOWHERE_WARNING_ << "error inner faiss, " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
         results->SetDim(f_cfg.k);
@@ -107,7 +107,7 @@ class FlatIndexNode : public IndexNode {
     virtual expected<DataSetPtr, Status>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
-            KNOWHERE_WARN("range search on empty index.");
+            LOG_KNOWHERE_WARNING_ << "range search on empty index.";
             return unexpected(Status::empty_index);
         }
 
@@ -138,7 +138,7 @@ class FlatIndexNode : public IndexNode {
                 GetRangeSearchResult(res, false, nq, low_bound, high_bound, distances, ids, lims, bitset);
             }
         } catch (const std::exception& e) {
-            KNOWHERE_WARN("error inner faiss, {}", e.what());
+            LOG_KNOWHERE_WARNING_ << "error inner faiss, " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
 
@@ -166,7 +166,7 @@ class FlatIndexNode : public IndexNode {
                 results->SetTensor(xq);
                 return results;
             } catch (const std::exception& e) {
-                KNOWHERE_WARN("error inner faiss, {}.", e.what());
+                LOG_KNOWHERE_WARNING_ << "error inner faiss, " << e.what();
                 return unexpected(Status::faiss_inner_error);
             }
         }
@@ -180,7 +180,7 @@ class FlatIndexNode : public IndexNode {
                 results->SetTensor(xq);
                 return results;
             } catch (const std::exception& e) {
-                KNOWHERE_WARN("error inner faiss, {}.", e.what());
+                LOG_KNOWHERE_WARNING_ << "error inner faiss, " << e.what();
                 return unexpected(Status::faiss_inner_error);
             }
         }
@@ -208,7 +208,7 @@ class FlatIndexNode : public IndexNode {
                 binset.Append("BinaryIVF", data, writer.rp);
             return Status::success;
         } catch (const std::exception& e) {
-            KNOWHERE_WARN("error inner faiss, {}.", e.what());
+            LOG_KNOWHERE_WARNING_ << "error inner faiss, " << e.what();
             return Status::faiss_inner_error;
         }
     }

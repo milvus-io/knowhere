@@ -1,32 +1,11 @@
 #include "knowhere/knowhere.h"
 namespace knowhere {
 
-static int
-InitLog() {
-#if defined(CONSOLE_LOGGING)
-    static auto console = spdlog::stderr_logger_mt("console");
-#else
-    try {
-        auto max_size = 1048576 * 5;
-        auto max_files = 3;
-        static auto logfile = spdlog::rotating_logger_mt("filelog", "/tmp/knowhere.log", max_size, max_files);
-    } catch (const spdlog::spdlog_ex& ex) {
-        std::cerr << "init log file error.\n";
-        return 1;
-    }
-#endif
-    spdlog::get(LOG_KEY_NAME)->set_level(spdlog::level::warn);
-    spdlog::get(LOG_KEY_NAME)->enable_backtrace(BACKTRACE_SIZE);
-    return 0;
-}
-
-int __init_log_status__ = InitLog();
-
 Index<IndexNode>
 IndexFactory::Create(const std::string& name, const Object& object) {
     auto& func_mapping_ = MapInstance();
     assert(func_mapping_.find(name) != func_mapping_.end());
-    KNOWHERE_INFO("create knowhere index {}", name);
+    LOG_KNOWHERE_INFO_ << "create knowhere index " << name;
     return func_mapping_[name](object);
 }
 
@@ -62,7 +41,7 @@ KnowhereException::KnowhereException(const std::string& m, const char* funcName,
         pos = file_path.find_last_of('/');
         filename = file_path.substr(pos + 1);
     } catch (std::exception& e) {
-        KNOWHERE_ERROR(e.what());
+        LOG_KNOWHERE_DEBUG_ << e.what();
     }
 
     int size = snprintf(nullptr, 0, "Error in %s at %s:%d: %s", funcName, filename.c_str(), line, m.c_str());

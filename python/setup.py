@@ -29,6 +29,8 @@ DEFINE_MACROS = [
     ("FINTEGER", "int"),
     ("SWIGWORDSIZE64", "1"),
     ("SWIG_PYTHON_SILENT_MEMLEAK", "1"),
+    ("AUTO_INITIALIZE_EASYLOGGINGPP", "1"),
+    ("ELPP_THREAD_SAFE", "1"),
 ]
 
 INCLUDE_DIRS = [
@@ -36,11 +38,11 @@ INCLUDE_DIRS = [
     KNOWHERE_ROOT,
     os.path.join(KNOWHERE_ROOT, "include"),
     os.path.join(KNOWHERE_ROOT, "thirdparty"),
-    os.path.join(KNOWHERE_ROOT, "thirdparty/spdlog/include")
+    os.path.join(KNOWHERE_ROOT, "thirdparty/easyloggingpp/src"),
 ]
 
 LIBRARY_DIRS = [os.path.join(KNOWHERE_ROOT, "build")]
-EXTRA_COMPILE_ARGS = ["-fPIC", "-std=c++17"]
+EXTRA_COMPILE_ARGS = ["-fPIC", "-std=gnu++17"]
 EXTRA_LINK_ARGS = [
     "-lknowhere",
     "-Wl,-rpath,$ORIGIN/../../../",

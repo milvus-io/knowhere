@@ -1001,7 +1001,7 @@ struct IVFPQScannerT : QueryTables {
 #define HANDLE_CODE_SIZE(cs)                                            \
     case cs:                                                            \
         scan_list_polysemous_hc<HammingComputer##cs, SearchResultType>( \
-                ncode, codes, res, bitset);                                     \
+                ncode, codes, res, bitset);                             \
         break
             HANDLE_CODE_SIZE(4);
             HANDLE_CODE_SIZE(8);

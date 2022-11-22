@@ -4,6 +4,7 @@
 #include <iostream>
 #include <list>
 #include <optional>
+#include <sstream>
 #include <unordered_map>
 #include <variant>
 
@@ -241,6 +242,37 @@ class Config {
     }
 
     static Status
+    Format(const Config& cfg, Json& json) {
+        for (auto it = cfg.__DICT__.begin(); it != cfg.__DICT__.end(); ++it) {
+            const auto& var = it->second;
+            if (json.find(it->first) != json.end() && json[it->first].is_string()) {
+                if (std::get_if<Entry<CFG_INT>>(&var)) {
+                    std::stringstream ss;
+                    CFG_INT v;
+                    ss.str(json[it->first]);
+                    ss >> v;
+                    json[it->first] = v;
+                }
+                if (std::get_if<Entry<CFG_FLOAT>>(&var)) {
+                    std::stringstream ss;
+                    CFG_FLOAT v;
+                    ss << json[it->first];
+                    ss >> v;
+                    json[it->first] = v;
+                }
+
+                if (std::get_if<Entry<CFG_BOOL>>(&var)) {
+                    if (json[it->first] == "true")
+                        json[it->first] = true;
+                    if (json[it->first] == "false")
+                        json[it->first] = false;
+                }
+            }
+        }
+        return Status::success;
+    }
+
+    static Status
     Load(Config& cfg, const Json& json, PARAM_TYPE type) {
         for (auto it = cfg.__DICT__.begin(); it != cfg.__DICT__.end(); ++it) {
             const auto& var = it->second;
@@ -371,10 +403,7 @@ class BaseConfig : public Config {
     CFG_BOOL trace_visit;
     KNOHWERE_DECLARE_CONFIG(BaseConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(metric_type).set_default("L2").description("metric type").for_all();
-        KNOWHERE_CONFIG_DECLARE_FIELD(k)
-            .set_default(10)
-            .description("search for top k similar vector.")
-            .for_search();
+        KNOWHERE_CONFIG_DECLARE_FIELD(k).set_default(10).description("search for top k similar vector.").for_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(radius_low_bound)
             .set_default(-1.0)
             .description("radius low bound for range search")

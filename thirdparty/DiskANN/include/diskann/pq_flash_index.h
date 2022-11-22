@@ -96,8 +96,8 @@ namespace diskann {
         const T *query, const _u64 k_search, const _u64 l_search, _s64 *res_ids,
         float *res_dists, const _u64 beam_width,
         const bool use_reorder_data = false, QueryStats *stats = nullptr,
-        const knowhere::feder::diskann::FederResultUniq& feder = nullptr,
-        knowhere::BitsetView bitset_view = nullptr);
+        const knowhere::feder::diskann::FederResultUniq &feder = nullptr,
+        knowhere::BitsetView                             bitset_view = nullptr);
 
     DISKANN_DLLEXPORT _u32 range_search(
         const T *query1, const double range, const _u64 min_l_search,
@@ -114,7 +114,7 @@ namespace diskann {
 
     DISKANN_DLLEXPORT _u64 get_max_degree() const noexcept;
 
-    DISKANN_DLLEXPORT _u32* get_medoids() const noexcept;
+    DISKANN_DLLEXPORT _u32 *get_medoids() const noexcept;
 
     DISKANN_DLLEXPORT size_t get_num_medoids() const noexcept;
 

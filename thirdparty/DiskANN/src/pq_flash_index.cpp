@@ -799,7 +799,7 @@ namespace diskann {
   void PQFlashIndex<T>::cached_beam_search(
       const T *query1, const _u64 k_search, const _u64 l_search, _s64 *indices,
       float *distances, const _u64 beam_width, const bool use_reorder_data,
-      QueryStats *stats, const knowhere::feder::diskann::FederResultUniq& feder,
+      QueryStats *stats, const knowhere::feder::diskann::FederResultUniq &feder,
       knowhere::BitsetView bitset_view) {
     ThreadData<T> data = this->thread_data.pop();
     while (data.scratch.sector_scratch == nullptr) {
@@ -1100,7 +1100,8 @@ namespace diskann {
 
           // add top candidate info into feder result
           if (feder != nullptr) {
-            feder->visit_info_.AddTopCandidateInfo(frontier_nhood.first, cur_expanded_dist);
+            feder->visit_info_.AddTopCandidateInfo(frontier_nhood.first,
+                                                   cur_expanded_dist);
             feder->id_set_.insert(frontier_nhood.first);
           }
         }
@@ -1318,7 +1319,7 @@ namespace diskann {
   }
 
   template<typename T>
-  _u32* PQFlashIndex<T>::get_medoids() const noexcept {
+  _u32 *PQFlashIndex<T>::get_medoids() const noexcept {
     return medoids;
   }
 
