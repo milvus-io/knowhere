@@ -4,7 +4,6 @@
 #include <iostream>
 #include "windows_customizations.h"
 namespace diskann {
-#define LOG(level) std::cout
   DISKANN_DLLEXPORT extern std::basic_ostream<char> cout;
   DISKANN_DLLEXPORT extern std::basic_ostream<char> cerr;
 }  // namespace diskann

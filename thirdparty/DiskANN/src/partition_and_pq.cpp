@@ -67,8 +67,9 @@ void gen_random_slice(const std::string base_file,
 
   base_reader.read((char *) &npts_u32, sizeof(uint32_t));
   base_reader.read((char *) &nd_u32, sizeof(uint32_t));
-  LOG(DEBUG) << "Loading base " << base_file << ". #points: " << npts_u32
-             << ". #dim: " << nd_u32 << ".";
+  LOG_KNOWHERE_DEBUG_ << "Loading base " << base_file
+                      << ". #points: " << npts_u32 << ". #dim: " << nd_u32
+                      << ".";
   sample_writer.write((char *) &num_sampled_pts_u32, sizeof(uint32_t));
   sample_writer.write((char *) &nd_u32, sizeof(uint32_t));
 
@@ -87,8 +88,8 @@ void gen_random_slice(const std::string base_file,
   sample_writer.seekp(0, std::ios::beg);
   sample_writer.write((char *) &num_sampled_pts_u32, sizeof(uint32_t));
   sample_writer.close();
-  LOG(DEBUG) << "Wrote " << num_sampled_pts_u32
-             << " points to sample file: " << output_file;
+  LOG_KNOWHERE_DEBUG_ << "Wrote " << num_sampled_pts_u32
+                      << " points to sample file: " << output_file;
 }
 
 // streams data from the file, and samples each vector with probability p_val
@@ -268,7 +269,7 @@ int generate_pq_pivots(const float *passed_train_data, size_t num_train,
         cur_best_load = bin_loads[b];
       }
     }
-    LOG(DEBUG) << " Pushing " << d << " into bin #: " << cur_best;
+    LOG_KNOWHERE_DEBUG_ << " Pushing " << d << " into bin #: " << cur_best;
     bin_to_dims[cur_best].push_back(d);
     if (bin_to_dims[cur_best].size() == high_val) {
       cur_num_high++;
@@ -289,7 +290,7 @@ int generate_pq_pivots(const float *passed_train_data, size_t num_train,
       stream << p << ",";
     }
     stream << "] ";
-    LOG(DEBUG) << stream.str();
+    LOG_KNOWHERE_DEBUG_ << stream.str();
     if (b > 0)
       chunk_offsets.push_back(chunk_offsets[b - 1] +
                               (unsigned) bin_to_dims[b - 1].size());
@@ -302,7 +303,7 @@ int generate_pq_pivots(const float *passed_train_data, size_t num_train,
   for (auto p : rearrangement)
     rearrange_stream << p << " ";
 
-  LOG(DEBUG) << rearrange_stream.str();
+  LOG_KNOWHERE_DEBUG_ << rearrange_stream.str();
 
   full_pivot_data.reset(new float[num_centers * dim]);
 
@@ -318,8 +319,9 @@ int generate_pq_pivots(const float *passed_train_data, size_t num_train,
     std::unique_ptr<uint32_t[]> closest_center =
         std::make_unique<uint32_t[]>(num_train);
 
-    LOG(DEBUG) << "Processing chunk " << i << " with dimensions ["
-               << chunk_offsets[i] << ", " << chunk_offsets[i + 1] << ")";
+    LOG_KNOWHERE_DEBUG_ << "Processing chunk " << i << " with dimensions ["
+                        << chunk_offsets[i] << ", " << chunk_offsets[i + 1]
+                        << ")";
 
 #pragma omp parallel for schedule(static, 65536)
     for (int64_t j = 0; j < (_s64) num_train; j++) {
@@ -443,7 +445,7 @@ int generate_pq_data_from_pivots(const std::string data_file,
       throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
                                   __LINE__);
     }
-    LOG(DEBUG) << "Loaded PQ pivot information";
+    LOG_KNOWHERE_DEBUG_ << "Loaded PQ pivot information";
   }
 
   std::ofstream compressed_file_writer(pq_compressed_vectors_path,
@@ -487,7 +489,8 @@ int generate_pq_data_from_pivots(const std::string data_file,
     diskann::convert_types<T, float>(block_data_T.get(), block_data_float.get(),
                                      cur_blk_size, dim);
 
-    LOG(DEBUG) << "Processing points  [" << start_id << ", " << end_id << ")..";
+    LOG_KNOWHERE_DEBUG_ << "Processing points  [" << start_id << ", " << end_id
+                        << ")..";
 
 #pragma omp parallel for firstprivate(block_data_tmp) schedule(static, 8192)
     for (uint64_t p = 0; p < cur_blk_size; p++) {
@@ -619,7 +622,7 @@ int estimate_cluster_sizes(float *test_data_float, size_t num_test,
     cluster_sizes.push_back((size_t) cur_shard_count);
     cluster_size_stream << cur_shard_count << " ";
   }
-  LOG(DEBUG) << cluster_size_stream.str();
+  LOG_KNOWHERE_DEBUG_ << cluster_size_stream.str();
   delete[] shard_counts;
   delete[] block_closest_centers;
   return 0;
@@ -716,10 +719,11 @@ int shard_data_into_clusters(const std::string data_file, float *pivots,
     shard_idmap_writer[i].write((char *) &cur_shard_count, sizeof(uint32_t));
     shard_idmap_writer[i].close();
   }
-  LOG(INFO) << shard_size_stream.str();
-  LOG(INFO) << "Partitioned " << num_points << " with replication factor "
-            << k_base << " to get " << total_count << " points across "
-            << num_centers << " shards ";
+  LOG_KNOWHERE_INFO_ << shard_size_stream.str();
+  LOG_KNOWHERE_INFO_ << "Partitioned " << num_points
+                     << " with replication factor " << k_base << " to get "
+                     << total_count << " points across " << num_centers
+                     << " shards ";
   return 0;
 }
 
@@ -806,10 +810,11 @@ int shard_data_into_clusters_only_ids(const std::string data_file,
     shard_idmap_writer[i].write((char *) &cur_shard_count, sizeof(uint32_t));
     shard_idmap_writer[i].close();
   }
-  LOG(INFO) << shard_size_stream.str();
-  LOG(INFO) << "Partitioned " << num_points << " with replication factor "
-            << k_base << " to get " << total_count << " points across "
-            << num_centers << " shards ";
+  LOG_KNOWHERE_INFO_ << shard_size_stream.str();
+  LOG_KNOWHERE_INFO_ << "Partitioned " << num_points
+                     << " with replication factor " << k_base << " to get "
+                     << total_count << " points across " << num_centers
+                     << " shards ";
   return 0;
 }
 
@@ -840,7 +845,7 @@ int retrieve_shard_data_from_ids(const std::string data_file,
 
   _u32 cur_pos = 0;
   _u32 num_written = 0;
-  LOG(DEBUG) << "Shard has " << shard_size << " points";
+  LOG_KNOWHERE_DEBUG_ << "Shard has " << shard_size << " points";
 
   size_t block_size = num_points <= BLOCK_SIZE ? num_points : BLOCK_SIZE;
   std::unique_ptr<T[]> block_data_T = std::make_unique<T[]>(block_size * dim);
@@ -870,7 +875,7 @@ int retrieve_shard_data_from_ids(const std::string data_file,
       break;
   }
 
-  LOG(DEBUG) << "Written file with " << num_written << " points";
+  LOG_KNOWHERE_DEBUG_ << "Written file with " << num_written << " points";
 
   shard_data_writer.seekp(0);
   shard_data_writer.write((char *) &num_written, sizeof(uint32_t));
@@ -909,14 +914,14 @@ int partition(const std::string data_file, const float sampling_rate,
   pivot_data = new float[num_parts * train_dim];
 
   // Process Global k-means for kmeans_partitioning Step
-  LOG(DEBUG) << "Processing global k-means (kmeans_partitioning Step)";
+  LOG_KNOWHERE_DEBUG_ << "Processing global k-means (kmeans_partitioning Step)";
   kmeans::kmeanspp_selecting_pivots(train_data_float, num_train, train_dim,
                                     pivot_data, num_parts);
 
   kmeans::run_lloyds(train_data_float, num_train, train_dim, pivot_data,
                      num_parts, max_k_means_reps, NULL, NULL);
 
-  LOG(DEBUG) << "Saving global k-center pivots";
+  LOG_KNOWHERE_DEBUG_ << "Saving global k-center pivots";
   diskann::save_bin<float>(output_file.c_str(), pivot_data, (size_t) num_parts,
                            train_dim);
 
@@ -971,7 +976,8 @@ int partition_with_ram_budget(const std::string data_file,
 
     pivot_data = new float[num_parts * train_dim];
     // Process Global k-means for kmeans_partitioning Step
-    LOG(INFO) << "Processing global k-means (kmeans_partitioning Step)";
+    LOG_KNOWHERE_INFO_
+        << "Processing global k-means (kmeans_partitioning Step)";
     kmeans::kmeanspp_selecting_pivots(train_data_float, num_train, train_dim,
                                       pivot_data, num_parts);
 
@@ -995,16 +1001,17 @@ int partition_with_ram_budget(const std::string data_file,
       if (cur_shard_ram_estimate > max_ram_usage)
         max_ram_usage = cur_shard_ram_estimate;
     }
-    LOG(DEBUG) << "With " << num_parts << " parts, max estimated RAM usage: "
-               << max_ram_usage / (1024 * 1024 * 1024) << "GB, budget given is "
-               << ram_budget;
+    LOG_KNOWHERE_DEBUG_ << "With " << num_parts
+                        << " parts, max estimated RAM usage: "
+                        << max_ram_usage / (1024 * 1024 * 1024)
+                        << "GB, budget given is " << ram_budget;
     if (max_ram_usage > 1024 * 1024 * 1024 * ram_budget) {
       fit_in_ram = false;
       num_parts += 2;
     }
   }
 
-  LOG(DEBUG) << "Saving global k-center pivots";
+  LOG_KNOWHERE_DEBUG_ << "Saving global k-center pivots";
   diskann::save_bin<float>(output_file.c_str(), pivot_data, (size_t) num_parts,
                            train_dim);
 

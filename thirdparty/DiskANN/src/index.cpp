@@ -363,7 +363,7 @@ namespace diskann {
   template<typename T, typename TagT>
   _u64 Index<T, TagT>::save_tags(std::string tags_file) {
     if (!_enable_tags) {
-      LOG(DEBUG) << "Not saving tags as they are not enabled.";
+      LOG_KNOWHERE_DEBUG_ << "Not saving tags as they are not enabled.";
       return 0;
     }
     size_t tag_bytes_written;
@@ -483,8 +483,8 @@ namespace diskann {
     auto stop = std::chrono::high_resolution_clock::now();
     auto timespan =
         std::chrono::duration_cast<std::chrono::duration<double>>(stop - start);
-    LOG(DEBUG) << "Time taken for save: " << timespan.count() << "s."
-               << std::endl;
+    LOG_KNOWHERE_DEBUG_ << "Time taken for save: " << timespan.count() << "s."
+                        << std::endl;
   }
 
 #ifdef EXEC_ENV_OLS
@@ -516,7 +516,7 @@ namespace diskann {
     if (file_dim != 1) {
       std::stringstream stream;
       stream << "ERROR: Found " << file_dim << " dimensions for tags,"
-             << "but tag file must have 1 dimension." << std::endl;
+             << "but tag file must have 1 dimension.";
       LOG(ERROR) << stream.str();
       delete[] tag_data;
       throw diskann::ANNException(stream.str(), -1, __FUNCSIG__, __FILE__,
@@ -1406,7 +1406,7 @@ namespace diskann {
         (unsigned) DIV_ROUND_UP(_nd + _num_frozen_pts, (64 * 64));
     if (num_syncs < 40)
       num_syncs = 40;
-    LOG(DEBUG) << "Number of syncs: " << num_syncs;
+    LOG_KNOWHERE_DEBUG_ << "Number of syncs: " << num_syncs;
 
     _saturate_graph = parameters.Get<bool>("saturate_graph");
 
@@ -1612,7 +1612,7 @@ namespace diskann {
                  << "/" << num_syncs << " with L " << L << ")"
                  << " sync_time: " << sync_time << "s"
                  << "; inter_time: " << inter_time << "s" << std::endl;
-          LOG(DEBUG) << stream.str();
+          LOG_KNOWHERE_DEBUG_ << stream.str();
           total_sync_time += sync_time;
           total_inter_time += inter_time;
           total_inter_count += inter_count;
@@ -1629,16 +1629,17 @@ namespace diskann {
       MallocExtension::instance()->ReleaseFreeMemory();
 #endif
       if (_nd > 0) {
-        LOG(INFO) << "Completed Pass " << rnd_no << " of data using L=" << L
-                  << " and alpha=" << _indexingAlpha << ". Stats: "
-                  << "search+prune_time=" << total_sync_time
-                  << "s, inter_time=" << total_inter_time
-                  << "s, inter_count=" << total_inter_count;
+        LOG_KNOWHERE_INFO_ << "Completed Pass " << rnd_no
+                           << " of data using L=" << L
+                           << " and alpha=" << _indexingAlpha << ". Stats: "
+                           << "search+prune_time=" << total_sync_time
+                           << "s, inter_time=" << total_inter_time
+                           << "s, inter_count=" << total_inter_count;
       }
     }
 
     if (_nd > 0) {
-      LOG(DEBUG) << "Starting final cleanup..";
+      LOG_KNOWHERE_DEBUG_ << "Starting final cleanup..";
     }
 #pragma omp parallel for schedule(dynamic, 65536)
     for (_s64 node_ctr = 0; node_ctr < (_s64) (visit_order.size());
@@ -1668,8 +1669,9 @@ namespace diskann {
       }
     }
     if (_nd > 0) {
-      LOG(DEBUG) << "final cleanup done. Link time: "
-                 << ((double) link_timer.elapsed() / (double) 1000000) << "s";
+      LOG_KNOWHERE_DEBUG_ << "final cleanup done. Link time: "
+                          << ((double) link_timer.elapsed() / (double) 1000000)
+                          << "s";
     }
   }
 
@@ -1720,9 +1722,9 @@ namespace diskann {
     if (min > max)
       min = max;
     if (_nd > 0) {
-      LOG(INFO) << "Index built with degree: max:" << max
-                << "  avg:" << (float) total / (float) (_nd + _num_frozen_pts)
-                << "  min:" << min << "  count(deg<2):" << cnt;
+      LOG_KNOWHERE_INFO_ << "Index built with degree: max:" << max << "  avg:"
+                         << (float) total / (float) (_nd + _num_frozen_pts)
+                         << "  min:" << min << "  count(deg<2):" << cnt;
     }
   }
 
@@ -1775,8 +1777,8 @@ namespace diskann {
         }
       }
 
-      LOG(INFO) << "Building start. Loading only first " << num_points_to_load
-                << " from file.. ";
+      LOG_KNOWHERE_INFO_ << "Building start. Loading only first "
+                         << num_points_to_load << " from file.. ";
       _nd = num_points_to_load;
 
       if (_enable_tags && tags.size() != num_points_to_load) {
@@ -1817,9 +1819,9 @@ namespace diskann {
     if (min > max)
       min = max;
     if (_nd > 0) {
-      LOG(INFO) << "Index built with degree: max:" << max
-                << "  avg:" << (float) total / (float) (_nd + _num_frozen_pts)
-                << "  min:" << min << "  count(deg<2):" << cnt;
+      LOG_KNOWHERE_INFO_ << "Index built with degree: max:" << max << "  avg:"
+                         << (float) total / (float) (_nd + _num_frozen_pts)
+                         << "  min:" << min << "  count(deg<2):" << cnt;
     }
     _width = (std::max)((unsigned) max, _width);
     _has_built = true;
@@ -1840,7 +1842,7 @@ namespace diskann {
 
     size_t file_num_points, file_dim;
     if (filename == nullptr) {
-      LOG(INFO) << "Starting with an empty index.";
+      LOG_KNOWHERE_INFO_ << "Starting with an empty index.";
       _nd = 0;
     } else {
       diskann::get_bin_metadata(filename, file_num_points, file_dim);
@@ -1869,8 +1871,8 @@ namespace diskann {
       copy_aligned_data_from_file<T>(std::string(filename), _data,
                                      file_num_points, file_dim, _aligned_dim);
 
-      LOG(DEBUG) << "Loading only first " << num_points_to_load
-                 << " from file.. ";
+      LOG_KNOWHERE_DEBUG_ << "Loading only first " << num_points_to_load
+                          << " from file.. ";
       _nd = num_points_to_load;
       if (_enable_tags) {
         if (tag_filename == nullptr) {
@@ -1880,8 +1882,8 @@ namespace diskann {
           }
         } else {
           if (file_exists(tag_filename)) {
-            LOG(DEBUG) << "Loading tags from " << tag_filename
-                       << " for vamana index build";
+            LOG_KNOWHERE_DEBUG_ << "Loading tags from " << tag_filename
+                                << " for vamana index build";
             TagT  *tag_data = nullptr;
             size_t npts, ndim;
             diskann::load_bin(tag_filename, tag_data, npts, ndim);
@@ -1929,9 +1931,9 @@ namespace diskann {
     if (min > max)
       min = max;
     if (_nd > 0) {
-      LOG(INFO) << "Index built with degree: max:" << max
-                << "  avg:" << (float) total / (float) (_nd + _num_frozen_pts)
-                << "  min:" << min << "  count(deg<2):" << cnt;
+      LOG_KNOWHERE_INFO_ << "Index built with degree: max:" << max << "  avg:"
+                         << (float) total / (float) (_nd + _num_frozen_pts)
+                         << "  min:" << min << "  count(deg<2):" << cnt;
     }
     _width = (std::max)((unsigned) max, _width);
     _has_built = true;
@@ -2016,8 +2018,9 @@ namespace diskann {
 
     if (L > scratch.search_l) {
       scratch.resize_for_query(L);
-      LOG(DEBUG) << "Expanding query scratch_space. Was created with Lsize: "
-                 << scratch.search_l << " but search L is: " << L;
+      LOG_KNOWHERE_DEBUG_
+          << "Expanding query scratch_space. Was created with Lsize: "
+          << scratch.search_l << " but search L is: " << L;
     }
     _u32  *indices = scratch.indices;             // new unsigned[L];
     float *dist_interim = scratch.interim_dists;  // new float[L];
@@ -2485,9 +2488,9 @@ namespace diskann {
     if (min > max)
       min = max;
     if (_nd > 0) {
-      LOG(INFO) << "Index built with degree: max:" << max
-                << "  avg:" << (float) total / (float) (_nd + _num_frozen_pts)
-                << "  min:" << min << "  count(deg<2):" << cnt;
+      LOG_KNOWHERE_INFO_ << "Index built with degree: max:" << max << "  avg:"
+                         << (float) total / (float) (_nd + _num_frozen_pts)
+                         << "  min:" << min << "  count(deg<2):" << cnt;
     }
   }
 

@@ -277,8 +277,8 @@ namespace diskann {
     npts = (unsigned) npts_i32;
     dim = (unsigned) dim_i32;
 
-    LOG(DEBUG) << "Metadata: #pts = " << npts << ", #dims = " << dim << "..."
-               << std::endl;
+    LOG_KNOWHERE_DEBUG_ << "Metadata: #pts = " << npts << ", #dims = " << dim
+                        << "...";
 
     size_t expected_actual_file_size =
         npts * dim * sizeof(T) + 2 * sizeof(uint32_t);
@@ -349,7 +349,7 @@ namespace diskann {
     reader.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
     try {
-      LOG(DEBUG) << "Opening bin file " << bin_file.c_str() << "... ";
+      LOG_KNOWHERE_DEBUG_ << "Opening bin file " << bin_file.c_str() << "... ";
       reader.open(bin_file, std::ios::binary | std::ios::ate);
       uint64_t fsize = reader.tellg();
       reader.seekg(0);
@@ -357,7 +357,7 @@ namespace diskann {
     } catch (std::system_error& e) {
       throw FileException(bin_file, e, __FUNCSIG__, __FILE__, __LINE__);
     }
-    LOG(DEBUG) << "done.";
+    LOG_KNOWHERE_DEBUG_ << "done.";
   }
   // load_bin functions END
 
@@ -365,7 +365,8 @@ namespace diskann {
                             float*& dists, size_t& npts, size_t& dim) {
     _u64            read_blk_size = 64 * 1024 * 1024;
     cached_ifstream reader(bin_file, read_blk_size);
-    LOG(DEBUG) << "Reading truthset file " << bin_file.c_str() << " ...";
+    LOG_KNOWHERE_DEBUG_ << "Reading truthset file " << bin_file.c_str()
+                        << " ...";
     size_t actual_file_size = reader.get_file_size();
 
     int npts_i32, dim_i32;
@@ -374,7 +375,8 @@ namespace diskann {
     npts = (unsigned) npts_i32;
     dim = (unsigned) dim_i32;
 
-    LOG(DEBUG) << "Metadata: #pts = " << npts << ", #dims = " << dim << "... ";
+    LOG_KNOWHERE_DEBUG_ << "Metadata: #pts = " << npts << ", #dims = " << dim
+                        << "... ";
 
     int truthset_type = -1;  // 1 means truthset has ids and distances, 2 means
                              // only ids, -1 is error
@@ -417,7 +419,8 @@ namespace diskann {
       std::vector<std::vector<_u32>>& groundtruth, size_t& npts) {
     _u64            read_blk_size = 64 * 1024 * 1024;
     cached_ifstream reader(bin_file, read_blk_size);
-    LOG(DEBUG) << "Reading truthset file " << bin_file.c_str() << "... ";
+    LOG_KNOWHERE_DEBUG_ << "Reading truthset file " << bin_file.c_str()
+                        << "... ";
     size_t actual_file_size = reader.get_file_size();
 
     int npts_i32, dim_i32;
@@ -428,7 +431,8 @@ namespace diskann {
     _u32*  ids;
     float* dists;
 
-    LOG(DEBUG) << "Metadata: #pts = " << npts << ", #dims = " << dim << "... ";
+    LOG_KNOWHERE_DEBUG_ << "Metadata: #pts = " << npts << ", #dims = " << dim
+                        << "... ";
 
     int truthset_type = -1;  // 1 means truthset has ids and distances, 2 means
                              // only ids, -1 is error
@@ -484,7 +488,8 @@ namespace diskann {
                                   _u64&                           gt_num) {
     _u64            read_blk_size = 64 * 1024 * 1024;
     cached_ifstream reader(bin_file, read_blk_size);
-    LOG(DEBUG) << "Reading truthset file " << bin_file.c_str() << "... ";
+    LOG_KNOWHERE_DEBUG_ << "Reading truthset file " << bin_file.c_str()
+                        << "... ";
     size_t actual_file_size = reader.get_file_size();
 
     int npts_u32, total_u32;
@@ -494,8 +499,8 @@ namespace diskann {
     gt_num = (_u64) npts_u32;
     _u64 total_res = (_u64) total_u32;
 
-    LOG(DEBUG) << "Metadata: #pts = " << gt_num
-               << ", #total_results = " << total_res << "...";
+    LOG_KNOWHERE_DEBUG_ << "Metadata: #pts = " << gt_num
+                        << ", #total_results = " << total_res << "...";
 
     size_t expected_file_size =
         2 * sizeof(_u32) + gt_num * sizeof(_u32) + total_res * sizeof(_u32);
@@ -556,19 +561,19 @@ namespace diskann {
   inline uint64_t save_bin(const std::string& filename, T* data, size_t npts,
                            size_t ndims) {
     std::ofstream writer(filename, std::ios::binary | std::ios::out);
-    LOG(DEBUG) << "Writing bin: " << filename.c_str();
+    LOG_KNOWHERE_DEBUG_ << "Writing bin: " << filename.c_str();
     int npts_i32 = (int) npts, ndims_i32 = (int) ndims;
     writer.write((char*) &npts_i32, sizeof(int));
     writer.write((char*) &ndims_i32, sizeof(int));
-    LOG(DEBUG) << "bin: #pts = " << npts << ", #dims = " << ndims
-               << ", size = " << npts * ndims * sizeof(T) + 2 * sizeof(int)
-               << "B";
+    LOG_KNOWHERE_DEBUG_ << "bin: #pts = " << npts << ", #dims = " << ndims
+                        << ", size = "
+                        << npts * ndims * sizeof(T) + 2 * sizeof(int) << "B";
 
     //    data = new T[npts_u64 * ndims_u64];
     writer.write((char*) data, npts * ndims * sizeof(T));
     writer.close();
     size_t bytes_written = npts * ndims * sizeof(T) + 2 * sizeof(uint32_t);
-    LOG(DEBUG) << "Finished writing bin.";
+    LOG_KNOWHERE_DEBUG_ << "Finished writing bin.";
     return bytes_written;
   }
 
@@ -611,7 +616,7 @@ namespace diskann {
       memset(data + i * rounded_dim + dim, 0, (rounded_dim - dim) * sizeof(T));
     }
     stream << " done." << std::endl;
-    LOG(DEBUG) << stream.str();
+    LOG_KNOWHERE_DEBUG_ << stream.str();
   }
 
 #ifdef EXEC_ENV_OLS
@@ -641,7 +646,8 @@ namespace diskann {
     reader.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
     try {
-      LOG(DEBUG) << "Reading (with alignment) bin file " << bin_file << " ...";
+      LOG_KNOWHERE_DEBUG_ << "Reading (with alignment) bin file " << bin_file
+                          << " ...";
       reader.open(bin_file, std::ios::binary | std::ios::ate);
 
       uint64_t fsize = reader.tellg();
@@ -674,7 +680,8 @@ namespace diskann {
   template<typename T>
   float prepare_base_for_inner_products(const std::string in_file,
                                         const std::string out_file) {
-    LOG(DEBUG) << "Pre-processing base file by adding extra coordinate";
+    LOG_KNOWHERE_DEBUG_
+        << "Pre-processing base file by adding extra coordinate";
     std::ifstream in_reader(in_file.c_str(), std::ios::binary);
     std::ofstream out_writer(out_file.c_str(), std::ios::binary);
     _u64          npts, in_dims, out_dims;

@@ -352,7 +352,7 @@ namespace diskann {
     std::vector<std::pair<unsigned, unsigned>> node_shard;
     node_shard.reserve(nelems);
     for (_u64 shard = 0; shard < nshards; shard++) {
-      LOG(INFO) << "Creating inverse map -- shard #" << shard;
+      LOG_KNOWHERE_INFO_ << "Creating inverse map -- shard #" << shard;
       for (_u64 idx = 0; idx < idmaps[shard].size(); idx++) {
         _u64 node_id = idmaps[shard][idx];
         node_shard.push_back(std::make_pair((_u32) node_id, (_u32) shard));
@@ -363,7 +363,7 @@ namespace diskann {
                 return left.first < right.first || (left.first == right.first &&
                                                     left.second < right.second);
               });
-    LOG(INFO) << "Finished computing node -> shards map";
+    LOG_KNOWHERE_INFO_ << "Finished computing node -> shards map";
 
     // create cached vamana readers
     std::vector<cached_ifstream> vamana_readers(nshards);
@@ -400,8 +400,8 @@ namespace diskann {
           input_width > max_input_width ? input_width : max_input_width;
     }
 
-    LOG(INFO) << "Max input width: " << max_input_width
-              << ", output width: " << output_width;
+    LOG_KNOWHERE_INFO_ << "Max input width: " << max_input_width
+                       << ", output width: " << output_width;
 
     merged_vamana_writer.write((char *) &output_width, sizeof(unsigned));
     std::ofstream medoid_writer(medoids_file.c_str(), std::ios::binary);
@@ -431,7 +431,7 @@ namespace diskann {
     merged_vamana_writer.write((char *) &merged_index_frozen, sizeof(_u64));
     medoid_writer.close();
 
-    LOG(INFO) << "Starting merge";
+    LOG_KNOWHERE_INFO_ << "Starting merge";
 
     // Gopal. random_shuffle() is deprecated.
     std::random_device rng;
@@ -496,7 +496,7 @@ namespace diskann {
     merged_vamana_writer.reset();
     merged_vamana_writer.write((char *) &merged_index_size, sizeof(uint64_t));
 
-    LOG(INFO) << "Finished merge";
+    LOG_KNOWHERE_INFO_ << "Finished merge";
     return 0;
   }
 
@@ -514,9 +514,10 @@ namespace diskann {
     double full_index_ram =
         estimate_ram_usage(base_num, base_dim, sizeof(T), R);
     if (full_index_ram < ram_budget * 1024 * 1024 * 1024) {
-      LOG(INFO) << "Full index fits in RAM budget, should consume at most "
-                << full_index_ram / (1024 * 1024 * 1024)
-                << "GiBs, so building in one shot";
+      LOG_KNOWHERE_INFO_
+          << "Full index fits in RAM budget, should consume at most "
+          << full_index_ram / (1024 * 1024 * 1024)
+          << "GiBs, so building in one shot";
       diskann::Parameters paras;
       paras.Set<unsigned>("L", (unsigned) L);
       paras.Set<unsigned>("R", (unsigned) R);
@@ -710,7 +711,7 @@ namespace diskann {
 
     // create cached reader + writer
     size_t actual_file_size = get_file_size(mem_index_file);
-    LOG(INFO) << "Vamana index file size: " << actual_file_size;
+    LOG_KNOWHERE_INFO_ << "Vamana index file size: " << actual_file_size;
     std::ifstream   vamana_reader(mem_index_file, std::ios::binary);
     cached_ofstream diskann_writer(output_file, write_blk_size);
 
@@ -936,10 +937,11 @@ namespace diskann {
     // ||x||^2/M^2) for every x, M is max norm of all points. Extra space on
     // disk needed!
     if (config.compare_metric == diskann::Metric::INNER_PRODUCT) {
-      LOG(INFO) << "Using Inner Product search, so need to pre-process base "
-                   "data into temp file. Please ensure there is additional "
-                   "(n*(d+1)*4) bytes for storing pre-processed base vectors, "
-                   "apart from the intermin indices and final index.";
+      LOG_KNOWHERE_INFO_
+          << "Using Inner Product search, so need to pre-process base "
+             "data into temp file. Please ensure there is additional "
+             "(n*(d+1)*4) bytes for storing pre-processed base vectors, "
+             "apart from the intermin indices and final index.";
       std::string prepped_base = index_prefix_path + "_prepped_base.bin";
       data_file_to_use = prepped_base;
       float max_norm_of_base =
@@ -969,11 +971,12 @@ namespace diskann {
       omp_set_num_threads(num_threads);
     }
 
-    LOG(INFO) << "Starting index build: R=" << R << " L=" << L
-              << " Query RAM budget: "
-              << pq_code_size_limit / (1024 * 1024 * 1024) << "(GiB)"
-              << " Indexing ram budget: " << indexing_ram_budget << "(GiB)"
-              << " T: " << num_threads;
+    LOG_KNOWHERE_INFO_ << "Starting index build: R=" << R << " L=" << L
+                       << " Query RAM budget: "
+                       << pq_code_size_limit / (1024 * 1024 * 1024) << "(GiB)"
+                       << " Indexing ram budget: " << indexing_ram_budget
+                       << "(GiB)"
+                       << " T: " << num_threads;
 
     auto s = std::chrono::high_resolution_clock::now();
 
@@ -987,8 +990,8 @@ namespace diskann {
     num_pq_chunks = num_pq_chunks <= 0 ? 1 : num_pq_chunks;
     num_pq_chunks = num_pq_chunks > dim ? dim : num_pq_chunks;
 
-    LOG(INFO) << "Compressing " << dim << "-dimensional data into "
-              << num_pq_chunks << " bytes per vector.";
+    LOG_KNOWHERE_INFO_ << "Compressing " << dim << "-dimensional data into "
+                       << num_pq_chunks << " bytes per vector.";
 
     size_t train_size, train_dim;
     float *train_data;
@@ -1035,7 +1038,7 @@ namespace diskann {
                                     pq_compressed_vectors_path);
     auto pq_e = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> pq_diff = pq_e - pq_s;
-    LOG(INFO) << "Training PQ codes cost: " << pq_diff.count() << "s";
+    LOG_KNOWHERE_INFO_ << "Training PQ codes cost: " << pq_diff.count() << "s";
     delete[] train_data;
 
     train_data = nullptr;
@@ -1052,7 +1055,7 @@ namespace diskann {
         medoids_path, centroids_path);
     auto graph_e = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> graph_diff = graph_e - graph_s;
-    LOG(INFO) << "Training graph cost: " << graph_diff.count() << "s";
+    LOG_KNOWHERE_INFO_ << "Training graph cost: " << graph_diff.count() << "s";
     if (!use_disk_pq) {
       diskann::create_disk_layout<T>(data_file_to_use.c_str(), mem_index_path,
                                      disk_index_path);
@@ -1083,7 +1086,7 @@ namespace diskann {
 
     auto                          e = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> diff = e - s;
-    LOG(INFO) << "Indexing time: " << diff.count() << std::endl;
+    LOG_KNOWHERE_INFO_ << "Indexing time: " << diff.count() << std::endl;
 
     return 0;
   }

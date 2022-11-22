@@ -115,8 +115,8 @@ namespace diskann {
       std::memset(centroid, 0, ndims * sizeof(float));
     }
 
-    LOG(INFO) << "PQ Pivots: #ctrs: " << npts_u64 << ", #dims: " << ndims_u64
-              << ", #chunks: " << n_chunks;
+    LOG_KNOWHERE_INFO_ << "PQ Pivots: #ctrs: " << npts_u64
+                       << ", #dims: " << ndims_u64 << ", #chunks: " << n_chunks;
     //      assert((_u64) ndims_u32 == n_chunks * chunk_size);
     // alloc and compute transpose
     tables_T = new float[256 * ndims_u64];
