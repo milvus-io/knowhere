@@ -67,7 +67,6 @@ pull_request_rules:
       - "status-success=Unit Test on ubuntu-20.04"
       - "status-success=Unit Test on centos7"
       - "status-success=Unit Test on macos-11"
-      - "status-success=Unit Test on MSYS"
       - "status-success=e2e"
     actions:
       label:
@@ -80,7 +79,6 @@ pull_request_rules:
       - "status-success!=Unit Test on ubuntu-20.04"
       - "status-success!=Unit Test on centos7"
       - "status-success!=Unit Test on macos-11"
-      - "status-success!=Unit Test on MSYS"
       - "status-success!=e2e"
       - -title~=\[skip e2e\]
     actions:
