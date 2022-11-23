@@ -122,7 +122,9 @@ bool AVX512Capable() {
 #include <knowhere/utils/BitsetView.h>
 
 namespace hnswlib {
-typedef int64_t labeltype;
+
+typedef unsigned int tableint;
+typedef unsigned int linklistsizeint;
 
 template <typename T>
 class pairGreater {
@@ -176,18 +178,18 @@ struct SearchParam {
 template<typename dist_t>
 class AlgorithmInterface {
  public:
-    virtual void addPoint(const void *datapoint, labeltype label)=0;
+    virtual void addPoint(const void *datapoint, tableint label)=0;
 
-    virtual std::vector<std::pair<dist_t, labeltype>>
+    virtual std::vector<std::pair<dist_t, tableint>>
     searchKnn(const void*, size_t, const faiss::BitsetView, const SearchParam*,
               const knowhere::feder::hnsw::FederResultUniq&) const = 0;
 
-    virtual std::vector<std::pair<dist_t, labeltype>>
+    virtual std::vector<std::pair<dist_t, tableint>>
     searchRange(const void*, float, const faiss::BitsetView, const SearchParam*,
                 const knowhere::feder::hnsw::FederResultUniq&) const = 0;
 
     // Return k nearest neighbor in the order of closer fist
-    virtual std::vector<std::pair<dist_t, labeltype>>
+    virtual std::vector<std::pair<dist_t, tableint>>
         searchKnnCloserFirst(const void* query_data, size_t k, const faiss::BitsetView) const;
 
     virtual void saveIndex(const std::string &location)=0;
@@ -196,10 +198,10 @@ class AlgorithmInterface {
 };
 
 template<typename dist_t>
-std::vector<std::pair<dist_t, labeltype>>
+std::vector<std::pair<dist_t, tableint>>
 AlgorithmInterface<dist_t>::searchKnnCloserFirst(const void* query_data, size_t k,
                                                  const faiss::BitsetView bitset) const {
-    std::vector<std::pair<dist_t, labeltype>> result;
+    std::vector<std::pair<dist_t, tableint>> result;
 
     // here searchKnn returns the result in the order of further first
     return searchKnn(query_data, k, bitset, nullptr, nullptr);
@@ -208,5 +210,4 @@ AlgorithmInterface<dist_t>::searchKnnCloserFirst(const void* query_data, size_t 
 
 #include "space_l2.h"
 #include "space_ip.h"
-#include "bruteforce.h"
 #include "hnswalg.h"
