@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 #include "faiss/MetricType.h"
-#include "knowhere/comp/metric_type.h"
+#include "knowhere/comp/index_param.h"
 #include "knowhere/expected.h"
 
 namespace knowhere {

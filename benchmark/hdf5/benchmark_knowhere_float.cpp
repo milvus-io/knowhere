@@ -15,7 +15,6 @@
 
 #include "benchmark_knowhere.h"
 #include "knowhere/comp/index_param.h"
-#include "knowhere/comp/index_type.h"
 #include "knowhere/comp/knowhere_config.h"
 #include "knowhere/dataset.h"
 
@@ -160,7 +159,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IDMAP) {
 }
 
 TEST_F(Benchmark_knowhere_float, TEST_IVF_FLAT) {
-    index_type_ = "IVFFLAT";
+    index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
 
     knowhere::Json conf = cfg_;
     for (auto nlist : NLISTs_) {
@@ -197,7 +196,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_FLAT) {
 // }
 
 TEST_F(Benchmark_knowhere_float, TEST_IVF_SQ8) {
-    index_type_ = "IVFSQ";
+    index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFSQ8;
 
     knowhere::Json conf = cfg_;
     for (auto nlist : NLISTs_) {
@@ -212,7 +211,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_SQ8) {
 }
 
 TEST_F(Benchmark_knowhere_float, TEST_IVF_PQ) {
-    index_type_ = "IVFPQ";
+    index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFPQ;
 
     knowhere::Json conf = cfg_;
     conf[knowhere::indexparam::NBITS] = NBITS_;
@@ -231,7 +230,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_PQ) {
 }
 
 TEST_F(Benchmark_knowhere_float, TEST_HNSW) {
-    index_type_ = "HNSW";
+    index_type_ = knowhere::IndexEnum::INDEX_HNSW;
 
     knowhere::Json conf = cfg_;
     for (auto M : HNSW_Ms_) {

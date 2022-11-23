@@ -307,8 +307,8 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
     // across the system, which may lead to higher per-query latency. So find the balance depending on the maximum
     // number of IOPs supported by the SSD.
     if (num_thread_max_value < pool_->size()) {
-        KNOWHERE_ERROR("The global thread pool is too large for DiskANN. Expected max: {}, actual: {}",
-                       num_thread_max_value, pool_->size());
+        LOG_KNOWHERE_ERROR_ << "The global thread pool is too large for DiskANN. Expected max: " << num_thread_max_value
+                            << ", actual: " << pool_->size();
         return false;
     }
 
