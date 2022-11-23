@@ -8,19 +8,9 @@
 #include <utility>
 #include <variant>
 
-#include "comp/index_type.h"
-namespace knowhere {
+#include "comp/index_param.h"
 
-namespace meta {
-const std::string IDS = "ids";
-const std::string DISTANCE = "distance";
-const std::string LIMS = "lims";
-const std::string TENSOR = "tensor";
-const std::string ROWS = "rows";
-const std::string DIM = "dim";
-const std::string RADIUS_LOW_BOUND = "radius_low_bound";
-const std::string RADIUS_HIGH_BOUND = "radius_high_bound";
-}  // namespace meta
+namespace knowhere {
 
 class DataSet {
  public:
