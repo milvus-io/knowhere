@@ -9,4 +9,4 @@ RUN apt-get update && apt-get install -y --no-install-recommends wget curl g++ g
     && cd /tmp && wget  --tries=3 --retry-connrefused "https://cmake.org/files/${CMAKE_VERSION}/${CMAKE_TAR}" \
     && tar --strip-components=1 -xz -C /usr/local -f ${CMAKE_TAR} \
     && rm -f ${CMAKE_TAR} \
-    && pip install wheel 
+    && pip install wheel
