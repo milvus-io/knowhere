@@ -73,7 +73,8 @@ class DiskANNConfig : public BaseConfig {
         KNOWHERE_CONFIG_DECLARE_FIELD(index_prefix)
             .description("path to load or save Diskann.")
             .for_train()
-            .for_search();
+            .for_search()
+            .for_range_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(data_path).description("raw data path.").for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(max_degree)
             .description("the degree of the graph index.")
@@ -99,7 +100,8 @@ class DiskANNConfig : public BaseConfig {
             .set_default(8)
             .set_range(1, 256)
             .for_train()
-            .for_search();
+            .for_search()
+            .for_range_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(disk_pq_dims)
             .description("the dimension of compressed vectors stored on the ssd, use 0 to store uncompressed data.")
             .set_default(0)
@@ -112,25 +114,45 @@ class DiskANNConfig : public BaseConfig {
             .description("the size of cached nodes in GB.")
             .set_default(0)
             .set_range(0, std::numeric_limits<CFG_FLOAT>::max())
-            .for_search();
+            .for_search()
+            .for_range_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(warm_up)
             .description("should do warm up before search.")
             .set_default(false)
-            .for_search();
+            .for_search()
+            .for_range_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(use_bfs_cache)
             .description("should bfs strategy to cache nodes.")
             .set_default(false)
-            .for_search();
+            .for_search()
+            .for_range_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(aio_maxnr)
             .description("the numebr of maximum parallel disk reads per thread.")
             .set_default(32)
             .set_range(1, 256)
-            .for_search();
+            .for_search()
+            .for_range_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(beamwidth)
             .description("the maximum number of IO requests each query will issue per iteration of search code.")
             .set_default(8)
             .set_range(1, 128)
-            .for_search();
+            .for_search()
+            .for_range_search();
+        KNOWHERE_CONFIG_DECLARE_FIELD(min_k)
+            .description("the min l_search size used in range search.")
+            .set_default(100)
+            .set_range(1, std::numeric_limits<CFG_INT>::max())
+            .for_range_search();
+        KNOWHERE_CONFIG_DECLARE_FIELD(max_k)
+            .description("the max l_search size used in range search.")
+            .set_default(10000)
+            .set_range(1, std::numeric_limits<CFG_INT>::max())
+            .for_range_search();
+        KNOWHERE_CONFIG_DECLARE_FIELD(search_list_and_k_ratio)
+            .description("the ratio of search list size and k.")
+            .set_default(2.0)
+            .set_range(1.0, 5.0)
+            .for_range_search();
     }
 };
 }  // namespace knowhere
