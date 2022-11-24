@@ -96,6 +96,14 @@ class IndexWrap {
     }
 
     DataSetPtr
+    RangeSearch(DataSetPtr dataset, const std::string& json){
+        auto res = idx.RangeSearch(*dataset, knowhere::Json::parse(json), nullptr);
+        if (res.has_value())
+            return res.value();
+        return nullptr;
+    }
+
+    DataSetPtr
     GetVectorByIds(DataSetPtr dataset, const std::string& json) {
         auto res = idx.GetVectorByIds(*dataset, knowhere::Json::parse(json));
         if (res.has_value())
