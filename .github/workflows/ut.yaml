@@ -8,52 +8,39 @@ on:
   pull_request:
     # File paths to consider in the event. Optional; defaults to all.
     paths:
-      - 'knowhere/**'
+      - 'include/**'
       - 'python/**'
-      - 'unittest/**'
+      - 'src/**'
       - 'thirdparty/**'
-      - 'build/**'
-      - 'build-support/**'
+      - 'benchmark/**'
       - 'cmake/**'
-      - 'scripts/**'
       - '.github/workflows/ut.yaml'
-      - 'build.sh'
       - 'CMakeLists.txt'
-      - 'Makefile'
       - '!**.md'
 
 jobs:
   ut:
-    name: Unit Test on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: UT on ubuntu-20.04
+    runs-on: ubuntu-20.04
     timeout-minutes: 60
     strategy:
       fail-fast: false
-      matrix:
-        os: [ ubuntu-18.04, macos-11, centos7 ]
-    env:
-      INSTALL_OPENBLAS: true
-      LD_LIBRARY_PATH: "${LD_LIBRARY_PATH}:/usr/lib"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Install Dependency
         run: |
-          ./scripts/install_deps.sh
-      - name: Cpplint & Clang-format check
-        if: ${{ matrix.os == 'ubuntu-18.04' }}
+          sudo apt update && sudo apt install -y cmake g++ gcc libopenblas-dev
+      - name: Build & Run
         run: |
-          ./build.sh -l
-      - name: Run Unittest
-        run: |
-          ./build.sh -t Release -u
-          if [[ -f "output/unittest/faiss_test" ]]; then
-            ./output/unittest/faiss_test
-          fi
-          ./output/unittest/test_knowhere
+          mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_UT=ON \
+          && make -j8 \
+          && ./tests/ut/knowhere_tests
 
   swig-build:
-    name: Python3 SWIG compile
+    name: Python3 Wheel
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     env:
@@ -61,36 +48,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Install Dependency
         run: |
-          ./scripts/install_deps.sh
+          sudo apt update && sudo apt install -y cmake g++ gcc libopenblas-dev python3 python3-pip python3-setuptools
       - name: Build
         run: |
-          ./build.sh -t Release -u
-      - name: Swig Compile
+          mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug \
+          && make -j8
+      - name: Swig Build
         run: |
-          echo "mock"
-          # cd python && python3 setup.py bdist_wheel
-
-  ut-msys:
-    name: Unit Test on MSYS
-    runs-on: windows-2019
-    timeout-minutes: 60
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Configure Toolchain
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: mingw64
-      - name: Install Dependency
-        shell: msys2 {0}
-        run: |
-          ./scripts/install_deps.sh
-      - name: Run Unittest
-        shell: msys2 {0}
-        run: |
-          ./build.sh -t Release -u
-          cp -fr output/lib/*.dll output/unittest/
-          ./output/unittest/faiss_test
-          ./output/unittest/test_knowhere
+          cd python && python3 setup.py bdist_wheel

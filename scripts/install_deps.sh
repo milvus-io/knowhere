@@ -49,7 +49,7 @@ if [[ "${MACHINE}" == "Linux" ]]; then
         sudo yum install -y epel-release centos-release-scl-rh wget && \
         sudo yum install -y git make automake ccache python3-devel \
             devtoolset-7-gcc devtoolset-7-gcc-c++ devtoolset-7-gcc-gfortran \
-            llvm-toolset-7.0-clang llvm-toolset-7.0-clang-tools-extra 
+            llvm-toolset-7.0-clang llvm-toolset-7.0-clang-tools-extra
 
         echo "source scl_source enable devtoolset-7" | sudo tee -a /etc/profile.d/devtoolset-7.sh
         echo "source scl_source enable llvm-toolset-7.0" | sudo tee -a /etc/profile.d/llvm-toolset-7.sh

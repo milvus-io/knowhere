@@ -1,7 +1,7 @@
 pull_request_rules:
   - name: Add needs-dco label when DCO check failed
     conditions:
-      - base=main
+      - base=refactoring
       - -status-success=DCO
     actions:
       label:
@@ -12,7 +12,7 @@ pull_request_rules:
 
   - name: Add dco-passed label when DCO check passed
     conditions:
-      - base=main
+      - base=refactoring
       - status-success=DCO
     actions:
       label:
@@ -23,7 +23,7 @@ pull_request_rules:
 
   - name: Blocking PR if missing a related issue or PR doesn't have kind/improvement label
     conditions:
-      - base=main
+      - base=refactoring
       - and:
         - -body~=\#[0-9]{1,6}(\s+|$)
         - -body~=https://github.com/milvus-io/knowhere/issues/[0-9]{1,6}(\s+|$)
@@ -36,17 +36,17 @@ pull_request_rules:
       comment:
         message: |
           @{{author}} Please associate the related issue to the body of your Pull Request.  (eg. “issue: #<xyz>”)
-  
+
   - name: Dismiss block label if related issue be added into PR
     conditions:
       - or:
         - and:
-          - base=main
+          - base=refactoring
           - or:
             - body~=\#[0-9]{1,6}(\s+|$)
             - body~=https://github.com/milvus-io/knowhere/issues/[0-9]{1,6}(\s+|$)
         - and:
-          - base=main
+          - base=refactoring
           - label=kind/improvement
     actions:
       label:
@@ -55,11 +55,10 @@ pull_request_rules:
 
   - name: Test passed for code changed
     conditions:
-      - base=main
-      - "status-success=Unit Test on ubuntu-18.04"
-      - "status-success=Unit Test on centos7"
-      - "status-success=Unit Test on macos-11"
-      - "status-success=Unit Test on MSYS"
+      - base=refactoring
+      - "status-success=UT on ubuntu-20.04"
+      - "status-success=Python3 Wheel"
+      - 'status-success=pre-commit'
       - "status-success=continuous-integration/jenkins/pr-merge"
     actions:
       label:
@@ -68,11 +67,10 @@ pull_request_rules:
 
   - name: Remove ci-passed label when ut failed
     conditions:
-      - base=main
-      - "status-success!=Unit Test on ubuntu-18.04"
-      - "status-success!=Unit Test on centos7"
-      - "status-success!=Unit Test on macos-11"
-      - "status-success!=Unit Test on MSYS"
+      - base=refactoring
+      - "status-success!=UT on ubuntu-20.04"
+      - "status-success!=Python3 Wheel"
+      - "status-success!=pre-commit"
       - "status-success!=continuous-integration/jenkins/pr-merge"
     actions:
       label:
