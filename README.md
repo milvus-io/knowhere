@@ -35,13 +35,15 @@ $ git submodule update --recursive --init
 
 $ mkdir build && cd build
 #DEBUG CPU
-$ cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_UT=ON -DWITH_CONSOLE_LOG=ON -G Ninja
+$ cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_UT=ON -G Ninja
 #RELEASE CPU
-$ cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_UT=ON -DWITH_CONSOLE_LOG=ON -G Ninja
+$ cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_UT=ON -G Ninja
 #DEBUG GPU
-$ cmake .. -DCMAKE_BUILD_TYPE=Debug -DUSE_CUDA=ON -DWITH_UT=ON -DWITH_CONSOLE_LOG=ON -G Ninja
+$ cmake .. -DCMAKE_BUILD_TYPE=Debug -DUSE_CUDA=ON -DWITH_UT=ON -G Ninja
 #RELEASE GPU
-$ cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_CUDA=ON -DWITH_UT=ON -DWITH_CONSOLE_LOG=ON -G Ninja
+$ cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_CUDA=ON -DWITH_UT=ON -G Ninja
+#ADD -DWITH_DISKANN=ON TO BUILD DISKANN INDEX
+$ cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_UT=ON -DWITH_DISKANN=ON -G Ninja
 #verbose compile
 $ninja -v
 ```

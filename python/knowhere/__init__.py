@@ -25,3 +25,6 @@ def DataSetToArray(ans):
     ids = np.zeros([rows, dim]).astype(np.int32)
     swigknowhere.DataSet2Array(ans, dis, ids)
     return dis, ids
+
+def GetNullDataSet():
+    return swigknowhere.GetNullDataSet()
