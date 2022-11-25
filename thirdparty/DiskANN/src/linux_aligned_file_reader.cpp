@@ -16,7 +16,7 @@ namespace {
 
   void execute_io(io_context_t ctx, uint64_t maxnr, int fd,
                   const std::vector<AlignedRead> &read_reqs,
-                  uint64_t n_retries = 0) {
+                  uint64_t n_retries = 3) {
 #ifdef DEBUG
     for (auto &req : read_reqs) {
       assert(IS_ALIGNED(req.len, 512));
@@ -50,32 +50,42 @@ namespace {
       }
 
       uint64_t n_tries = 0;
-      while (n_tries <= n_retries) {
+      while (n_tries < n_retries) {
+        n_tries++;
         // issue reads
         int64_t ret = io_submit(ctx, (int64_t) n_ops, cbs.data());
         // if requests didn't get accepted
         if (ret != (int64_t) n_ops) {
-          std::stringstream err;
-          err << "io_submit() failed; returned " << ret
-              << ", expected=" << n_ops << ", ernno=" << errno << "="
-              << ::strerror(-ret) << ", try #" << n_tries + 1
-              << ", ctx: " << ctx;
-          throw diskann::ANNException(err.str(), -1, __FUNCSIG__, __FILE__,
-                                      __LINE__);
-        } else {
-          // wait on io_getevents
-          ret = io_getevents(ctx, (int64_t) n_ops, (int64_t) n_ops, evts.data(),
-                             nullptr);
-          // if requests didn't complete
-          if (ret != (int64_t) n_ops) {
+          LOG(WARNING) << "io_submit() failed; returned " << ret
+                       << ", expected=" << n_ops << ", ernno=" << -ret << "="
+                       << ::strerror(-ret) << ", try #" << n_tries + 1
+                       << ", ctx: " << ctx;
+          continue;
+        }
+        // wait on io_getevents
+        ret = io_getevents(ctx, (int64_t) n_ops, (int64_t) n_ops, evts.data(),
+                           nullptr);
+        // if requests didn't complete
+        if (ret != (int64_t) n_ops) {
+          LOG(WARNING) << "io_getevents() failed; returned " << ret
+                       << ", expected=" << n_ops << ", ernno=" << -ret << "="
+                       << ::strerror(-ret) << ", try #" << n_tries + 1;
+          continue;
+        };
+        break;
+      }
+      if (n_tries == n_retries) {
+        LOG(WARNING) << "Aio failed, using pread instead";
+        for (int j = 0; j < n_ops; ++j) {
+          size_t len = read_reqs[j + iter * maxnr].len;
+          auto   ret = pread(fd, read_reqs[j + iter * maxnr].buf, len,
+                           read_reqs[j + iter * maxnr].offset);
+          if (ret != read_reqs[j + iter * maxnr].len) {
             std::stringstream err;
-            err << "io_getevents() failed; returned " << ret
-                << ", expected=" << n_ops << ", ernno=" << errno << "="
-                << ::strerror(-ret) << ", try #" << n_tries + 1;
+            err << "pread() failed; returned " << ret << ", expected=" << len
+                << ", ernno=" << errno << "=" << ::strerror(-ret);
             throw diskann::ANNException(err.str(), -1, __FUNCSIG__, __FILE__,
                                         __LINE__);
-          } else {
-            break;
           }
         }
       }
