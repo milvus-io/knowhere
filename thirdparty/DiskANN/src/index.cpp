@@ -1395,7 +1395,7 @@ namespace diskann {
       omp_set_num_threads(num_threads);
 
     uint32_t num_syncs =
-        (unsigned) DIV_ROUND_UP(_nd + _num_frozen_pts, (64 * 64));
+        (unsigned) DIV_ROUND_UP(_nd + _num_frozen_pts, 8192);
     if (num_syncs < 40)
       num_syncs = 40;
     LOG(DEBUG) << "Number of syncs: " << num_syncs;
@@ -1413,7 +1413,7 @@ namespace diskann {
     unsigned    L = _indexingQueueSize;
 
     std::vector<unsigned> Lvec;
-    Lvec.push_back(L);
+    Lvec.push_back(unsigned(0.8 * L));
     Lvec.push_back(L);
     const unsigned NUM_RNDS = 2;
 
