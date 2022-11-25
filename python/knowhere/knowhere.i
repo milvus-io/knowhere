@@ -31,6 +31,7 @@ typedef uint64_t size_t;
 #endif
 //#include <knowhere/expected.h>
 #include <knowhere/knowhere.h>
+#include <tests/ut/local_file_manager.h>
 using namespace knowhere;
 %}
 
@@ -69,7 +70,13 @@ import_array();
 class IndexWrap {
  public:
     IndexWrap(const std::string& name) {
-        idx = IndexFactory::Instance().Create(name);
+        if (name.rfind("DISKANN", 0) == 0) {
+            std::shared_ptr<knowhere::FileManager> file_manager = std::make_shared<knowhere::LocalFileManager>();
+            auto diskann_pack = knowhere::Pack(file_manager);
+            idx = IndexFactory::Instance().Create(name, diskann_pack);
+        } else {
+            idx = IndexFactory::Instance().Create(name);
+        }
     }
 
     Status
@@ -171,6 +178,10 @@ int64_t DataSet_Rows(DataSetPtr results){
 
 int64_t DataSet_Dim(DataSetPtr results){
     return results->GetDim();
+}
+
+DataSetPtr GetNullDataSet() {
+    return nullptr;
 }
 
 void
