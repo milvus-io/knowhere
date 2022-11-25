@@ -161,7 +161,7 @@ namespace knowhere {
 namespace {
 static constexpr float kCacheExpansionRate = 1.2;
 static constexpr uint32_t kLinuxAioMaxnrLimit = 65536;
-
+static constexpr int kSearchListSizeMaxValue = 200;
 template <typename T>
 expected<T, Status>
 TryDiskANNCall(std::function<T()>&& diskann_call) {
@@ -210,6 +210,62 @@ GetOptionalFilenames(const std::string& prefix) {
     return filenames;
 }
 
+inline bool
+AnyIndexFileExist(const std::string& index_prefix) {
+    auto file_exist = [&index_prefix](std::vector<std::string> filenames) -> bool {
+        for (auto& filename : filenames) {
+            if (file_exists(filename)) {
+                return true;
+            }
+        }
+        return false;
+    };
+    return file_exist(GetNecessaryFilenames(index_prefix, diskann::INNER_PRODUCT, true, true)) ||
+           file_exist(GetOptionalFilenames(index_prefix));
+}
+
+inline Status
+CheckAddParams(const DiskANNConfig& diskann_cfg) {
+    if (diskann_cfg.metric_type != knowhere::metric::L2 || diskann_cfg.metric_type != knowhere::metric::IP) {
+        LOG_KNOWHERE_ERROR_ << "DiskANN currently only supports floating point data for Max Inner Product Search. "
+                            << std::endl;
+        return Status::invalid_metric_type;
+    }
+    if (AnyIndexFileExist(diskann_cfg.index_prefix)) {
+        LOG_KNOWHERE_ERROR_ << "This index prefix already has index files." << std::endl;
+        return Status::diskann_file_error;
+    }
+}
+
+inline Status
+CheckSearchParams(const DiskANNConfig& diskann_cfg) {
+    auto max_search_list_size = std::max(kSearchListSizeMaxValue, diskann_cfg.k * 10);
+    if (diskann_cfg.search_list_size > max_search_list_size || diskann_cfg.search_list_size < diskann_cfg.k) {
+        LOG_KNOWHERE_ERROR_ << "search_list_size should be in range: [topk, max(200, topk * 10)]";
+        return Status::invalid_args;
+    }
+    return Status::success;
+}
+
+inline Status
+CheckRangeSearchParams(const DiskANNConfig& diskann_cfg) {
+    if (diskann_cfg.metric_type == knowhere::metric::L2) {
+        if (diskann_cfg.min_k > diskann_cfg.max_k || diskann_cfg.radius_low_bound > diskann_cfg.radius_high_bound) {
+            LOG_KNOWHERE_ERROR_ << "min_k should be smaller than max_k, radius_low_bound should be smaller than the "
+                                   "radius_high_bound in metric L2";
+            return Status::invalid_args;
+        }
+    } else if (diskann_cfg.metric_type == knowhere::metric::IP) {
+        if (diskann_cfg.min_k < diskann_cfg.max_k || diskann_cfg.radius_low_bound < diskann_cfg.radius_high_bound) {
+            LOG_KNOWHERE_ERROR_ << "min_k should be smaller than max_k, radius_low_bound should be larger than the "
+                                   "radius_high_bound in metric IP";
+            return Status::invalid_args;
+        }
+    } else {
+        return Status::invalid_metric_type;
+    }
+    return Status::success;
+}
 }  // namespace
 
 template <typename T>
@@ -218,11 +274,13 @@ DiskANNIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
     assert(file_manager_ != nullptr);
     std::lock_guard<std::mutex> lock(preparation_lock_);
     auto build_conf = static_cast<const DiskANNConfig&>(cfg);
-    auto& data_path = build_conf.data_path;
-    index_prefix_ = build_conf.index_prefix;
-    if (!LoadFile(data_path)) {
+    CheckAddParams(build_conf);
+    if (!LoadFile(build_conf.data_path)) {
+        LOG_KNOWHERE_ERROR_ << "Failed load the raw data before building." << std::endl;
         return Status::diskann_file_error;
     }
+    auto& data_path = build_conf.data_path;
+    index_prefix_ = build_conf.index_prefix;
 
     size_t count;
     size_t dim;
@@ -230,7 +288,8 @@ DiskANNIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
     count_.store(count);
     dim_.store(dim);
 
-    auto diskann_metric = build_conf.metric_type == "L2" ? diskann::Metric::L2 : diskann::Metric::INNER_PRODUCT;
+    auto diskann_metric =
+        build_conf.metric_type == knowhere::metric::L2 ? diskann::Metric::L2 : diskann::Metric::INNER_PRODUCT;
     diskann::BuildConfig diskann_internal_build_config{data_path,
                                                        index_prefix_,
                                                        diskann_metric,
@@ -242,12 +301,12 @@ DiskANNIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
                                                        static_cast<uint32_t>(build_conf.disk_pq_dims),
                                                        false,
                                                        build_conf.accelerate_build};
-    auto build_expect =
+    auto build_stat =
         TryDiskANNCall<int>([&]() -> int { return diskann::build_disk_index<T>(diskann_internal_build_config); });
 
-    if (!build_expect.has_value()) {
-        return build_expect.error();
-    } else if (build_expect.value() != 0) {
+    if (!build_stat.has_value()) {
+        return build_stat.error();
+    } else if (build_stat.value() != 0) {
         return Status::diskann_inner_error;
     }
 
@@ -278,7 +337,8 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
         return true;
     }
     index_prefix_ = prep_conf.index_prefix;
-    auto diskann_metric = prep_conf.metric_type == "L2" ? diskann::Metric::L2 : diskann::Metric::INNER_PRODUCT;
+    auto diskann_metric =
+        prep_conf.metric_type == knowhere::metric::L2 ? diskann::Metric::L2 : diskann::Metric::INNER_PRODUCT;
 
     // Load file from file manager.
     for (auto& filename :
@@ -309,7 +369,7 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
     // number of IOPs supported by the SSD.
     if (num_thread_max_value < pool_->size()) {
         LOG_KNOWHERE_ERROR_ << "The global thread pool is too large for DiskANN. Expected max: " << num_thread_max_value
-                            << " , actual:" << pool_->size();
+                            << ", actual:" << pool_->size();
         return false;
     }
 
@@ -448,8 +508,8 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
     auto lsearch = static_cast<uint64_t>(search_conf.search_list_size);
     auto beamwidth = static_cast<uint64_t>(search_conf.beamwidth);
 
-    auto dim = dataset.GetDim();
     auto nq = dataset.GetRows();
+    auto dim = dataset.GetDim();
     auto xq = static_cast<const T*>(dataset.GetTensor());
 
     feder::diskann::FederResultUniq feder_result;
@@ -546,7 +606,7 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
     for (auto& future : futures) {
         future.get();
     }
-
+    GetRangeSearchResult(result_dist_array, result_id_array, !is_L2, nq, low_bound, high_bound, p_dist, p_id, p_lims);
     auto res = std::make_shared<DataSet>();
     res->SetRows(nq);
     res->SetIds(p_id);

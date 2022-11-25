@@ -29,6 +29,9 @@ constexpr uint32_t kNumRows = 10000;
 constexpr uint32_t kNumQueries = 100;
 constexpr uint32_t kDim = 128;
 constexpr uint32_t kK = 10;
+constexpr float kL2KnnRecall = 0.8;
+constexpr float kL2RangeAp = 0.7;
+constexpr float kIpRangeAp = 0.5;
 
 void
 WriteRawDataToDisk(const std::string data_path, const float* raw_data, const uint32_t num, const uint32_t dim) {
@@ -39,94 +42,84 @@ WriteRawDataToDisk(const std::string data_path, const float* raw_data, const uin
     writer.close();
 }
 
-float
-GetTopKRecall(const knowhere::DataSetPtr ground_truth, const knowhere::DataSetPtr result) {
-    REQUIRE(ground_truth->GetDim() >= result->GetDim());
-    REQUIRE(ground_truth->GetRows() >= result->GetRows());
-
-    auto nq = result->GetRows();
-    auto gt_k = ground_truth->GetDim();
-    auto res_k = result->GetDim();
-    auto gt_ids = ground_truth->GetIds();
-    auto res_ids = result->GetIds();
-
-    uint32_t matched_num = 0;
-    for (auto i = 0; i < nq; ++i) {
-        std::vector<int64_t> ids_0(gt_ids + i * gt_k, gt_ids + i * gt_k + res_k);
-        std::vector<int64_t> ids_1(res_ids + i * res_k, res_ids + i * res_k + res_k);
-
-        std::sort(ids_0.begin(), ids_0.end());
-        std::sort(ids_1.begin(), ids_1.end());
-
-        std::vector<int64_t> v(nq * 2);
-        std::vector<int64_t>::iterator it;
-        it = std::set_intersection(ids_0.begin(), ids_0.end(), ids_1.begin(), ids_1.end(), v.begin());
-        v.resize(it - v.begin());
-        matched_num += v.size();
-    }
-    return ((float)matched_num) / ((float)nq * res_k);
-}
-
 }  // namespace
 
 TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
+    fs::remove_all(kDir);
+    fs::remove(kDir);
     REQUIRE_NOTHROW(fs::create_directory(kDir));
     REQUIRE_NOTHROW(fs::create_directory(kL2IndexDir));
     REQUIRE_NOTHROW(fs::create_directory(kIPIndexDir));
 
-    auto metric_str = GENERATE(as<std::string>{}, "IP", "L2");
+    auto metric_str = GENERATE(as<std::string>{}, knowhere::metric::L2, knowhere::metric::IP);
 
     auto base_gen = [&metric_str]() {
         knowhere::Json json;
         json["dim"] = kDim;
         json["metric_type"] = metric_str;
         json["k"] = kK;
+        if (metric_str == knowhere::metric::L2) {
+            json["radius_low_bound"] = CFG_FLOAT(0);
+            json["radius_high_bound"] = CFG_FLOAT(450);
+        } else {
+            json["radius_low_bound"] = CFG_FLOAT(50000);
+            json["radius_high_bound"] = std::numeric_limits<CFG_FLOAT>::max();
+        }
         return json;
     };
 
     auto build_gen = [&base_gen, &metric_str]() {
         knowhere::Json json = base_gen();
-        json["index_prefix"] = (metric_str == "L2" ? kL2IndexPrefix : kIPIndexPrefix);
+        json["index_prefix"] = (metric_str == knowhere::metric::L2 ? kL2IndexPrefix : kIPIndexPrefix);
         json["data_path"] = kRawDataPath;
         json["max_degree"] = 56;
-        json["build_list_size"] = 110;
+        json["search_list_size"] = 128;
         json["pq_code_budget_gb"] = sizeof(float) * kDim * kNumRows * 0.125 / (1024 * 1024 * 1024);
         json["build_dram_budget_gb"] = 32.0;
         json["build_threads_num"] = 8;
         return json;
     };
 
-    auto search_gen = [&base_gen, &metric_str]() {
+    auto knn_search_gen = [&base_gen, &metric_str]() {
         knowhere::Json json = base_gen();
-        json["index_prefix"] = (metric_str == "L2" ? kL2IndexPrefix : kIPIndexPrefix);
+        json["index_prefix"] = (metric_str == knowhere::metric::L2 ? kL2IndexPrefix : kIPIndexPrefix);
         json["search_threads_num"] = 8;
         json["search_cache_budget_gb"] = sizeof(float) * kDim * kNumRows * 0.125 / (1024 * 1024 * 1024);
-        json["search_list_size"] = 10;
+        json["search_list_size"] = 36;
         json["beamwidth"] = 8;
         return json;
     };
 
-    auto query_ds = GenDataSet(kNumQueries, kDim);
-    knowhere::DataSetPtr gt_ptr = nullptr;
+    auto range_search_gen = [&base_gen, &metric_str]() {
+        knowhere::Json json = base_gen();
+        json["index_prefix"] = (metric_str == knowhere::metric::L2 ? kL2IndexPrefix : kIPIndexPrefix);
+        json["search_threads_num"] = 8;
+        json["search_cache_budget_gb"] = sizeof(float) * kDim * kNumRows * 0.125 / (1024 * 1024 * 1024);
+        json["beamwidth"] = 8;
+        json["min_k"] = 10;
+        json["max_k"] = 8000;
+        json["search_list_and_k_ratio"] = 2.0;
+        return json;
+    };
+
+    auto query_ds = GenDataSet(kNumQueries, kDim, 42);
+    knowhere::DataSetPtr knn_gt_ptr = nullptr;
+    knowhere::DataSetPtr range_search_gt_ptr = nullptr;
     {
-        auto base_ds = GenDataSet(kNumRows, kDim);
+        auto base_ds = GenDataSet(kNumRows, kDim, 30);
         auto base_ptr = static_cast<const float*>(base_ds->GetTensor());
         WriteRawDataToDisk(kRawDataPath, base_ptr, kNumRows, kDim);
 
-        auto flat = knowhere::IndexFactory::Instance().Create("FLAT");
-        auto cfg_json = base_gen().dump();
-        knowhere::Json json = knowhere::Json::parse(cfg_json);
-        auto build_res = flat.Build(*base_ds, json);
-        REQUIRE(build_res == knowhere::Status::success);
-        auto results = flat.Search(*query_ds, json, nullptr);
-        REQUIRE(results.has_value());
-        gt_ptr = results.value();
+        // generate the gt of knn search and range search
+        auto base_json = base_gen();
+        knn_gt_ptr = GetKNNGroundTruth(*base_ds, *query_ds, metric_str, kK);
+        range_search_gt_ptr = GetRangeSearchGroundTruth(*base_ds, *query_ds, metric_str, base_json["radius_low_bound"],
+                                                        base_json["radius_high_bound"]);
     }
 
     SECTION("Test L2/IP metric.") {
         std::shared_ptr<knowhere::FileManager> file_manager = std::make_shared<knowhere::LocalFileManager>();
         auto diskann_index_pack = knowhere::Pack(file_manager);
-
         // build process
         {
             knowhere::DataSet* ds_ptr = nullptr;
@@ -135,15 +128,23 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
             knowhere::Json json = knowhere::Json::parse(build_json);
             diskann.Build(*ds_ptr, json);
         }
-        //  knn search process
+        //  knn search & range search process
         {
             auto diskann = knowhere::IndexFactory::Instance().Create("DISKANNFLOAT", diskann_index_pack);
-            auto search_json = search_gen().dump();
-            knowhere::Json json = knowhere::Json::parse(search_json);
-            auto res = diskann.Search(*query_ds, json, nullptr);
+            auto knn_search_json = knn_search_gen().dump();
+            knowhere::Json knn_json = knowhere::Json::parse(knn_search_json);
+            auto res = diskann.Search(*query_ds, knn_json, nullptr);
             REQUIRE(res.has_value());
-            auto recall = GetTopKRecall(gt_ptr, res.value());
-            REQUIRE(recall > 0.90);
+            auto recall = GetKNNRecall(*knn_gt_ptr, *res.value());
+            REQUIRE(recall > kL2KnnRecall);
+
+            auto range_search_json = range_search_gen().dump();
+            knowhere::Json range_json = knowhere::Json::parse(range_search_json);
+            auto range_search_res = diskann.RangeSearch(*query_ds, range_json, nullptr);
+            REQUIRE(range_search_res.has_value());
+            auto ap = GetRangeSearchRecall(*range_search_gt_ptr, *range_search_res.value());
+            float standard_ap = metric_str == knowhere::metric::L2 ? kL2RangeAp : kIpRangeAp;
+            REQUIRE(ap > standard_ap);
         }
     }
     fs::remove_all(kDir);
