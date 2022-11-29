@@ -174,10 +174,9 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
         qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
         index = new (std::nothrow) T(qzr, dim, ivf_sq_cfg.nlist, faiss::QuantizerType::QT_8bit, metric.value());
     }
-
     if constexpr (std::is_same<faiss::IndexBinaryIVF, T>::value) {
         const IvfBinConfig& ivf_bin_cfg = static_cast<const IvfBinConfig&>(cfg);
-        qzr = new typename QuantizerT<T>::type(dim, metric.value());
+        qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
         index = new (std::nothrow) T(qzr, dim, ivf_bin_cfg.nlist, metric.value());
     }
 
