@@ -235,6 +235,7 @@ CheckAddParams(const DiskANNConfig& diskann_cfg) {
         LOG_KNOWHERE_ERROR_ << "This index prefix already has index files." << std::endl;
         return Status::diskann_file_error;
     }
+    return Status::success;
 }
 
 inline Status
@@ -536,11 +537,7 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
         future.get();
     }
 
-    auto res = std::make_shared<DataSet>();
-    res->SetDim(k);
-    res->SetRows(nq);
-    res->SetIds(p_id);
-    res->SetDistance(p_dist);
+    auto res = GenResultDataSet(nq, k, p_id, p_dist);
 
     // set visit_info json string into result dataset
     if (feder_result != nullptr) {
@@ -607,12 +604,7 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
         future.get();
     }
     GetRangeSearchResult(result_dist_array, result_id_array, !is_L2, nq, low_bound, high_bound, p_dist, p_id, p_lims);
-    auto res = std::make_shared<DataSet>();
-    res->SetRows(nq);
-    res->SetIds(p_id);
-    res->SetDistance(p_dist);
-    res->SetLims(p_lims);
-    return res;
+    return GenResultDataSet(nq, p_id, p_dist, p_lims);
 }
 
 template <typename T>
@@ -632,11 +624,7 @@ DiskANNIndexNode<T>::GetIndexMeta(const Config& cfg) const {
     Json json_meta, json_id_set;
     nlohmann::to_json(json_meta, meta);
     nlohmann::to_json(json_id_set, id_set);
-
-    auto res = std::make_shared<DataSet>();
-    res->SetJsonInfo(json_meta.dump());
-    res->SetJsonIdSet(json_id_set.dump());
-    return res;
+    return GenResultDataSet(json_meta.dump(), json_id_set.dump());
 }
 
 template <typename T>

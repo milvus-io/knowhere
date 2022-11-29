@@ -266,12 +266,8 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
         LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return unexpected(Status::faiss_inner_error);
     }
-    auto results = std::make_shared<DataSet>();
-    results->SetDim(ivf_cfg.k);
-    results->SetRows(rows);
-    results->SetIds(ids);
-    results->SetDistance(dis);
-    return results;
+
+    return GenResultDataSet(rows, ivf_cfg.k, ids, dis);
 }
 
 template <typename T>
@@ -319,12 +315,7 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
         return unexpected(Status::faiss_inner_error);
     }
 
-    auto results = std::make_shared<DataSet>();
-    results->SetRows(nq);
-    results->SetIds(ids);
-    results->SetDistance(distances);
-    results->SetLims(lims);
-    return results;
+    return GenResultDataSet(nq, ids, distances, lims);
 }
 
 template <>
@@ -354,18 +345,14 @@ IvfIndexNode<faiss::IndexBinaryIVF>::Search(const DataSet& dataset, const Config
         LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return unexpected(Status::faiss_inner_error);
     }
-    auto results = std::make_shared<DataSet>();
-    results->SetDim(ivf_bin_cfg.k);
-    results->SetRows(rows);
-    results->SetIds(ids);
+
     if (index_->metric_type == faiss::METRIC_Hamming) {
         int64_t num = rows * ivf_bin_cfg.k;
         for (int64_t i = 0; i < num; i++) {
             dis[i] = static_cast<float>(i_dis[i]);
         }
     }
-    results->SetDistance(dis);
-    return results;
+    return GenResultDataSet(rows, ivf_bin_cfg.k, ids, dis);
 }
 
 template <>
@@ -402,12 +389,7 @@ IvfIndexNode<faiss::IndexBinaryIVF>::RangeSearch(const DataSet& dataset, const C
         return unexpected(Status::faiss_inner_error);
     }
 
-    auto results = std::make_shared<DataSet>();
-    results->SetRows(nq);
-    results->SetIds(ids);
-    results->SetDistance(distances);
-    results->SetLims(lims);
-    return results;
+    return GenResultDataSet(nq, ids, distances, lims);
 }
 
 template <typename T>
@@ -506,11 +488,7 @@ IvfIndexNode<faiss::IndexIVFFlat>::GetIndexMeta(const Config& config) const {
     Json json_meta, json_id_set;
     nlohmann::to_json(json_meta, meta);
     nlohmann::to_json(json_id_set, id_set);
-
-    auto res = std::make_shared<DataSet>();
-    res->SetJsonInfo(json_meta.dump());
-    res->SetJsonIdSet(json_id_set.dump());
-    return res;
+    return GenResultDataSet(json_meta.dump(), json_id_set.dump());
 }
 
 template <typename T>

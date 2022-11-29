@@ -73,7 +73,6 @@ class GpuFlatIndexNode : public IndexNode {
             return unexpected(Status::empty_index);
         }
 
-        DataSetPtr results = std::make_shared<DataSet>();
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
         auto nq = dataset.GetRows();
         auto x = dataset.GetTensor();
@@ -91,11 +90,7 @@ class GpuFlatIndexNode : public IndexNode {
             return unexpected(Status::faiss_inner_error);
         }
 
-        results->SetDim(f_cfg.k);
-        results->SetRows(nq);
-        results->SetIds(ids);
-        results->SetDistance(dis);
-        return results;
+        return GenResultDataSet(nq, f_cfg.k, ids, dis);
     }
 
     virtual expected<DataSetPtr, Status>
