@@ -88,7 +88,6 @@ TEST_P(IDMAPTest, idmap_basic) {
     index_->BuildAll(base_dataset, conf_);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
-    ASSERT_TRUE(index_->GetRawVectors() != nullptr);
     ASSERT_GT(index_->Size(), 0);
 
     auto result = index_->GetVectorById(id_dataset, conf_);
@@ -279,7 +278,6 @@ TEST_P(IDMAPTest, idmap_copy) {
     index_->BuildAll(base_dataset, conf_);
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
-    ASSERT_TRUE(index_->GetRawVectors() != nullptr);
     auto result = index_->Query(query_dataset, conf_, nullptr);
     AssertAnns(result, nq, k);
     // PrintResult(result, nq, k);
@@ -295,8 +293,6 @@ TEST_P(IDMAPTest, idmap_copy) {
     auto clone_result = clone_index->Query(query_dataset, conf_, nullptr);
 
     AssertAnns(clone_result, nq, k);
-    ASSERT_THROW({ std::static_pointer_cast<knowhere::GPUIDMAP>(clone_index)->GetRawVectors(); },
-                 knowhere::KnowhereException);
 
     auto binary = clone_index->Serialize(conf_);
     clone_index->Load(binary);
@@ -311,7 +307,6 @@ TEST_P(IDMAPTest, idmap_copy) {
     auto host_index = knowhere::cloner::CopyGpuToCpu(clone_index, conf_);
     auto host_result = host_index->Query(query_dataset, conf_, nullptr);
     AssertAnns(host_result, nq, k);
-    ASSERT_TRUE(std::static_pointer_cast<knowhere::IDMAP>(host_index)->GetRawVectors() != nullptr);
 
     // gpu to gpu
     auto device_index = knowhere::cloner::CopyCpuToGpu(index_, DEVICE_ID, conf_);

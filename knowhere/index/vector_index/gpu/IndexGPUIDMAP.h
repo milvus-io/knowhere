@@ -39,9 +39,6 @@ class GPUIDMAP : public IDMAP, public GPUIndex {
     VecIndexPtr
     CopyGpuToGpu(const int64_t, const Config&) override;
 
-    const float*
-    GetRawVectors() override;
-
     void
     GenGraph(const float*, const int64_t, GraphType&, const Config&);
 

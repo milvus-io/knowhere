@@ -88,11 +88,6 @@ GPUIDMAP::CopyGpuToGpu(const int64_t device_id, const Config& config) {
     return std::static_pointer_cast<IDMAP>(cpu_index)->CopyCpuToGpu(device_id, config);
 }
 
-const float*
-GPUIDMAP::GetRawVectors() {
-    KNOWHERE_THROW_MSG("Not support");
-}
-
 void
 GPUIDMAP::QueryImpl(int64_t n,
                     const float* data,
