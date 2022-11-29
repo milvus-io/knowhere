@@ -156,12 +156,8 @@ class IvfGpuIndexNode : public IndexNode {
             LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
-        auto results = std::make_shared<DataSet>();
-        results->SetDim(ivf_gpu_cfg.k);
-        results->SetRows(rows);
-        results->SetIds(ids);
-        results->SetDistance(dis);
-        return results;
+
+        return GenResultDataSet(rows, ivf_gpu_cfg.k, ids, dis);
     }
 
     virtual expected<DataSetPtr, Status>

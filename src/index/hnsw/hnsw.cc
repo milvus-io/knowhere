@@ -129,11 +129,7 @@ class HnswIndexNode : public IndexNode {
             future.get();
         }
 
-        auto res = std::make_shared<DataSet>();
-        res->SetDim(k);
-        res->SetRows(nq);
-        res->SetIds(p_id);
-        res->SetDistance(p_dist);
+        auto res = GenResultDataSet(nq, k, p_id, p_dist);
 
         // set visit_info json string into result dataset
         if (feder_result != nullptr) {
@@ -213,11 +209,7 @@ class HnswIndexNode : public IndexNode {
 
         GetRangeSearchResult(result_dist_array, result_id_array, !is_L2, nq, low_bound, high_bound, dis, ids, lims);
 
-        auto res = std::make_shared<DataSet>();
-        res->SetRows(nq);
-        res->SetIds(ids);
-        res->SetDistance(dis);
-        res->SetLims(lims);
+        auto res = GenResultDataSet(nq, ids, dis, lims);
 
         // set visit_info json string into result dataset
         if (feder_result != nullptr) {
@@ -283,11 +275,7 @@ class HnswIndexNode : public IndexNode {
         Json json_meta, json_id_set;
         nlohmann::to_json(json_meta, meta);
         nlohmann::to_json(json_id_set, id_set);
-
-        auto res = std::make_shared<DataSet>();
-        res->SetJsonInfo(json_meta.dump());
-        res->SetJsonIdSet(json_id_set.dump());
-        return res;
+        return GenResultDataSet(json_meta.dump(), json_id_set.dump());
     }
 
     virtual Status

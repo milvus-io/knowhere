@@ -97,11 +97,8 @@ class FlatIndexNode : public IndexNode {
             LOG_KNOWHERE_WARNING_ << "error inner faiss, " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
-        results->SetDim(f_cfg.k);
-        results->SetRows(nq);
-        results->SetIds(ids);
-        results->SetDistance(dis);
-        return results;
+
+        return GenResultDataSet(nq, f_cfg.k, ids, dis);
     }
 
     virtual expected<DataSetPtr, Status>
@@ -142,12 +139,7 @@ class FlatIndexNode : public IndexNode {
             return unexpected(Status::faiss_inner_error);
         }
 
-        DataSetPtr results = std::make_shared<DataSet>();
-        results->SetRows(nq);
-        results->SetIds(ids);
-        results->SetDistance(distances);
-        results->SetLims(lims);
-        return results;
+        return GenResultDataSet(nq, ids, distances, lims);
     }
 
     virtual expected<DataSetPtr, Status>

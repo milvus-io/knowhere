@@ -19,6 +19,8 @@ endif()
 
 add_definitions(-DAUTO_INITIALIZE_EASYLOGGINGPP)
 add_definitions(-DELPP_THREAD_SAFE)
+add_definitions(-DNOT_COMPILE_FOR_SWIG)
+
 include(cmake/utils/compile_flags.cmake)
 include(cmake/utils/platform_check.cmake)
 include(cmake/libs/libfaiss.cmake)
