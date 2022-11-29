@@ -180,16 +180,6 @@ BinaryIDMAP::Train(const DatasetPtr& dataset_ptr, const Config& config) {
     index_ = index;
 }
 
-const uint8_t*
-BinaryIDMAP::GetRawVectors() {
-    try {
-        auto flat_index = dynamic_cast<faiss::IndexBinaryFlat*>(index_.get());
-        return flat_index->xb.data();
-    } catch (std::exception& e) {
-        KNOWHERE_THROW_MSG(e.what());
-    }
-}
-
 void
 BinaryIDMAP::QueryImpl(int64_t n,
                        const uint8_t* data,

@@ -65,9 +65,6 @@ class IDMAP : public VecIndex, public FaissBaseIndex {
     VecIndexPtr
     CopyCpuToGpu(const int64_t, const Config&);
 
-    virtual const float*
-    GetRawVectors();
-
  protected:
     virtual void
     QueryImpl(int64_t, const float*, int64_t, float*, int64_t*, const Config&, const faiss::BitsetView);

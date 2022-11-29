@@ -15,6 +15,7 @@
 
 #include "common/Exception.h"
 #include "common/Log.h"
+#include "index/VecIndexThreadPoolWrapper.h"
 #include "index/vector_index/IndexAnnoy.h"
 #include "index/vector_index/IndexBinaryIDMAP.h"
 #include "index/vector_index/IndexBinaryIVF.h"
@@ -42,17 +43,17 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
     switch (mode) {
         case IndexMode::MODE_CPU: {
             if (type == IndexEnum::INDEX_FAISS_BIN_IDMAP) {
-                return std::make_shared<knowhere::BinaryIDMAP>();
+                return std::make_shared<VecIndexThreadPoolWrapper>(std::make_unique<BinaryIDMAP>());
             } else if (type == IndexEnum::INDEX_FAISS_BIN_IVFFLAT) {
-                return std::make_shared<knowhere::BinaryIVF>();
+                return std::make_shared<VecIndexThreadPoolWrapper>(std::make_unique<BinaryIVF>());
             } else if (type == IndexEnum::INDEX_FAISS_IDMAP) {
-                return std::make_shared<knowhere::IDMAP>();
+                return std::make_shared<VecIndexThreadPoolWrapper>(std::make_unique<IDMAP>());
             } else if (type == IndexEnum::INDEX_FAISS_IVFFLAT) {
-                return std::make_shared<knowhere::IVF_NM>();
+                return std::make_shared<VecIndexThreadPoolWrapper>(std::make_unique<IVF_NM>());
             } else if (type == IndexEnum::INDEX_FAISS_IVFPQ) {
-                return std::make_shared<knowhere::IVFPQ>();
+                return std::make_shared<VecIndexThreadPoolWrapper>(std::make_unique<IVFPQ>());
             } else if (type == IndexEnum::INDEX_FAISS_IVFSQ8) {
-                return std::make_shared<knowhere::IVFSQ>();
+                return std::make_shared<VecIndexThreadPoolWrapper>(std::make_unique<IVFSQ>());
             } else if (type == IndexEnum::INDEX_ANNOY) {
                 return std::make_shared<knowhere::IndexAnnoy>();
             } else if (type == IndexEnum::INDEX_HNSW) {

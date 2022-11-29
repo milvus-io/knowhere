@@ -143,25 +143,32 @@ IndexAnnoy::Query(const DatasetPtr& dataset_ptr, const Config& config, const fai
     auto p_id = new int64_t[k * rows];
     auto p_dist = new float[k * rows];
 
-#pragma omp parallel for
+    std::vector<std::future<void>> futures;
+    futures.reserve(rows);
     for (unsigned int i = 0; i < rows; ++i) {
-        std::vector<int64_t> result;
-        result.reserve(k);
-        std::vector<float> distances;
-        distances.reserve(k);
-        index_->get_nns_by_vector(static_cast<const float*>(p_data) + i * dim, k, search_k, &result, &distances,
-                                  bitset);
+        futures.push_back(pool_->push([&, index = i]() {
+            std::vector<int64_t> result;
+            result.reserve(k);
+            std::vector<float> distances;
+            distances.reserve(k);
+            index_->get_nns_by_vector(static_cast<const float*>(p_data) + index * dim, k, search_k, &result, &distances,
+                                    bitset);
 
-        size_t result_num = result.size();
-        auto local_p_id = p_id + k * i;
-        auto local_p_dist = p_dist + k * i;
-        memcpy(local_p_id, result.data(), result_num * sizeof(int64_t));
-        memcpy(local_p_dist, distances.data(), result_num * sizeof(float));
+            size_t result_num = result.size();
+            auto local_p_id = p_id + k * index;
+            auto local_p_dist = p_dist + k * index;
+            memcpy(local_p_id, result.data(), result_num * sizeof(int64_t));
+            memcpy(local_p_dist, distances.data(), result_num * sizeof(float));
 
-        for (; result_num < k; result_num++) {
-            local_p_id[result_num] = -1;
-            local_p_dist[result_num] = 1.0 / 0.0;
-        }
+            for (; result_num < k; result_num++) {
+                local_p_id[result_num] = -1;
+                local_p_dist[result_num] = 1.0 / 0.0;
+            }
+        }));
+    }
+
+    for (auto& future : futures) {
+        future.get();
     }
 
     return GenResultDataset(p_id, p_dist);

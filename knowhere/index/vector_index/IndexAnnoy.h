@@ -16,8 +16,8 @@
 
 #include "annoy/src/annoylib.h"
 #include "annoy/src/kissrandom.h"
-
 #include "knowhere/common/Exception.h"
+#include "knowhere/common/ThreadPool.h"
 #include "knowhere/index/VecIndex.h"
 
 namespace knowhere {
@@ -28,6 +28,7 @@ class IndexAnnoy : public VecIndex {
  public:
     IndexAnnoy() {
         index_type_ = IndexEnum::INDEX_ANNOY;
+        pool_ = ThreadPool::GetGlobalThreadPool();
     }
 
     BinarySet
@@ -66,6 +67,7 @@ class IndexAnnoy : public VecIndex {
 
  private:
     std::string metric_type_;
+    std::shared_ptr<ThreadPool> pool_;
     std::shared_ptr<AnnoyIndexInterface<int64_t, float>> index_ = nullptr;
 };
 
