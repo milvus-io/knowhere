@@ -211,6 +211,7 @@ class DataSet {
 };
 using DataSetPtr = std::shared_ptr<DataSet>;
 
+#ifdef NOT_COMPILE_FOR_SWIG
 inline DataSetPtr
 GenDataSet(const int64_t nb, const int64_t dim, const void* xb) {
     auto ret_ds = std::make_shared<DataSet>();
@@ -220,6 +221,42 @@ GenDataSet(const int64_t nb, const int64_t dim, const void* xb) {
     ret_ds->SetIsOwner(false);
     return ret_ds;
 }
+
+// inline DataSetPtr
+// GenResultDataSet(const void* tensor) {
+//     auto ret_ds = std::make_shared<DataSet>();
+//     SetDatasetOutputTensor(ret_ds, tensor);
+//     return ret_ds;
+// }
+
+inline DataSetPtr
+GenResultDataSet(const int64_t nq, const int64_t topk, const int64_t* ids, const float* distance) {
+    auto ret_ds = std::make_shared<DataSet>();
+    ret_ds->SetRows(nq);
+    ret_ds->SetDim(topk);
+    ret_ds->SetIds(ids);
+    ret_ds->SetDistance(distance);
+    return ret_ds;
+}
+
+inline DataSetPtr
+GenResultDataSet(const int64_t nq, const int64_t* ids, const float* distance, const size_t* lims) {
+    auto ret_ds = std::make_shared<DataSet>();
+    ret_ds->SetRows(nq);
+    ret_ds->SetIds(ids);
+    ret_ds->SetDistance(distance);
+    ret_ds->SetLims(lims);
+    return ret_ds;
+}
+
+inline DataSetPtr
+GenResultDataSet(const std::string& json_info, const std::string& json_id_set) {
+    auto ret_ds = std::make_shared<DataSet>();
+    ret_ds->SetJsonInfo(json_info);
+    ret_ds->SetJsonIdSet(json_id_set);
+    return ret_ds;
+}
+#endif
 
 }  // namespace knowhere
 #endif /* DATASET_H */
