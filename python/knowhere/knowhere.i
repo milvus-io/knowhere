@@ -43,8 +43,6 @@ using namespace knowhere;
 import_array();
 %}
 
-
-
 %include <std_string.i>
 %include <std_pair.i>
 %include <std_map.i>
@@ -63,7 +61,6 @@ import_array();
 %apply (float *IN_ARRAY1, int DIM1) {(float *dis, int len)}
 %apply (float* INPLACE_ARRAY2, int DIM1, int DIM2){(float *dis,int nq_1,int k_1)}
 %apply (int *INPLACE_ARRAY2, int DIM1, int DIM2){(int *ids,int nq_2,int k_2)}
-
 
 %inline %{
 
@@ -119,18 +116,18 @@ class IndexWrap {
     }
 
     Status
-    Serialization(BinarySetPtr binset) {
-        return idx.Serialization(*binset);
+    Serialize(BinarySetPtr binset) {
+        return idx.Serialize(*binset);
     }
 
     Status
-    Deserialization(BinarySetPtr binset) {
-        return idx.Deserialization(*binset);
+    Deserialize(BinarySetPtr binset) {
+        return idx.Deserialize(*binset);
     }
 
     int64_t
-    Dims() {
-        return idx.Dims();
+    Dim() {
+        return idx.Dim();
     }
 
     int64_t
@@ -197,6 +194,5 @@ DataSet2Array(DataSetPtr result, float* dis, int nq_1, int k_1, int* ids, int nq
         }
     }
 }
-
 
 %}
