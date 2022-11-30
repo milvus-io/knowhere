@@ -145,7 +145,7 @@ class AnnoyIndexNode : public IndexNode {
     }
 
     virtual Status
-    Serialization(BinarySet& binset) const override {
+    Serialize(BinarySet& binset) const override {
         if (!index_) {
             return Status::empty_index;
         }
@@ -154,7 +154,7 @@ class AnnoyIndexNode : public IndexNode {
         std::shared_ptr<uint8_t[]> metric_type(new uint8_t[metric_type_length]);
         memcpy(metric_type.get(), metric_type_.data(), metric_type_.length());
 
-        auto dim = Dims();
+        auto dim = Dim();
         std::shared_ptr<uint8_t[]> dim_data(new uint8_t[sizeof(uint64_t)]);
         memcpy(dim_data.get(), &dim, sizeof(uint64_t));
 
@@ -170,7 +170,7 @@ class AnnoyIndexNode : public IndexNode {
     }
 
     virtual Status
-    Deserialization(const BinarySet& binset) override {
+    Deserialize(const BinarySet& binset) override {
         if (index_)
             delete index_;
         auto metric_type = binset.GetByName("annoy_metric_type");
@@ -205,7 +205,7 @@ class AnnoyIndexNode : public IndexNode {
     }
 
     virtual int64_t
-    Dims() const override {
+    Dim() const override {
         if (!index_)
             return 0;
         return index_->get_dim();

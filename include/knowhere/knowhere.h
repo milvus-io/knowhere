@@ -77,13 +77,13 @@ class IndexNode : public Object {
     virtual expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const = 0;
     virtual Status
-    Serialization(BinarySet& binset) const = 0;
+    Serialize(BinarySet& binset) const = 0;
     virtual Status
-    Deserialization(const BinarySet& binset) = 0;
+    Deserialize(const BinarySet& binset) = 0;
     virtual std::unique_ptr<BaseConfig>
     CreateConfig() const = 0;
     virtual int64_t
-    Dims() const = 0;
+    Dim() const = 0;
     virtual int64_t
     Size() const = 0;
     virtual int64_t
@@ -263,18 +263,18 @@ class Index {
     }
 
     Status
-    Serialization(BinarySet& binset) const {
-        return this->node->Serialization(binset);
+    Serialize(BinarySet& binset) const {
+        return this->node->Serialize(binset);
     }
 
     Status
-    Deserialization(const BinarySet& binset) {
-        return this->node->Deserialization(binset);
+    Deserialize(const BinarySet& binset) {
+        return this->node->Deserialize(binset);
     }
 
     int64_t
-    Dims() const {
-        return this->node->Dims();
+    Dim() const {
+        return this->node->Dim();
     }
 
     int64_t

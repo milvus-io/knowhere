@@ -184,7 +184,7 @@ class FlatIndexNode : public IndexNode {
     }
 
     virtual Status
-    Serialization(BinarySet& binset) const override {
+    Serialize(BinarySet& binset) const override {
         if (!index_)
             return Status::empty_index;
         try {
@@ -206,7 +206,7 @@ class FlatIndexNode : public IndexNode {
     }
 
     virtual Status
-    Deserialization(const BinarySet& binset) override {
+    Deserialize(const BinarySet& binset) override {
         if (index_) {
             delete index_;
             index_ = nullptr;
@@ -238,7 +238,7 @@ class FlatIndexNode : public IndexNode {
     }
 
     virtual int64_t
-    Dims() const override {
+    Dim() const override {
         return index_->d;
     }
 

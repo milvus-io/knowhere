@@ -50,9 +50,9 @@ class IvfIndexNode : public IndexNode {
         return unexpected(Status::not_implemented);
     }
     virtual Status
-    Serialization(BinarySet& binset) const override;
+    Serialize(BinarySet& binset) const override;
     virtual Status
-    Deserialization(const BinarySet& binset) override;
+    Deserialize(const BinarySet& binset) override;
     virtual std::unique_ptr<BaseConfig>
     CreateConfig() const override {
         if constexpr (std::is_same<faiss::IndexIVFFlat, T>::value)
@@ -65,7 +65,7 @@ class IvfIndexNode : public IndexNode {
             return std::make_unique<IvfBinConfig>();
     };
     virtual int64_t
-    Dims() const override {
+    Dim() const override {
         if (!index_)
             return -1;
         return index_->d;
@@ -493,7 +493,7 @@ IvfIndexNode<faiss::IndexIVFFlat>::GetIndexMeta(const Config& config) const {
 
 template <typename T>
 Status
-IvfIndexNode<T>::Serialization(BinarySet& binset) const {
+IvfIndexNode<T>::Serialize(BinarySet& binset) const {
     try {
         MemoryIOWriter writer;
         if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value)
@@ -515,7 +515,7 @@ IvfIndexNode<T>::Serialization(BinarySet& binset) const {
 
 template <typename T>
 Status
-IvfIndexNode<T>::Deserialization(const BinarySet& binset) {
+IvfIndexNode<T>::Deserialize(const BinarySet& binset) {
     std::string name = "IVF";
     if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value) {
         name = "BinaryIVF";

@@ -11,6 +11,7 @@
 #include "index/ivf_gpu/ivf_gpu_config.h"
 #include "io/FaissIO.h"
 #include "knowhere/knowhere.h"
+
 namespace knowhere {
 
 template <typename T>
@@ -36,6 +37,7 @@ class IvfGpuIndexNode : public IndexNode {
         static_assert(std::is_same<T, faiss::IndexIVFFlat>::value || std::is_same<T, faiss::IndexIVFPQ>::value ||
                       std::is_same<T, faiss::IndexIVFScalarQuantizer>::value);
     }
+
     virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
         auto err = Train(dataset, cfg);
@@ -43,6 +45,7 @@ class IvfGpuIndexNode : public IndexNode {
             return err;
         return Add(dataset, cfg);
     }
+
     virtual Status
     Train(const DataSet& dataset, const Config& cfg) override {
         if (gpu_index_ && gpu_index_->is_trained) {
@@ -110,6 +113,7 @@ class IvfGpuIndexNode : public IndexNode {
         this->gpu_index_ = gpu_index;
         return Status::success;
     }
+
     virtual Status
     Add(const DataSet& dataset, const Config& cfg) override {
         if (!gpu_index_)
@@ -126,6 +130,7 @@ class IvfGpuIndexNode : public IndexNode {
         }
         return Status::success;
     }
+
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         auto ivf_gpu_cfg = static_cast<const typename KnowhereConfigType<T>::Type&>(cfg);
@@ -164,8 +169,9 @@ class IvfGpuIndexNode : public IndexNode {
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
         return unexpected(Status::not_implemented);
     }
+
     virtual Status
-    Serialization(BinarySet& binset) const override {
+    Serialize(BinarySet& binset) const override {
         if (!this->gpu_index_)
             return Status::empty_index;
         if (!this->gpu_index_->is_trained)
@@ -194,8 +200,9 @@ class IvfGpuIndexNode : public IndexNode {
 
         return Status::success;
     }
+
     virtual Status
-    Deserialization(const BinarySet& binset) override {
+    Deserialize(const BinarySet& binset) override {
         auto binary = binset.GetByName("IVF");
         MemoryIOReader reader;
         try {
@@ -222,22 +229,26 @@ class IvfGpuIndexNode : public IndexNode {
     CreateConfig() const override {
         return std::make_unique<typename KnowhereConfigType<T>::Type>();
     }
+
     virtual int64_t
-    Dims() const override {
+    Dim() const override {
         if (gpu_index_)
             return gpu_index_->d;
         return 0;
     }
+
     virtual int64_t
     Size() const override {
         return 0;
     }
+
     virtual int64_t
     Count() const override {
         if (gpu_index_)
             return gpu_index_->ntotal;
         return 0;
     }
+
     virtual std::string
     Type() const override {
         if constexpr (std::is_same<faiss::IndexIVFFlat, T>::value) {
@@ -250,6 +261,7 @@ class IvfGpuIndexNode : public IndexNode {
             return "GPUIVFSQ";
         }
     }
+
     virtual ~IvfGpuIndexNode() {
         if (gpu_index_)
             delete gpu_index_;
@@ -261,6 +273,7 @@ class IvfGpuIndexNode : public IndexNode {
     std::vector<faiss::gpu::GpuResourcesProvider*> res_;
     faiss::Index* gpu_index_;
 };
+
 KNOWHERE_REGISTER_GLOBAL(GPUIVFFLAT, [](const Object& object) {
     return Index<IvfGpuIndexNode<faiss::IndexIVFFlat>>::Create(object);
 });

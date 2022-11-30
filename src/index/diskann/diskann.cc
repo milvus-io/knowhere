@@ -59,13 +59,13 @@ class DiskANNIndexNode : public IndexNode {
     GetIndexMeta(const Config& cfg) const override;
 
     virtual Status
-    Serialization(BinarySet& binset) const override {
+    Serialize(BinarySet& binset) const override {
         LOG_KNOWHERE_ERROR_ << "DiskANN doesn't support Serialize.";
         return Status::not_implemented;
     }
 
     virtual Status
-    Deserialization(const BinarySet& binset) override {
+    Deserialize(const BinarySet& binset) override {
         LOG_KNOWHERE_ERROR_ << "DiskANN doesn't support Deserialization.";
         return Status::not_implemented;
     }
@@ -85,7 +85,7 @@ class DiskANNIndexNode : public IndexNode {
     }
 
     virtual int64_t
-    Dims() const override {
+    Dim() const override {
         if (dim_.load() == -1) {
             LOG_KNOWHERE_ERROR_ << "index is not ready yet.";
             return 0;
