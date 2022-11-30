@@ -10,6 +10,7 @@
 #include "index/flat_gpu/flat_gpu_config.h"
 #include "io/FaissIO.h"
 #include "knowhere/knowhere.h"
+
 namespace knowhere {
 
 static faiss::gpu::StandardGpuResources*
@@ -22,6 +23,7 @@ class GpuFlatIndexNode : public IndexNode {
  public:
     GpuFlatIndexNode(const Object& object) : gpu_index_(nullptr) {
     }
+
     virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
         auto err = Train(dataset, cfg);
@@ -30,10 +32,12 @@ class GpuFlatIndexNode : public IndexNode {
         err = Add(dataset, cfg);
         return err;
     }
+
     virtual Status
     Train(const DataSet& dataset, const Config& cfg) override {
         return Status::success;
     }
+
     virtual Status
     Add(const DataSet& dataset, const Config& cfg) override {
         const GpuFlatConfig& f_cfg = static_cast<const GpuFlatConfig&>(cfg);
@@ -66,6 +70,7 @@ class GpuFlatIndexNode : public IndexNode {
         this->gpu_index_ = gpu_index;
         return Status::success;
     }
+
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!gpu_index_) {
@@ -113,8 +118,9 @@ class GpuFlatIndexNode : public IndexNode {
         }
         return results;
     }
+
     virtual Status
-    Serialization(BinarySet& binset) const override {
+    Serialize(BinarySet& binset) const override {
         if (!gpu_index_) {
             LOG_KNOWHERE_WARNING_ << "serilalization on empty index.";
             return Status::empty_index;
@@ -141,8 +147,9 @@ class GpuFlatIndexNode : public IndexNode {
         }
         return Status::success;
     }
+
     virtual Status
-    Deserialization(const BinarySet& binset) override {
+    Deserialize(const BinarySet& binset) override {
         auto binary = binset.GetByName("FLAT");
         MemoryIOReader reader;
         try {
@@ -170,22 +177,27 @@ class GpuFlatIndexNode : public IndexNode {
     CreateConfig() const override {
         return std::make_unique<GpuFlatConfig>();
     }
+
     virtual int64_t
-    Dims() const override {
+    Dim() const override {
         return gpu_index_->d;
     }
+
     virtual int64_t
     Size() const override {
         return gpu_index_->ntotal * gpu_index_->d * sizeof(float);
     }
+
     virtual int64_t
     Count() const override {
         return gpu_index_->ntotal;
     }
+
     virtual std::string
     Type() const override {
         return "GPUFLAT";
     }
+
     virtual ~GpuFlatIndexNode() {
         if (gpu_index_)
             delete gpu_index_;

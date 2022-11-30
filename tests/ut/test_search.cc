@@ -116,10 +116,10 @@ TEST_CASE("Test All Index Search.", "[search]") {
         auto res = idx.Build(*train_ds, json);
         REQUIRE(res == knowhere::Status::success);
         knowhere::BinarySet bs;
-        idx.Serialization(bs);
+        idx.Serialize(bs);
 
         auto idx_ = knowhere::IndexFactory::Instance().Create(name);
-        idx_.Deserialization(bs);
+        idx_.Deserialize(bs);
         auto results = idx_.Search(*query_ds, json, nullptr);
         REQUIRE(results.has_value());
         auto ids = results.value()->GetIds();
