@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <mutex>
 #include <thread>
 #include <unordered_map>
 #include <vector>
@@ -16,6 +17,7 @@ namespace hnswlib {
 class VisitedListPool {
     int numelements;
     std::unordered_map<std::thread::id, std::vector<bool>> map;
+    std::mutex mtx;
 
  public:
     VisitedListPool(int numelements1) {
@@ -24,7 +26,9 @@ class VisitedListPool {
 
     std::vector<bool>&
     getFreeVisitedList() {
+        std::unique_lock lk(mtx);
         auto& res = map[std::this_thread::get_id()];
+        lk.unlock();
         if (res.size() != numelements) {
             res.assign(numelements, false);
         } else {
