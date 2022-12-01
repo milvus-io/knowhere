@@ -148,20 +148,23 @@ class Benchmark_knowhere_float_range_multi : public Benchmark_knowhere, public :
 // Following these steps:
 //   1. set_ann_test_name, eg. "sift-128-euclidean" or "glove-200-angular"
 //   2. use parse_ann_test_name() and load_hdf5_data<false>()
-//   3. comment SetMetaRadius()
-//   4. use the last element in the gt_dist_ as its radius for each nq
-//   5. specify the hdf5 file name to generate
-//   6. run this testcase
+//   3. use the last element in the gt_dist_ as its radius for each nq
+//   4. specify the hdf5 file name to generate
+//   5. run this testcase
 #if 0
 TEST_F(Benchmark_knowhere_float_range_multi, TEST_CREATE_HDF5_WITH_MULTI_RADIUS) {
     std::vector<float> golden_radius(nq_);
     for (int32_t i = 0; i < nq_; i++) {
-        golden_radius[i] = gt_dist_[(i + 1) * gt_k_ - 1] + 0.01;
+        golden_radius[i] = std::pow(gt_dist_[(i + 1) * gt_k_ - 1], 2.0) + 0.01;
     }
 
     std::vector<int32_t> golden_lims(nq_ + 1);
     for (int32_t i = 0; i <= nq_; i++) {
         golden_lims[i] = i * gt_k_;
+    }
+
+    for (int32_t i = 0; i < nq_ * gt_k_; i++) {
+        gt_dist_[i] = std::pow(gt_dist_[i], 2.0);
     }
 
     assert(dim_ == 128);

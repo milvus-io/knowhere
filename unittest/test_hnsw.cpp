@@ -162,14 +162,14 @@ TEST_P(HNSWTest, hnsw_range_search_l2) {
         ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult(result, metric_type, nq, low_bound * low_bound, high_bound * high_bound,
+        CheckRangeSearchResult(result, metric_type, nq, low_bound, high_bound,
                                golden_labels.data(), golden_lims.data(), false, bitset);
     };
 
     for (std::pair<float, float> range: {
-             std::make_pair<float, float>(0, 4.1f),
-             std::make_pair<float, float>(4.1f, 4.2f),
-             std::make_pair<float, float>(4.2f, 4.3f)}) {
+             std::make_pair<float, float>(0, 16.81f),
+             std::make_pair<float, float>(16.81f, 17.64f),
+             std::make_pair<float, float>(17.64f, 18.49f)}) {
         knowhere::SetMetaRadiusLowBound(conf_, range.first);
         knowhere::SetMetaRadiusHighBound(conf_, range.second);
         test_range_search_l2(range.first, range.second, nullptr);

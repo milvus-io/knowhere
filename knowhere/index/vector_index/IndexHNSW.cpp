@@ -286,12 +286,8 @@ IndexHNSW::QueryByRangeImpl(int64_t n, const float* xq, float*& distances, int64
 
     float low_bound = GetMetaRadiusLowBound(config);
     float high_bound = GetMetaRadiusHighBound(config);
-    bool is_L2 = (index_->metric_type_ == 0);  // L2: 0, InnerProduct: 1
-    if (is_L2) {
-        low_bound *= low_bound;
-        high_bound *= high_bound;
-    }
-    float radius = (is_L2 ? high_bound : 1.0f - low_bound);
+    bool is_ip = (index_->metric_type_ == 1);  // L2: 0, InnerProduct: 1
+    float radius = (is_ip ? 1.0f - low_bound : high_bound);
 
     std::vector<std::vector<int64_t>> result_id_array(n);
     std::vector<std::vector<float>> result_dist_array(n);
@@ -309,13 +305,13 @@ IndexHNSW::QueryByRangeImpl(int64_t n, const float* xq, float*& distances, int64
             result_id_array[index].resize(elem_cnt);
             for (size_t j = 0; j < elem_cnt; j++) {
                 auto& p = rst[j];
-                result_dist_array[index][j] = (is_L2 ? p.first : (1 - p.first));
+                result_dist_array[index][j] = (is_ip ? (1 - p.first) : p.first);
                 result_id_array[index][j] = p.second;
             }
             result_size[index] = rst.size();
 
             // filter range search result
-            FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], !is_L2, low_bound,
+            FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, low_bound,
                                             high_bound);
         }));
     }
@@ -324,7 +320,7 @@ IndexHNSW::QueryByRangeImpl(int64_t n, const float* xq, float*& distances, int64
         future.get();
     }
 
-    GetRangeSearchResult(result_dist_array, result_id_array, !is_L2, n, low_bound, high_bound, distances, labels, lims);
+    GetRangeSearchResult(result_dist_array, result_id_array, is_ip, n, low_bound, high_bound, distances, labels, lims);
 }
 
 void

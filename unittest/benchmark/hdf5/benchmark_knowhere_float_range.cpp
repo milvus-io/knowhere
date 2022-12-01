@@ -157,13 +157,14 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere, public ::testi
 #if 0
 TEST_F(Benchmark_knowhere_float_range, TEST_CREATE_HDF5) {
     // set this radius to get about 1M result dataset for 10k nq
-    const float radius = 186.0;
+    const float low_bound = 0.0;
+    const float high_bound = 186.0 * 186.0;
 
     std::vector<int64_t> golden_labels;
     std::vector<float> golden_distances;
     std::vector<size_t> golden_lims;
-    RunFloatRangeSearchBF<CMin<float>>(golden_labels, golden_distances, golden_lims, metric_type_,
-                                       (const float*)xb_, nb_, (const float*)xq_, nq_, dim_, radius, nullptr);
+    RunFloatRangeSearchBF(golden_labels, golden_distances, golden_lims, metric_type_,
+                          (const float*)xb_, nb_, (const float*)xq_, nq_, dim_, low_bound, high_bound, nullptr);
 
     // convert golden_lims and golden_ids to int32
     std::vector<int32_t> golden_lims_int(nq_ + 1);
@@ -179,7 +180,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_CREATE_HDF5) {
 
     assert(dim_ == 128);
     assert(nq_ == 10000);
-    hdf5_write_range<false>("sift-128-euclidean-range.hdf5", dim_, xb_, nb_, xq_, nq_, radius,
+    hdf5_write_range<false>("sift-128-euclidean-range.hdf5", dim_, xb_, nb_, xq_, nq_, high_bound,
                             golden_lims_int.data(), golden_ids_int.data(), golden_distances.data());
 }
 #endif

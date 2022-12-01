@@ -52,7 +52,7 @@ constexpr float kMax = 100;
 constexpr uint32_t kK = 10;
 constexpr uint32_t kBigK = kNumRows * 2;
 constexpr float kL2RadiusLowBound = 0;
-constexpr float kL2RadiusHighBound = 550;
+constexpr float kL2RadiusHighBound = 300000;
 constexpr float kIPRadiusLowBound = 50000;
 constexpr float kIPRadiusHighBound = std::numeric_limits<float>::max();
 constexpr float kDisLossTolerance = 0.5;
@@ -62,7 +62,7 @@ constexpr uint32_t kLargeDimNumQueries = 10;
 constexpr uint32_t kLargeDim = 5600;
 constexpr uint32_t kLargeDimBigK = kLargeDimNumRows * 2;
 constexpr float kLargeDimL2RadiusLowBound = 0;
-constexpr float kLargeDimL2RadiusHighBound = 6000;
+constexpr float kLargeDimL2RadiusHighBound = 36000000;
 constexpr float kLargeDimIPRadiusLowBound = 400000;
 constexpr float kLargeDimIPRadiusHighBound = std::numeric_limits<float>::max();
 
@@ -174,7 +174,6 @@ GenRangeSearchGrounTruth(const float* data_p, const float* query_p, const std::s
                 for (uint32_t dim = 0; dim < num_dims; ++dim) {  // for every dim
                     dis += std::pow(xb[dim] - xq[dim], 2);
                 }
-                dis = std::sqrt(dis);
             }
             if (knowhere::distance_in_range(dis, radius_low_bound, radius_high_bound, is_ip)) {
                 ground_truth->at(query_index).emplace_back(row);

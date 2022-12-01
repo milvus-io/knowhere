@@ -214,8 +214,7 @@ BinaryIDMAP::QueryByRangeImpl(int64_t n,
 
     faiss::RangeSearchResult res(n);
     index->range_search(n, data, high_bound, &res, bitset);
-    GetRangeSearchResult(res, (index->metric_type == faiss::METRIC_INNER_PRODUCT), n, low_bound, high_bound,
-                         distances, labels, lims, bitset);
+    GetRangeSearchResult(res, false, n, low_bound, high_bound, distances, labels, lims, bitset);
 }
 
 }  // namespace knowhere

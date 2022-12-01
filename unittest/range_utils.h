@@ -28,7 +28,7 @@ inline float float_vec_dist(
     const size_t dim) {
     assert(metric_type == knowhere::metric::L2 || metric_type == knowhere::metric::IP);
     if (metric_type == knowhere::metric::L2) {
-        return std::sqrt(faiss::fvec_L2sqr_ref(pa, pb, dim));
+        return faiss::fvec_L2sqr_ref(pa, pb, dim);
     } else {
         return faiss::fvec_inner_product_ref(pa, pb, dim);
     }

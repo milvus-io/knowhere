@@ -121,7 +121,7 @@ TEST_P(BruteForceTest, float_range_search_l2) {
                               xb.data(), nb, xq.data(), nq, dim, low_bound, high_bound, bitset);
 
         auto result = knowhere::BruteForce::RangeSearch(base_dataset, query_dataset, config, bitset);
-        CheckRangeSearchResult(result, metric_type, nq, low_bound * low_bound, high_bound * high_bound,
+        CheckRangeSearchResult(result, metric_type, nq, low_bound, high_bound,
                                golden_labels.data(), golden_lims.data(), true, bitset);
     };
 
@@ -129,9 +129,9 @@ TEST_P(BruteForceTest, float_range_search_l2) {
     for (int64_t blas_threshold : {0, 20}) {
         knowhere::KnowhereConfig::SetBlasThreshold(blas_threshold);
         for (std::pair<float, float> range: {
-             std::make_pair<float, float>(0, 4.1f),
-             std::make_pair<float, float>(4.1f, 4.2f),
-             std::make_pair<float, float>(4.2f, 4.3f)}) {
+             std::make_pair<float, float>(0, 16.81f),
+             std::make_pair<float, float>(16.81f, 17.64f),
+             std::make_pair<float, float>(17.64f, 18.49f)}) {
             test_range_search_l2(range.first, range.second, nullptr);
             test_range_search_l2(range.first, range.second, *bitset);
         }
