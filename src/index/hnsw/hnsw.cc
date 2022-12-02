@@ -156,12 +156,8 @@ class HnswIndexNode : public IndexNode {
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
         float low_bound = hnsw_cfg.radius_low_bound;
         float high_bound = hnsw_cfg.radius_high_bound;
-        bool is_L2 = (index_->metric_type_ == 0);  // 0:L2, 1:IP
-        if (is_L2) {
-            low_bound *= low_bound;
-            high_bound *= high_bound;
-        }
-        float radius = (is_L2 ? high_bound : 1.0f - low_bound);
+        bool is_ip = (index_->metric_type_ == 1);  // 0:L2, 1:IP
+        float radius = (is_ip ? (1.0f - low_bound) : high_bound);
 
         feder::hnsw::FederResultUniq feder_result;
         if (hnsw_cfg.trace_visit) {
@@ -193,13 +189,13 @@ class HnswIndexNode : public IndexNode {
                 result_id_array[index].resize(elem_cnt);
                 for (size_t j = 0; j < elem_cnt; j++) {
                     auto& p = rst[j];
-                    result_dist_array[index][j] = (is_L2 ? p.first : (1 - p.first));
+                    result_dist_array[index][j] = (is_ip ? (1 - p.first) : p.first);
                     result_id_array[index][j] = p.second;
                 }
                 result_size[index] = rst.size();
 
                 // filter range search result
-                FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], !is_L2, low_bound,
+                FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, low_bound,
                                                 high_bound);
             }));
         }
@@ -207,7 +203,7 @@ class HnswIndexNode : public IndexNode {
             future.get();
         }
 
-        GetRangeSearchResult(result_dist_array, result_id_array, !is_L2, nq, low_bound, high_bound, dis, ids, lims);
+        GetRangeSearchResult(result_dist_array, result_id_array, is_ip, nq, low_bound, high_bound, dis, ids, lims);
 
         auto res = GenResultDataSet(nq, ids, dis, lims);
 

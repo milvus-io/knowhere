@@ -292,12 +292,8 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
 
     float low_bound = ivf_cfg.radius_low_bound;
     float high_bound = ivf_cfg.radius_high_bound;
-    bool is_L2 = (index_->metric_type == faiss::METRIC_L2);
-    if (is_L2) {
-        low_bound *= low_bound;
-        high_bound *= high_bound;
-    }
-    float radius = (is_L2 ? high_bound : low_bound);
+    bool is_ip = (index_->metric_type == faiss::METRIC_INNER_PRODUCT);
+    float radius = (is_ip ? low_bound : high_bound);
 
     int64_t* ids = nullptr;
     float* distances = nullptr;
@@ -308,7 +304,7 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
         faiss::RangeSearchResult res(nq);
         index_->range_search_thread_safe(nq, (const float*)xq, radius, &res, ivf_cfg.nprobe, parallel_mode, max_codes,
                                          bitset);
-        GetRangeSearchResult(res, !is_L2, nq, low_bound, high_bound, distances, ids, lims, bitset);
+        GetRangeSearchResult(res, is_ip, nq, low_bound, high_bound, distances, ids, lims, bitset);
     } catch (const std::exception& e) {
         LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return unexpected(Status::faiss_inner_error);

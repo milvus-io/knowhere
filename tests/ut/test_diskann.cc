@@ -60,7 +60,7 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
         json["k"] = kK;
         if (metric_str == knowhere::metric::L2) {
             json["radius_low_bound"] = CFG_FLOAT(0);
-            json["radius_high_bound"] = CFG_FLOAT(450);
+            json["radius_high_bound"] = CFG_FLOAT(200000);
         } else {
             json["radius_low_bound"] = CFG_FLOAT(50000);
             json["radius_high_bound"] = std::numeric_limits<CFG_FLOAT>::max();

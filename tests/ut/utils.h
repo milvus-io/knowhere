@@ -113,7 +113,6 @@ GetRangeSearchGroundTruth(const knowhere::DataSet& base, const knowhere::DataSet
                     distance += ((base_p[ndim * row + dim] - query_p[query_index * ndim + dim]) *
                                  (base_p[ndim * row + dim] - query_p[query_index * ndim + dim]));
                 }
-                distance = std::sqrt(distance);
             }
             if (knowhere::distance_in_range(distance, radius_low_bound, radius_high_bound, is_ip)) {
                 ids_v[query_index].emplace_back(row);

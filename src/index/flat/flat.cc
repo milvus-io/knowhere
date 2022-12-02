@@ -121,14 +121,10 @@ class FlatIndexNode : public IndexNode {
 
             faiss::RangeSearchResult res(nq);
             if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
-                bool is_L2 = (index_->metric_type == faiss::METRIC_L2);
-                if (is_L2) {
-                    low_bound *= low_bound;
-                    high_bound *= high_bound;
-                }
-                float radius = (is_L2 ? high_bound : low_bound);
+                bool is_ip = (index_->metric_type == faiss::METRIC_INNER_PRODUCT);
+                float radius = (is_ip ? low_bound : high_bound);
                 index_->range_search(nq, (const float*)xq, radius, &res, bitset);
-                GetRangeSearchResult(res, !is_L2, nq, low_bound, high_bound, distances, ids, lims, bitset);
+                GetRangeSearchResult(res, is_ip, nq, low_bound, high_bound, distances, ids, lims, bitset);
             }
             if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
                 index_->range_search(nq, (const uint8_t*)xq, high_bound, &res, bitset);
