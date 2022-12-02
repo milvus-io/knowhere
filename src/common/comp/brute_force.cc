@@ -132,8 +132,6 @@ BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_da
     auto faiss_metric_type = metric_type.value();
     switch (faiss_metric_type) {
         case faiss::METRIC_L2:
-            low_bound *= low_bound;
-            high_bound *= high_bound;
             faiss::range_search_L2sqr((const float*)xq, (const float*)xb, dim, nq, nb, high_bound, &res, bitset);
             break;
         case faiss::METRIC_INNER_PRODUCT:
