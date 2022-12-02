@@ -57,7 +57,6 @@ class Benchmark_base {
                   const size_t* lims,
                   int32_t nq) {
         const float FLOAT_DIFF = 0.00001;
-        const bool is_L2 = (metric_type == "L2");
         for (int32_t i = 0; i < nq; i++) {
             std::unordered_set<int32_t> gt_ids_set(gt_ids_ + gt_lims_[i], gt_ids_ + gt_lims_[i + 1]);
             std::unordered_map<int32_t, float> gt_map;
@@ -66,8 +65,7 @@ class Benchmark_base {
             }
             for (auto j = lims[i]; j < lims[i + 1]; j++) {
                 if (gt_ids_set.count(ids[j]) > 0) {
-                    float dist = (is_L2) ? std::sqrt(distances[j]) : distances[j];
-                    ASSERT_LT(std::abs(dist - gt_map[ids[j]]), FLOAT_DIFF);
+                    ASSERT_LT(std::abs(distances[j] - gt_map[ids[j]]), FLOAT_DIFF);
                 }
             }
         }
