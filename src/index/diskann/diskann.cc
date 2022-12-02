@@ -569,12 +569,8 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
 
     auto low_bound = search_conf.radius_low_bound;
     auto high_bound = search_conf.radius_high_bound;
-    bool is_L2 = (pq_flash_index_->get_metric() == diskann::Metric::L2);
-    if (is_L2) {
-        low_bound *= low_bound;
-        high_bound *= high_bound;
-    }
-    float radius = (is_L2 ? high_bound : low_bound);
+    bool is_ip = (pq_flash_index_->get_metric() == diskann::Metric::INNER_PRODUCT);
+    float radius = (is_ip ? low_bound : high_bound);
 
     auto dim = dataset.GetDim();
     auto nq = dataset.GetRows();
@@ -596,14 +592,14 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
             pq_flash_index_->range_search(xq + (index * dim), radius, min_k, max_k, result_id_array[index],
                                           result_dist_array[index], beamwidth, search_list_and_k_ratio, bitset);
             // filter range search result
-            FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], !is_L2, low_bound,
+            FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, low_bound,
                                             high_bound);
         }));
     }
     for (auto& future : futures) {
         future.get();
     }
-    GetRangeSearchResult(result_dist_array, result_id_array, !is_L2, nq, low_bound, high_bound, p_dist, p_id, p_lims);
+    GetRangeSearchResult(result_dist_array, result_id_array, is_ip, nq, low_bound, high_bound, p_dist, p_id, p_lims);
     return GenResultDataSet(nq, p_id, p_dist, p_lims);
 }
 
