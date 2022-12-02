@@ -195,4 +195,22 @@ DataSet2Array(DataSetPtr result, float* dis, int nq_1, int k_1, int* ids, int nq
     }
 }
 
+void
+DataSet2Array(DataSetPtr result, int* lims, int s_1, float* dis, int s_2, int* ids, int s_3) {
+    auto lims_ = result->GetLims();
+    auto ids_ = result->GetIds();
+    auto dist_ = result->GetDistance();
+    assert(s_2 == s_3);
+    *lims = 0;
+    for (int i = 0; i < s_1; i++) {
+        *(lims + i + 1) = *((size_t*)(lims_) + i + 1);
+        auto beg = *(lims + i);
+        auto end = *(lims + i + 1);
+        for (int j = beg; j < end; ++j) {
+            *(ids + j) = *((int64_t*)(ids_) + j);
+            *(dis + j) = *((float*)(dist_) + j);
+        }
+    }
+}
+
 %}
