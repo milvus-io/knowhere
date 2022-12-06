@@ -1,10 +1,10 @@
 #include <omp.h>
 
 #include "common/range_util.h"
-#include "common/thread_pool.h"
 #include "diskann/aux_utils.h"
 #include "diskann/pq_flash_index.h"
 #include "index/diskann/diskann_config.h"
+#include "knowhere/comp/thread_pool.h"
 #ifndef _WINDOWS
 #include "diskann/linux_aligned_file_reader.h"
 #else

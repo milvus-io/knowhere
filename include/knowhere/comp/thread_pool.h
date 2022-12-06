@@ -14,7 +14,7 @@
 #include <memory>
 #include <utility>
 
-#include "common/ctpl/ctpl-std.h"
+#include "ctpl/ctpl-std.h"
 #include "knowhere/log.h"
 
 namespace knowhere {
