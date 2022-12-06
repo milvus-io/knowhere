@@ -111,15 +111,12 @@ class HnswIndexNode : public IndexNode {
                 size_t rst_size = rst.size();
                 auto p_single_dis = p_dist + index * k;
                 auto p_single_id = p_id + index * k;
-                size_t idx = rst_size - 1;
-                while (!rst.empty()) {
-                    auto& it = rst.top();
-                    p_single_dis[idx] = transform ? (1 - it.first) : it.first;
-                    p_single_id[idx] = it.second;
-                    rst.pop();
-                    idx--;
+                for (size_t idx = 0; idx < rst_size; ++idx) {
+                    const auto& [dist, id] = rst[idx];
+                    p_single_dis[idx] = transform ? (1 - dist) : dist;
+                    p_single_id[idx] = id;
                 }
-                for (idx = rst_size; idx < (size_t)k; idx++) {
+                for (size_t idx = rst_size; idx < (size_t)k; idx++) {
                     p_single_dis[idx] = float(1.0 / 0.0);
                     p_single_id[idx] = -1;
                 }
@@ -193,8 +190,6 @@ class HnswIndexNode : public IndexNode {
                     result_id_array[index][j] = p.second;
                 }
                 result_size[index] = rst.size();
-
-                // filter range search result
                 FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, low_bound,
                                                 high_bound);
             }));
@@ -203,6 +198,7 @@ class HnswIndexNode : public IndexNode {
             future.get();
         }
 
+        // filter range search result
         GetRangeSearchResult(result_dist_array, result_id_array, is_ip, nq, low_bound, high_bound, dis, ids, lims);
 
         auto res = GenResultDataSet(nq, ids, dis, lims);
