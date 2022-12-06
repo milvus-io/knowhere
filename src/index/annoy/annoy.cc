@@ -227,7 +227,7 @@ class AnnoyIndexNode : public IndexNode {
 
     virtual std::string
     Type() const override {
-        return "ANNOY";
+        return knowhere::IndexEnum::INDEX_ANNOY;
     }
 
     virtual ~AnnoyIndexNode() {

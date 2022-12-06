@@ -344,7 +344,7 @@ class HnswIndexNode : public IndexNode {
 
     virtual std::string
     Type() const override {
-        return "HNSW";
+        return knowhere::IndexEnum::INDEX_HNSW;
     }
 
     virtual ~HnswIndexNode() {
