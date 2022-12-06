@@ -14,6 +14,7 @@ constexpr int64_t M_BYTE = 1024 * 1024;
 
 std::string
 KnowhereConfig::SetSimdType(const SimdType simd_type) {
+#ifdef __x86_64__
     if (simd_type == SimdType::AUTO) {
         faiss::use_avx512 = true;
         faiss::use_avx2 = true;
@@ -40,7 +41,7 @@ KnowhereConfig::SetSimdType(const SimdType simd_type) {
         faiss::use_sse4_2 = false;
         LOG_KNOWHERE_INFO_ << "FAISS expect simdType::GENERIC";
     }
-
+#endif
     std::string simd_str;
     faiss::fvec_hook(simd_str);
     LOG_KNOWHERE_INFO_ << "FAISS hook " << simd_str;
