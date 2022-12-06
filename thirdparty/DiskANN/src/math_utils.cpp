@@ -45,7 +45,7 @@ void  cblas_sgemm(OPENBLAS_CONST enum CBLAS_ORDER     Order,
 
 namespace math_utils {
 
-  float calc_distance(float* vec_1, float* vec_2, size_t dim) {
+  float calc_distance(const float* vec_1, const float* vec_2, size_t dim) {
     float dist = 0;
     for (size_t j = 0; j < dim; j++) {
       dist += (vec_1[j] - vec_2[j]) * (vec_1[j] - vec_2[j]);
@@ -58,11 +58,70 @@ namespace math_utils {
   // to be pre-allocated
   void compute_vecs_l2sq(float* vecs_l2sq, float* data, const size_t num_points,
                          const size_t dim) {
-#pragma omp parallel for schedule(static, 8192)
     for (int64_t n_iter = 0; n_iter < (_s64) num_points; n_iter++) {
       vecs_l2sq[n_iter] = cblas_snrm2(dim, (data + (n_iter * dim)), 1);
       vecs_l2sq[n_iter] *= vecs_l2sq[n_iter];
     }
+  }
+
+  void elkan_L2(const float* x, const float* y, size_t d, size_t nx, size_t ny,
+                uint32_t* ids) {
+    if (nx == 0 || ny == 0) {
+      return;
+    }
+    const size_t bs_y = 256;
+    float* data = (float*) malloc((bs_y * (bs_y - 1) / 2) * sizeof(float));
+    float* val = (float*) malloc(nx * sizeof(float));
+    for (size_t j0 = 0; j0 < ny; j0 += bs_y) {
+      size_t j1 = j0 + bs_y;
+      if (j1 > ny)
+        j1 = ny;
+
+      auto Y = [&](size_t i, size_t j) -> float& {
+        assert(i != j);
+        i -= j0, j -= j0;
+        return (i > j) ? data[j + i * (i - 1) / 2] : data[i + j * (j - 1) / 2];
+      };
+
+      for (size_t i = j0 + 1; i < j1; ++i) {
+        const float* y_i = y + i * d;
+        for (size_t j = j0; j < i; j++) {
+          const float* y_j = y + j * d;
+          Y(i, j) = calc_distance(y_i, y_j, d);
+        }
+      }
+
+      for (size_t i = 0; i < nx; i++) {
+        const float* x_i = x + i * d;
+
+        int64_t ids_i = j0;
+        float   val_i = calc_distance(x_i, y + j0 * d, d);
+        float   val_i_time_4 = val_i * 4;
+        for (size_t j = j0 + 1; j < j1; j++) {
+          if (val_i_time_4 <= Y(ids_i, j)) {
+            continue;
+          }
+          const float* y_j = y + j * d;
+          float        disij = calc_distance(x_i, y_j, d / 2);
+          if (disij >= val_i) {
+            continue;
+          }
+          disij += calc_distance(x_i + d / 2, y_j + d / 2, d - d / 2);
+          if (disij < val_i) {
+            ids_i = j;
+            val_i = disij;
+            val_i_time_4 = val_i * 4;
+          }
+        }
+
+        if (j0 == 0 || val[i] > val_i) {
+          val[i] = val_i;
+          ids[i] = ids_i;
+        }
+      }
+    }
+    free(val);
+    free(data);
   }
 
   void rotate_data_randomly(float* data, size_t num_points, size_t dim,
@@ -125,7 +184,6 @@ namespace math_utils {
                 dist_matrix, num_centers);
 
     if (k == 1) {
-#pragma omp parallel for schedule(static, 8192)
       for (int64_t i = 0; i < (_s64) num_points; i++) {
         float  min = std::numeric_limits<float>::max();
         float* current = dist_matrix + (i * num_centers);
@@ -137,7 +195,6 @@ namespace math_utils {
         }
       }
     } else {
-#pragma omp parallel for schedule(static, 8192)
       for (int64_t i = 0; i < (_s64) num_points; i++) {
         std::vector<PivotContainer> top_k_vec;
         float*                      current = dist_matrix + (i * num_centers);
@@ -209,7 +266,6 @@ namespace math_utils {
       int64_t blk_st = cur_blk * PAR_BLOCK_SIZE;
       int64_t blk_ed =
           std::min((_s64) num_points, (_s64) ((cur_blk + 1) * PAR_BLOCK_SIZE));
-#pragma omp parallel for schedule(static, 1)
       for (int64_t j = blk_st; j < blk_ed; j++) {
         for (size_t l = 0; l < k; l++) {
           size_t this_center_id =
@@ -239,7 +295,6 @@ namespace math_utils {
     diskann::cout << "Processing residuals of " << num_points << " points in "
                   << dim << " dimensions using " << num_centers << " centers "
                   << std::endl;
-#pragma omp parallel for schedule(static, 8192)
     for (int64_t n_iter = 0; n_iter < (_s64) num_points; n_iter++) {
       for (size_t d_iter = 0; d_iter < dim; d_iter++) {
         if (to_subtract == 1)
@@ -287,13 +342,11 @@ namespace kmeans {
         closest_docs[c].clear();
     }
 
-    math_utils::compute_closest_centers(data, num_points, dim, centers,
-                                        num_centers, 1, closest_center,
-                                        closest_docs, docs_l2sq);
+    math_utils::elkan_L2(data, centers, dim, num_points, num_centers, closest_center);
+    for (size_t i = 0; i < num_points; ++i) {
+      closest_docs[closest_center[i]].push_back(i);
+    }
 
-    //	diskann::cout << "closest centerss calculation done " << std::endl;
-
-#pragma omp parallel for schedule(static, 1)
     for (int64_t c = 0; c < (_s64) num_centers; ++c) {
       float*  center = centers + (size_t) c * (size_t) dim;
       double* cluster_sum = new double[dim];
@@ -321,7 +374,6 @@ namespace kmeans {
           num_points / CHUNK_SIZE + (num_points % CHUNK_SIZE == 0 ? 0 : 1);
       std::vector<float> residuals(nchunks * BUF_PAD, 0.0);
 
-#pragma omp parallel for schedule(static, 32)
       for (int64_t chunk = 0; chunk < (_s64) nchunks; ++chunk)
         for (size_t d = chunk * CHUNK_SIZE;
              d < num_points && d < (chunk + 1) * CHUNK_SIZE; ++d)
@@ -455,7 +507,6 @@ namespace kmeans {
 
     float* dist = new float[num_points];
 
-#pragma omp parallel for schedule(static, 8192)
     for (int64_t i = 0; i < (_s64) num_points; i++) {
       dist[i] =
           math_utils::calc_distance(data + i * dim, data + init_id * dim, dim);
@@ -494,7 +545,6 @@ namespace kmeans {
       std::memcpy(pivot_data + num_picked * dim, data + tmp_pivot * dim,
                   dim * sizeof(float));
 
-#pragma omp parallel for schedule(static, 8192)
       for (int64_t i = 0; i < (_s64) num_points; i++) {
         dist[i] = (std::min)(
             dist[i], math_utils::calc_distance(data + i * dim,

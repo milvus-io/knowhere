@@ -198,7 +198,7 @@ class AlgorithmInterface {
     virtual void
     addPoint(const void* datapoint, labeltype label) = 0;
 
-    virtual std::priority_queue<std::pair<dist_t, labeltype>>
+    virtual std::vector<std::pair<dist_t, labeltype>>
     searchKnn(const void*, size_t, const knowhere::BitsetView, const SearchParam*,
               const knowhere::feder::hnsw::FederResultUniq&) const = 0;
 
@@ -223,17 +223,7 @@ AlgorithmInterface<dist_t>::searchKnnCloserFirst(const void* query_data, size_t 
     std::vector<std::pair<dist_t, labeltype>> result;
 
     // here searchKnn returns the result in the order of further first
-    auto ret = searchKnn(query_data, k, bitset, nullptr, nullptr);
-    {
-        size_t sz = ret.size();
-        result.resize(sz);
-        while (!ret.empty()) {
-            result[--sz] = ret.top();
-            ret.pop();
-        }
-    }
-
-    return result;
+    return searchKnn(query_data, k, bitset, nullptr, nullptr);
 }
 }  // namespace hnswlib
 
