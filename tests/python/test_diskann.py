@@ -47,14 +47,18 @@ def test_index(gen_data, faiss_ans, recall, error):
             "build_dram_budget_gb":32.0,
             "num_threads": 8
         },
-        "search_config": {
+        "init_config": {
             "dim":128,
             "metric_type":"L2",
             "index_prefix": index_path,
+            "num_threads":8,
+            "search_cache_budget_gb": pq_code_size
+        },
+        "search_config": {
+            "dim":128,
+            "metric_type":"L2",
             "k":10,
             "search_list_size": 100,
-            "num_threads":8,
-            "search_cache_budget_gb": pq_code_size,
             "beamwidth":8
         }
     }
@@ -64,6 +68,9 @@ def test_index(gen_data, faiss_ans, recall, error):
     diskann.Build(
         knowhere.GetNullDataSet(),
         json.dumps(diskann_config["build_config"]),
+    )
+    diskann.Init(
+        json.dumps(diskann_config["init_config"]),
     )
     ans = diskann.Search(
         knowhere.ArrayToDataSet(xq),

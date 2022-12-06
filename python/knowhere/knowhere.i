@@ -91,6 +91,11 @@ class IndexWrap {
         return idx.Add(*dataset, knowhere::Json::parse(json));
     }
 
+    bool
+    Init(const std::string& json) {
+        return idx.Init(knowhere::Json::parse(json));
+    }
+
     DataSetPtr
     Search(DataSetPtr dataset, const std::string& json) {
         auto res = idx.Search(*dataset, knowhere::Json::parse(json), nullptr);

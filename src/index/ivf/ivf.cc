@@ -64,6 +64,10 @@ class IvfIndexNode : public IndexNode {
         if constexpr (std::is_same<faiss::IndexBinaryIVF, T>::value)
             return std::make_unique<IvfBinConfig>();
     };
+    virtual bool
+    Init(const Config& cfg) {
+        return true;
+    }
     virtual int64_t
     Dim() const override {
         if (!index_)

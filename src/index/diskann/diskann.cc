@@ -43,6 +43,9 @@ class DiskANNIndexNode : public IndexNode {
     virtual Status
     Add(const DataSet& dataset, const Config& cfg) override;
 
+    virtual bool
+    Init(const Config& cfg) override;
+
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
 
@@ -238,14 +241,26 @@ CheckAddParams(const DiskANNConfig& diskann_cfg) {
     return Status::success;
 }
 
+inline bool
+CheckInit(bool is_prepared) {
+    if (!is_prepared) {
+        LOG_KNOWHERE_ERROR_
+            << "DiskANN is not been initialized yet, plz call Init function to make it ready for queries.";
+        return false;
+    } else {
+        return true;
+    }
+}
+
 inline Status
 CheckSearchParams(const DiskANNConfig& diskann_cfg) {
     auto max_search_list_size = std::max(kSearchListSizeMaxValue, diskann_cfg.k * 10);
     if (diskann_cfg.search_list_size > max_search_list_size || diskann_cfg.search_list_size < diskann_cfg.k) {
         LOG_KNOWHERE_ERROR_ << "search_list_size should be in range: [topk, max(200, topk * 10)]";
         return Status::invalid_args;
+    } else {
+        return Status::success;
     }
-    return Status::success;
 }
 
 inline Status
@@ -494,13 +509,18 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
 }
 
 template <typename T>
-expected<DataSetPtr, Status>
-DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
+bool
+DiskANNIndexNode<T>::Init(const Config& cfg) {
     if (!is_prepared_.load()) {
         const_cast<DiskANNIndexNode<T>*>(this)->Prepare(cfg);
     }
-    if (!is_prepared_.load() || !pq_flash_index_) {
-        LOG_KNOWHERE_ERROR_ << "Failed to load diskann.";
+    return is_prepared_.load();
+}
+
+template <typename T>
+expected<DataSetPtr, Status>
+DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
+    if (!CheckInit(is_prepared_.load()) || !pq_flash_index_) {
         return unexpected(Status::empty_index);
     }
 
@@ -553,11 +573,7 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
 template <typename T>
 expected<DataSetPtr, Status>
 DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
-    if (!is_prepared_.load()) {
-        const_cast<DiskANNIndexNode<T>*>(this)->Prepare(cfg);
-    }
-    if (!is_prepared_.load() || !pq_flash_index_) {
-        LOG_KNOWHERE_ERROR_ << "Failed to load diskann.";
+    if (!CheckInit(is_prepared_.load()) || !pq_flash_index_) {
         return unexpected(Status::empty_index);
     }
 

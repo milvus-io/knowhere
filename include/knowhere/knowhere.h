@@ -68,6 +68,8 @@ class IndexNode : public Object {
     Train(const DataSet& dataset, const Config& cfg) = 0;
     virtual Status
     Add(const DataSet& dataset, const Config& cfg) = 0;
+    virtual bool
+    Init(const Config& cfg) = 0;
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const = 0;
     virtual expected<DataSetPtr, Status>
@@ -208,6 +210,19 @@ class Index {
             return res;
         }
         return this->node->Add(dataset, *cfg);
+    }
+
+    bool
+    Init(const Json& json) {
+        Json json_(json);
+        auto cfg = this->node->CreateConfig();
+        Config::Format(*cfg, json_);
+        LOG_KNOWHERE_INFO_ << json_.dump();
+        auto res = Config::Load(*cfg, json_, knowhere::INIT);
+        if (res != Status::success) {
+            return false;
+        }
+        return this->node->Init(*cfg);
     }
 
     expected<DataSetPtr, Status>

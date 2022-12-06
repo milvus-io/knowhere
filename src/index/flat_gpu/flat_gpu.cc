@@ -71,6 +71,11 @@ class GpuFlatIndexNode : public IndexNode {
         return Status::success;
     }
 
+    virtual bool
+    Init(const Config& cfg) {
+        return true;
+    }
+
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!gpu_index_) {

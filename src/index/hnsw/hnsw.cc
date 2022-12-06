@@ -55,6 +55,11 @@ class HnswIndexNode : public IndexNode {
         return Status::success;
     }
 
+    virtual bool
+    Init(const Config& cfg) {
+        return true;
+    }
+
     virtual Status
     Add(const DataSet& dataset, const Config& cfg) override {
         if (!index_) {

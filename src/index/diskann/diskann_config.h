@@ -70,11 +70,7 @@ class DiskANNConfig : public BaseConfig {
     // ratio, the accuracy will get higher but throughput will get affected.
     CFG_FLOAT search_list_and_k_ratio;
     KNOHWERE_DECLARE_CONFIG(DiskANNConfig) {
-        KNOWHERE_CONFIG_DECLARE_FIELD(index_prefix)
-            .description("path to load or save Diskann.")
-            .for_train()
-            .for_search()
-            .for_range_search();
+        KNOWHERE_CONFIG_DECLARE_FIELD(index_prefix).description("path to load or save Diskann.").for_train().for_init();
         KNOWHERE_CONFIG_DECLARE_FIELD(data_path).description("raw data path.").for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(max_degree)
             .description("the degree of the graph index.")
@@ -100,8 +96,7 @@ class DiskANNConfig : public BaseConfig {
             .set_default(8)
             .set_range(1, 256)
             .for_train()
-            .for_search()
-            .for_range_search();
+            .for_init();
         KNOWHERE_CONFIG_DECLARE_FIELD(disk_pq_dims)
             .description("the dimension of compressed vectors stored on the ssd, use 0 to store uncompressed data.")
             .set_default(0)
@@ -114,24 +109,20 @@ class DiskANNConfig : public BaseConfig {
             .description("the size of cached nodes in GB.")
             .set_default(0)
             .set_range(0, std::numeric_limits<CFG_FLOAT>::max())
-            .for_search()
-            .for_range_search();
+            .for_init();
         KNOWHERE_CONFIG_DECLARE_FIELD(warm_up)
             .description("should do warm up before search.")
             .set_default(false)
-            .for_search()
-            .for_range_search();
+            .for_init();
         KNOWHERE_CONFIG_DECLARE_FIELD(use_bfs_cache)
             .description("should bfs strategy to cache nodes.")
             .set_default(false)
-            .for_search()
-            .for_range_search();
+            .for_init();
         KNOWHERE_CONFIG_DECLARE_FIELD(aio_maxnr)
             .description("the numebr of maximum parallel disk reads per thread.")
             .set_default(32)
             .set_range(1, 256)
-            .for_search()
-            .for_range_search();
+            .for_init();
         KNOWHERE_CONFIG_DECLARE_FIELD(beamwidth)
             .description("the maximum number of IO requests each query will issue per iteration of search code.")
             .set_default(8)
