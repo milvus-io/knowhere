@@ -15,7 +15,7 @@ def fbin_write(x, fname):
     x.tofile(f)
 
 def test_index(gen_data, faiss_ans, recall, error):
-    index_name = "DISKANNFLOAT"
+    index_name = "DISKANN"
     diskann_dir = "diskann_test"
     data_path = os.path.join(diskann_dir, "diskann_data")
     index_path = os.path.join(diskann_dir, "diskann_index")
@@ -47,14 +47,16 @@ def test_index(gen_data, faiss_ans, recall, error):
             "build_dram_budget_gb":32.0,
             "num_threads": 8
         },
+        "load_config": {
+            "index_prefix": index_path,
+            "num_threads":8,
+            "search_cache_budget_gb": pq_code_size,
+        },
         "search_config": {
             "dim":128,
             "metric_type":"L2",
-            "index_prefix": index_path,
             "k":10,
             "search_list_size": 100,
-            "num_threads":8,
-            "search_cache_budget_gb": pq_code_size,
             "beamwidth":8
         }
     }
@@ -64,6 +66,10 @@ def test_index(gen_data, faiss_ans, recall, error):
     diskann.Build(
         knowhere.GetNullDataSet(),
         json.dumps(diskann_config["build_config"]),
+    )
+    diskann.Load(
+        knowhere.GetIndexBinarySet(),
+        json.dumps(diskann_config["load_config"]),
     )
     ans = diskann.Search(
         knowhere.ArrayToDataSet(xq),

@@ -136,8 +136,6 @@ GetRangeSearchGroundTruth(const knowhere::DataSet& base, const knowhere::DataSet
 
 inline float
 GetKNNRecall(const knowhere::DataSet& ground_truth, const knowhere::DataSet& result) {
-    REQUIRE(ground_truth.GetDim() >= result.GetDim());
-
     auto nq = result.GetRows();
     auto gt_k = ground_truth.GetDim();
     auto res_k = result.GetDim();

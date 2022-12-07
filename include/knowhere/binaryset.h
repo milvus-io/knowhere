@@ -1,6 +1,7 @@
 #ifndef BINARYSET_H
 #define BINARYSET_H
 
+#include <cassert>
 #include <cstring>
 #include <map>
 #include <memory>
@@ -22,6 +23,10 @@ CopyBinary(const BinaryPtr& bin) {
 
 class BinarySet {
  public:
+    BinarySet() = default;
+    BinarySet(const std::nullptr_t value) {
+        assert(value == nullptr);
+    }
     BinaryPtr
     GetByName(const std::string& name) const {
         return binary_map_.at(name);

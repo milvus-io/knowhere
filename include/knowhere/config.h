@@ -38,12 +38,7 @@ typedef nlohmann::json Json;
 template <typename T>
 struct Entry {};
 
-enum PARAM_TYPE {
-    TRAIN = 0x1,
-    SEARCH = 0x2,
-    RANGE_SEARCH = 0x4,
-    FEDER = 0x8,
-};
+enum PARAM_TYPE { TRAIN = 0x1, SEARCH = 0x2, RANGE_SEARCH = 0x4, FEDER = 0x8, LOAD = 0x10 };
 
 template <>
 struct Entry<CFG_STRING> {
@@ -188,6 +183,12 @@ class EntryAccess {
     }
 
     EntryAccess&
+    for_load() {
+        entry->type |= PARAM_TYPE::LOAD;
+        return *this;
+    }
+
+    EntryAccess&
     for_search() {
         entry->type |= PARAM_TYPE::SEARCH;
         return *this;
@@ -210,6 +211,7 @@ class EntryAccess {
         entry->type |= PARAM_TYPE::TRAIN;
         entry->type |= PARAM_TYPE::SEARCH;
         entry->type |= PARAM_TYPE::RANGE_SEARCH;
+        entry->type |= PARAM_TYPE::LOAD;
         return *this;
     }
 

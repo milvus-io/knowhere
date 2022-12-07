@@ -142,7 +142,7 @@ class AnnoyIndexNode : public IndexNode {
     }
 
     virtual Status
-    Serialize(BinarySet& binset) const override {
+    Save(BinarySet& binset) const override {
         if (!index_) {
             return Status::empty_index;
         }
@@ -167,7 +167,7 @@ class AnnoyIndexNode : public IndexNode {
     }
 
     virtual Status
-    Deserialize(const BinarySet& binset) override {
+    Load(const BinarySet& binset, const Config& cfg) override {
         if (index_)
             delete index_;
         auto metric_type = binset.GetByName("annoy_metric_type");

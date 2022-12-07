@@ -153,7 +153,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IDMAP) {
     knowhere::Json conf = cfg_;
     std::string index_file_name = get_index_name({});
     create_index(index_file_name, conf);
-    index_.Deserialize(binary_set_);
+    index_.Load(binary_set_);
     binary_set_.clear();
     test_idmap(conf);
 }
@@ -167,7 +167,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_FLAT) {
 
         std::string index_file_name = get_index_name({nlist});
         create_index(index_file_name, conf);
-        index_.Deserialize(binary_set_);
+        index_.Load(binary_set_);
         binary_set_.clear();
         test_ivf(conf);
     }
@@ -204,7 +204,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_SQ8) {
 
         std::string index_file_name = get_index_name({nlist});
         create_index(index_file_name, conf);
-        index_.Deserialize(binary_set_);
+        index_.Load(binary_set_);
         binary_set_.clear();
         test_ivf(conf);
     }
@@ -222,7 +222,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_PQ) {
 
             std::string index_file_name = get_index_name({nlist, m});
             create_index(index_file_name, conf);
-            index_.Deserialize(binary_set_);
+            index_.Load(binary_set_);
             binary_set_.clear();
             test_ivf(conf);
         }
@@ -240,7 +240,7 @@ TEST_F(Benchmark_knowhere_float, TEST_HNSW) {
 
             std::string index_file_name = get_index_name({M, efc});
             create_index(index_file_name, conf);
-            index_.Deserialize(binary_set_);
+            index_.Load(binary_set_);
             binary_set_.clear();
             test_hnsw(conf);
         }

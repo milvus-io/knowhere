@@ -26,5 +26,10 @@ def DataSetToArray(ans):
     swigknowhere.DataSet2Array(ans, dis, ids)
     return dis, ids
 
+
 def GetNullDataSet():
     return swigknowhere.GetNullDataSet()
+
+
+def GetIndexBinarySet():
+    return  swigknowhere.GetIndexBinarySet()

@@ -59,16 +59,13 @@ class DiskANNIndexNode : public IndexNode {
     GetIndexMeta(const Config& cfg) const override;
 
     virtual Status
-    Serialize(BinarySet& binset) const override {
-        LOG_KNOWHERE_ERROR_ << "DiskANN doesn't support Serialize.";
+    Save(BinarySet& binset) const override {
+        LOG_KNOWHERE_ERROR_ << "DiskANN doesn't support Save.";
         return Status::not_implemented;
     }
 
     virtual Status
-    Deserialize(const BinarySet& binset) override {
-        LOG_KNOWHERE_ERROR_ << "DiskANN doesn't support Deserialization.";
-        return Status::not_implemented;
-    }
+    Load(const BinarySet& binset, const Config& cfg) override;
 
     virtual std::unique_ptr<BaseConfig>
     CreateConfig() const override {
@@ -110,13 +107,7 @@ class DiskANNIndexNode : public IndexNode {
 
     virtual std::string
     Type() const override {
-        if (std::is_same_v<T, float>) {
-            return std::string(knowhere::IndexEnum::INDEX_DISKANN) + "FLOAT";
-        } else if (std::is_same_v<T, uint8_t>) {
-            return std::string(knowhere::IndexEnum::INDEX_DISKANN) + "UINT8";
-        } else if (std::is_same_v<T, int8_t>) {
-            return std::string(knowhere::IndexEnum::INDEX_DISKANN) + "INT8";
-        }
+        return knowhere::IndexEnum::INDEX_DISKANN;
     }
 
  private:
@@ -493,13 +484,29 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
     return true;
 }
 
+inline bool
+CheckPrepare(bool is_prepared) {
+    if (!is_prepared) {
+        LOG_KNOWHERE_ERROR_ << "DiskANN is not been loaded yet, plz call Load() function to make it ready for queries.";
+        return false;
+    } else {
+        return true;
+    }
+}
+
 template <typename T>
-expected<DataSetPtr, Status>
-DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
+Status
+DiskANNIndexNode<T>::Load(const BinarySet& binset, const Config& cfg) {
     if (!is_prepared_.load()) {
         const_cast<DiskANNIndexNode<T>*>(this)->Prepare(cfg);
     }
-    if (!is_prepared_.load() || !pq_flash_index_) {
+    return is_prepared_.load() ? Status::success : Status::diskann_inner_error;
+}
+
+template <typename T>
+expected<DataSetPtr, Status>
+DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
+    if (!CheckPrepare(is_prepared_.load()) || !pq_flash_index_) {
         LOG_KNOWHERE_ERROR_ << "Failed to load diskann.";
         return unexpected(Status::empty_index);
     }
@@ -553,10 +560,7 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
 template <typename T>
 expected<DataSetPtr, Status>
 DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
-    if (!is_prepared_.load()) {
-        const_cast<DiskANNIndexNode<T>*>(this)->Prepare(cfg);
-    }
-    if (!is_prepared_.load() || !pq_flash_index_) {
+    if (!CheckPrepare(is_prepared_.load()) || !pq_flash_index_) {
         LOG_KNOWHERE_ERROR_ << "Failed to load diskann.";
         return unexpected(Status::empty_index);
     }
@@ -633,10 +637,5 @@ DiskANNIndexNode<T>::GetCachedNodeNum(const float cache_dram_budget, const uint6
     return num_nodes_to_cache;
 }
 
-KNOWHERE_REGISTER_GLOBAL(DISKANNFLOAT,
-                         [](const Object& object) { return Index<DiskANNIndexNode<float>>::Create(object); });
-KNOWHERE_REGISTER_GLOBAL(DISKANNUINT8,
-                         [](const Object& object) { return Index<DiskANNIndexNode<uint8_t>>::Create(object); });
-KNOWHERE_REGISTER_GLOBAL(DISKANNINT8,
-                         [](const Object& object) { return Index<DiskANNIndexNode<int8_t>>::Create(object); });
+KNOWHERE_REGISTER_GLOBAL(DISKANN, [](const Object& object) { return Index<DiskANNIndexNode<float>>::Create(object); });
 }  // namespace knowhere

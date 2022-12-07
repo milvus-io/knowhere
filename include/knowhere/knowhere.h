@@ -77,9 +77,9 @@ class IndexNode : public Object {
     virtual expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const = 0;
     virtual Status
-    Serialize(BinarySet& binset) const = 0;
+    Save(BinarySet& binset) const = 0;
     virtual Status
-    Deserialize(const BinarySet& binset) = 0;
+    Load(const BinarySet& binset, const Config& cfg) = 0;
     virtual std::unique_ptr<BaseConfig>
     CreateConfig() const = 0;
     virtual int64_t
@@ -263,13 +263,23 @@ class Index {
     }
 
     Status
-    Serialize(BinarySet& binset) const {
-        return this->node->Serialize(binset);
+    Save(BinarySet& binset) const {
+        return this->node->Save(binset);
     }
 
     Status
-    Deserialize(const BinarySet& binset) {
-        return this->node->Deserialize(binset);
+    Load(const BinarySet& binset, const Json& json = nullptr) {
+        auto cfg = this->node->CreateConfig();
+        if (json != nullptr) {
+            Json json_(json);
+            Config::Format(*cfg, json_);
+            LOG_KNOWHERE_INFO_ << json_.dump();
+            auto res = Config::Load(*cfg, json_, knowhere::LOAD);
+            if (res != Status::success) {
+                return res;
+            }
+        }
+        return this->node->Load(binset, *cfg);
     }
 
     int64_t

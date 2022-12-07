@@ -171,7 +171,7 @@ class IvfGpuIndexNode : public IndexNode {
     }
 
     virtual Status
-    Serialize(BinarySet& binset) const override {
+    Save(BinarySet& binset) const override {
         if (!this->gpu_index_)
             return Status::empty_index;
         if (!this->gpu_index_->is_trained)
@@ -202,7 +202,7 @@ class IvfGpuIndexNode : public IndexNode {
     }
 
     virtual Status
-    Deserialize(const BinarySet& binset) override {
+    Load(const BinarySet& binset, const Config& cfg) override {
         auto binary = binset.GetByName("IVF");
         MemoryIOReader reader;
         try {

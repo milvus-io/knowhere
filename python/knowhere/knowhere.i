@@ -67,7 +67,7 @@ import_array();
 class IndexWrap {
  public:
     IndexWrap(const std::string& name) {
-        if (name.rfind("DISKANN", 0) == 0) {
+        if (name == knowhere::IndexEnum::INDEX_DISKANN) {
             std::shared_ptr<knowhere::FileManager> file_manager = std::make_shared<knowhere::LocalFileManager>();
             auto diskann_pack = knowhere::Pack(file_manager);
             idx = IndexFactory::Instance().Create(name, diskann_pack);
@@ -116,13 +116,13 @@ class IndexWrap {
     }
 
     Status
-    Serialize(BinarySetPtr binset) {
-        return idx.Serialize(*binset);
+    Save(BinarySetPtr binset) {
+        return idx.Save(*binset);
     }
 
     Status
-    Deserialize(BinarySetPtr binset) {
-        return idx.Deserialize(*binset);
+    Load(BinarySetPtr binset, const std::string& json = "{}") {
+        return idx.Load(*binset, knowhere::Json::parse(json));
     }
 
     int64_t
@@ -179,6 +179,10 @@ int64_t DataSet_Dim(DataSetPtr results){
 
 DataSetPtr GetNullDataSet() {
     return nullptr;
+}
+
+BinarySetPtr GetIndexBinarySet() {
+    return std::make_shared<knowhere::BinarySet>();
 }
 
 void

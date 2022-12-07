@@ -60,13 +60,13 @@ TEST_CASE("Test All Index Search.", "[search]") {
         auto dim = dataset.GetDim();
         auto p_data = dataset.GetTensor();
         knowhere::BinarySet bs;
-        auto res = index.Serialize(bs);
+        auto res = index.Save(bs);
         REQUIRE(res == knowhere::Status::success);
         knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
         bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)p_data, [&](uint8_t*) {});
         bptr->size = dim * rows * sizeof(float);
         bs.Append("RAW_DATA", bptr);
-        res = index.Deserialize(bs);
+        res = index.Load(bs);
         REQUIRE(res == knowhere::Status::success);
     };
 
@@ -113,7 +113,7 @@ TEST_CASE("Test All Index Search.", "[search]") {
         }
     }
 
-    SECTION("Test Cpu Index Serial/Deserial.") {
+    SECTION("Test Cpu Index Save/Load.") {
         using std::make_tuple;
         auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
 
@@ -141,10 +141,10 @@ TEST_CASE("Test All Index Search.", "[search]") {
         auto res = idx.Build(*train_ds, json);
         REQUIRE(res == knowhere::Status::success);
         knowhere::BinarySet bs;
-        idx.Serialize(bs);
+        idx.Save(bs);
 
         auto idx_ = knowhere::IndexFactory::Instance().Create(name);
-        idx_.Deserialize(bs);
+        idx_.Load(bs);
         if (name == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
             load_raw_data(idx_, *train_ds, json);
         }

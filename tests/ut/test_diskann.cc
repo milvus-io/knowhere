@@ -76,15 +76,20 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
         json["search_list_size"] = 128;
         json["pq_code_budget_gb"] = sizeof(float) * kDim * kNumRows * 0.125 / (1024 * 1024 * 1024);
         json["build_dram_budget_gb"] = 32.0;
-        json["build_threads_num"] = 8;
+        json["num_threads"] = 8;
+        return json;
+    };
+
+    auto load_gen = [&base_gen, &metric_str]() {
+        knowhere::Json json = base_gen();
+        json["index_prefix"] = (metric_str == knowhere::metric::L2 ? kL2IndexPrefix : kIPIndexPrefix);
+        json["num_threads"] = 8;
+        json["search_cache_budget_gb"] = sizeof(float) * kDim * kNumRows * 0.125 / (1024 * 1024 * 1024);
         return json;
     };
 
     auto knn_search_gen = [&base_gen, &metric_str]() {
         knowhere::Json json = base_gen();
-        json["index_prefix"] = (metric_str == knowhere::metric::L2 ? kL2IndexPrefix : kIPIndexPrefix);
-        json["search_threads_num"] = 8;
-        json["search_cache_budget_gb"] = sizeof(float) * kDim * kNumRows * 0.125 / (1024 * 1024 * 1024);
         json["search_list_size"] = 36;
         json["beamwidth"] = 8;
         return json;
@@ -92,9 +97,6 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
 
     auto range_search_gen = [&base_gen, &metric_str]() {
         knowhere::Json json = base_gen();
-        json["index_prefix"] = (metric_str == knowhere::metric::L2 ? kL2IndexPrefix : kIPIndexPrefix);
-        json["search_threads_num"] = 8;
-        json["search_cache_budget_gb"] = sizeof(float) * kDim * kNumRows * 0.125 / (1024 * 1024 * 1024);
         json["beamwidth"] = 8;
         json["min_k"] = 10;
         json["max_k"] = 8000;
@@ -123,21 +125,27 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
         // build process
         {
             knowhere::DataSet* ds_ptr = nullptr;
-            auto diskann = knowhere::IndexFactory::Instance().Create("DISKANNFLOAT", diskann_index_pack);
+            auto diskann =
+                knowhere::IndexFactory::Instance().Create(knowhere::IndexEnum::INDEX_DISKANN, diskann_index_pack);
             auto build_json = build_gen().dump();
             knowhere::Json json = knowhere::Json::parse(build_json);
             diskann.Build(*ds_ptr, json);
         }
         //  knn search & range search process
         {
-            auto diskann = knowhere::IndexFactory::Instance().Create("DISKANNFLOAT", diskann_index_pack);
-            auto knn_search_json = knn_search_gen().dump();
-            knowhere::Json knn_json = knowhere::Json::parse(knn_search_json);
-            auto res = diskann.Search(*query_ds, knn_json, nullptr);
+            auto diskann =
+                knowhere::IndexFactory::Instance().Create(knowhere::IndexEnum::INDEX_DISKANN, diskann_index_pack);
+            // search before Load
+            auto error_res = diskann.Search(*query_ds, knn_search_gen(), nullptr);
+            REQUIRE(error_res.error() == knowhere::Status::empty_index);
+            // Load diskann index
+            auto load_status = diskann.Load(nullptr, load_gen());
+            // search knn
+            auto res = diskann.Search(*query_ds, knn_search_gen(), nullptr);
             REQUIRE(res.has_value());
             auto recall = GetKNNRecall(*knn_gt_ptr, *res.value());
             REQUIRE(recall > kL2KnnRecall);
-
+            // range search
             auto range_search_json = range_search_gen().dump();
             knowhere::Json range_json = knowhere::Json::parse(range_search_json);
             auto range_search_res = diskann.RangeSearch(*query_ds, range_json, nullptr);

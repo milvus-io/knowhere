@@ -27,7 +27,7 @@ class Benchmark_knowhere : public Benchmark_hdf5 {
         binary_set_.clear();
 
         FileIOWriter writer(filename);
-        index_.Serialize(binary_set_);
+        index_.Save(binary_set_);
 
         const auto& m = binary_set_.binary_map_;
         for (auto it = m.begin(); it != m.end(); ++it) {

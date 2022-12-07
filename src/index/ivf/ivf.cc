@@ -52,9 +52,9 @@ class IvfIndexNode : public IndexNode {
         return unexpected(Status::not_implemented);
     }
     virtual Status
-    Serialize(BinarySet& binset) const override;
+    Save(BinarySet& binset) const override;
     virtual Status
-    Deserialize(const BinarySet& binset) override;
+    Load(const BinarySet& binset, const Config& cfg) override;
     virtual std::unique_ptr<BaseConfig>
     CreateConfig() const override {
         if constexpr (std::is_same<faiss::IndexIVFFlat, T>::value)
@@ -528,7 +528,7 @@ IvfIndexNode<faiss::IndexIVFFlat>::GetIndexMeta(const Config& config) const {
 
 template <typename T>
 Status
-IvfIndexNode<T>::Serialize(BinarySet& binset) const {
+IvfIndexNode<T>::Save(BinarySet& binset) const {
     try {
         MemoryIOWriter writer;
         if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value) {
@@ -553,7 +553,7 @@ IvfIndexNode<T>::Serialize(BinarySet& binset) const {
 
 template <typename T>
 Status
-IvfIndexNode<T>::Deserialize(const BinarySet& binset) {
+IvfIndexNode<T>::Load(const BinarySet& binset, const Config& cfg) {
     std::string name = "IVF";
     if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value) {
         name = "BinaryIVF";
@@ -581,7 +581,7 @@ IvfIndexNode<T>::Deserialize(const BinarySet& binset) {
 
 template <>
 Status
-IvfIndexNode<faiss::IndexIVFFlat>::Deserialize(const BinarySet& binset) {
+IvfIndexNode<faiss::IndexIVFFlat>::Load(const BinarySet& binset, const Config& cfg) {
     std::string name = "IVF";
     auto binary = binset.GetByName(name);
 

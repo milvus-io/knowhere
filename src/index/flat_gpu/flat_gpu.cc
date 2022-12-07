@@ -120,7 +120,7 @@ class GpuFlatIndexNode : public IndexNode {
     }
 
     virtual Status
-    Serialize(BinarySet& binset) const override {
+    Save(BinarySet& binset) const override {
         if (!gpu_index_) {
             LOG_KNOWHERE_WARNING_ << "serilalization on empty index.";
             return Status::empty_index;
@@ -149,7 +149,7 @@ class GpuFlatIndexNode : public IndexNode {
     }
 
     virtual Status
-    Deserialize(const BinarySet& binset) override {
+    Load(const BinarySet& binset, const Config& cfg) override {
         auto binary = binset.GetByName("FLAT");
         MemoryIOReader reader;
         try {
