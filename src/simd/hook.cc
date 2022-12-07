@@ -6,6 +6,8 @@
 #include <iostream>
 #include <mutex>
 
+#include "faiss/FaissHook.h"
+
 #if defined(__x86_64__)
 #include "distances_avx.h"
 #include "distances_avx512.h"
@@ -130,6 +132,7 @@ fvec_hook(std::string& simd_type) {
 static int init_hook_ = []() {
     std::string simd_type;
     fvec_hook(simd_type);
+    faiss::sq_hook();
     LOG_KNOWHERE_INFO_ << "simd type: " << simd_type;
     return 0;
 }();
