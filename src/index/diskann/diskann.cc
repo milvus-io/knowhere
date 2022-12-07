@@ -111,11 +111,11 @@ class DiskANNIndexNode : public IndexNode {
     virtual std::string
     Type() const override {
         if (std::is_same_v<T, float>) {
-            return "DISKANNFLOAT";
+            return std::string(knowhere::IndexEnum::INDEX_DISKANN) + "FLOAT";
         } else if (std::is_same_v<T, uint8_t>) {
-            return "DISKANNUINT8";
+            return std::string(knowhere::IndexEnum::INDEX_DISKANN) + "UINT8";
         } else if (std::is_same_v<T, int8_t>) {
-            return "DISKANNINT8";
+            return std::string(knowhere::IndexEnum::INDEX_DISKANN) + "INT8";
         }
     }
 

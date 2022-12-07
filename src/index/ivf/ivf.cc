@@ -14,6 +14,8 @@
 
 namespace knowhere {
 
+#define RAW_DATA "RAW_DATA"
+
 template <typename T>
 struct QuantizerT {
     typedef faiss::IndexFlat type;
@@ -115,13 +117,13 @@ class IvfIndexNode : public IndexNode {
     virtual std::string
     Type() const override {
         if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value)
-            return "IVFFLAT";
+            return knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
         if constexpr (std::is_same<T, faiss::IndexIVFPQ>::value)
-            return "IVFPQ";
+            return knowhere::IndexEnum::INDEX_FAISS_IVFPQ;
         if constexpr (std::is_same<T, faiss::IndexIVFScalarQuantizer>::value)
-            return "IVFSQ";
+            return knowhere::IndexEnum::INDEX_FAISS_IVFSQ8;
         if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value)
-            return "IVFBIN";
+            return knowhere::IndexEnum::INDEX_FAISS_BIN_IVFFLAT;
     };
     virtual ~IvfIndexNode() {
         if (index_)
@@ -289,8 +291,13 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
     float* dis(new (std::nothrow) float[rows * ivf_cfg.k]);
     try {
         size_t max_codes = 0;
-        index_->search_thread_safe(rows, (const float*)data, ivf_cfg.k, dis, ids, ivf_cfg.nprobe, parallel_mode,
-                                   max_codes, bitset);
+        if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
+            index_->search_without_codes_thread_safe(rows, (const float*)data, ivf_cfg.k, dis, ids, ivf_cfg.nprobe,
+                                                     parallel_mode, max_codes, bitset);
+        } else {
+            index_->search_thread_safe(rows, (const float*)data, ivf_cfg.k, dis, ids, ivf_cfg.nprobe, parallel_mode,
+                                       max_codes, bitset);
+        }
     } catch (const std::exception& e) {
         delete[] ids;
         delete[] dis;
@@ -334,8 +341,13 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
     try {
         size_t max_codes = 0;
         faiss::RangeSearchResult res(nq);
-        index_->range_search_thread_safe(nq, (const float*)xq, radius, &res, ivf_cfg.nprobe, parallel_mode, max_codes,
-                                         bitset);
+        if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
+            index_->range_search_without_codes_thread_safe(nq, (const float*)xq, radius, &res, ivf_cfg.nprobe,
+                                                           parallel_mode, max_codes, bitset);
+        } else {
+            index_->range_search_thread_safe(nq, (const float*)xq, radius, &res, ivf_cfg.nprobe, parallel_mode,
+                                             max_codes, bitset);
+        }
         GetRangeSearchResult(res, is_ip, nq, low_bound, high_bound, distances, ids, lims, bitset);
     } catch (const std::exception& e) {
         LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
@@ -435,7 +447,11 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
         for (int64_t i = 0; i < rows; i++) {
             int64_t id = p_ids[i];
             assert(id >= 0 && id < index_->ntotal);
-            index_->reconstruct(id, p_x + i * dim);
+            if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
+                index_->reconstruct_without_codes(id, p_x + i * dim);
+            } else {
+                index_->reconstruct(id, p_x + i * dim);
+            }
         }
     } catch (const std::exception& e) {
         std::unique_ptr<float> p_x_auto_delete(p_x);
@@ -515,10 +531,13 @@ Status
 IvfIndexNode<T>::Serialize(BinarySet& binset) const {
     try {
         MemoryIOWriter writer;
-        if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value)
+        if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value) {
             faiss::write_index_binary(index_, &writer);
-        else
+        } else if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
+            faiss::write_index_nm(index_, &writer);
+        } else {
             faiss::write_index(index_, &writer);
+        }
         std::shared_ptr<uint8_t[]> data(writer.data_);
         if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value) {
             binset.Append("BinaryIVF", data, writer.rp);
@@ -553,6 +572,48 @@ IvfIndexNode<T>::Deserialize(const BinarySet& binset) {
             index_ = static_cast<T*>(faiss::read_index_binary(&reader));
         else
             index_ = static_cast<T*>(faiss::read_index(&reader));
+    } catch (const std::exception& e) {
+        LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
+        return Status::faiss_inner_error;
+    }
+    return Status::success;
+}
+
+template <>
+Status
+IvfIndexNode<faiss::IndexIVFFlat>::Deserialize(const BinarySet& binset) {
+    std::string name = "IVF";
+    auto binary = binset.GetByName(name);
+
+    MemoryIOReader reader;
+    reader.total = binary->size;
+    reader.data_ = binary->data.get();
+    if (index_) {
+        LOG_KNOWHERE_WARNING_ << "index not empty, delte old index.";
+        delete index_;
+    }
+    try {
+        index_ = static_cast<faiss::IndexIVFFlat*>(faiss::read_index_nm(&reader));
+
+        // Construct arranged data from original data
+        auto binary = binset.GetByName(RAW_DATA);
+        auto invlists = index_->invlists;
+        auto d = index_->d;
+        size_t nb = binary->size / invlists->code_size;
+        index_->prefix_sum.resize(invlists->nlist);
+        size_t curr_index = 0;
+
+        auto ails = dynamic_cast<faiss::ArrayInvertedLists*>(invlists);
+        index_->arranged_codes.resize(d * nb * sizeof(float));
+        for (size_t i = 0; i < invlists->nlist; i++) {
+            auto list_size = ails->ids[i].size();
+            for (size_t j = 0; j < list_size; j++) {
+                memcpy(index_->arranged_codes.data() + d * (curr_index + j) * sizeof(float),
+                       binary->data.get() + d * ails->ids[i][j] * sizeof(float), d * sizeof(float));
+            }
+            index_->prefix_sum[i] = curr_index;
+            curr_index += list_size;
+        }
     } catch (const std::exception& e) {
         LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return Status::faiss_inner_error;
