@@ -10,6 +10,7 @@
 #include "distances_avx512.h"
 #include "distances_ref.h"
 #include "distances_sse.h"
+#include "faiss/FaissHook.h"
 #include "instruction_set.h"
 #include "knowhere/log.h"
 namespace faiss {
@@ -100,6 +101,7 @@ fvec_hook(std::string& simd_type) {
 static int init_hook_ = []() {
     std::string simd_type;
     fvec_hook(simd_type);
+    faiss::sq_hook();
     LOG_KNOWHERE_INFO_ << "simd type: " << simd_type;
     return 0;
 }();
