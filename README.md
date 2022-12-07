@@ -15,7 +15,7 @@ All Linux distributions are available for Knowhere development. However, a major
 Here's a list of verified OS types where Knowhere can successfully build and run:
 
 - Ubuntu 20.04 x86_64
-- Ubuntu 20.04 Aarch64
+- Ubuntu 20.04 aarch_64
 - MacOS (x86_64)
 - MacOS (Apple Silicon)
 
