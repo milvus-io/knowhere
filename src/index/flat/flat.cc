@@ -248,9 +248,9 @@ class FlatIndexNode : public IndexNode {
     virtual std::string
     Type() const override {
         if constexpr (std::is_same<T, faiss::IndexFlat>::value)
-            return "FLAT";
+            return knowhere::IndexEnum::INDEX_FAISS_IDMAP;
         if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value)
-            return "BINFLAT";
+            return knowhere::IndexEnum::INDEX_FAISS_BIN_IVFFLAT;
     }
 
     virtual ~FlatIndexNode() {
