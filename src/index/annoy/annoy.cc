@@ -133,10 +133,7 @@ class AnnoyIndexNode : public IndexNode {
             return unexpected(Status::annoy_inner_error);
         }
 
-        auto results = std::make_shared<DataSet>();
-        results->SetTensor(p_x);
-
-        return results;
+        return GenResultDataSet(p_x);
     }
 
     virtual expected<DataSetPtr, Status>
