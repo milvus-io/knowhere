@@ -236,6 +236,7 @@ GenResultDataSet(const int64_t nq, const int64_t topk, const int64_t* ids, const
     ret_ds->SetDim(topk);
     ret_ds->SetIds(ids);
     ret_ds->SetDistance(distance);
+    ret_ds->SetIsOwner(true);
     return ret_ds;
 }
 
@@ -246,6 +247,7 @@ GenResultDataSet(const int64_t nq, const int64_t* ids, const float* distance, co
     ret_ds->SetIds(ids);
     ret_ds->SetDistance(distance);
     ret_ds->SetLims(lims);
+    ret_ds->SetIsOwner(true);
     return ret_ds;
 }
 
@@ -254,6 +256,7 @@ GenResultDataSet(const std::string& json_info, const std::string& json_id_set) {
     auto ret_ds = std::make_shared<DataSet>();
     ret_ds->SetJsonInfo(json_info);
     ret_ds->SetJsonIdSet(json_id_set);
+    ret_ds->SetIsOwner(true);
     return ret_ds;
 }
 #endif
