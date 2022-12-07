@@ -241,9 +241,7 @@ class HnswIndexNode : public IndexNode {
             std::unique_ptr<float> auto_delete_px(p_x);
             return unexpected(Status::hnsw_inner_error);
         }
-        auto res = std::make_shared<DataSet>();
-        res->SetTensor(p_x);
-        return res;
+        return GenResultDataSet(p_x);
     }
 
     expected<DataSetPtr, Status>

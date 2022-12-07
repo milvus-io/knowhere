@@ -140,7 +140,6 @@ class FlatIndexNode : public IndexNode {
 
     virtual expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
-        DataSetPtr results = std::make_shared<DataSet>();
         auto nq = dataset.GetRows();
         auto dim = dataset.GetDim();
         auto in_ids = dataset.GetIds();
@@ -151,8 +150,7 @@ class FlatIndexNode : public IndexNode {
                     int64_t id = in_ids[i];
                     index_->reconstruct(id, xq + i * dim);
                 }
-                results->SetTensor(xq);
-                return results;
+                return GenResultDataSet(xq);
             } catch (const std::exception& e) {
                 LOG_KNOWHERE_WARNING_ << "error inner faiss, " << e.what();
                 return unexpected(Status::faiss_inner_error);
@@ -165,8 +163,7 @@ class FlatIndexNode : public IndexNode {
                     int64_t id = in_ids[i];
                     index_->reconstruct(id, xq + i * dim / 8);
                 }
-                results->SetTensor(xq);
-                return results;
+                return GenResultDataSet(xq);
             } catch (const std::exception& e) {
                 LOG_KNOWHERE_WARNING_ << "error inner faiss, " << e.what();
                 return unexpected(Status::faiss_inner_error);

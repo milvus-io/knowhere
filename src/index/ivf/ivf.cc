@@ -442,11 +442,7 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
         LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return unexpected(Status::faiss_inner_error);
     }
-
-    auto results = std::make_shared<DataSet>();
-    results->SetTensor(p_x);
-
-    return results;
+    return GenResultDataSet(p_x);
 }
 
 template <>
@@ -472,11 +468,7 @@ IvfIndexNode<faiss::IndexBinaryIVF>::GetVectorByIds(const DataSet& dataset, cons
         LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return unexpected(Status::faiss_inner_error);
     }
-
-    auto results = std::make_shared<DataSet>();
-    results->SetTensor(p_x);
-
-    return results;
+    return GenResultDataSet(p_x);
 }
 
 template <>

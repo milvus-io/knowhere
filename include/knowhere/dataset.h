@@ -222,12 +222,13 @@ GenDataSet(const int64_t nb, const int64_t dim, const void* xb) {
 }
 
 #ifdef NOT_COMPILE_FOR_SWIG
-// inline DataSetPtr
-// GenResultDataSet(const void* tensor) {
-//     auto ret_ds = std::make_shared<DataSet>();
-//     SetDatasetOutputTensor(ret_ds, tensor);
-//     return ret_ds;
-// }
+inline DataSetPtr
+GenResultDataSet(const void* tensor) {
+    auto ret_ds = std::make_shared<DataSet>();
+    ret_ds->SetTensor(tensor);
+    ret_ds->SetIsOwner(true);
+    return ret_ds;
+}
 
 inline DataSetPtr
 GenResultDataSet(const int64_t nq, const int64_t topk, const int64_t* ids, const float* distance) {
