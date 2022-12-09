@@ -2,7 +2,7 @@
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/generators/catch_generators.hpp"
 #include "knowhere/comp/index_param.h"
-#include "knowhere/knowhere.h"
+#include "knowhere/factory.h"
 #include "utils.h"
 
 TEST_CASE("Test All Index Search.", "[search]") {

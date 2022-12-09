@@ -3,7 +3,7 @@
 #include "catch2/generators/catch_generators.hpp"
 #include "index/diskann/diskann.cc"
 #include "index/diskann/diskann_config.h"
-#include "knowhere/knowhere.h"
+#include "knowhere/factory.h"
 #include "local_file_manager.h"
 #include "utils.h"
 #if __has_include(<filesystem>)
