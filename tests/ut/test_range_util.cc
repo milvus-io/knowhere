@@ -1,6 +1,6 @@
 #include "catch2/catch_test_macros.hpp"
 #include "common/range_util.h"
-#include "knowhere/knowhere.h"
+#include "knowhere/factory.h"
 #include "utils.h"
 
 TEST_CASE("Test distance_in_range", "[range search]") {

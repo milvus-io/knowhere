@@ -5,7 +5,7 @@
 #include "faiss/index_io.h"
 #include "index/flat/flat_config.h"
 #include "io/FaissIO.h"
-#include "knowhere/knowhere.h"
+#include "knowhere/factory.h"
 
 namespace knowhere {
 
