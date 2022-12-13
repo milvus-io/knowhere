@@ -6,6 +6,7 @@
 #include "index/flat/flat_config.h"
 #include "io/FaissIO.h"
 #include "knowhere/factory.h"
+#include "knowhere/index_node_thread_pool_wrapper.h"
 
 namespace knowhere {
 
@@ -262,13 +263,14 @@ class FlatIndexNode : public IndexNode {
     T* index_;
 };
 
-KNOWHERE_REGISTER_GLOBAL(FLAT,
-                         [](const Object& object) { return Index<FlatIndexNode<faiss::IndexFlat>>::Create(object); });
+KNOWHERE_REGISTER_GLOBAL(FLAT, [](const Object& object) {
+    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<FlatIndexNode<faiss::IndexFlat>>(object));
+});
 KNOWHERE_REGISTER_GLOBAL(BINFLAT, [](const Object& object) {
-    return Index<FlatIndexNode<faiss::IndexBinaryFlat>>::Create(object);
+    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<FlatIndexNode<faiss::IndexBinaryFlat>>(object));
 });
 KNOWHERE_REGISTER_GLOBAL(BIN_FLAT, [](const Object& object) {
-    return Index<FlatIndexNode<faiss::IndexBinaryFlat>>::Create(object);
+    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<FlatIndexNode<faiss::IndexBinaryFlat>>(object));
 });
 
 }  // namespace knowhere

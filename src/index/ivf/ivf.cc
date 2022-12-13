@@ -11,6 +11,7 @@
 #include "io/FaissIO.h"
 #include "knowhere/factory.h"
 #include "knowhere/feder/IVFFlat.h"
+#include "knowhere/index_node_thread_pool_wrapper.h"
 
 namespace knowhere {
 
@@ -643,27 +644,33 @@ IvfIndexNode<faiss::IndexIVFFlat>::Deserialize(const BinarySet& binset) {
 }
 
 KNOWHERE_REGISTER_GLOBAL(IVFBIN, [](const Object& object) {
-    return Index<IvfIndexNode<faiss::IndexBinaryIVF>>::Create(object);
+    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<IvfIndexNode<faiss::IndexBinaryIVF>>(object));
 });
 
 KNOWHERE_REGISTER_GLOBAL(BIN_IVF_FLAT, [](const Object& object) {
-    return Index<IvfIndexNode<faiss::IndexBinaryIVF>>::Create(object);
+    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<IvfIndexNode<faiss::IndexBinaryIVF>>(object));
 });
 
-KNOWHERE_REGISTER_GLOBAL(IVFFLAT,
-                         [](const Object& object) { return Index<IvfIndexNode<faiss::IndexIVFFlat>>::Create(object); });
-KNOWHERE_REGISTER_GLOBAL(IVF_FLAT,
-                         [](const Object& object) { return Index<IvfIndexNode<faiss::IndexIVFFlat>>::Create(object); });
-KNOWHERE_REGISTER_GLOBAL(IVFPQ,
-                         [](const Object& object) { return Index<IvfIndexNode<faiss::IndexIVFPQ>>::Create(object); });
-KNOWHERE_REGISTER_GLOBAL(IVF_PQ,
-                         [](const Object& object) { return Index<IvfIndexNode<faiss::IndexIVFPQ>>::Create(object); });
+KNOWHERE_REGISTER_GLOBAL(IVFFLAT, [](const Object& object) {
+    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<IvfIndexNode<faiss::IndexIVFFlat>>(object));
+});
+KNOWHERE_REGISTER_GLOBAL(IVF_FLAT, [](const Object& object) {
+    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<IvfIndexNode<faiss::IndexIVFFlat>>(object));
+});
+KNOWHERE_REGISTER_GLOBAL(IVFPQ, [](const Object& object) {
+    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<IvfIndexNode<faiss::IndexIVFPQ>>(object));
+});
+KNOWHERE_REGISTER_GLOBAL(IVF_PQ, [](const Object& object) {
+    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<IvfIndexNode<faiss::IndexIVFPQ>>(object));
+});
 
 KNOWHERE_REGISTER_GLOBAL(IVFSQ, [](const Object& object) {
-    return Index<IvfIndexNode<faiss::IndexIVFScalarQuantizer>>::Create(object);
+    return Index<IndexNodeThreadPoolWrapper>::Create(
+        std::make_unique<IvfIndexNode<faiss::IndexIVFScalarQuantizer>>(object));
 });
 KNOWHERE_REGISTER_GLOBAL(IVF_SQ8, [](const Object& object) {
-    return Index<IvfIndexNode<faiss::IndexIVFScalarQuantizer>>::Create(object);
+    return Index<IndexNodeThreadPoolWrapper>::Create(
+        std::make_unique<IvfIndexNode<faiss::IndexIVFScalarQuantizer>>(object));
 });
 
 }  // namespace knowhere
