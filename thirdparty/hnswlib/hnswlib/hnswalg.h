@@ -250,77 +250,62 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         }
 
         auto& visited = visited_list_pool_->getFreeVisitedList();
-        std::vector<Neighbor> retset(ef + 1);
+        NeighborSet retset(ef);
 
         if (!has_deletions || !bitset.test((int64_t)ep_id)) {
             dist_t dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
-            retset[0] = Neighbor(ep_id, dist, true);
+            retset.insert(Neighbor(ep_id, dist, Neighbor::kValid));
         } else {
-            retset[0] = Neighbor(ep_id, std::numeric_limits<dist_t>::max(), true);
+            retset.insert(Neighbor(ep_id, std::numeric_limits<dist_t>::max(), Neighbor::kInvalid));
         }
 
         visited[ep_id] = true;
-        size_t p = 0, cur_size = 1;
-        while (p < cur_size) {
-            int np = cur_size;
-            if (retset[p].flag) {
-                retset[p].flag = false;
-                tableint u = retset[p].id;
-                tableint* list = (tableint*)get_linklist0(u);
+        while (retset.has_next()) {
+            auto [u, d, s] = retset.pop();
+            tableint* list = (tableint*)get_linklist0(u);
 #if defined(USE_PREFETCH)
-                _mm_prefetch(list, _MM_HINT_T0);
+            _mm_prefetch(list, _MM_HINT_T0);
 #endif
-                int size = list[0];
+            int size = list[0];
 
-                if constexpr (collect_metrics) {
-                    metric_hops++;
-                    metric_distance_computations += size;
-                }
+            if constexpr (collect_metrics) {
+                metric_hops++;
+                metric_distance_computations += size;
+            }
 #if defined(USE_PREFETCH)
-                for (size_t i = 1; i <= size; ++i) {
-                    _mm_prefetch(getDataByInternalId(list[i]), _MM_HINT_T0);
-                }
+            for (size_t i = 1; i <= size; ++i) {
+                _mm_prefetch(getDataByInternalId(list[i]), _MM_HINT_T0);
+            }
 #endif
-                for (size_t i = 1; i <= size; ++i) {
-                    tableint v = list[i];
-                    if (visited[v]) {
-                        if (feder_result != nullptr) {
-                            feder_result->visit_info_.AddVisitRecord(0, u, v, -1.0);
-                            feder_result->id_set_.insert(u);
-                            feder_result->id_set_.insert(v);
-                        }
-                        continue;
-                    }
-                    visited[v] = true;
-                    dist_t dist = fstdistfunc_(data_point, getDataByInternalId(v), dist_func_param_);
+            for (size_t i = 1; i <= size; ++i) {
+                tableint v = list[i];
+                if (visited[v]) {
                     if (feder_result != nullptr) {
-                        feder_result->visit_info_.AddVisitRecord(0, u, v, dist);
+                        feder_result->visit_info_.AddVisitRecord(0, u, v, -1.0);
                         feder_result->id_set_.insert(u);
                         feder_result->id_set_.insert(v);
                     }
-                    if ((cur_size == ef && dist >= retset[ef - 1].distance) ||
-                        (has_deletions && bitset.test((int64_t)v))) {
-                        continue;
-                    }
-                    Neighbor nn(v, dist, true);
-                    int r = InsertIntoPool(retset.data(), cur_size, nn);
-                    if (cur_size < ef) {
-                        ++cur_size;
-                    }
-                    if (r < np) {
-                        np = r;
-                    }
+                    continue;
                 }
-            }
-            if (np <= p) {
-                p = np;
-            } else {
-                ++p;
+                visited[v] = true;
+                dist_t dist = fstdistfunc_(data_point, getDataByInternalId(v), dist_func_param_);
+                if (feder_result != nullptr) {
+                    feder_result->visit_info_.AddVisitRecord(0, u, v, dist);
+                    feder_result->id_set_.insert(u);
+                    feder_result->id_set_.insert(v);
+                }
+                int status = Neighbor::kValid;
+                if (has_deletions && bitset.test((int64_t)v)) {
+                    status = Neighbor::kInvalid;
+                }
+
+                Neighbor nn(v, dist, status);
+                retset.insert(nn);
             }
         }
 
-        std::vector<std::pair<dist_t, tableint>> ans(cur_size);
-        for (int i = 0; i < cur_size; ++i) {
+        std::vector<std::pair<dist_t, tableint>> ans(retset.size());
+        for (int i = 0; i < retset.size(); ++i) {
             ans[i] = {retset[i].distance, retset[i].id};
         }
         return ans;
