@@ -15,9 +15,10 @@ class Index {
     Index() : node(nullptr) {
     }
 
+    template <typename... Args>
     static Index<T1>
-    Create(const Object& object) {
-        return Index(new (std::nothrow) T1(object));
+    Create(Args&&... args) {
+        return Index(new (std::nothrow) T1(std::forward<Args>(args)...));
     }
 
     template <typename T2>
