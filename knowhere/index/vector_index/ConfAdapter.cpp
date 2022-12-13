@@ -271,9 +271,8 @@ ANNOYConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 ANNOYConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    static int64_t MIN_SEARCH_K = std::numeric_limits<int64_t>::min();
     static int64_t MAX_SEARCH_K = std::numeric_limits<int64_t>::max();
-    CheckIntegerRange(cfg, indexparam::SEARCH_K, MIN_SEARCH_K, MAX_SEARCH_K);
+    CheckIntegerRange(cfg, indexparam::SEARCH_K, GetMetaTopk(cfg), MAX_SEARCH_K);
     return ConfAdapter::CheckSearch(cfg, type, mode);
 }
 
