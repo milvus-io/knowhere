@@ -3,7 +3,9 @@
 
 #include <cassert>
 #include <iostream>
+#include <optional>
 #include <string>
+
 namespace knowhere {
 
 enum class Status {
@@ -31,9 +33,11 @@ class unexpected {
     constexpr unexpected(const E& err) : err(err) {
         static_assert(std::is_same<E, Status>::value);
     }
+
     constexpr unexpected(E&& err) : err(err) {
         static_assert(std::is_same<E, Status>::value);
     }
+
     ~unexpected() = default;
 
     E err;
@@ -42,62 +46,54 @@ class unexpected {
 template <typename T, typename E>
 class expected {
  public:
-    expected(const T& t) : has_val(true), val(t) {
-    }
-    expected(T&& t) : has_val(true), val(std::move(t)) {
-    }
     template <typename... Args>
-    expected(Args... args) : has_val(true), val(std::forward<Args...>(args...)) {
+    expected(Args&&... args) : val(std::forward<Args...>(args...)) {
     }
 
-    constexpr expected(const unexpected<E>& unexp) {
-        has_val = false;
+    expected(const unexpected<E>& unexp) {
         err = unexp.err;
     }
 
-    expected(const expected<T, E>& other) {
-        this->has_val = other.has_val;
-        if (other.has_val) {
-            this->val = other.val;
-        } else {
-            this->err = other.err;
-        }
-    };
+    expected(unexpected<E>&& unexp) {
+        err = std::move(unexp.err);
+    }
+
+    expected(const expected<T, E>&) = default;
+
     expected(expected<T, E>&&) = default;
+
+    expected&
+    operator=(const expected<T, E>&) = default;
+
+    expected&
+    operator=(expected<T, E>&&) = default;
+
     bool
     has_value() {
-        return has_val;
+        return val.has_value();
     }
+
     E
     error() const {
-        assert(has_val == false);
-        return err;
+        assert(val.has_value() == false);
+        return err.value();
     }
+
     T&
     value() {
-        assert(has_val == true);
-        return val;
+        assert(val.has_value() == true);
+        return val.value();
     }
 
     expected<T, E>&
     operator=(const unexpected<E>& unexp) {
-        has_val = false;
         err = unexp.err;
-    }
-    ~expected() {
-        if (has_val) {
-            val.~T();
-        } else {
-            err.~E();
-        }
+        return *this;
     }
 
  private:
-    bool has_val;
-    union {
-        T val;
-        E err;
-    };
+    std::optional<T> val = std::nullopt;
+    std::optional<E> err = std::nullopt;
 };
 
 }  // namespace knowhere
