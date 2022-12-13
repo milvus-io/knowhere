@@ -8,7 +8,7 @@
 #include "index/hnsw/hnsw_config.h"
 #include "knowhere/comp/index_param.h"
 #include "knowhere/comp/thread_pool.h"
-#include "knowhere/knowhere.h"
+#include "knowhere/factory.h"
 
 namespace knowhere {
 class HnswIndexNode : public IndexNode {

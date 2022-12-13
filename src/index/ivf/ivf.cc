@@ -9,8 +9,8 @@
 #include "faiss/index_io.h"
 #include "index/ivf/ivf_config.h"
 #include "io/FaissIO.h"
+#include "knowhere/factory.h"
 #include "knowhere/feder/IVFFlat.h"
-#include "knowhere/knowhere.h"
 
 namespace knowhere {
 

@@ -9,7 +9,7 @@
 #include "faiss/index_io.h"
 #include "index/flat_gpu/flat_gpu_config.h"
 #include "io/FaissIO.h"
-#include "knowhere/knowhere.h"
+#include "knowhere/factory.h"
 
 namespace knowhere {
 

@@ -10,9 +10,9 @@
 #else
 #include "diskann/windows_aligned_file_reader.h"
 #endif
+#include "knowhere/factory.h"
 #include "knowhere/feder/DiskANN.h"
 #include "knowhere/file_manager.h"
-#include "knowhere/knowhere.h"
 #include "knowhere/log.h"
 
 namespace knowhere {
