@@ -90,9 +90,6 @@ ConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 ConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    const int64_t DEFAULT_MIN_K = 1;
-    const int64_t DEFAULT_MAX_K = 16384;
-    CheckIntegerRange(cfg, meta::TOPK, DEFAULT_MIN_K - 1, DEFAULT_MAX_K);
     return true;
 }
 
