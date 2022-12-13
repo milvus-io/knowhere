@@ -241,7 +241,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     mutable std::atomic<long> metric_hops;
 
     template <bool has_deletions, bool collect_metrics = false>
-    std::vector<std::pair<dist_t, tableint>>
+    std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
     searchBaseLayerST(tableint ep_id, const void* data_point, size_t ef, const faiss::BitsetView bitset,
                       const SearchParam* param = nullptr,
                       const knowhere::feder::hnsw::FederResultUniq& feder_result = nullptr) const {
@@ -250,80 +250,81 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         }
 
         auto& visited = visited_list_pool_->getFreeVisitedList();
-        std::vector<Neighbor> retset(ef + 1);
 
+        std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
+            top_candidates;
+        std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
+            candidate_set;
+
+        dist_t lowerBound;
         if (!has_deletions || !bitset.test((int64_t)ep_id)) {
             dist_t dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
-            retset[0] = Neighbor(ep_id, dist, true);
+            lowerBound = dist;
+            top_candidates.emplace(dist, ep_id);
+            candidate_set.emplace(-dist, ep_id);
         } else {
-            retset[0] = Neighbor(ep_id, std::numeric_limits<dist_t>::max(), true);
+            lowerBound = std::numeric_limits<dist_t>::max();
+            candidate_set.emplace(-lowerBound, ep_id);
         }
 
         visited[ep_id] = true;
-        size_t p = 0, cur_size = 1;
-        while (p < cur_size) {
-            int np = cur_size;
-            if (retset[p].flag) {
-                retset[p].flag = false;
-                tableint u = retset[p].id;
-                tableint* list = (tableint*)get_linklist0(u);
-#if defined(USE_PREFETCH)
-                _mm_prefetch(list, _MM_HINT_T0);
-#endif
-                int size = list[0];
+        while (!candidate_set.empty()) {
+            std::pair<dist_t, tableint> current_node_pair = candidate_set.top();
 
-                if constexpr (collect_metrics) {
-                    metric_hops++;
-                    metric_distance_computations += size;
-                }
-#if defined(USE_PREFETCH)
-                for (size_t i = 1; i <= size; ++i) {
-                    _mm_prefetch(getDataByInternalId(list[i]), _MM_HINT_T0);
-                }
+            if ((-current_node_pair.first) > lowerBound && (top_candidates.size() == ef || has_deletions == false)) {
+                break;
+            }
+            candidate_set.pop();
+
+            tableint current_node_id = current_node_pair.second;
+            int* data = (int*)get_linklist0(current_node_id);
+            size_t size = getListCount((linklistsizeint*)data);
+            // bool cur_node_deleted = isMarkedDeleted(current_node_id);
+            if (collect_metrics) {
+                metric_hops++;
+                metric_distance_computations += size;
+            }
+
+#ifdef USE_PREFETCH
+            for (size_t j = 1; j <= size; ++j) {
+                _mm_prefetch(getDataByInternalId(data[j]), _MM_HINT_T0);
+            }
 #endif
-                for (size_t i = 1; i <= size; ++i) {
-                    tableint v = list[i];
-                    if (visited[v]) {
-                        if (feder_result != nullptr) {
-                            feder_result->visit_info_.AddVisitRecord(0, u, v, -1.0);
-                            feder_result->id_set_.insert(u);
-                            feder_result->id_set_.insert(v);
-                        }
-                        continue;
-                    }
-                    visited[v] = true;
-                    dist_t dist = fstdistfunc_(data_point, getDataByInternalId(v), dist_func_param_);
+
+            for (size_t j = 1; j <= size; j++) {
+                int candidate_id = *(data + j);
+                if (!visited[candidate_id]) {
+                    visited[candidate_id] = true;
+                    char* currObj1 = (getDataByInternalId(candidate_id));
+                    dist_t dist = fstdistfunc_(data_point, currObj1, dist_func_param_);
                     if (feder_result != nullptr) {
-                        feder_result->visit_info_.AddVisitRecord(0, u, v, dist);
-                        feder_result->id_set_.insert(u);
-                        feder_result->id_set_.insert(v);
+                        feder_result->visit_info_.AddVisitRecord(0, current_node_id, candidate_id, dist);
+                        feder_result->id_set_.insert(current_node_id);
+                        feder_result->id_set_.insert(candidate_id);
                     }
-                    if ((cur_size == ef && dist >= retset[ef - 1].distance) ||
-                        (has_deletions && bitset.test((int64_t)v))) {
-                        continue;
+
+                    if (top_candidates.size() < ef || lowerBound > dist) {
+                        candidate_set.emplace(-dist, candidate_id);
+                        if (!has_deletions || !bitset.test((int64_t)candidate_id))
+                            top_candidates.emplace(dist, candidate_id);
+
+                        if (top_candidates.size() > ef)
+                            top_candidates.pop();
+
+                        if (!top_candidates.empty())
+                            lowerBound = top_candidates.top().first;
                     }
-                    Neighbor nn(v, dist, true);
-                    int r = InsertIntoPool(retset.data(), cur_size, nn);
-                    if (cur_size < ef) {
-                        ++cur_size;
-                    }
-                    if (r < np) {
-                        np = r;
+                } else {
+                    if (feder_result != nullptr) {
+                        feder_result->visit_info_.AddVisitRecord(0, current_node_id, candidate_id, -1.0);
+                        feder_result->id_set_.insert(current_node_id);
+                        feder_result->id_set_.insert(candidate_id);
                     }
                 }
             }
-            if (np <= p) {
-                p = np;
-            } else {
-                ++p;
-            }
         }
 
-        std::vector<std::pair<dist_t, tableint>> ans(cur_size);
-        for (int i = 0; i < cur_size; ++i) {
-            ans[i] = {retset[i].distance, retset[i].id};
-        }
-        return ans;
+        return top_candidates;
     }
 
     std::vector<tableint>
@@ -370,16 +371,17 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     }
 
     std::vector<std::pair<dist_t, labeltype>>
-    getNeighboursWithinRadius(std::vector<std::pair<dist_t, tableint>>& top_candidates, const void* data_point,
-                              float radius, const faiss::BitsetView bitset,
+    getNeighboursWithinRadius(std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>,
+                                                  CompareByFirst>& top_candidates,
+                              const void* data_point, float radius, const faiss::BitsetView bitset,
                               const knowhere::feder::hnsw::FederResultUniq& feder_result = nullptr) const {
         std::vector<std::pair<dist_t, labeltype>> result;
         auto& visited = visited_list_pool_->getFreeVisitedList();
 
         std::queue<std::pair<dist_t, tableint>> radius_queue;
         while (!top_candidates.empty()) {
-            auto cand = top_candidates.back();
-            top_candidates.pop_back();
+            auto cand = top_candidates.top();
+            top_candidates.pop();
             if (cand.first < radius) {
                 radius_queue.push(cand);
                 result.emplace_back(cand.first, cand.second);
@@ -1087,11 +1089,12 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         return cur_c;
     };
 
-    std::vector<std::pair<dist_t, labeltype>>
+    std::priority_queue<std::pair<dist_t, labeltype>>
     searchKnn(const void* query_data, size_t k, const faiss::BitsetView bitset, const SearchParam* param = nullptr,
               const knowhere::feder::hnsw::FederResultUniq& feder_result = nullptr) const {
+        std::priority_queue<std::pair<dist_t, labeltype>> result;
         if (cur_element_count == 0)
-            return {};
+            return result;
 
         tableint currObj = enterpoint_node_;
         dist_t curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
@@ -1134,8 +1137,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                 }
             }
         }
-
-        std::vector<std::pair<dist_t, tableint>> top_candidates;
+        std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
+            top_candidates;
         size_t ef = param ? param->ef_ : this->ef_;
         if (!bitset.empty()) {
             top_candidates =
@@ -1144,11 +1147,13 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             top_candidates =
                 searchBaseLayerST<false, true>(currObj, query_data, std::max(ef, k), bitset, param, feder_result);
         }
-        std::vector<std::pair<dist_t, labeltype>> result;
-        size_t len = std::min(k, top_candidates.size());
-        result.reserve(len);
-        for (int i = 0; i < len; ++i) {
-            result.emplace_back(top_candidates[i].first, (labeltype)top_candidates[i].second);
+        while (top_candidates.size() > k) {
+            top_candidates.pop();
+        }
+        while (top_candidates.size() > 0) {
+            std::pair<dist_t, tableint> rez = top_candidates.top();
+            result.push(std::pair<dist_t, labeltype>(rez.first, rez.second));
+            top_candidates.pop();
         }
         return result;
     };
@@ -1198,7 +1203,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             }
         }
 
-        std::vector<std::pair<dist_t, tableint>> top_candidates;
+        std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
+            top_candidates;
         size_t ef = param ? param->ef_ : this->ef_;
         if (!bitset.empty()) {
             top_candidates = searchBaseLayerST<true, true>(currObj, query_data, ef, bitset, param, feder_result);
