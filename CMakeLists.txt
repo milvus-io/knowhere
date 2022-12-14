@@ -10,6 +10,7 @@ knowhere_option(WITH_UT "Build with UT test" OFF)
 knowhere_option(WITH_ASAN "Build with ASAN" OFF)
 knowhere_option(WITH_DISKANN "Build with diskann index" OFF)
 knowhere_option(WITH_BENCHMARK "Build with benchmark" OFF)
+knowhere_option(WITH_COVERAGE "Build with coverage" OFF)
 
 if(USE_CUDA)
     set(CMAKE_CUDA_ARCHITECTURES 75;70;61;60)
@@ -38,6 +39,10 @@ find_package(OpenMP REQUIRED)
 if(OPENMP_FOUND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
+
+if(WITH_COVERAGE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
 endif()
 
 knowhere_file_glob(GLOB_RECURSE KNOWHERE_SRCS src/common/*.cc
