@@ -27,8 +27,8 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 ROOT_DIR="$( cd -P "$( dirname "$SOURCE" )/.." && pwd )"
 
-KNOWHERE_CORE_DIR="${ROOT_DIR}/knowhere"
-KNOWHERE_UNITTEST_DIR="${ROOT_DIR}/output/unittest"
+KNOWHERE_CORE_DIR="${ROOT_DIR}/src"
+KNOWHERE_UNITTEST_DIR="${ROOT_DIR}/build/tests/ut"
 
 echo "ROOT_DIR = ${ROOT_DIR}"
 echo "KNOWHERE_CORE_DIR = ${KNOWHERE_CORE_DIR}"
@@ -42,7 +42,7 @@ FILE_INFO_UT="${ROOT_DIR}/lcov_ut.info"
 FILE_INFO_COMBINE="${ROOT_DIR}/lcov_combine.info"
 FILE_INFO_OUTPUT="${ROOT_DIR}/lcov_output.info"
 DIR_LCOV_OUTPUT="${ROOT_DIR}/coverage"
-DIR_GCNO="${ROOT_DIR}/cmake_build/"
+DIR_GCNO="${ROOT_DIR}/build/"
 
 # delete old code coverage info files
 rm -f ${FILE_INFO_BASE}
@@ -59,13 +59,13 @@ if [ $? -ne 0 ]; then
 fi
 
 # run unittest
-for test in `ls ${KNOWHERE_UNITTEST_DIR}`; do
+for test in `ls ${KNOWHERE_UNITTEST_DIR}/*test*`; do
     echo "Running unittest: ${KNOWHERE_UNITTEST_DIR}/$test"
     # run unittest
-    ${KNOWHERE_UNITTEST_DIR}/${test}
+    ${test}
     if [ $? -ne 0 ]; then
         echo ${args}
-        echo ${${KNOWHERE_UNITTEST_DIR}/}/${test} "run failed"
+        echo ${test} "run failed"
         exit 1
     fi
 done
@@ -83,9 +83,10 @@ fi
 # remove unnecessary info
 ${LCOV_CMD} -r "${FILE_INFO_COMBINE}" -o "${FILE_INFO_OUTPUT}" \
     "/usr/*" \
-    "*/unittest/*" \
-    "*/thirdparty/*" \
-    "*/usr/include/*"
+    "*/build/*" \
+    "*/include/*" \
+    "*/tests/*" \
+    "*/thirdparty/*"
 
 if [ $? -ne 0 ]; then
     echo "generate ${FILE_INFO_OUTPUT} failed"
