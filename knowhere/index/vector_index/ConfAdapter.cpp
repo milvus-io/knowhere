@@ -90,6 +90,13 @@ ConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 ConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
+    std::string key = meta::TOPK;
+    if (!cfg.contains(key)) {
+        KNOWHERE_THROW_FORMAT("Param '%s' not exist", key.data());
+    }
+    if (!cfg[key].is_number_integer()) {
+        KNOWHERE_THROW_FORMAT("Param '%s' should be an integer", key.data());
+    }
     return true;
 }
 
@@ -102,8 +109,8 @@ ConfAdapter::CheckRangeSearch(Config& cfg, const IndexType type, const IndexMode
     float low_bound = GetValueFromConfig<float>(cfg, meta::RADIUS_LOW_BOUND);
     float high_bound = GetValueFromConfig<float>(cfg, meta::RADIUS_HIGH_BOUND);
     if (low_bound >= high_bound) {
-        KNOWHERE_THROW_FORMAT("Param 'RADIUS_LOW_BOUND'(%f) must be smaller than 'RADIUS_HIGH_BOUND'(%f)",
-                              low_bound, high_bound);
+        KNOWHERE_THROW_FORMAT("Param 'RADIUS_LOW_BOUND'(%f) must be smaller than 'RADIUS_HIGH_BOUND'(%f)", low_bound,
+                              high_bound);
     }
     return true;
 }
