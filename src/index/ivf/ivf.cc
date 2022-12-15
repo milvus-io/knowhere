@@ -262,6 +262,27 @@ IvfIndexNode<T>::Add(const DataSet& dataset, const Config&) {
         } else {
             index_->add(rows, (const float*)data);
         }
+        if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
+            auto raw_data = dataset.GetTensor();
+            auto invlists = index_->invlists;
+            auto d = index_->d;
+            size_t nb = dataset.GetRows();
+            index_->prefix_sum.resize(invlists->nlist);
+            size_t curr_index = 0;
+
+            auto ails = dynamic_cast<faiss::ArrayInvertedLists*>(invlists);
+            index_->arranged_codes.resize(d * nb * sizeof(float));
+            for (size_t i = 0; i < invlists->nlist; i++) {
+                auto list_size = ails->ids[i].size();
+                for (size_t j = 0; j < list_size; j++) {
+                    memcpy(index_->arranged_codes.data() + d * (curr_index + j) * sizeof(float),
+                           (uint8_t*)raw_data + d * ails->ids[i][j] * sizeof(float), d * sizeof(float));
+                }
+                index_->prefix_sum[i] = curr_index;
+                curr_index += list_size;
+            }
+        }
+
     } catch (std::exception& e) {
         LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return Status::faiss_inner_error;
