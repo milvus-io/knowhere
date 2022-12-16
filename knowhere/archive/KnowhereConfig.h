@@ -18,6 +18,9 @@ namespace knowhere {
 
 class KnowhereConfig {
  public:
+    static void
+    ShowVersion();
+
     /**
      * set SIMD type
      */
