@@ -15,6 +15,11 @@ cmake_minimum_required(VERSION 3.18)
 message( STATUS "------------------------------KNOWHERE-----------------------------------" )
 message( STATUS "Building using CMake version: ${CMAKE_VERSION}" )
 
+if ( KNOWHERE_VERSION )
+    message( STATUS "Building KNOWHERE version: ${KNOWHERE_VERSION}" )
+    add_definitions( -DKNOWHERE_VERSION=${KNOWHERE_VERSION} )
+endif ()
+
 add_definitions( -DAUTO_INITIALIZE_EASYLOGGINGPP )
 
 # Note: Cross compiling arguments must be set before project annotation, when ${CMAKE_SYSTEM_NAME} is not available.
@@ -53,7 +58,7 @@ set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 
 
 #************************** Project Settings ***************************
-project( knowhere VERSION "${KNOWHERE_VERSION}" )
+#project( knowhere VERSION "${KNOWHERE_VERSION}" )
 project( knowhere LANGUAGES C CXX )
 
 set( CMAKE_CXX_STANDARD 17 )
@@ -93,7 +98,6 @@ include( ExternalProject )
 include( ThirdPartyPackagesKw )
 
 using_ccache_if_defined( KNOWHERE_USE_CCACHE )
-
 
 #************************** Compiler arguments *************************
 if ( KNOWHERE_GPU_VERSION )
