@@ -12,6 +12,11 @@ knowhere_option(WITH_DISKANN "Build with diskann index" OFF)
 knowhere_option(WITH_BENCHMARK "Build with benchmark" OFF)
 knowhere_option(WITH_COVERAGE "Build with coverage" OFF)
 
+if(KNOWHERE_VERSION)
+    message(STATUS "Building KNOWHERE version: ${KNOWHERE_VERSION}")
+    add_definitions(-DKNOWHERE_VERSION=${KNOWHERE_VERSION})
+endif ()
+
 if(USE_CUDA)
     set(CMAKE_CUDA_ARCHITECTURES 75;70;61;60)
     enable_language(CUDA)
