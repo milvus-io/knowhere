@@ -12,6 +12,17 @@ namespace knowhere {
 
 constexpr int64_t M_BYTE = 1024 * 1024;
 
+void
+KnowhereConfig::ShowVersion() {
+#define XSTR(x) STR(x)
+#define STR(x) #x
+#ifdef KNOWHERE_VERSION
+    LOG_KNOWHERE_INFO_ << "Knowhere Version: " << XSTR(KNOWHERE_VERSION);
+#else
+    LOG_KNOWHERE_INFO_ << "Knowhere Version: unknown";
+#endif
+}
+
 std::string
 KnowhereConfig::SetSimdType(const SimdType simd_type) {
 #ifdef __x86_64__
