@@ -39,7 +39,7 @@
 #endif
 #include "boost/dynamic_bitset.hpp"
 
-#ifdef _WINDOWS
+#if !defined(__ARM_NEON__) && !defined(__aarch64__)
 #include <xmmintrin.h>
 #endif
 #include "index.h"
@@ -1402,8 +1402,7 @@ namespace diskann {
     if (num_threads != 0)
       omp_set_num_threads(num_threads);
 
-    uint32_t num_syncs =
-        (unsigned) DIV_ROUND_UP(_nd + _num_frozen_pts, (64 * 64));
+    uint32_t num_syncs = (unsigned) DIV_ROUND_UP(_nd + _num_frozen_pts, 8192);
     if (num_syncs < 40)
       num_syncs = 40;
     LOG_KNOWHERE_DEBUG_ << "Number of syncs: " << num_syncs;
@@ -1421,7 +1420,7 @@ namespace diskann {
     unsigned    L = _indexingQueueSize;
 
     std::vector<unsigned> Lvec;
-    Lvec.push_back(L);
+    Lvec.push_back(unsigned(0.8 * L));
     Lvec.push_back(L);
     const unsigned NUM_RNDS = 2;
 
@@ -3098,7 +3097,11 @@ namespace diskann {
       unsigned id = init_ids[i];
       if (id >= _nd)
         continue;
+#if defined(__ARM_NEON__) || defined(__aarch64__)
+      __builtin_prefetch(_opt_graph + _node_size * id, 0, 3);
+#else
       _mm_prefetch(_opt_graph + _node_size * id, _MM_HINT_T0);
+#endif
     }
     L = 0;
     for (unsigned i = 0; i < init_ids.size(); i++) {
@@ -3125,13 +3128,22 @@ namespace diskann {
         retset[k].flag = false;
         unsigned n = retset[k].id;
 
+#if defined(__ARM_NEON__) || defined(__aarch64__)
+        __builtin_prefetch(_opt_graph + _node_size * n + _data_len, 0, 3);
+#else
         _mm_prefetch(_opt_graph + _node_size * n + _data_len, _MM_HINT_T0);
+#endif
         unsigned *neighbors =
             (unsigned *) (_opt_graph + _node_size * n + _data_len);
         unsigned MaxM = *neighbors;
         neighbors++;
-        for (unsigned m = 0; m < MaxM; ++m)
+        for (unsigned m = 0; m < MaxM; ++m) {
+#if defined(__ARM_NEON__) || defined(__aarch64__)
+          __builtin_prefetch(_opt_graph + _node_size * neighbors[m], 0, 3);
+#else
           _mm_prefetch(_opt_graph + _node_size * neighbors[m], _MM_HINT_T0);
+#endif
+        }
         for (unsigned m = 0; m < MaxM; ++m) {
           unsigned id = neighbors[m];
           if (flags[id])

@@ -1,6 +1,6 @@
 #pragma once
 #include "windows_customizations.h"
-
+#include <cstdint>
 namespace diskann {
 
   template<typename T>

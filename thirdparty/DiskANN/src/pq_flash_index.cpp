@@ -58,15 +58,26 @@ namespace {
   void pq_dist_lookup(const _u8 *pq_ids, const _u64 n_pts,
                       const _u64 pq_nchunks, const float *pq_dists,
                       float *dists_out) {
+#if defined(__ARM_NEON__) || defined(__aarch64__)
+    __builtin_prefetch((char *) dists_out, 1, 3);
+    __builtin_prefetch((char *) pq_ids, 0, 3);
+    __builtin_prefetch((char *) (pq_ids + 64), 0, 3);
+    __builtin_prefetch((char *) (pq_ids + 128), 0, 3);
+#else
     _mm_prefetch((char *) dists_out, _MM_HINT_T0);
     _mm_prefetch((char *) pq_ids, _MM_HINT_T0);
     _mm_prefetch((char *) (pq_ids + 64), _MM_HINT_T0);
     _mm_prefetch((char *) (pq_ids + 128), _MM_HINT_T0);
+#endif
     memset(dists_out, 0, n_pts * sizeof(float));
     for (_u64 chunk = 0; chunk < pq_nchunks; chunk++) {
       const float *chunk_dists = pq_dists + 256 * chunk;
       if (chunk < pq_nchunks - 1) {
+#if defined(__ARM_NEON__) || defined(__aarch64__)
+        __builtin_prefetch((char *) (chunk_dists + 256), 0, 3);
+#else
         _mm_prefetch((char *) (chunk_dists + 256), _MM_HINT_T0);
+#endif
       }
       for (_u64 idx = 0; idx < n_pts; idx++) {
         _u8 pq_centerid = pq_ids[pq_nchunks * idx + chunk];
@@ -854,7 +865,6 @@ namespace diskann {
 
     // pointers to buffers for data
     T *data_buf = query_scratch->coord_scratch;
-    _mm_prefetch((char *) data_buf, _MM_HINT_T1);
 
     // sector scratch
     char *sector_scratch = query_scratch->sector_scratch;
