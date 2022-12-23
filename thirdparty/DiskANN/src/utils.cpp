@@ -57,9 +57,19 @@ bool cpuHasAvx2Support() {
 #ifdef _WINDOWS
 bool AvxSupportedCPU = cpuHasAvxSupport();
 bool Avx2SupportedCPU = cpuHasAvx2Support();
-#else
+bool NeonSupported = false;
+#elif defined(__x86_64__)
 bool Avx2SupportedCPU = true;
 bool AvxSupportedCPU = false;
+bool NeonSupported = false;
+#elif defined(__ARM_NEON__) || defined(__aarch64__)
+bool Avx2SupportedCPU = false;
+bool AvxSupportedCPU = false;
+bool NeonSupported = true;
+#else 
+bool Avx2SupportedCPU = false;
+bool AvxSupportedCPU = false;
+bool NeonSupported = false;
 #endif
 
 namespace diskann {
@@ -74,6 +84,9 @@ namespace diskann {
         LOG(WARNING)
             << "L2: AVX2 not supported. Using AVX distance computation";
         return new diskann::AVXDistanceL2Float();
+      } else if (NeonSupported) {
+        LOG(INFO) << "L2: Using Neon distance computation NeonDistanceL2Float";
+        return new diskann::NeonDistanceL2Float();
       } else {
         LOG(WARNING) << "L2: Older CPU. Using slow distance computation";
         return new diskann::SlowDistanceL2Float();
@@ -82,9 +95,15 @@ namespace diskann {
       LOG(INFO) << "Cosine: Using either AVX or AVX2 implementation";
       return new diskann::DistanceCosineFloat();
     } else if (m == diskann::Metric::INNER_PRODUCT) {
-      LOG(INFO) << "Inner product: Using AVX2 implementation "
-                   "AVXDistanceInnerProductFloat";
-      return new diskann::AVXDistanceInnerProductFloat();
+      if (NeonSupported) {
+        LOG(INFO) << "Inner product: Using Neon implementation "
+                     "NeonDistanceInnerProductFloat";
+        return new diskann::NeonDistanceInnerProductFloat();
+      } else {
+        LOG(INFO) << "Inner product: Using AVX2 implementation "
+                     "AVXDistanceInnerProductFloat";
+        return new diskann::AVXDistanceInnerProductFloat();
+      }
     } else if (m == diskann::Metric::FAST_L2) {
       LOG(INFO) << "Fast_L2: Using AVX2 implementation with norm memoization "
                    "DistanceFastL2<float>";
@@ -111,6 +130,9 @@ namespace diskann {
       } else if (AvxSupportedCPU) {
         LOG(WARNING) << "AVX2 not supported. Using AVX distance computation";
         return new diskann::AVXDistanceL2Int8();
+      } else if (NeonSupported) {
+        LOG(INFO) << "Using Neon distance computation NeonDistanceL2Int8.";
+        return new diskann::NeonDistanceL2Int8();
       } else {
         LOG(WARNING) << "Older CPU. Using slow distance computation "
                         "SlowDistanceL2Int<int8_t>.";
@@ -136,14 +158,20 @@ namespace diskann {
   template<>
   diskann::Distance<uint8_t>* get_distance_function(diskann::Metric m) {
     if (m == diskann::Metric::L2) {
+      if (NeonSupported) {
+        LOG(INFO) << "Using Neon distance computation NeonDistanceL2UInt8.";
+        return new diskann::NeonDistanceL2UInt8();
+      } else {
 #ifdef _WINDOWS
-      LOG(WARNING)
-          << "WARNING: AVX/AVX2 distance function not defined for Uint8. Using "
-             "slow version. "
-             "Contact gopalsr@microsoft.com if you need AVX/AVX2 support."
-          << std::endl;
+        LOG(WARNING)
+            << "WARNING: AVX/AVX2 distance function not defined for Uint8. "
+               "Using "
+               "slow version. "
+               "Contact gopalsr@microsoft.com if you need AVX/AVX2 support."
+            << std::endl;
 #endif
-      return new diskann::DistanceL2UInt8();
+        return new diskann::DistanceL2UInt8();
+      }
     } else if (m == diskann::Metric::COSINE) {
       LOG(WARNING)
           << "AVX/AVX2 distance function not defined for Uint8. Using "
