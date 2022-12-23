@@ -1,25 +1,45 @@
 // TODO
 // CHECK COSINE ON LINUX
 
-#ifdef _WINDOWS
+#if defined(_WINDOWS)
 #include <immintrin.h>
 #include <smmintrin.h>
 #include <tmmintrin.h>
 #include <intrin.h>
-#else
+#elif defined(__x86_64__)
 #include <immintrin.h>
 #endif
 
 #include "simd_utils.h"
 #include <cosine_similarity.h>
 #include <iostream>
+#include <math.h>
 
 #include "distance.h"
 #include "logger.h"
 #include "ann_exception.h"
 
 namespace diskann {
+#if defined(__x86_64__)
+  namespace {
+#define ALIGNED(x) __attribute__((aligned(x)))
 
+    // reads 0 <= d < 4 floats as __m128
+    inline __m128 masked_read(int d, const float *x) {
+      ALIGNED(16) float buf[4] = {0, 0, 0, 0};
+      switch (d) {
+        case 3:
+          buf[2] = x[2];
+        case 2:
+          buf[1] = x[1];
+        case 1:
+          buf[0] = x[0];
+      }
+      return _mm_load_ps(buf);
+      // cannot use AVX2 _mm_mask_set1_epi32
+    }
+  }  // namespace
+#endif
   // Cosine similarity.
   float DistanceCosineInt8::compare(const int8_t *a, const int8_t *b,
                                     uint32_t length) const {
@@ -123,48 +143,54 @@ namespace diskann {
     return (float) result;
   }
 
-#ifndef _WINDOWS
-  float DistanceL2Float::compare(const float *a, const float *b,
-                                 uint32_t size) const {
-    a = (const float *) __builtin_assume_aligned(a, 32);
-    b = (const float *) __builtin_assume_aligned(b, 32);
-#else
-  float DistanceL2Float::compare(const float *a, const float *b,
-                                 uint32_t size) const {
-#endif
+  float DistanceL2Float::compare(const float *x, const float *y,
+                                 uint32_t d) const {
+#if defined(__x86_64__)
+    __m256 msum1 = _mm256_setzero_ps();
 
-    float result = 0;
-#ifdef USE_AVX2
-    // assume size is divisible by 8
-    uint16_t niters = (uint16_t) (size / 8);
-    __m256   sum = _mm256_setzero_ps();
-    for (uint16_t j = 0; j < niters; j++) {
-      // scope is a[8j:8j+7], b[8j:8j+7]
-      // load a_vec
-      if (j < (niters - 1)) {
-        _mm_prefetch((char *) (a + 8 * (j + 1)), _MM_HINT_T0);
-        _mm_prefetch((char *) (b + 8 * (j + 1)), _MM_HINT_T0);
-      }
-      __m256 a_vec = _mm256_load_ps(a + 8 * j);
-      // load b_vec
-      __m256 b_vec = _mm256_load_ps(b + 8 * j);
-      // a_vec - b_vec
-      __m256 tmp_vec = _mm256_sub_ps(a_vec, b_vec);
-
-      sum = _mm256_fmadd_ps(tmp_vec, tmp_vec, sum);
+    while (d >= 8) {
+      __m256 mx = _mm256_loadu_ps(x);
+      x += 8;
+      __m256 my = _mm256_loadu_ps(y);
+      y += 8;
+      const __m256 a_m_b1 = _mm256_sub_ps(mx, my);
+      msum1 = _mm256_add_ps(msum1, _mm256_mul_ps(a_m_b1, a_m_b1));
+      d -= 8;
     }
 
-    // horizontal add sum
-    result = _mm256_reduce_add_ps(sum);
-#else
-#ifndef _WINDOWS
-#pragma omp simd reduction(+ : result) aligned(a, b : 32)
-#endif
-    for (int32_t i = 0; i < (int32_t) size; i++) {
-      result += (a[i] - b[i]) * (a[i] - b[i]);
+    __m128 msum2 = _mm256_extractf128_ps(msum1, 1);
+    msum2 = _mm_add_ps(msum2, _mm256_extractf128_ps(msum1, 0));
+
+    if (d >= 4) {
+      __m128 mx = _mm_loadu_ps(x);
+      x += 4;
+      __m128 my = _mm_loadu_ps(y);
+      y += 4;
+      const __m128 a_m_b1 = _mm_sub_ps(mx, my);
+      msum2 = _mm_add_ps(msum2, _mm_mul_ps(a_m_b1, a_m_b1));
+      d -= 4;
     }
+
+    if (d > 0) {
+      __m128 mx = masked_read(d, x);
+      __m128 my = masked_read(d, y);
+      __m128 a_m_b1 = _mm_sub_ps(mx, my);
+      msum2 = _mm_add_ps(msum2, _mm_mul_ps(a_m_b1, a_m_b1));
+    }
+
+    msum2 = _mm_hadd_ps(msum2, msum2);
+    msum2 = _mm_hadd_ps(msum2, msum2);
+    return _mm_cvtss_f32(msum2);
+#else
+    float result = 0.0f;
+#ifndef _WINDOWS
+#pragma omp simd reduction(+ : result) aligned(x, y : 32)
 #endif
+    for (int32_t i = 0; i < (int32_t) d; i++) {
+      result += (x[i] - y[i]) * (x[i] - y[i]);
+    }
     return result;
+#endif
   }
 
   float SlowDistanceL2Float::compare(const float *a, const float *b,
@@ -258,7 +284,7 @@ namespace diskann {
     float result = 0;
 
 #ifdef __GNUC__
-#ifdef USE_AVX2
+#if defined(USE_AVX2) && (defined(__x86_64__) || defined(_WINDOWS))
 #define AVX_DOT(addr1, addr2, dest, tmp1, tmp2) \
   tmp1 = _mm256_loadu_ps(addr1);                \
   tmp2 = _mm256_loadu_ps(addr2);                \
@@ -291,7 +317,7 @@ namespace diskann {
              unpack[5] + unpack[6] + unpack[7];
 
 #else
-#ifdef __SSE2__
+#if defined(__SSE2__) && (defined(__x86_64__) || defined(_WINDOWS))
 #define SSE_DOT(addr1, addr2, dest, tmp1, tmp2) \
   tmp1 = _mm128_loadu_ps(addr1);                \
   tmp2 = _mm128_loadu_ps(addr2);                \
@@ -331,11 +357,11 @@ namespace diskann {
 #else
 
     float        dot0, dot1, dot2, dot3;
-    const float *last = a + size;
+    const float *last = (float *) a + size;
     const float *unroll_group = last - 3;
 
     /* Process 4 items with each loop for efficiency. */
-    while (a < unroll_group) {
+    while ((float *) a < unroll_group) {
       dot0 = a[0] * b[0];
       dot1 = a[1] * b[1];
       dot2 = a[2] * b[2];
@@ -345,7 +371,7 @@ namespace diskann {
       b += 4;
     }
     /* Process last 0-3 pixels.  Not needed for standard vector lengths. */
-    while (a < last) {
+    while ((float *) a < last) {
       result += *a++ * *b++;
     }
 #endif
@@ -436,11 +462,11 @@ namespace diskann {
     result += unpack[0] + unpack[1] + unpack[2] + unpack[3];
 #else
     float        dot0, dot1, dot2, dot3;
-    const float *last = a + size;
+    const float *last = (float *) a + size;
     const float *unroll_group = last - 3;
 
     /* Process 4 items with each loop for efficiency. */
-    while (a < unroll_group) {
+    while ((float *) a < unroll_group) {
       dot0 = a[0] * a[0];
       dot1 = a[1] * a[1];
       dot2 = a[2] * a[2];
@@ -449,7 +475,7 @@ namespace diskann {
       a += 4;
     }
     /* Process last 0-3 pixels.  Not needed for standard vector lengths. */
-    while (a < last) {
+    while ((float *) a < last) {
       result += (*a) * (*a);
       a++;
     }
@@ -462,6 +488,7 @@ namespace diskann {
   float AVXDistanceInnerProductFloat::compare(const float *a, const float *b,
                                               uint32_t size) const {
     float result = 0.0f;
+#if defined(__x86_64__) || defined(_WINDOWS)
 #define AVX_DOT(addr1, addr2, dest, tmp1, tmp2) \
   tmp1 = _mm256_loadu_ps(addr1);                \
   tmp2 = _mm256_loadu_ps(addr2);                \
@@ -496,7 +523,26 @@ namespace diskann {
     _mm256_storeu_ps(unpack, sum);
     result = unpack[0] + unpack[1] + unpack[2] + unpack[3] + unpack[4] +
              unpack[5] + unpack[6] + unpack[7];
+#else
+    float dot0, dot1, dot2, dot3;
+    const float *last = a + size;
+    const float *unroll_group = last - 3;
 
+    /* Process 4 items with each loop for efficiency. */
+    while (a < unroll_group) {
+      dot0 = a[0] * a[0];
+      dot1 = a[1] * a[1];
+      dot2 = a[2] * a[2];
+      dot3 = a[3] * a[3];
+      result += dot0 + dot1 + dot2 + dot3;
+      a += 4;
+    }
+    /* Process last 0-3 pixels.  Not needed for standard vector lengths. */
+    while (a < last) {
+      result += (*a) * (*a);
+      a++;
+    }
+#endif
     return -result;
   }
 

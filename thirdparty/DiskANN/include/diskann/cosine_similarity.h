@@ -2,7 +2,7 @@
 // Licensed under the MIT license.
 
 #pragma once
-
+#ifdef _WINDOWS
 #include <immintrin.h>
 #include <smmintrin.h>
 #include <tmmintrin.h>
@@ -17,8 +17,6 @@
 #include "simd_utils.h"
 
 extern bool Avx2SupportedCPU;
-
-#ifdef _WINDOWS
 // SIMD implementation of Cosine similarity. Taken from hnsw library.
 
 /**

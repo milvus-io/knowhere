@@ -19,7 +19,9 @@
 #include <set>
 #include <sstream>
 #include <string.h>
+#if !defined(__ARM_NEON__) && !defined(__aarch64__)
 #include <xmmintrin.h>
+#endif
 #ifdef __APPLE__
 #else
 #include <malloc.h>
@@ -34,6 +36,7 @@ typedef int FileHandle;
 #endif
 
 #include "distance.h"
+#include "distance_neon.h"
 #include "utils.h"
 #include "logger.h"
 #include "cached_io.h"
@@ -205,6 +208,9 @@ namespace diskann {
 #else
     ::_aligned_free(ptr);
 #endif
+    if (malloc_trim(0) == 0) {
+      LOG_KNOWHERE_DEBUG_ << "Failed to release free memory from the heap.";
+    }
   }
 
   inline void GenRandom(std::mt19937& rng, unsigned* addr, unsigned size,
@@ -837,15 +843,24 @@ namespace diskann {
   // NOTE :: good efficiency when total_vec_size is integral multiple of 64
   inline void prefetch_vector(const char* vec, size_t vecsize) {
     size_t max_prefetch_size = (vecsize / 64) * 64;
-    for (size_t d = 0; d < max_prefetch_size; d += 64)
+    for (size_t d = 0; d < max_prefetch_size; d += 64) {
+#if defined(__ARM_NEON__) || defined(__aarch64__)
+      __builtin_prefetch((const char*) vec + d, 0, 3);
+#else
       _mm_prefetch((const char*) vec + d, _MM_HINT_T0);
+#endif
+    }
   }
 
   // NOTE :: good efficiency when total_vec_size is integral multiple of 64
   inline void prefetch_vector_l2(const char* vec, size_t vecsize) {
     size_t max_prefetch_size = (vecsize / 64) * 64;
     for (size_t d = 0; d < max_prefetch_size; d += 64)
+#if defined(__ARM_NEON__) || defined(__aarch64__)
+      __builtin_prefetch((const char*) vec + d, 0, 2);
+#else
       _mm_prefetch((const char*) vec + d, _MM_HINT_T1);
+#endif
   }
 
   // NOTE: Implementation in utils.cpp.
