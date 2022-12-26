@@ -116,4 +116,11 @@ KnowhereConfig::SetLogHandler() {
     faiss::LOG_INFO_ = [](const std::string& msg) { LOG_KNOWHERE_INFO_ << msg; };
 }
 
+void
+KnowhereConfig::SetAioContextPool(size_t num_ctx, size_t max_events) {
+#ifdef KNOWHERE_WITH_DISKANN
+    AioContextPool::InitGlobalAioPool(num_ctx, max_events);
+#endif
+}
+
 }  // namespace knowhere
