@@ -43,10 +43,11 @@ BruteForce::Search(const DatasetPtr base_dataset,
     auto metric_type = GetMetaMetricType(config);
     auto topk = GetMetaTopk(config);
 
+    auto faiss_metric_type = GetFaissMetricType(metric_type);
+
     auto labels = new int64_t[nq * topk];
     auto distances = new float[nq * topk];
 
-    auto faiss_metric_type = GetFaissMetricType(metric_type);
     switch (faiss_metric_type) {
         case faiss::METRIC_L2: {
             faiss::float_maxheap_array_t buf{(size_t)nq, (size_t)topk, labels, distances};
@@ -112,8 +113,10 @@ BruteForce::RangeSearch(const DatasetPtr base_dataset,
     auto low_bound = GetMetaRadiusLowBound(config);
     auto high_bound = GetMetaRadiusHighBound(config);
 
-    faiss::RangeSearchResult res(nq);
     auto faiss_metric_type = GetFaissMetricType(metric_type);
+
+    faiss::RangeSearchResult res(nq);
+
     switch (faiss_metric_type) {
         case faiss::METRIC_L2:
             faiss::range_search_L2sqr((const float*)xq, (const float*)xb, dim, nq, nb, high_bound, &res, bitset);
