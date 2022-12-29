@@ -26,5 +26,39 @@ def DataSetToArray(ans):
     swigknowhere.DataSet2Array(ans, dis, ids)
     return dis, ids
 
+
+def RangeSearchDataSetToArray(ans):
+    rows = swigknowhere.DataSet_Rows(ans)
+    lims = np.zeros(
+        [
+            rows + 1,
+        ],
+        dtype=np.int32,
+    )
+    swigknowhere.DumpRangeResultLimits(ans, lims)
+    dis = np.zeros(
+        [
+            lims[-1],
+        ],
+        dtype=np.float32,
+    )
+    swigknowhere.DumpRangeResultDis(ans, dis)
+    ids = np.zeros(
+        [
+            lims[-1],
+        ],
+        dtype=np.int32,
+    )
+    swigknowhere.DumpRangeResultIds(ans, ids)
+
+    dis_list = []
+    ids_list = []
+    for idx in range(rows):
+        dis_list.append(dis[lims[idx] : lims[idx + 1]])
+        ids_list.append(ids[lims[idx] : lims[idx + 1]])
+
+    return dis_list, ids_list
+
+
 def GetNullDataSet():
     return swigknowhere.GetNullDataSet()

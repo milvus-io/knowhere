@@ -195,4 +195,28 @@ DataSet2Array(DataSetPtr result, float* dis, int nq_1, int k_1, int* ids, int nq
     }
 }
 
+void
+DumpRangeResultIds(DataSetPtr result, int* ids, int len) {
+    auto ids_ = result->GetIds();
+    for (int i = 0; i < len; ++i) {
+        *(ids + i) = *((int64_t*)(ids_) + i);
+    }
+}
+
+void
+DumpRangeResultLimits(DataSetPtr result, int* lims, int len) {
+    auto lims_ = result->GetLims();
+    for (int i = 0; i < len; ++i) {
+        *(lims + i) = *((size_t*)(lims_) + i);
+    }
+}
+
+void
+DumpRangeResultDis(DataSetPtr result, float* dis, int len) {
+    auto dist_ = result->GetDistance();
+    for (int i = 0; i < len; ++i) {
+        *(dis + i) = *((float*)(dist_) + i);
+    }
+}
+
 %}
