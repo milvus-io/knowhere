@@ -39,4 +39,7 @@ macro(benchmark_test target file)
     install(TARGETS ${target} DESTINATION unittest)
 endmacro()
 
-benchmark_test(benchmark_knowhere_float hdf5/benchmark_knowhere_float.cpp)
+benchmark_test(benchmark_knowhere_binary        hdf5/benchmark_knowhere_binary.cpp)
+benchmark_test(benchmark_knowhere_binary_range  hdf5/benchmark_knowhere_binary_range.cpp)
+benchmark_test(benchmark_knowhere_float         hdf5/benchmark_knowhere_float.cpp)
+benchmark_test(benchmark_knowhere_float_range   hdf5/benchmark_knowhere_float_range.cpp)
