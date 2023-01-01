@@ -14,7 +14,8 @@ class IvfConfig : public BaseConfig {
         KNOWHERE_CONFIG_DECLARE_FIELD(nprobe)
             .set_default(1024)
             .description("number of probes at query time.")
-            .for_search();
+            .for_search()
+            .for_range_search();
     }
 };
 
