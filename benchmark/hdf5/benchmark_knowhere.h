@@ -93,10 +93,7 @@ class Benchmark_knowhere : public Benchmark_hdf5 {
             read_index(index_file_name);
         } catch (...) {
             printf("[%.3f s] Building all on %d vectors\n", get_time_diff(), nb_);
-            knowhere::DataSetPtr ds_ptr = std::make_shared<knowhere::DataSet>();
-            ds_ptr->SetTensor(xb_);
-            ds_ptr->SetRows(nb_);
-            ds_ptr->SetDim(dim_);
+            knowhere::DataSetPtr ds_ptr = knowhere::GenDataSet(nb_, dim_, xb_);
             index_.Build(*ds_ptr, conf);
 
             printf("[%.3f s] Writing index file: %s\n", get_time_diff(), index_file_name.c_str());
