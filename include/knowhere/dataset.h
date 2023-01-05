@@ -226,7 +226,6 @@ GenDataSet(const int64_t nb, const int64_t dim, const void* xb) {
     return ret_ds;
 }
 
-#ifdef NOT_COMPILE_FOR_SWIG
 inline DataSetPtr
 GenResultDataSet(const void* tensor) {
     auto ret_ds = std::make_shared<DataSet>();
@@ -265,7 +264,6 @@ GenResultDataSet(const std::string& json_info, const std::string& json_id_set) {
     ret_ds->SetIsOwner(true);
     return ret_ds;
 }
-#endif
 
 }  // namespace knowhere
 #endif /* DATASET_H */
