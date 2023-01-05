@@ -32,11 +32,12 @@ jobs:
           submodules: recursive
       - name: Install Dependency
         run: |
-          sudo apt update && sudo apt install -y cmake g++ gcc libopenblas-dev
+          sudo apt update && sudo apt install -y cmake g++ gcc libopenblas-dev build-essential ninja-build
       - name: Build & Run
         run: |
-          mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_UT=ON \
-          && make -j8 \
+          mkdir build && cd build \
+          && cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_UT=ON -G Ninja \
+          && ninja -v \
           && ./tests/ut/knowhere_tests
 
   swig-build:
@@ -52,11 +53,12 @@ jobs:
           submodules: recursive
       - name: Install Dependency
         run: |
-          sudo apt update && sudo apt install -y cmake g++ gcc libopenblas-dev python3 python3-pip python3-setuptools
+          sudo apt update && \
+          sudo apt install -y cmake g++ gcc libopenblas-dev python3 python3-pip python3-setuptools \
+                              build-essential ninja-build
       - name: Build
         run: |
-          mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug \
-          && make -j8
+          mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -G Ninja && ninja -v
       - name: Swig Build
         run: |
           cd python && python3 setup.py bdist_wheel
