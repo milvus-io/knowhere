@@ -13,26 +13,27 @@ namespace knowhere {
 template <typename T>
 class FlatIndexNode : public IndexNode {
  public:
-    FlatIndexNode(const Object& object) : index_(nullptr) {
+    FlatIndexNode(const Object&) : index_(nullptr) {
         static_assert(std::is_same<T, faiss::IndexFlat>::value || std::is_same<T, faiss::IndexBinaryFlat>::value,
                       "not suppprt.");
     }
 
-    virtual Status
+    Status
     Build(const DataSet& dataset, const Config& cfg) override {
         auto err = Train(dataset, cfg);
-        if (err != Status::success)
+        if (err != Status::success) {
             return err;
+        }
         err = Add(dataset, cfg);
         return err;
     }
 
-    virtual Status
+    Status
     Train(const DataSet&, const Config&) override {
         return Status::success;
     }
 
-    virtual Status
+    Status
     Add(const DataSet& dataset, const Config& cfg) override {
         T* index = nullptr;
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
@@ -55,14 +56,16 @@ class FlatIndexNode : public IndexNode {
         this->index_ = index;
         const void* x = dataset.GetTensor();
         const int64_t n = dataset.GetRows();
-        if constexpr (std::is_same<T, faiss::IndexFlat>::value)
+        if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
             index_->add(n, (const float*)x);
-        if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value)
+        }
+        if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
             index_->add(n, (const uint8_t*)x);
+        }
         return Status::success;
     }
 
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
             LOG_KNOWHERE_WARNING_ << "search on empty index";
@@ -102,7 +105,7 @@ class FlatIndexNode : public IndexNode {
         return GenResultDataSet(nq, f_cfg.k, ids, dis);
     }
 
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
             LOG_KNOWHERE_WARNING_ << "range search on empty index.";
@@ -139,7 +142,7 @@ class FlatIndexNode : public IndexNode {
         return GenResultDataSet(nq, ids, distances, lims);
     }
 
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
         auto nq = dataset.GetRows();
         auto dim = dataset.GetDim();
@@ -172,26 +175,31 @@ class FlatIndexNode : public IndexNode {
         }
     }
 
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const override {
         return unexpected(Status::not_implemented);
     }
 
-    virtual Status
+    Status
     Serialize(BinarySet& binset) const override {
-        if (!index_)
+        if (!index_) {
             return Status::empty_index;
+        }
         try {
             MemoryIOWriter writer;
-            if constexpr (std::is_same<T, faiss::IndexFlat>::value)
+            if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
                 faiss::write_index(index_, &writer);
-            if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value)
+            }
+            if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
                 faiss::write_index_binary(index_, &writer);
+            }
             std::shared_ptr<uint8_t[]> data(writer.data_);
-            if constexpr (std::is_same<T, faiss::IndexFlat>::value)
+            if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
                 binset.Append("FLAT", data, writer.rp);
-            if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value)
+            }
+            if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
                 binset.Append("BinaryIVF", data, writer.rp);
+            }
             return Status::success;
         } catch (const std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "error inner faiss, " << e.what();
@@ -199,17 +207,19 @@ class FlatIndexNode : public IndexNode {
         }
     }
 
-    virtual Status
+    Status
     Deserialize(const BinarySet& binset) override {
         if (index_) {
             delete index_;
             index_ = nullptr;
         }
         std::string name = "";
-        if constexpr (std::is_same<T, faiss::IndexFlat>::value)
+        if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
             name = "FLAT";
-        if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value)
+        }
+        if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
             name = "BinaryIVF";
+        }
         auto binary = binset.GetByName(name);
 
         MemoryIOReader reader;
@@ -226,37 +236,40 @@ class FlatIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual std::unique_ptr<BaseConfig>
+    std::unique_ptr<BaseConfig>
     CreateConfig() const override {
         return std::make_unique<FlatConfig>();
     }
 
-    virtual int64_t
+    int64_t
     Dim() const override {
         return index_->d;
     }
 
-    virtual int64_t
+    int64_t
     Size() const override {
         return index_->ntotal * index_->d * sizeof(float);
     }
 
-    virtual int64_t
+    int64_t
     Count() const override {
         return index_->ntotal;
     }
 
-    virtual std::string
+    std::string
     Type() const override {
-        if constexpr (std::is_same<T, faiss::IndexFlat>::value)
+        if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
             return knowhere::IndexEnum::INDEX_FAISS_IDMAP;
-        if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value)
+        }
+        if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
             return knowhere::IndexEnum::INDEX_FAISS_BIN_IVFFLAT;
+        }
     }
 
-    virtual ~FlatIndexNode() {
-        if (index_)
+    ~FlatIndexNode() override {
+        if (index_) {
             delete index_;
+        }
     }
 
  private:

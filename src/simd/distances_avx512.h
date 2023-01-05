@@ -1,8 +1,8 @@
 #ifndef DISTANCES_AVX512_H
 #define DISTANCES_AVX512_H
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
 namespace faiss {
 

@@ -17,10 +17,10 @@
 
 # The checks defined here will be run and will display by default as warnings.
 Checks: >
-    -*, clang-diagnostic-*, -clang-diagnostic-error,
-    clang-analyzer-*, -clang-analyzer-alpha*,
+    -*, clang-diagnostic-*, -clang-diagnostic-error, clang-analyzer-*, -clang-analyzer-alpha*,
     google-*, -google-runtime-references, -google-readability-todo,
-    modernize-*, -modernize-pass-by-value, -modernize-use-equals-default,
+    modernize-*, -modernize-pass-by-value, -modernize-use-equals-default, -modernize-use-trailing-return-type,
+    -modernize-use-auto, -modernize-avoid-c-arrays, -google-readability-casting,-google-explicit-constructor,
     performance-faster-string-find, performance-for-range-copy,
     performance-implicit-conversion-in-loop, performance-inefficient-algorithm,
     performance-trivially-destructible, performance-inefficient-vector-operation,
@@ -30,8 +30,7 @@ Checks: >
 
 # produce HeaderFilterRegex from core/build-support/lint_exclusions.txt with:
 # echo -n '^?!('; sed -e 's/*/\.*/g' core/build-support/lint_exclusions.txt | tr '\n' '|'; echo ')$'
-HeaderFilterRegex: '^?!(.*cmake-build-debug.*|.*cmake-build-release.*|.*cmake_build.*|.*thirdparty.*|.*src/grpc.*|.*knowhere/include.*|.*unittest.*)$'
-AnalyzeTemporaryDtors: true
+HeaderFilterRegex: '^(?:.*\/knowhere\/include\/.+\.h)|(?:.*\/knowhere\/src\/.+\.h)$'
 CheckOptions:
   - key:             google-readability-braces-around-statements.ShortStatementLines
     value:           '1'

@@ -47,7 +47,7 @@ enum PARAM_TYPE {
 
 template <>
 struct Entry<CFG_STRING> {
-    Entry<CFG_STRING>(CFG_STRING* v) {
+    explicit Entry<CFG_STRING>(CFG_STRING* v) {
         val = v;
         type = 0x0;
         default_val = std::nullopt;
@@ -67,7 +67,7 @@ struct Entry<CFG_STRING> {
 
 template <>
 struct Entry<CFG_FLOAT> {
-    Entry<CFG_FLOAT>(CFG_FLOAT* v) {
+    explicit Entry<CFG_FLOAT>(CFG_FLOAT* v) {
         val = v;
         default_val = std::nullopt;
         type = 0x0;
@@ -91,7 +91,7 @@ struct Entry<CFG_FLOAT> {
 
 template <>
 struct Entry<CFG_INT> {
-    Entry<CFG_INT>(CFG_INT* v) {
+    explicit Entry<CFG_INT>(CFG_INT* v) {
         val = v;
         default_val = std::nullopt;
         type = 0x0;
@@ -115,7 +115,7 @@ struct Entry<CFG_INT> {
 
 template <>
 struct Entry<CFG_LIST> {
-    Entry<CFG_LIST>(CFG_LIST* v) {
+    explicit Entry<CFG_LIST>(CFG_LIST* v) {
         val = v;
         default_val = std::nullopt;
         type = 0x0;
@@ -137,7 +137,7 @@ struct Entry<CFG_LIST> {
 
 template <>
 struct Entry<CFG_BOOL> {
-    Entry<CFG_BOOL>(CFG_BOOL* v) {
+    explicit Entry<CFG_BOOL>(CFG_BOOL* v) {
         val = v;
         default_val = std::nullopt;
         type = 0x0;
@@ -222,19 +222,18 @@ class Config {
     static Json
     Save(const Config& cfg) {
         Json json;
-        for (auto it = cfg.__DICT__.begin(); it != cfg.__DICT__.end(); ++it) {
-            const auto& var = it->second;
-
+        for (const auto& it : cfg.__DICT__) {
+            const auto& var = it.second;
             if (const Entry<CFG_INT>* ptr = std::get_if<Entry<CFG_INT>>(&var)) {
-                json[it->first] = *ptr->val;
+                json[it.first] = *ptr->val;
             }
 
             if (const Entry<CFG_STRING>* ptr = std::get_if<Entry<CFG_STRING>>(&var)) {
-                json[it->first] = *ptr->val;
+                json[it.first] = *ptr->val;
             }
 
             if (const Entry<CFG_FLOAT>* ptr = std::get_if<Entry<CFG_FLOAT>>(&var)) {
-                json[it->first] = *ptr->val;
+                json[it.first] = *ptr->val;
             }
         }
 
@@ -243,29 +242,31 @@ class Config {
 
     static Status
     Format(const Config& cfg, Json& json) {
-        for (auto it = cfg.__DICT__.begin(); it != cfg.__DICT__.end(); ++it) {
-            const auto& var = it->second;
-            if (json.find(it->first) != json.end() && json[it->first].is_string()) {
+        for (const auto& it : cfg.__DICT__) {
+            const auto& var = it.second;
+            if (json.find(it.first) != json.end() && json[it.first].is_string()) {
                 if (std::get_if<Entry<CFG_INT>>(&var)) {
                     std::stringstream ss;
                     CFG_INT v;
-                    ss.str(json[it->first]);
+                    ss.str(json[it.first]);
                     ss >> v;
-                    json[it->first] = v;
+                    json[it.first] = v;
                 }
                 if (std::get_if<Entry<CFG_FLOAT>>(&var)) {
                     std::stringstream ss;
                     CFG_FLOAT v;
-                    ss << json[it->first];
+                    ss << json[it.first];
                     ss >> v;
-                    json[it->first] = v;
+                    json[it.first] = v;
                 }
 
                 if (std::get_if<Entry<CFG_BOOL>>(&var)) {
-                    if (json[it->first] == "true")
-                        json[it->first] = true;
-                    if (json[it->first] == "false")
-                        json[it->first] = false;
+                    if (json[it.first] == "true") {
+                        json[it.first] = true;
+                    }
+                    if (json[it.first] == "false") {
+                        json[it.first] = false;
+                    }
                 }
             }
         }
@@ -274,105 +275,110 @@ class Config {
 
     static Status
     Load(Config& cfg, const Json& json, PARAM_TYPE type) {
-        for (auto it = cfg.__DICT__.begin(); it != cfg.__DICT__.end(); ++it) {
-            const auto& var = it->second;
+        for (const auto& it : cfg.__DICT__) {
+            const auto& var = it.second;
 
             if (const Entry<CFG_INT>* ptr = std::get_if<Entry<CFG_INT>>(&var)) {
-                if (!(type & ptr->type))
+                if (!(type & ptr->type)) {
                     continue;
-                if (json.find(it->first) == json.end() && !ptr->default_val.has_value()) {
+                }
+                if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
                     return Status::invalid_param_in_json;
                 }
-                if (json.find(it->first) == json.end()) {
+                if (json.find(it.first) == json.end()) {
                     *ptr->val = ptr->default_val.value();
                     continue;
                 }
-                if (!json[it->first].is_number_integer()) {
+                if (!json[it.first].is_number_integer()) {
                     return Status::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
-                    auto v = json[it->first];
+                    auto v = json[it.first];
                     if (ptr->range.value().first <= v && v <= ptr->range.value().second) {
                         *ptr->val = v;
                     } else {
                         return Status::out_of_range_in_json;
                     }
                 } else {
-                    *ptr->val = json[it->first];
+                    *ptr->val = json[it.first];
                 }
             }
 
             if (const Entry<CFG_FLOAT>* ptr = std::get_if<Entry<CFG_FLOAT>>(&var)) {
-                if (!(type & ptr->type))
+                if (!(type & ptr->type)) {
                     continue;
-                if (json.find(it->first) == json.end() && !ptr->default_val.has_value()) {
+                }
+                if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
                     return Status::invalid_param_in_json;
                 }
-                if (json.find(it->first) == json.end()) {
+                if (json.find(it.first) == json.end()) {
                     *ptr->val = ptr->default_val.value();
                     continue;
                 }
-                if (!json[it->first].is_number_float()) {
+                if (!json[it.first].is_number_float()) {
                     return Status::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
-                    auto v = json[it->first];
+                    auto v = json[it.first];
                     if (ptr->range.value().first <= v && v <= ptr->range.value().second) {
                         *ptr->val = v;
                     } else {
                         return Status::out_of_range_in_json;
                     }
                 } else {
-                    *ptr->val = json[it->first];
+                    *ptr->val = json[it.first];
                 }
             }
 
             if (const Entry<CFG_STRING>* ptr = std::get_if<Entry<CFG_STRING>>(&var)) {
-                if (!(type & ptr->type))
+                if (!(type & ptr->type)) {
                     continue;
-                if (json.find(it->first) == json.end() && !ptr->default_val.has_value()) {
+                }
+                if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
                     return Status::invalid_param_in_json;
                 }
-                if (json.find(it->first) == json.end()) {
+                if (json.find(it.first) == json.end()) {
                     *ptr->val = ptr->default_val.value();
                     continue;
                 }
-                if (!json[it->first].is_string()) {
+                if (!json[it.first].is_string()) {
                     return Status::type_conflict_in_json;
                 }
-                *ptr->val = json[it->first];
+                *ptr->val = json[it.first];
             }
 
             if (const Entry<CFG_LIST>* ptr = std::get_if<Entry<CFG_LIST>>(&var)) {
-                if (!(type & ptr->type))
+                if (!(type & ptr->type)) {
                     continue;
-                if (json.find(it->first) == json.end() && !ptr->default_val.has_value()) {
+                }
+                if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
                     return Status::invalid_param_in_json;
                 }
-                if (json.find(it->first) == json.end()) {
+                if (json.find(it.first) == json.end()) {
                     *ptr->val = ptr->default_val.value();
                     continue;
                 }
-                if (!json[it->first].is_array()) {
+                if (!json[it.first].is_array()) {
                     return Status::type_conflict_in_json;
                 }
-                for (auto&& i : json[it->first]) ptr->val->push_back(i);
+                for (auto&& i : json[it.first]) ptr->val->push_back(i);
             }
 
             if (const Entry<CFG_BOOL>* ptr = std::get_if<Entry<CFG_BOOL>>(&var)) {
-                if (!(type & ptr->type))
+                if (!(type & ptr->type)) {
                     continue;
-                if (json.find(it->first) == json.end() && !ptr->default_val.has_value()) {
+                }
+                if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
                     return Status::invalid_param_in_json;
                 }
-                if (json.find(it->first) == json.end()) {
+                if (json.find(it.first) == json.end()) {
                     *ptr->val = ptr->default_val.value();
                     continue;
                 }
-                if (!json[it->first].is_boolean()) {
+                if (!json[it.first].is_boolean()) {
                     return Status::type_conflict_in_json;
                 }
-                *ptr->val = json[it->first];
+                *ptr->val = json[it.first];
             }
         }
 
@@ -382,8 +388,8 @@ class Config {
     virtual ~Config() {
     }
 
-    typedef std::variant<Entry<CFG_STRING>, Entry<CFG_FLOAT>, Entry<CFG_INT>, Entry<CFG_LIST>, Entry<CFG_BOOL>>
-        VarEntry;
+    using VarEntry =
+        std::variant<Entry<CFG_STRING>, Entry<CFG_FLOAT>, Entry<CFG_INT>, Entry<CFG_LIST>, Entry<CFG_BOOL>>;
     std::unordered_map<CFG_STRING, VarEntry> __DICT__;
 };
 

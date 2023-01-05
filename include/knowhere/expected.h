@@ -30,11 +30,11 @@ enum class Status {
 template <typename E>
 class unexpected {
  public:
-    constexpr unexpected(const E& err) : err(err) {
+    constexpr explicit unexpected(const E& err) : err(err) {
         static_assert(std::is_same<E, Status>::value);
     }
 
-    constexpr unexpected(E&& err) : err(err) {
+    constexpr explicit unexpected(E&& err) : err(err) {
         static_assert(std::is_same<E, Status>::value);
     }
 
@@ -60,13 +60,13 @@ class expected {
 
     expected(const expected<T, E>&) = default;
 
-    expected(expected<T, E>&&) = default;
+    expected(expected<T, E>&&) noexcept = default;
 
     expected&
     operator=(const expected<T, E>&) = default;
 
     expected&
-    operator=(expected<T, E>&&) = default;
+    operator=(expected<T, E>&&) noexcept = default;
 
     bool
     has_value() {

@@ -1,8 +1,7 @@
 #ifndef BITSET_H
 #define BITSET_H
 
-#include <assert.h>
-
+#include <cassert>
 #include <sstream>
 #include <string>
 
@@ -15,8 +14,7 @@ class BitsetView {
     BitsetView(const uint8_t* data, size_t num_bits) : bits_(data), num_bits_(num_bits) {
     }
 
-    BitsetView(const std::nullptr_t value) : BitsetView() {
-        assert(value == nullptr);
+    BitsetView(const std::nullptr_t) : BitsetView() {
     }
 
     bool
