@@ -24,7 +24,7 @@ struct QuantizerT {
 
 template <>
 struct QuantizerT<faiss::IndexBinaryIVF> {
-    typedef faiss::IndexBinaryFlat type;
+    using type = faiss::IndexBinaryFlat;
 };
 
 template <typename T>
@@ -36,47 +36,53 @@ class IvfIndexNode : public IndexNode {
                           std::is_same<T, faiss::IndexBinaryIVF>::value,
                       "not support.");
     }
-    virtual Status
+    Status
     Build(const DataSet& dataset, const Config& cfg) override;
-    virtual Status
+    Status
     Train(const DataSet& dataset, const Config& cfg) override;
-    virtual Status
+    Status
     Add(const DataSet& dataset, const Config& cfg) override;
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override;
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const override {
         return unexpected(Status::not_implemented);
     }
-    virtual Status
+    Status
     Serialize(BinarySet& binset) const override;
-    virtual Status
+    Status
     Deserialize(const BinarySet& binset) override;
-    virtual std::unique_ptr<BaseConfig>
+    std::unique_ptr<BaseConfig>
     CreateConfig() const override {
-        if constexpr (std::is_same<faiss::IndexIVFFlat, T>::value)
+        if constexpr (std::is_same<faiss::IndexIVFFlat, T>::value) {
             return std::make_unique<IvfFlatConfig>();
-        if constexpr (std::is_same<faiss::IndexIVFPQ, T>::value)
+        }
+        if constexpr (std::is_same<faiss::IndexIVFPQ, T>::value) {
             return std::make_unique<IvfPqConfig>();
-        if constexpr (std::is_same<faiss::IndexIVFScalarQuantizer, T>::value)
+        }
+        if constexpr (std::is_same<faiss::IndexIVFScalarQuantizer, T>::value) {
             return std::make_unique<IvfSqConfig>();
-        if constexpr (std::is_same<faiss::IndexBinaryIVF, T>::value)
+        }
+        if constexpr (std::is_same<faiss::IndexBinaryIVF, T>::value) {
             return std::make_unique<IvfBinConfig>();
+        }
     };
-    virtual int64_t
+    int64_t
     Dim() const override {
-        if (!index_)
+        if (!index_) {
             return -1;
+        }
         return index_->d;
     };
-    virtual int64_t
+    int64_t
     Size() const override {
-        if (!index_)
+        if (!index_) {
             return 0;
+        }
         if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
             auto nb = index_->invlists->compute_ntotal();
             auto nlist = index_->nlist;
@@ -109,28 +115,35 @@ class IvfIndexNode : public IndexNode {
             return (nb * code_size + nb * sizeof(int64_t) + nlist * code_size);
         }
     };
-    virtual int64_t
+    int64_t
     Count() const override {
-        if (!index_)
+        if (!index_) {
             return 0;
+        }
         return index_->ntotal;
     };
-    virtual std::string
+    std::string
     Type() const override {
-        if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value)
+        if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
             return knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
-        if constexpr (std::is_same<T, faiss::IndexIVFPQ>::value)
+        }
+        if constexpr (std::is_same<T, faiss::IndexIVFPQ>::value) {
             return knowhere::IndexEnum::INDEX_FAISS_IVFPQ;
-        if constexpr (std::is_same<T, faiss::IndexIVFScalarQuantizer>::value)
+        }
+        if constexpr (std::is_same<T, faiss::IndexIVFScalarQuantizer>::value) {
             return knowhere::IndexEnum::INDEX_FAISS_IVFSQ8;
-        if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value)
+        }
+        if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value) {
             return knowhere::IndexEnum::INDEX_FAISS_BIN_IVFFLAT;
+        }
     };
-    virtual ~IvfIndexNode() {
-        if (index_)
+    ~IvfIndexNode() override {
+        if (index_) {
             delete index_;
-        if (qzr_)
+        }
+        if (qzr_) {
             delete qzr_;
+        }
     };
 
  private:
@@ -146,8 +159,9 @@ template <typename T>
 Status
 IvfIndexNode<T>::Build(const DataSet& dataset, const Config& cfg) {
     auto err = Train(dataset, cfg);
-    if (err != Status::success)
+    if (err != Status::success) {
         return err;
+    }
     err = Add(dataset, cfg);
     return err;
 }
@@ -187,8 +201,9 @@ Status
 IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
     const BaseConfig& base_cfg = static_cast<const IvfConfig&>(cfg);
     auto metric = Str2FaissMetricType(base_cfg.metric_type);
-    if (!metric.has_value())
+    if (!metric.has_value()) {
         return Status::invalid_metric_type;
+    }
     decltype(this->qzr_) qzr = nullptr;
     decltype(this->index_) index = nullptr;
     auto dim = dataset.GetDim();
@@ -216,10 +231,12 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
     }
 
     if (qzr == nullptr || index == nullptr) {
-        if (qzr)
+        if (qzr) {
             delete qzr;
-        if (index)
+        }
+        if (index) {
             delete index;
+        }
         LOG_KNOWHERE_WARNING_ << "memory malloc error.";
         return Status::malloc_error;
     }
@@ -253,8 +270,9 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
 template <typename T>
 Status
 IvfIndexNode<T>::Add(const DataSet& dataset, const Config&) {
-    if (!this->index_)
+    if (!this->index_) {
         return Status::empty_index;
+    }
     auto data = dataset.GetTensor();
     auto rows = dataset.GetRows();
     try {
@@ -456,10 +474,12 @@ IvfIndexNode<faiss::IndexBinaryIVF>::RangeSearch(const DataSet& dataset, const C
 template <typename T>
 expected<DataSetPtr, Status>
 IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const {
-    if (!this->index_)
+    if (!this->index_) {
         return unexpected(Status::empty_index);
-    if (!this->index_->is_trained)
+    }
+    if (!this->index_->is_trained) {
         return unexpected(Status::index_not_trained);
+    }
     auto rows = dataset.GetRows();
     auto dim = dataset.GetDim();
     float* p_x(new (std::nothrow) float[dim * rows]);
@@ -486,10 +506,12 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
 template <>
 expected<DataSetPtr, Status>
 IvfIndexNode<faiss::IndexBinaryIVF>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const {
-    if (!this->index_)
+    if (!this->index_) {
         return unexpected(Status::empty_index);
-    if (!this->index_->is_trained)
+    }
+    if (!this->index_->is_trained) {
         return unexpected(Status::index_not_trained);
+    }
     auto rows = dataset.GetRows();
     auto dim = dataset.GetDim();
     uint8_t* p_x(new (std::nothrow) uint8_t[dim * rows / 8]);
@@ -590,10 +612,11 @@ IvfIndexNode<T>::Deserialize(const BinarySet& binset) {
         delete index_;
     }
     try {
-        if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value)
+        if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value) {
             index_ = static_cast<T*>(faiss::read_index_binary(&reader));
-        else
+        } else {
             index_ = static_cast<T*>(faiss::read_index(&reader));
+        }
     } catch (const std::exception& e) {
         LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return Status::faiss_inner_error;

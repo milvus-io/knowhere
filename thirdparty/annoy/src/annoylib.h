@@ -1334,7 +1334,7 @@ class AnnoyIndex : public AnnoyIndexInterface<S, T> {
 
         _nodes_size = new_nodes_size;
         if (_verbose)
-            showUpdate("Reallocating to %ld nodes: old_address=%p, new_address=%p\n", new_nodes_size, old, _nodes);
+            showUpdate("Reallocating to %ld nodes: old_address=%p, new_address=%p\n", new_nodes_size, old, _nodes); //NOLINT
     }
 
     void

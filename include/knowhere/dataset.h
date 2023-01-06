@@ -17,28 +17,33 @@ class DataSet {
     typedef std::variant<const float*, const size_t*, const int64_t*, const void*, int64_t, std::string, std::any> Var;
     DataSet() = default;
     ~DataSet() {
-        if (!is_owner)
+        if (!is_owner) {
             return;
+        }
         for (auto&& x : this->data_) {
             {
                 auto ptr = std::get_if<0>(&x.second);
-                if (ptr != nullptr)
+                if (ptr != nullptr) {
                     delete[] * ptr;
+                }
             }
             {
                 auto ptr = std::get_if<1>(&x.second);
-                if (ptr != nullptr)
+                if (ptr != nullptr) {
                     delete[] * ptr;
+                }
             }
             {
                 auto ptr = std::get_if<2>(&x.second);
-                if (ptr != nullptr)
+                if (ptr != nullptr) {
                     delete[] * ptr;
+                }
             }
             {
                 auto ptr = std::get_if<3>(&x.second);
-                if (ptr != nullptr)
+                if (ptr != nullptr) {
                     delete[](char*)(*ptr);
+                }
             }
         }
     }

@@ -72,7 +72,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         // label_offset_ = size_links_level0_ + data_size_;
         offsetLevel0_ = 0;
 
-        data_level0_memory_ = (char*)malloc(max_elements_ * size_data_per_element_);
+        data_level0_memory_ = (char*)malloc(max_elements_ * size_data_per_element_); //NOLINT
         if (data_level0_memory_ == nullptr)
             throw std::runtime_error("Not enough memory");
 
@@ -772,7 +772,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         readBinaryPOD(input, mult_);
         readBinaryPOD(input, ef_construction_);
 
-        data_level0_memory_ = (char*)malloc(max_elements * size_data_per_element_);
+        data_level0_memory_ = (char*)malloc(max_elements * size_data_per_element_); //NOLINT
         if (data_level0_memory_ == nullptr)
             throw std::runtime_error("Not enough memory: loadIndex failed to allocate level0");
         input.read(data_level0_memory_, cur_element_count * size_data_per_element_);
