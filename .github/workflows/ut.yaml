@@ -4,7 +4,7 @@ name: Unit Test
 on:
   push:
     branches:
-      - main
+      - refactoring
   pull_request:
     # File paths to consider in the event. Optional; defaults to all.
     paths:
@@ -20,7 +20,7 @@ on:
 
 jobs:
   ut:
-    name: UT on ubuntu-20.04
+    name: ut on ubuntu-20.04
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     strategy:
@@ -40,11 +40,9 @@ jobs:
           && ./tests/ut/knowhere_tests
 
   swig-build:
-    name: Python3 Wheel
+    name: python3 wheel
     runs-on: ubuntu-20.04
     timeout-minutes: 60
-    env:
-      INSTALL_OPENBLAS: true
     steps:
       - name: Checkout
         uses: actions/checkout@v2

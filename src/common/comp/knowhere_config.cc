@@ -10,8 +10,6 @@
 
 namespace knowhere {
 
-constexpr int64_t M_BYTE = 1024 * 1024;
-
 void
 KnowhereConfig::ShowVersion() {
 #define XSTR(x) STR(x)

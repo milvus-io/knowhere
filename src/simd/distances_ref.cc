@@ -9,7 +9,7 @@
 
 #include "distances_ref.h"
 
-#include <math.h>
+#include <cmath>
 namespace faiss {
 
 float
@@ -29,7 +29,7 @@ fvec_L1_ref(const float* x, const float* y, size_t d) {
     float res = 0;
     for (i = 0; i < d; i++) {
         const float tmp = x[i] - y[i];
-        res += fabs(tmp);
+        res += std::fabs(tmp);
     }
     return res;
 }
@@ -39,7 +39,7 @@ fvec_Linf_ref(const float* x, const float* y, size_t d) {
     size_t i;
     float res = 0;
     for (i = 0; i < d; i++) {
-        res = fmax(res, fabs(x[i] - y[i]));
+        res = std::fmax(res, std::fabs(x[i] - y[i]));
     }
     return res;
 }

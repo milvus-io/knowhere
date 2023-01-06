@@ -17,9 +17,9 @@ class HnswIndexNode : public IndexNode {
         pool_ = ThreadPool::GetGlobalThreadPool();
     }
 
-    virtual Status
+    Status
     Build(const DataSet& dataset, const Config& cfg) override {
-        auto res = Train(dataset, cfg);
+        auto res = this->Train(dataset, cfg);
         if (res != Status::success) {
             return res;
         }
@@ -27,12 +27,12 @@ class HnswIndexNode : public IndexNode {
         return res;
     }
 
-    virtual Status
+    Status
     Train(const DataSet& dataset, const Config& cfg) override {
         auto rows = dataset.GetRows();
         auto dim = dataset.GetDim();
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
-        hnswlib::SpaceInterface<float>* space = NULL;
+        hnswlib::SpaceInterface<float>* space = nullptr;
         if (hnsw_cfg.metric_type == metric::L2) {
             space = new (std::nothrow) hnswlib::L2Space(dim);
         } else if (hnsw_cfg.metric_type == metric::IP) {
@@ -55,7 +55,7 @@ class HnswIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual Status
+    Status
     Add(const DataSet& dataset, const Config& cfg) override {
         if (!index_) {
             return Status::empty_index;
@@ -74,7 +74,7 @@ class HnswIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
             LOG_KNOWHERE_WARNING_ << "search on empty index";
@@ -139,7 +139,7 @@ class HnswIndexNode : public IndexNode {
         return res;
     }
 
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
             LOG_KNOWHERE_WARNING_ << "range search on empty index.";
@@ -214,7 +214,7 @@ class HnswIndexNode : public IndexNode {
         return res;
     }
 
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
         if (!index_) {
             return unexpected(Status::empty_index);
@@ -256,8 +256,9 @@ class HnswIndexNode : public IndexNode {
         for (int i = 0; i < overview_levels; i++) {
             int64_t level = index_->maxlevel_ - i;
             // do not record level 0
-            if (level <= 0)
+            if (level <= 0) {
                 break;
+            }
             meta.AddLevelLinkGraph(level);
             UpdateLevelLinkList(level, meta, id_set);
         }
@@ -268,7 +269,7 @@ class HnswIndexNode : public IndexNode {
         return GenResultDataSet(json_meta.dump(), json_id_set.dump());
     }
 
-    virtual Status
+    Status
     Serialize(BinarySet& binset) const override {
         if (!index_) {
             return Status::empty_index;
@@ -285,7 +286,7 @@ class HnswIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual Status
+    Status
     Deserialize(const BinarySet& binset) override {
         if (index_) {
             delete index_;
@@ -307,12 +308,12 @@ class HnswIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual std::unique_ptr<BaseConfig>
+    std::unique_ptr<BaseConfig>
     CreateConfig() const override {
         return std::make_unique<HnswConfig>();
     }
 
-    virtual int64_t
+    int64_t
     Dim() const override {
         if (!index_) {
             return 0;
@@ -320,7 +321,7 @@ class HnswIndexNode : public IndexNode {
         return (*static_cast<size_t*>(index_->dist_func_param_));
     }
 
-    virtual int64_t
+    int64_t
     Size() const override {
         if (!index_) {
             return 0;
@@ -328,7 +329,7 @@ class HnswIndexNode : public IndexNode {
         return index_->cal_size();
     }
 
-    virtual int64_t
+    int64_t
     Count() const override {
         if (!index_) {
             return 0;
@@ -336,12 +337,12 @@ class HnswIndexNode : public IndexNode {
         return index_->cur_element_count;
     }
 
-    virtual std::string
+    std::string
     Type() const override {
         return knowhere::IndexEnum::INDEX_HNSW;
     }
 
-    virtual ~HnswIndexNode() {
+    ~HnswIndexNode() override {
         if (index_) {
             delete index_;
         }

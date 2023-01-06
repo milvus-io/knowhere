@@ -102,237 +102,237 @@ class InstructionSet {
  public:
     // getters
     std::string
-    Vendor(void) {
+    Vendor() {
         return vendor_;
     }
     std::string
-    Brand(void) {
+    Brand() {
         return brand_;
     }
 
     bool
-    SSE3(void) {
+    SSE3() {
         return f_1_ECX_[0];
     }
     bool
-    PCLMULQDQ(void) {
+    PCLMULQDQ() {
         return f_1_ECX_[1];
     }
     bool
-    MONITOR(void) {
+    MONITOR() {
         return f_1_ECX_[3];
     }
     bool
-    SSSE3(void) {
+    SSSE3() {
         return f_1_ECX_[9];
     }
     bool
-    FMA(void) {
+    FMA() {
         return f_1_ECX_[12];
     }
     bool
-    CMPXCHG16B(void) {
+    CMPXCHG16B() {
         return f_1_ECX_[13];
     }
     bool
-    SSE41(void) {
+    SSE41() {
         return f_1_ECX_[19];
     }
     bool
-    SSE42(void) {
+    SSE42() {
         return f_1_ECX_[20];
     }
     bool
-    MOVBE(void) {
+    MOVBE() {
         return f_1_ECX_[22];
     }
     bool
-    POPCNT(void) {
+    POPCNT() {
         return f_1_ECX_[23];
     }
     bool
-    AES(void) {
+    AES() {
         return f_1_ECX_[25];
     }
     bool
-    XSAVE(void) {
+    XSAVE() {
         return f_1_ECX_[26];
     }
     bool
-    OSXSAVE(void) {
+    OSXSAVE() {
         return f_1_ECX_[27];
     }
     bool
-    AVX(void) {
+    AVX() {
         return f_1_ECX_[28];
     }
     bool
-    F16C(void) {
+    F16C() {
         return f_1_ECX_[29];
     }
     bool
-    RDRAND(void) {
+    RDRAND() {
         return f_1_ECX_[30];
     }
 
     bool
-    MSR(void) {
+    MSR() {
         return f_1_EDX_[5];
     }
     bool
-    CX8(void) {
+    CX8() {
         return f_1_EDX_[8];
     }
     bool
-    SEP(void) {
+    SEP() {
         return f_1_EDX_[11];
     }
     bool
-    CMOV(void) {
+    CMOV() {
         return f_1_EDX_[15];
     }
     bool
-    CLFSH(void) {
+    CLFSH() {
         return f_1_EDX_[19];
     }
     bool
-    MMX(void) {
+    MMX() {
         return f_1_EDX_[23];
     }
     bool
-    FXSR(void) {
+    FXSR() {
         return f_1_EDX_[24];
     }
     bool
-    SSE(void) {
+    SSE() {
         return f_1_EDX_[25];
     }
     bool
-    SSE2(void) {
+    SSE2() {
         return f_1_EDX_[26];
     }
 
     bool
-    FSGSBASE(void) {
+    FSGSBASE() {
         return f_7_EBX_[0];
     }
     bool
-    BMI1(void) {
+    BMI1() {
         return f_7_EBX_[3];
     }
     bool
-    HLE(void) {
+    HLE() {
         return isIntel_ && f_7_EBX_[4];
     }
     bool
-    AVX2(void) {
+    AVX2() {
         return f_7_EBX_[5];
     }
     bool
-    BMI2(void) {
+    BMI2() {
         return f_7_EBX_[8];
     }
     bool
-    ERMS(void) {
+    ERMS() {
         return f_7_EBX_[9];
     }
     bool
-    INVPCID(void) {
+    INVPCID() {
         return f_7_EBX_[10];
     }
     bool
-    RTM(void) {
+    RTM() {
         return isIntel_ && f_7_EBX_[11];
     }
     bool
-    AVX512F(void) {
+    AVX512F() {
         return f_7_EBX_[16];
     }
     bool
-    AVX512DQ(void) {
+    AVX512DQ() {
         return f_7_EBX_[17];
     }
     bool
-    RDSEED(void) {
+    RDSEED() {
         return f_7_EBX_[18];
     }
     bool
-    ADX(void) {
+    ADX() {
         return f_7_EBX_[19];
     }
     bool
-    AVX512PF(void) {
+    AVX512PF() {
         return f_7_EBX_[26];
     }
     bool
-    AVX512ER(void) {
+    AVX512ER() {
         return f_7_EBX_[27];
     }
     bool
-    AVX512CD(void) {
+    AVX512CD() {
         return f_7_EBX_[28];
     }
     bool
-    SHA(void) {
+    SHA() {
         return f_7_EBX_[29];
     }
     bool
-    AVX512BW(void) {
+    AVX512BW() {
         return f_7_EBX_[30];
     }
     bool
-    AVX512VL(void) {
+    AVX512VL() {
         return f_7_EBX_[31];
     }
 
     bool
-    PREFETCHWT1(void) {
+    PREFETCHWT1() {
         return f_7_ECX_[0];
     }
 
     bool
-    LAHF(void) {
+    LAHF() {
         return f_81_ECX_[0];
     }
     bool
-    LZCNT(void) {
+    LZCNT() {
         return isIntel_ && f_81_ECX_[5];
     }
     bool
-    ABM(void) {
+    ABM() {
         return isAMD_ && f_81_ECX_[5];
     }
     bool
-    SSE4a(void) {
+    SSE4a() {
         return isAMD_ && f_81_ECX_[6];
     }
     bool
-    XOP(void) {
+    XOP() {
         return isAMD_ && f_81_ECX_[11];
     }
     bool
-    TBM(void) {
+    TBM() {
         return isAMD_ && f_81_ECX_[21];
     }
 
     bool
-    SYSCALL(void) {
+    SYSCALL() {
         return isIntel_ && f_81_EDX_[11];
     }
     bool
-    MMXEXT(void) {
+    MMXEXT() {
         return isAMD_ && f_81_EDX_[22];
     }
     bool
-    RDTSCP(void) {
+    RDTSCP() {
         return isIntel_ && f_81_EDX_[27];
     }
     bool
-    _3DNOWEXT(void) {
+    _3DNOWEXT() {
         return isAMD_ && f_81_EDX_[30];
     }
     bool
-    _3DNOW(void) {
+    _3DNOW() {
         return isAMD_ && f_81_EDX_[31];
     }
 

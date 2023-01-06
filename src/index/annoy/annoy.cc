@@ -11,7 +11,7 @@ class AnnoyIndexNode : public IndexNode {
     AnnoyIndexNode(const Object& object) : index_(nullptr), pool_(ThreadPool::GetGlobalThreadPool()) {
     }
 
-    virtual Status
+    Status
     Build(const DataSet& dataset, const Config& cfg) override {
         const AnnoyConfig& annoy_cfg = static_cast<const AnnoyConfig&>(cfg);
         metric_type_ = annoy_cfg.metric_type;
@@ -35,8 +35,9 @@ class AnnoyIndexNode : public IndexNode {
             }
         }
         if (index) {
-            if (this->index_)
+            if (this->index_) {
                 delete this->index_;
+            }
             this->index_ = index;
 
             auto p_data = dataset.GetTensor();
@@ -48,6 +49,7 @@ class AnnoyIndexNode : public IndexNode {
             bool res = index_->build(annoy_cfg.n_trees, -1, &error_msg);
             if (!res) {
                 LOG_KNOWHERE_WARNING_ << error_msg;
+                free(error_msg);
                 return Status::annoy_inner_error;
             }
             return Status::success;
@@ -58,17 +60,17 @@ class AnnoyIndexNode : public IndexNode {
         return Status::invalid_metric_type;
     }
 
-    virtual Status
+    Status
     Train(const DataSet& dataset, const Config& cfg) override {
-        return Build(dataset, cfg);
+        return this->Build(dataset, cfg);
     }
 
-    virtual Status
+    Status
     Add(const DataSet& dataset, const Config& cfg) override {
         return Status::not_implemented;
     }
 
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
             return unexpected(Status::empty_index);
@@ -112,12 +114,12 @@ class AnnoyIndexNode : public IndexNode {
         return GenResultDataSet(rows, annoy_cfg.k, p_id, p_dist);
     }
 
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         return unexpected(Status::not_implemented);
     }
 
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
         if (!index_) {
             return unexpected(Status::empty_index);
@@ -144,12 +146,12 @@ class AnnoyIndexNode : public IndexNode {
         return GenResultDataSet(p_x);
     }
 
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const override {
         return unexpected(Status::not_implemented);
     }
 
-    virtual Status
+    Status
     Serialize(BinarySet& binset) const override {
         if (!index_) {
             return Status::empty_index;
@@ -174,10 +176,11 @@ class AnnoyIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual Status
+    Status
     Deserialize(const BinarySet& binset) override {
-        if (index_)
+        if (index_) {
             delete index_;
+        }
         auto metric_type = binset.GetByName("annoy_metric_type");
         metric_type_.resize(static_cast<size_t>(metric_type->size));
         memcpy(metric_type_.data(), metric_type->data.get(), static_cast<size_t>(metric_type->size));
@@ -204,40 +207,44 @@ class AnnoyIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual std::unique_ptr<BaseConfig>
+    std::unique_ptr<BaseConfig>
     CreateConfig() const override {
         return std::make_unique<AnnoyConfig>();
     }
 
-    virtual int64_t
+    int64_t
     Dim() const override {
-        if (!index_)
+        if (!index_) {
             return 0;
+        }
         return index_->get_dim();
     }
 
-    virtual int64_t
+    int64_t
     Size() const override {
-        if (!index_)
+        if (!index_) {
             return 0;
+        }
         return index_->cal_size();
     }
 
-    virtual int64_t
+    int64_t
     Count() const override {
-        if (!index_)
+        if (!index_) {
             return 0;
+        }
         return index_->get_n_items();
     }
 
-    virtual std::string
+    std::string
     Type() const override {
         return knowhere::IndexEnum::INDEX_ANNOY;
     }
 
-    virtual ~AnnoyIndexNode() {
-        if (index_)
+    ~AnnoyIndexNode() override {
+        if (index_) {
             delete index_;
+        }
     }
 
  private:
