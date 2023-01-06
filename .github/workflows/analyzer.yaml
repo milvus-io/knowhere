@@ -1,4 +1,4 @@
-name: Pre-commit
+name: Analyzer
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   analyzer:
-    name: analyzer
+    name: Analyzer
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     strategy:
