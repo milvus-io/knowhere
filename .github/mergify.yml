@@ -56,9 +56,10 @@ pull_request_rules:
   - name: Test passed for code changed
     conditions:
       - base=refactoring
-      - "status-success=Unit Test"
-      - 'status-success=Pre-commit'
-      - 'status-success=Analyzer'
+      - "status-success=ut on ubuntu-20.04"
+      - 'status-success=pre-commit'
+      - 'status-success=analyzer'
+      - 'status-success=python3 wheel'
       - "status-success=continuous-integration/jenkins/pr-merge"
     actions:
       label:
@@ -68,9 +69,10 @@ pull_request_rules:
   - name: Remove ci-passed label when ut failed
     conditions:
       - base=refactoring
-      - "status-success!=Unit Test"
-      - "status-success!=Pre-commit"
-      - "status-success!=Analyzer"
+      - "status-success!=ut on ubuntu-20.04"
+      - "status-success!=pre-commit"
+      - "status-success!=analyzer"
+      - "status-success!=python3 wheel"
       - "status-success!=continuous-integration/jenkins/pr-merge"
     actions:
       label:

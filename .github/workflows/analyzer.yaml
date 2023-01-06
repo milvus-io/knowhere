@@ -7,7 +7,7 @@ on:
 
 jobs:
   analyzer:
-    name: Analyzer
+    name: analyzer
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     strategy:
