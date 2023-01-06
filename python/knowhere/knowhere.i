@@ -16,12 +16,10 @@ typedef uint64_t size_t;
 %ignore knowhere::IndexFactory;
 %ignore knowhere::IndexNode;
 %ignore knowhere::Index;
-%ignore knowhere::DataSet;
 %ignore knowhere::expected;
 
 %{
 #include <stdint.h>
-
 #include <memory>
 #ifdef SWIGPYTHON
 #undef popcount64
@@ -29,7 +27,6 @@ typedef uint64_t size_t;
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 #endif
-//#include <knowhere/expected.h>
 #include <knowhere/factory.h>
 #include <tests/ut/local_file_manager.h>
 using namespace knowhere;
@@ -48,11 +45,14 @@ import_array();
 %include <std_map.i>
 %include <std_shared_ptr.i>
 %include <exception.i>
+%shared_ptr(knowhere::DataSet)
+%shared_ptr(knowhere::BinarySet)
+%template(DataSetPtr) std::shared_ptr<knowhere::DataSet>;
+%template(BinarySetPtr) std::shared_ptr<knowhere::BinarySet>;
 %include <knowhere/expected.h>
 %include <knowhere/dataset.h>
 %include <knowhere/binaryset.h>
-%template(DataSetPtr) std::shared_ptr<knowhere::DataSet>;
-%template(BinarySetPtr) std::shared_ptr<knowhere::BinarySet>;
+%include <knowhere/expected.h>
 %apply (float* IN_ARRAY2, int DIM1, int DIM2) {(float* xb, int nb, int dim)}
 %apply (int* IN_ARRAY2, int DIM1, int DIM2) {(int* xb, int nb, int dim)}
 %apply (uint8_t *IN_ARRAY1, int DIM1) {(uint8_t *block, int size)}
@@ -63,7 +63,6 @@ import_array();
 %apply (int *INPLACE_ARRAY2, int DIM1, int DIM2){(int *ids,int nq_2,int k_2)}
 
 %inline %{
-
 class IndexWrap {
  public:
     IndexWrap(const std::string& name) {
@@ -76,51 +75,51 @@ class IndexWrap {
         }
     }
 
-    Status
-    Build(DataSetPtr dataset, const std::string& json) {
+    knowhere::Status
+    Build(knowhere::DataSetPtr dataset, const std::string& json) {
         return idx.Build(*dataset, knowhere::Json::parse(json));
     }
 
-    Status
-    Train(DataSetPtr dataset, const std::string& json) {
+    knowhere::Status
+    Train(knowhere::DataSetPtr dataset, const std::string& json) {
         return idx.Train(*dataset, knowhere::Json::parse(json));
     }
 
-    Status
-    Add(DataSetPtr dataset, const std::string& json) {
+    knowhere::Status
+    Add(knowhere::DataSetPtr dataset, const std::string& json) {
         return idx.Add(*dataset, knowhere::Json::parse(json));
     }
 
-    DataSetPtr
-    Search(DataSetPtr dataset, const std::string& json) {
+    knowhere::DataSetPtr
+    Search(knowhere::DataSetPtr dataset, const std::string& json) {
         auto res = idx.Search(*dataset, knowhere::Json::parse(json), nullptr);
         if (res.has_value())
             return res.value();
         return nullptr;
     }
 
-    DataSetPtr
-    RangeSearch(DataSetPtr dataset, const std::string& json){
+    knowhere::DataSetPtr
+    RangeSearch(knowhere::DataSetPtr dataset, const std::string& json){
         auto res = idx.RangeSearch(*dataset, knowhere::Json::parse(json), nullptr);
         if (res.has_value())
             return res.value();
         return nullptr;
     }
 
-    DataSetPtr
-    GetVectorByIds(DataSetPtr dataset, const std::string& json) {
+    knowhere::DataSetPtr
+    GetVectorByIds(knowhere::DataSetPtr dataset, const std::string& json) {
         auto res = idx.GetVectorByIds(*dataset, knowhere::Json::parse(json));
         if (res.has_value())
             return res.value();
         return nullptr;
     }
 
-    Status
+    knowhere::Status
     Serialize(BinarySetPtr binset) {
         return idx.Serialize(*binset);
     }
 
-    Status
+    knowhere::Status
     Deserialize(BinarySetPtr binset) {
         return idx.Deserialize(*binset);
     }
@@ -149,7 +148,7 @@ class IndexWrap {
     Index<IndexNode> idx;
 };
 
-DataSetPtr
+knowhere::DataSetPtr
 Array2DataSetF(float* xb, int nb, int dim) {
     auto ds = std::make_shared<DataSet>();
     ds->SetIsOwner(false);
@@ -159,7 +158,7 @@ Array2DataSetF(float* xb, int nb, int dim) {
     return ds;
 };
 
-DataSetPtr
+knowhere::DataSetPtr
 Array2DataSetI(int *xb, int nb, int dim){
     auto ds = std::make_shared<DataSet>();
     ds->SetIsOwner(false);
@@ -169,20 +168,20 @@ Array2DataSetI(int *xb, int nb, int dim){
     return ds;
 };
 
-int64_t DataSet_Rows(DataSetPtr results){
+int64_t DataSet_Rows(knowhere::DataSetPtr results){
     return results->GetRows();
 }
 
-int64_t DataSet_Dim(DataSetPtr results){
+int64_t DataSet_Dim(knowhere::DataSetPtr results){
     return results->GetDim();
 }
 
-DataSetPtr GetNullDataSet() {
+knowhere::DataSetPtr GetNullDataSet() {
     return nullptr;
 }
 
 void
-DataSet2Array(DataSetPtr result, float* dis, int nq_1, int k_1, int* ids, int nq_2, int k_2) {
+DataSet2Array(knowhere::DataSetPtr result, float* dis, int nq_1, int k_1, int* ids, int nq_2, int k_2) {
     auto ids_ = result->GetIds();
     auto dist_ = result->GetDistance();
     assert(nq_1 == nq_2);
@@ -196,7 +195,7 @@ DataSet2Array(DataSetPtr result, float* dis, int nq_1, int k_1, int* ids, int nq
 }
 
 void
-DumpRangeResultIds(DataSetPtr result, int* ids, int len) {
+DumpRangeResultIds(knowhere::DataSetPtr result, int* ids, int len) {
     auto ids_ = result->GetIds();
     for (int i = 0; i < len; ++i) {
         *(ids + i) = *((int64_t*)(ids_) + i);
@@ -204,7 +203,7 @@ DumpRangeResultIds(DataSetPtr result, int* ids, int len) {
 }
 
 void
-DumpRangeResultLimits(DataSetPtr result, int* lims, int len) {
+DumpRangeResultLimits(knowhere::DataSetPtr result, int* lims, int len) {
     auto lims_ = result->GetLims();
     for (int i = 0; i < len; ++i) {
         *(lims + i) = *((size_t*)(lims_) + i);
@@ -212,7 +211,7 @@ DumpRangeResultLimits(DataSetPtr result, int* lims, int len) {
 }
 
 void
-DumpRangeResultDis(DataSetPtr result, float* dis, int len) {
+DumpRangeResultDis(knowhere::DataSetPtr result, float* dis, int len) {
     auto dist_ = result->GetDistance();
     for (int i = 0; i < len; ++i) {
         *(dis + i) = *((float*)(dist_) + i);
