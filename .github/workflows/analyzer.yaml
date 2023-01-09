@@ -19,8 +19,8 @@ jobs:
           submodules: recursive
       - name: Install Dependency
         run: |
-          sudo apt update && sudo apt install -y cmake g++ gcc libopenblas-dev clang-tidy
+          sudo apt update && sudo apt install -y cmake g++ gcc libopenblas-dev clang-tidy libboost-program-options-dev libaio-dev
       - name: Build & Analyzer
         run: |
-          mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_UT=ON \
+          mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_UT=ON -DWITH_DISKANN=ON \
           && cd .. && find src -type f | grep -E "\.cc$" | xargs /usr/lib/llvm-10/share/clang/run-clang-tidy.py -quiet -p=./build
