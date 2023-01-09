@@ -41,47 +41,47 @@ class DiskANNIndexNode : public IndexNode {
         file_manager_ = diskann_index_pack->GetPack();
     }
 
-    virtual Status
-    Build(const DataSet& dataset, const Config& cfg) {
+    Status
+    Build(const DataSet& dataset, const Config& cfg) override {
         return Add(dataset, cfg);
     }
 
-    virtual Status
-    Train(const DataSet& dataset, const Config& cfg) {
+    Status
+    Train(const DataSet& dataset, const Config& cfg) override {
         return Status::success;
     }
 
-    virtual Status
+    Status
     Add(const DataSet& dataset, const Config& cfg) override;
 
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
 
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
 
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
         LOG_KNOWHERE_ERROR_ << "DiskANN doesn't support GetVectorById.";
         return unexpected(Status::not_implemented);
     }
 
-    virtual expected<DataSetPtr, Status>
+    expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const override;
 
-    virtual Status
+    Status
     Serialize(BinarySet& binset) const override {
         LOG_KNOWHERE_ERROR_ << "DiskANN doesn't support Serialize.";
         return Status::not_implemented;
     }
 
-    virtual Status
+    Status
     Deserialize(const BinarySet& binset) override {
         LOG_KNOWHERE_ERROR_ << "DiskANN doesn't support Deserialization.";
         return Status::not_implemented;
     }
 
-    virtual std::unique_ptr<BaseConfig>
+    std::unique_ptr<BaseConfig>
     CreateConfig() const override {
         return std::make_unique<DiskANNConfig>();
     }
@@ -95,7 +95,7 @@ class DiskANNIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual int64_t
+    int64_t
     Dim() const override {
         if (dim_.load() == -1) {
             LOG_KNOWHERE_ERROR_ << "index is not ready yet.";
@@ -104,13 +104,13 @@ class DiskANNIndexNode : public IndexNode {
         return dim_.load();
     }
 
-    virtual int64_t
+    int64_t
     Size() const override {
         LOG_KNOWHERE_ERROR_ << "Size() function has not been implemented yet.";
         return 0;
     }
 
-    virtual int64_t
+    int64_t
     Count() const override {
         if (count_.load() == -1) {
             LOG_KNOWHERE_ERROR_ << "index is not ready yet.";
@@ -119,7 +119,7 @@ class DiskANNIndexNode : public IndexNode {
         return count_.load();
     }
 
-    virtual std::string
+    std::string
     Type() const override {
         if (std::is_same_v<T, float>) {
             return std::string(knowhere::IndexEnum::INDEX_DISKANN) + "FLOAT";
@@ -172,7 +172,6 @@ namespace knowhere {
 namespace {
 static constexpr float kCacheExpansionRate = 1.2;
 static constexpr uint32_t kLinuxAioMaxnrLimit = 65536;
-static constexpr int kSearchListSizeMaxValue = 200;
 template <typename T>
 expected<T, Status>
 TryDiskANNCall(std::function<T()>&& diskann_call) {
@@ -223,7 +222,7 @@ GetOptionalFilenames(const std::string& prefix) {
 
 inline bool
 AnyIndexFileExist(const std::string& index_prefix) {
-    auto file_exist = [&index_prefix](std::vector<std::string> filenames) -> bool {
+    auto file_exist = [](std::vector<std::string> filenames) -> bool {
         for (auto& filename : filenames) {
             if (file_exists(filename)) {
                 return true;
@@ -249,35 +248,6 @@ CheckAddParams(const DiskANNConfig& diskann_cfg) {
     return Status::success;
 }
 
-inline Status
-CheckSearchParams(const DiskANNConfig& diskann_cfg) {
-    auto max_search_list_size = std::max(kSearchListSizeMaxValue, diskann_cfg.k * 10);
-    if (diskann_cfg.search_list_size > max_search_list_size || diskann_cfg.search_list_size < diskann_cfg.k) {
-        LOG_KNOWHERE_ERROR_ << "search_list_size should be in range: [topk, max(200, topk * 10)]";
-        return Status::invalid_args;
-    }
-    return Status::success;
-}
-
-inline Status
-CheckRangeSearchParams(const DiskANNConfig& diskann_cfg) {
-    if (diskann_cfg.metric_type == knowhere::metric::L2) {
-        if (diskann_cfg.min_k > diskann_cfg.max_k || diskann_cfg.radius_low_bound > diskann_cfg.radius_high_bound) {
-            LOG_KNOWHERE_ERROR_ << "min_k should be smaller than max_k, radius_low_bound should be smaller than the "
-                                   "radius_high_bound in metric L2";
-            return Status::invalid_args;
-        }
-    } else if (diskann_cfg.metric_type == knowhere::metric::IP) {
-        if (diskann_cfg.min_k < diskann_cfg.max_k || diskann_cfg.radius_low_bound < diskann_cfg.radius_high_bound) {
-            LOG_KNOWHERE_ERROR_ << "min_k should be smaller than max_k, radius_low_bound should be larger than the "
-                                   "radius_high_bound in metric IP";
-            return Status::invalid_args;
-        }
-    } else {
-        return Status::invalid_metric_type;
-    }
-    return Status::success;
-}
 }  // namespace
 
 template <typename T>
