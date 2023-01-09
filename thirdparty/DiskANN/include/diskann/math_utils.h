@@ -75,9 +75,8 @@ namespace kmeans {
   // Similarly, if closest_docs == NULL, will allocate memory and return.
 
   float lloyds_iter(float* data, size_t num_points, size_t dim, float* centers,
-                    size_t num_centers, float* docs_l2sq,
-                    std::vector<size_t>* closest_docs,
-                    uint32_t*&           closest_center);
+                    size_t num_centers, std::vector<size_t>* closest_docs,
+                    uint32_t*& closest_center);
 
   // Run Lloyds until max_reps or stopping criterion
   // If you pass NULL for closest_docs and closest_center, it will NOT return

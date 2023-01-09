@@ -8,42 +8,24 @@
 #include "logger.h"
 #include "utils.h"
 
-#ifdef __cplusplus
+#ifndef FINTEGER
+#define FINTEGER long
+#endif
+
 extern "C" {
-#endif
 
-#ifndef OPENBLAS_CONST
-#define OPENBLAS_CONST const
-#endif
+/* declare BLAS functions, see http://www.netlib.org/clapack/cblas/ */
 
-typedef int blasint;
-
-typedef enum CBLAS_ORDER {
-  CblasRowMajor = 101,
-  CblasColMajor = 102
-} CBLAS_ORDER;
-typedef enum CBLAS_TRANSPOSE {
-  CblasNoTrans = 111,
-  CblasTrans = 112,
-  CblasConjTrans = 113,
-  CblasConjNoTrans = 114
-} CBLAS_TRANSPOSE;
-
-float cblas_snrm2(const int N, const float* X, const int incX);
-void  cblas_sgemm(OPENBLAS_CONST enum CBLAS_ORDER     Order,
-                  OPENBLAS_CONST enum CBLAS_TRANSPOSE TransA,
-                  OPENBLAS_CONST enum CBLAS_TRANSPOSE TransB,
-                  OPENBLAS_CONST blasint M, OPENBLAS_CONST blasint N,
-                  OPENBLAS_CONST blasint K, OPENBLAS_CONST float alpha,
-                  OPENBLAS_CONST float* A, OPENBLAS_CONST blasint lda,
-                  OPENBLAS_CONST float* B, OPENBLAS_CONST blasint ldb,
-                  OPENBLAS_CONST float beta, float* C,
-                  OPENBLAS_CONST blasint ldc);
-#ifdef __cplusplus
-}
-#endif
+int sgemm_(const char* transa, const char* transb, FINTEGER* m, FINTEGER* n,
+           FINTEGER* k, const float* alpha, const float* a, FINTEGER* lda,
+           const float* b, FINTEGER* ldb, float* beta, float* c, FINTEGER* ldc);
+};
 
 namespace math_utils {
+  namespace {
+    static constexpr const char* kNoTranspose = "Not transpose";
+    static constexpr const char* kTranspose = "Transpose";
+  };  // namespace
 
   float calc_distance(const float* vec_1, const float* vec_2, size_t dim) {
     float dist = 0;
@@ -59,8 +41,8 @@ namespace math_utils {
   void compute_vecs_l2sq(float* vecs_l2sq, float* data, const size_t num_points,
                          const size_t dim) {
     for (int64_t n_iter = 0; n_iter < (_s64) num_points; n_iter++) {
-      vecs_l2sq[n_iter] = cblas_snrm2(dim, (data + (n_iter * dim)), 1);
-      vecs_l2sq[n_iter] *= vecs_l2sq[n_iter];
+      vecs_l2sq[n_iter] =
+          calc_distance(data + (n_iter * dim), data + (n_iter * dim), dim);
     }
   }
 
@@ -127,15 +109,18 @@ namespace math_utils {
   void rotate_data_randomly(float* data, size_t num_points, size_t dim,
                             float* rot_mat, float*& new_mat,
                             bool transpose_rot) {
-    CBLAS_TRANSPOSE transpose = CblasNoTrans;
+    char* transpose = const_cast<char*>(kNoTranspose);
     if (transpose_rot) {
       diskann::cout << "Transposing rotation matrix.." << std::flush;
-      transpose = CblasTrans;
+      transpose = const_cast<char*>(kTranspose);
     }
     diskann::cout << "done Rotating data with random matrix.." << std::flush;
 
-    cblas_sgemm(CblasRowMajor, CblasNoTrans, transpose, num_points, dim, dim,
-                1.0, data, dim, rot_mat, dim, 0, new_mat, dim);
+    float    one = 1.0, zero = 0.0;
+    FINTEGER m = num_points, finteger_dim = dim;
+    sgemm_(kNoTranspose, transpose, &m, &finteger_dim, &finteger_dim, &one,
+           data, &finteger_dim, rot_mat, &finteger_dim, &zero, new_mat,
+           &finteger_dim);
 
     diskann::cout << "done." << std::endl;
   }
@@ -171,17 +156,17 @@ namespace math_utils {
       ones_b[i] = 1.0;
     }
 
-    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, num_points,
-                num_centers, 1, 1.0f, docs_l2sq, 1, ones_a, 1, 0.0f,
-                dist_matrix, num_centers);
+    float    one = 1, zero = 0, minus_two = -2.0f;
+    FINTEGER m = num_points, n = num_centers, finteger_one = 1,
+             finteger_dim = dim;
+    sgemm_(kNoTranspose, kTranspose, &m, &n, &finteger_one, &one, docs_l2sq,
+           &finteger_one, ones_a, &finteger_one, &zero, dist_matrix, &n);
 
-    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, num_points,
-                num_centers, 1, 1.0f, ones_b, 1, centers_l2sq, 1, 1.0f,
-                dist_matrix, num_centers);
+    sgemm_(kNoTranspose, kTranspose, &m, &n, &finteger_one, &one, ones_b,
+           &finteger_one, centers_l2sq, &finteger_one, &one, dist_matrix, &n);
 
-    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, num_points,
-                num_centers, dim, -2.0f, data, dim, centers, dim, 1.0f,
-                dist_matrix, num_centers);
+    sgemm_(kNoTranspose, kTranspose, &m, &n, &finteger_dim, &minus_two, data,
+           &finteger_dim, centers, &finteger_dim, &one, dist_matrix, &n);
 
     if (k == 1) {
       for (int64_t i = 0; i < (_s64) num_points; i++) {
@@ -204,7 +189,7 @@ namespace math_utils {
         std::nth_element(top_k_vec.begin(), top_k_vec.begin() + k - 1,
                          top_k_vec.end());
         std::sort(top_k_vec.begin(), top_k_vec.begin() + k);
-        for (int64_t j = 0; j < k; j++) {
+        for (size_t j = 0; j < k; j++) {
           center_index[i * k + j] = top_k_vec[j].piv_id;
         }
       }
@@ -274,7 +259,7 @@ namespace math_utils {
         }
       }
       if (inverted_index != NULL) {
-        for (int64_t j = 0; j < num_pts_blk * k; ++j) {
+        for (size_t j = 0; j < num_pts_blk * k; ++j) {
           inverted_index[closest_centers[j]].push_back(blk_st + j / k);
         }
       }
@@ -322,9 +307,8 @@ namespace kmeans {
   // closest_docs == NULL, will allocate memory and return.
 
   float lloyds_iter(float* data, size_t num_points, size_t dim, float* centers,
-                    size_t num_centers, float* docs_l2sq,
-                    std::vector<size_t>* closest_docs,
-                    uint32_t*&           closest_center) {
+                    size_t num_centers, std::vector<size_t>* closest_docs,
+                    uint32_t*& closest_center) {
     bool compute_residual = true;
     // Timer timer;
 
@@ -342,7 +326,8 @@ namespace kmeans {
         closest_docs[c].clear();
     }
 
-    math_utils::elkan_L2(data, centers, dim, num_points, num_centers, closest_center);
+    math_utils::elkan_L2(data, centers, dim, num_points, num_centers,
+                         closest_center);
     for (size_t i = 0; i < num_points; ++i) {
       closest_docs[closest_center[i]].push_back(i);
     }
@@ -417,16 +402,13 @@ namespace kmeans {
       ret_closest_center = false;
     }
 
-    float* docs_l2sq = new float[num_points];
-    math_utils::compute_vecs_l2sq(docs_l2sq, data, num_points, dim);
-
     float old_residual;
     // Timer timer;
     for (size_t i = 0; i < max_reps; ++i) {
       old_residual = residual;
 
       residual = lloyds_iter(data, num_points, dim, centers, num_centers,
-                             docs_l2sq, closest_docs, closest_center);
+                             closest_docs, closest_center);
 
       LOG_KNOWHERE_DEBUG_ << "Lloyd's iter " << i
                           << "  dist_sq residual: " << residual;
@@ -439,7 +421,6 @@ namespace kmeans {
         break;
       }
     }
-    delete[] docs_l2sq;
     if (!ret_closest_docs)
       delete[] closest_docs;
     if (!ret_closest_center)
@@ -464,7 +445,7 @@ namespace kmeans {
     std::uniform_int_distribution<size_t> distribution(0, num_points - 1);
 
     size_t tmp_pivot;
-    for (int64_t j = num_points - num_centers; j < num_points; j++) {
+    for (size_t j = num_points - num_centers; j < num_points; j++) {
       tmp_pivot = std::uniform_int_distribution<size_t>(0, j)(generator);
       if (picked.count(tmp_pivot)) {
         tmp_pivot = j;

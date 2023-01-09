@@ -15,7 +15,7 @@ def fbin_write(x, fname):
     x.tofile(f)
 
 def test_index(gen_data, faiss_ans, recall, error):
-    index_name = "DISKANNFLOAT"
+    index_name = "DISKANN"
     diskann_dir = "diskann_test"
     data_path = os.path.join(diskann_dir, "diskann_data")
     index_path = os.path.join(diskann_dir, "diskann_index")
