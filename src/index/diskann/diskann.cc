@@ -30,8 +30,7 @@ namespace knowhere {
 
 template <typename T>
 class DiskANNIndexNode : public IndexNode {
-    static_assert(std::is_same_v<T, float> || std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>,
-                  "DiskANN only support float, int8 and uint8");
+    static_assert(std::is_same_v<T, float>, "DiskANN only support float");
 
  public:
     DiskANNIndexNode(const Object& object) : is_prepared_(false), dim_(-1), count_(-1) {
@@ -121,13 +120,7 @@ class DiskANNIndexNode : public IndexNode {
 
     std::string
     Type() const override {
-        if (std::is_same_v<T, float>) {
-            return std::string(knowhere::IndexEnum::INDEX_DISKANN) + "FLOAT";
-        } else if (std::is_same_v<T, uint8_t>) {
-            return std::string(knowhere::IndexEnum::INDEX_DISKANN) + "UINT8";
-        } else if (std::is_same_v<T, int8_t>) {
-            return std::string(knowhere::IndexEnum::INDEX_DISKANN) + "INT8";
-        }
+        return std::string(knowhere::IndexEnum::INDEX_DISKANN);
     }
 
  private:
@@ -614,10 +607,5 @@ DiskANNIndexNode<T>::GetCachedNodeNum(const float cache_dram_budget, const uint6
     return num_nodes_to_cache;
 }
 
-KNOWHERE_REGISTER_GLOBAL(DISKANNFLOAT,
-                         [](const Object& object) { return Index<DiskANNIndexNode<float>>::Create(object); });
-KNOWHERE_REGISTER_GLOBAL(DISKANNUINT8,
-                         [](const Object& object) { return Index<DiskANNIndexNode<uint8_t>>::Create(object); });
-KNOWHERE_REGISTER_GLOBAL(DISKANNINT8,
-                         [](const Object& object) { return Index<DiskANNIndexNode<int8_t>>::Create(object); });
+KNOWHERE_REGISTER_GLOBAL(DISKANN, [](const Object& object) { return Index<DiskANNIndexNode<float>>::Create(object); });
 }  // namespace knowhere

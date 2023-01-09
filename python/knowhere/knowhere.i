@@ -28,7 +28,7 @@ typedef uint64_t size_t;
 #include <numpy/arrayobject.h>
 #endif
 #include <knowhere/factory.h>
-#include <tests/ut/local_file_manager.h>
+#include <knowhere/comp/local_file_manager.h>
 using namespace knowhere;
 %}
 
