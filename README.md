@@ -28,7 +28,7 @@ Here's a list of verified OS types where Knowhere can successfully build and run
 #### Install Dependencies
 
 ```bash
-$ sudo apt install build-essential libopenblas-dev ninja-build
+$ sudo apt install build-essential libopenblas-dev ninja-build libaio-dev libboost-program-options-dev
 ```
 
 #### Build From Source Code

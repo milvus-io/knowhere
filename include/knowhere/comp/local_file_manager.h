@@ -16,7 +16,7 @@
 #include "knowhere/file_manager.h"
 namespace knowhere {
 /**
- * @brief LocalFileManager is used for test and placeholder purpose. It will not do anything to the file on disk.
+ * @brief LocalFileManager is used for placeholder purpose. It will not do anything to the file on disk.
  *
  * This class is not thread-safe.
  */

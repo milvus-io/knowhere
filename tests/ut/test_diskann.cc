@@ -14,8 +14,8 @@
 #include "catch2/generators/catch_generators.hpp"
 #include "index/diskann/diskann.cc"
 #include "index/diskann/diskann_config.h"
+#include "knowhere/comp/local_file_manager.h"
 #include "knowhere/factory.h"
-#include "local_file_manager.h"
 #include "utils.h"
 #if __has_include(<filesystem>)
 #include <filesystem>
@@ -134,14 +134,14 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
         // build process
         {
             knowhere::DataSet* ds_ptr = nullptr;
-            auto diskann = knowhere::IndexFactory::Instance().Create("DISKANNFLOAT", diskann_index_pack);
+            auto diskann = knowhere::IndexFactory::Instance().Create("DISKANN", diskann_index_pack);
             auto build_json = build_gen().dump();
             knowhere::Json json = knowhere::Json::parse(build_json);
             diskann.Build(*ds_ptr, json);
         }
         //  knn search & range search process
         {
-            auto diskann = knowhere::IndexFactory::Instance().Create("DISKANNFLOAT", diskann_index_pack);
+            auto diskann = knowhere::IndexFactory::Instance().Create("DISKANN", diskann_index_pack);
             auto knn_search_json = knn_search_gen().dump();
             knowhere::Json knn_json = knowhere::Json::parse(knn_search_json);
             auto res = diskann.Search(*query_ds, knn_json, nullptr);

@@ -68,14 +68,14 @@ GetKNNGroundTruth(const knowhere::DataSet& base, const knowhere::DataSet& query,
                             (base_p[ndim * row + dim] - query_p[query_index * ndim + dim]));
                 }
             }
-            if (pq.size() < topk) {
+            if (pq.size() < (size_t)topk) {
                 pq.push(std::make_pair(row, dis));
             } else if (pq.top().second > dis) {
                 pq.pop();
                 pq.push(std::make_pair(row, dis));
             }
         }
-        int pq_size = pq.size();
+        uint32_t pq_size = pq.size();
         uint32_t index = 0;
         for (; index < pq_size; ++index) {
             auto& id_dis_pair = pq.top();
@@ -83,7 +83,7 @@ GetKNNGroundTruth(const knowhere::DataSet& base, const knowhere::DataSet& query,
             dis[query_index * topk + index] = id_dis_pair.second;
             pq.pop();
         }
-        for (; index < topk; ++index) {
+        for (; index < (uint32_t)topk; ++index) {
             ids[query_index * topk + index] = -1;
             dis[query_index * topk + index] = -1;
         }
