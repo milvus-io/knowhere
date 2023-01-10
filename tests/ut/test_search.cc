@@ -16,7 +16,7 @@
 #include "knowhere/factory.h"
 #include "utils.h"
 
-TEST_CASE("Test All Index Search.", "[search]") {
+TEST_CASE("Test All Mem Index Search.", "[search]") {
     using Catch::Approx;
 
     int64_t nb = 10000, nq = 1000;
@@ -165,5 +165,23 @@ TEST_CASE("Test All Index Search.", "[search]") {
         for (int i = 0; i < 1000; ++i) {
             CHECK(ids[i] == i);
         }
+    }
+
+    SECTION("Test build IVFPQ with invalid params.") {
+        auto idx = knowhere::IndexFactory::Instance().Create(knowhere::IndexEnum::INDEX_FAISS_IVFPQ);
+        uint32_t nb = 1000;
+        uint32_t dim = 128;
+        auto ivf_pq_gen = [&]() {
+            knowhere::Json json;
+            json["dim"] = dim;
+            json["metric_type"] = "L2";
+            json["k"] = 10;
+            json["m"] = 15;
+            json["nbits"] = 8;
+            return json;
+        };
+        auto train_ds = GenDataSet(nb, dim, seed);
+        auto res = idx.Build(*train_ds, ivf_pq_gen());
+        REQUIRE(res == knowhere::Status::faiss_inner_error);
     }
 }

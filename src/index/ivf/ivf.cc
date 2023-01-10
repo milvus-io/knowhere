@@ -183,6 +183,7 @@ MatchNlist(int64_t size, int64_t nlist) {
 
     if (nlist * MIN_POINTS_PER_CENTROID > size) {
         // nlist is too large, adjust to a proper value
+        LOG_KNOWHERE_WARNING_ << "nlist(" << nlist << ") is too large, adjust to a proper value";
         nlist = std::max(static_cast<int64_t>(1), size / MIN_POINTS_PER_CENTROID);
         LOG_KNOWHERE_WARNING_ << "Row num " << size << " match nlist " << nlist;
     }
@@ -193,6 +194,7 @@ int64_t
 MatchNbits(int64_t size, int64_t nbits) {
     if (size < (1 << nbits)) {
         // nbits is too large, adjust to a proper value
+        LOG_KNOWHERE_WARNING_ << "nbits(" << nbits << ") is too large, adjust to a proper value";
         if (size >= (1 << 8)) {
             nbits = 8;
         } else if (size >= (1 << 4)) {
@@ -218,39 +220,50 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
     decltype(this->qzr_) qzr = nullptr;
     decltype(this->index_) index = nullptr;
     auto dim = dataset.GetDim();
-    if constexpr (std::is_same<faiss::IndexIVFFlat, T>::value) {
-        const IvfFlatConfig& ivf_flat_cfg = static_cast<const IvfFlatConfig&>(cfg);
-        qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
-        index = new (std::nothrow) T(qzr, dim, MatchNlist(dataset.GetRows(), ivf_flat_cfg.nlist), metric.value());
-    }
-    if constexpr (std::is_same<faiss::IndexIVFPQ, T>::value) {
-        const IvfPqConfig& ivf_pq_cfg = static_cast<const IvfPqConfig&>(cfg);
-        qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
-        index = new (std::nothrow) T(qzr, dim, MatchNlist(dataset.GetRows(), ivf_pq_cfg.nlist), ivf_pq_cfg.m,
-                                     MatchNbits(dataset.GetRows(), ivf_pq_cfg.nbits), metric.value());
-    }
-    if constexpr (std::is_same<faiss::IndexIVFScalarQuantizer, T>::value) {
-        const IvfSqConfig& ivf_sq_cfg = static_cast<const IvfSqConfig&>(cfg);
-        qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
-        index = new (std::nothrow)
-            T(qzr, dim, MatchNlist(dataset.GetRows(), ivf_sq_cfg.nlist), faiss::QuantizerType::QT_8bit, metric.value());
-    }
-    if constexpr (std::is_same<faiss::IndexBinaryIVF, T>::value) {
-        const IvfBinConfig& ivf_bin_cfg = static_cast<const IvfBinConfig&>(cfg);
-        qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
-        index = new (std::nothrow) T(qzr, dim, MatchNlist(dataset.GetRows(), ivf_bin_cfg.nlist), metric.value());
-    }
-
-    if (qzr == nullptr || index == nullptr) {
+    try {
+        if constexpr (std::is_same<faiss::IndexIVFFlat, T>::value) {
+            const IvfFlatConfig& ivf_flat_cfg = static_cast<const IvfFlatConfig&>(cfg);
+            qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
+            index = new (std::nothrow) T(qzr, dim, MatchNlist(dataset.GetRows(), ivf_flat_cfg.nlist), metric.value());
+        }
+        if constexpr (std::is_same<faiss::IndexIVFPQ, T>::value) {
+            const IvfPqConfig& ivf_pq_cfg = static_cast<const IvfPqConfig&>(cfg);
+            qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
+            index = new (std::nothrow) T(qzr, dim, MatchNlist(dataset.GetRows(), ivf_pq_cfg.nlist), ivf_pq_cfg.m,
+                                         MatchNbits(dataset.GetRows(), ivf_pq_cfg.nbits), metric.value());
+        }
+        if constexpr (std::is_same<faiss::IndexIVFScalarQuantizer, T>::value) {
+            const IvfSqConfig& ivf_sq_cfg = static_cast<const IvfSqConfig&>(cfg);
+            qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
+            index = new (std::nothrow) T(qzr, dim, MatchNlist(dataset.GetRows(), ivf_sq_cfg.nlist),
+                                         faiss::QuantizerType::QT_8bit, metric.value());
+        }
+        if constexpr (std::is_same<faiss::IndexBinaryIVF, T>::value) {
+            const IvfBinConfig& ivf_bin_cfg = static_cast<const IvfBinConfig&>(cfg);
+            qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
+            index = new (std::nothrow) T(qzr, dim, MatchNlist(dataset.GetRows(), ivf_bin_cfg.nlist), metric.value());
+        }
+        if (qzr == nullptr || index == nullptr) {
+            if (qzr) {
+                delete qzr;
+            }
+            if (index) {
+                delete index;
+            }
+            LOG_KNOWHERE_WARNING_ << "memory malloc error.";
+            return Status::malloc_error;
+        }
+    } catch (std::exception& e) {
         if (qzr) {
             delete qzr;
         }
         if (index) {
             delete index;
         }
-        LOG_KNOWHERE_WARNING_ << "memory malloc error.";
-        return Status::malloc_error;
+        LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
+        return Status::faiss_inner_error;
     }
+
     auto data = dataset.GetTensor();
     auto rows = dataset.GetRows();
     try {
