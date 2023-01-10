@@ -102,7 +102,7 @@ class NeighborSet {
  private:
     size_t size_ = 0;
     size_t capacity_;
-    size_t cur_;
+    size_t cur_ = 0;
     std::vector<Neighbor> data_;
 };
 

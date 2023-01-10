@@ -36,7 +36,9 @@ typedef int FileHandle;
 #endif
 
 #include "distance.h"
+#if defined(__ARM_NEON__) && defined(__aarch64__)
 #include "distance_neon.h"
+#endif
 #include "utils.h"
 #include "logger.h"
 #include "cached_io.h"
@@ -78,8 +80,8 @@ inline bool file_exists(const std::string& name, bool dirCheck = false) {
   val = stat(name.c_str(), &buffer);
 #else
   // It is the 21st century but Windows API still thinks in 32-bit terms.
-  // Turns out calling stat() on a file > 4GB results in errno = 132 (OVERFLOW).
-  // How silly is this!? So calling _stat64()
+  // Turns out calling stat() on a file > 4GB results in errno = 132
+  // (OVERFLOW). How silly is this!? So calling _stat64()
   struct _stat64 buffer;
   val = _stat64(name.c_str(), &buffer);
 #endif
@@ -113,18 +115,21 @@ typedef uint8_t  _u8;
 typedef int8_t   _s8;
 inline void      open_file_to_write(std::ofstream&     writer,
                                     const std::string& filename) {
-       writer.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-       if (!file_exists(filename))
+  writer.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+  if (!file_exists(filename))
     writer.open(filename, std::ios::binary | std::ios::out);
   else
     writer.open(filename, std::ios::binary | std::ios::in | std::ios::out);
 
   if (writer.fail()) {
-         char buff[1024];
+    char buff[1024];
 #ifdef _WINDOWS
     strerror_s(buff, 1024, errno);
 #else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
     strerror_r(errno, buff, 1024);
+#pragma GCC diagnostic pop
 #endif
     diskann::cerr << std::string("Failed to open file") + filename +
                          " for write because " + buff

@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include <cstdio>
-#include <algorithm>
 #include <omp.h>
+#include <algorithm>
+#include <cstdio>
 
-#include <faiss/utils/utils.h>
 #include <faiss/impl/FaissAssert.h>
 #include <faiss/impl/ScalarQuantizer.h>
+#include <faiss/utils/utils.h>
 
 namespace faiss {
 
@@ -66,7 +66,7 @@ struct Codec6bit {
     }
 
     static float decode_component(const uint8_t* code, int i) {
-        uint8_t bits;
+        uint8_t bits = 0x00;
         code += (i >> 2) * 3;
         switch (i & 3) {
             case 0:
@@ -178,7 +178,7 @@ template <int SIMDWIDTH>
 struct QuantizerFP16 {};
 
 template <>
-struct QuantizerFP16<1>: Quantizer {
+struct QuantizerFP16<1> : Quantizer {
     const size_t d;
 
     QuantizerFP16(size_t d, const std::vector<float>& /* unused */) : d(d) {}
@@ -207,7 +207,7 @@ struct QuantizerFP16<1>: Quantizer {
 template <int SIMDWIDTH>
 struct Quantizer8bitDirect {};
 
-template<>
+template <>
 struct Quantizer8bitDirect<1> : Quantizer {
     const size_t d;
 
@@ -232,7 +232,7 @@ struct Quantizer8bitDirect<1> : Quantizer {
 };
 
 template <int SIMDWIDTH>
-Quantizer *select_quantizer_1(
+Quantizer* select_quantizer_1(
         QuantizerType qtype,
         size_t d,
         const std::vector<float>& trained) {
@@ -305,7 +305,7 @@ struct SimilarityL2<1> {
 template <int SIMDWIDTH>
 struct SimilarityIP {};
 
-template<>
+template <>
 struct SimilarityIP<1> {
     static constexpr int simdwidth = 1;
     static constexpr MetricType metric_type = METRIC_INNER_PRODUCT;
@@ -398,7 +398,7 @@ struct DCTemplate<Quantizer, Similarity, 1> : SQDistanceComputer {
 template <class Similarity, int SIMDWIDTH>
 struct DistanceComputerByte : SQDistanceComputer {};
 
-template<class Similarity>
+template <class Similarity>
 struct DistanceComputerByte<Similarity, 1> : SQDistanceComputer {
     using Sim = Similarity;
 
@@ -458,7 +458,7 @@ SQDistanceComputer* select_distance_computer(
         size_t d,
         const std::vector<float>& trained) {
     constexpr int SIMDWIDTH = Sim::simdwidth;
-    switch(qtype) {
+    switch (qtype) {
         case QuantizerType::QT_8bit_uniform:
             return new DCTemplate<
                     QuantizerTemplate<Codec8bit, true, SIMDWIDTH>,
@@ -508,7 +508,7 @@ SQDistanceComputer* select_distance_computer(
 }
 
 template <class DCClass>
-InvertedListScanner* sel2_InvertedListScanner (
+InvertedListScanner* sel2_InvertedListScanner(
         const ScalarQuantizer* sq,
         const Index* quantizer,
         bool store_pairs,
@@ -543,7 +543,7 @@ InvertedListScanner* sel1_InvertedListScanner(
         bool store_pairs,
         bool r) {
     constexpr int SIMDWIDTH = Similarity::simdwidth;
-    switch(sq->qtype) {
+    switch (sq->qtype) {
         case QuantizerType::QT_8bit_uniform:
             return sel12_InvertedListScanner<Similarity, Codec8bit, true>(
                     sq, quantizer, store_pairs, r);
