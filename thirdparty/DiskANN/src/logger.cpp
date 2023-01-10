@@ -8,8 +8,8 @@
 #include "ANNLoggingImpl.hpp"
 #endif
 
-#include "logger_impl.h"
-#include "windows_customizations.h"
+#include "diskann/logger_impl.h"
+#include "diskann/windows_customizations.h"
 
 namespace diskann {
 

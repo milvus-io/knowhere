@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
 
-#include <math_utils.h>
+#include "diskann/math_utils.h"
 #include <omp.h>
 #include <algorithm>
 #include <chrono>
@@ -22,12 +22,12 @@
 #include "gperftools/malloc_extension.h"
 #endif
 
-#include "logger.h"
-#include "exceptions.h"
-#include "index.h"
-#include "parameters.h"
+#include "diskann/logger.h"
+#include "diskann/exceptions.h"
+#include "diskann/index.h"
+#include "diskann/parameters.h"
 #include "tsl/robin_set.h"
-#include "utils.h"
+#include "diskann/utils.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -36,8 +36,8 @@
 #include <tsl/robin_map.h>
 
 #include <cassert>
-#include "memory_mapper.h"
-#include "partition_and_pq.h"
+#include "diskann/memory_mapper.h"
+#include "diskann/partition_and_pq.h"
 #ifdef _WINDOWS
 #include <xmmintrin.h>
 #endif
@@ -151,7 +151,7 @@ template<typename T>
 void gen_random_slice(const T *inputdata, size_t npts, size_t ndims,
                       double p_val, float *&sampled_data, size_t &slice_size) {
   std::vector<std::vector<float>> sampled_vectors;
-  const T                        *cur_vector_T;
+  const T *                       cur_vector_T;
 
   p_val = p_val < 1 ? p_val : 1;
 
@@ -482,7 +482,7 @@ int generate_pq_data_from_pivots(const std::string data_file,
 
   for (size_t block = 0; block < num_blocks; block++) {
     size_t start_id = block * block_size;
-    size_t end_id = (std::min)((block + 1) * block_size, num_points);
+    size_t end_id = (std::min) ((block + 1) * block_size, num_points);
     size_t cur_blk_size = end_id - start_id;
 
     base_reader.read((char *) (block_data_T.get()),
@@ -531,8 +531,8 @@ int generate_pq_data_from_pivots(const std::string data_file,
                     cur_chunk_size * sizeof(float));
       }
 
-      math_utils::elkan_L2(cur_data.get(), cur_pivot_data.get(), cur_chunk_size, cur_blk_size,
-                           num_centers, closest_center.get());
+      math_utils::elkan_L2(cur_data.get(), cur_pivot_data.get(), cur_chunk_size,
+                           cur_blk_size, num_centers, closest_center.get());
 
 #pragma omp parallel for schedule(static, 8192)
       for (int64_t j = 0; j < (_s64) cur_blk_size; j++) {
@@ -591,14 +591,14 @@ int estimate_cluster_sizes(float *test_data_float, size_t num_test,
   }
 
   size_t block_size = num_test <= BLOCK_SIZE ? num_test : BLOCK_SIZE;
-  _u32  *block_closest_centers = new _u32[block_size * k_base];
+  _u32 * block_closest_centers = new _u32[block_size * k_base];
   float *block_data_float;
 
   size_t num_blocks = DIV_ROUND_UP(num_test, block_size);
 
   for (size_t block = 0; block < num_blocks; block++) {
     size_t start_id = block * block_size;
-    size_t end_id = (std::min)((block + 1) * block_size, num_test);
+    size_t end_id = (std::min) ((block + 1) * block_size, num_test);
     size_t cur_blk_size = end_id - start_id;
 
     block_data_float = test_data_float + start_id * test_dim;
@@ -679,7 +679,7 @@ int shard_data_into_clusters(const std::string data_file, float *pivots,
 
   for (size_t block = 0; block < num_blocks; block++) {
     size_t start_id = block * block_size;
-    size_t end_id = (std::min)((block + 1) * block_size, num_points);
+    size_t end_id = (std::min) ((block + 1) * block_size, num_points);
     size_t cur_blk_size = end_id - start_id;
 
     base_reader.read((char *) block_data_T.get(),
@@ -775,7 +775,7 @@ int shard_data_into_clusters_only_ids(const std::string data_file,
 
   for (size_t block = 0; block < num_blocks; block++) {
     size_t start_id = block * block_size;
-    size_t end_id = (std::min)((block + 1) * block_size, num_points);
+    size_t end_id = (std::min) ((block + 1) * block_size, num_points);
     size_t cur_blk_size = end_id - start_id;
 
     base_reader.read((char *) block_data_T.get(),
@@ -853,7 +853,7 @@ int retrieve_shard_data_from_ids(const std::string data_file,
 
   for (size_t block = 0; block < num_blocks; block++) {
     size_t start_id = block * block_size;
-    size_t end_id = (std::min)((block + 1) * block_size, num_points);
+    size_t end_id = (std::min) ((block + 1) * block_size, num_points);
     size_t cur_blk_size = end_id - start_id;
 
     base_reader.read((char *) block_data_T.get(),

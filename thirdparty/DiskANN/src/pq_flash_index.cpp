@@ -1,10 +1,10 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
 
-#include "logger.h"
-#include "pq_flash_index.h"
+#include "diskann/logger.h"
+#include "diskann/pq_flash_index.h"
 #include <malloc.h>
-#include "percentile_stats.h"
+#include "diskann/percentile_stats.h"
 
 #include <omp.h>
 #include <atomic>
@@ -13,19 +13,19 @@
 #include <iterator>
 #include <random>
 #include <thread>
-#include "distance.h"
-#include "exceptions.h"
-#include "parameters.h"
-#include "timer.h"
-#include "utils.h"
+#include "diskann/distance.h"
+#include "diskann/exceptions.h"
+#include "diskann/parameters.h"
+#include "diskann/timer.h"
+#include "diskann/utils.h"
 
-#include "cosine_similarity.h"
+#include "diskann/cosine_similarity.h"
 #include "tsl/robin_set.h"
 
 #ifdef _WINDOWS
 #include "windows_aligned_file_reader.h"
 #else
-#include "linux_aligned_file_reader.h"
+#include "diskann/linux_aligned_file_reader.h"
 #endif
 
 #define READ_U64(stream, val) stream.read((char *) &val, sizeof(_u64))

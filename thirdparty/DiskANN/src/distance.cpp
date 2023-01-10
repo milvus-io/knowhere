@@ -10,14 +10,14 @@
 #include <immintrin.h>
 #endif
 
-#include "simd_utils.h"
-#include <cosine_similarity.h>
+#include "diskann/simd_utils.h"
+#include "diskann/cosine_similarity.h"
 #include <iostream>
 #include <math.h>
 
-#include "distance.h"
-#include "logger.h"
-#include "ann_exception.h"
+#include "diskann/distance.h"
+#include "diskann/logger.h"
+#include "diskann/ann_exception.h"
 
 namespace diskann {
 #if defined(__x86_64__)

@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
 
-#include "ann_exception.h"
+#include "diskann/ann_exception.h"
 #include <sstream>
 #include <string>
 

@@ -21,18 +21,18 @@
 #include <sys/stat.h>
 #include <time.h>
 
-#include "common_includes.h"
-#include "logger.h"
-#include "exceptions.h"
-#include "aligned_file_reader.h"
-#include "math_utils.h"
-#include "memory_mapper.h"
-#include "parameters.h"
-#include "partition_and_pq.h"
-#include "timer.h"
-#include "utils.h"
-#include "windows_customizations.h"
-#include "ann_exception.h"
+#include "diskann/common_includes.h"
+#include "diskann/logger.h"
+#include "diskann/exceptions.h"
+#include "diskann/aligned_file_reader.h"
+#include "diskann/math_utils.h"
+#include "diskann/memory_mapper.h"
+#include "diskann/parameters.h"
+#include "diskann/partition_and_pq.h"
+#include "diskann/timer.h"
+#include "diskann/utils.h"
+#include "diskann/windows_customizations.h"
+#include "diskann/ann_exception.h"
 #if defined(RELEASE_UNUSED_TCMALLOC_MEMORY_AT_CHECKPOINTS) && \
     defined(DISKANN_BUILD)
 #include "gperftools/malloc_extension.h"
@@ -42,7 +42,7 @@
 #if !defined(__ARM_NEON__) && !defined(__aarch64__)
 #include <xmmintrin.h>
 #endif
-#include "index.h"
+#include "diskann/index.h"
 
 #define MAX_POINTS_FOR_USING_BITSET 10000000
 

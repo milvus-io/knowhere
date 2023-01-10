@@ -1,8 +1,8 @@
 macro(__knowhere_option variable description value)
   if(NOT DEFINED ${variable})
     set(${variable}
-      ${value}
-      CACHE STRING ${description})
+        ${value}
+        CACHE STRING ${description})
   endif()
 endmacro()
 
