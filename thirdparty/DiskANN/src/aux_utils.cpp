@@ -15,17 +15,17 @@
 #include "gperftools/malloc_extension.h"
 #endif
 
-#include "logger.h"
-#include "aux_utils.h"
-#include "cached_io.h"
-#include "index.h"
+#include "diskann/logger.h"
+#include "diskann/aux_utils.h"
+#include "diskann/cached_io.h"
+#include "diskann/index.h"
 #include "omp.h"
-#include "partition_and_pq.h"
-#include "percentile_stats.h"
-#include "pq_flash_index.h"
+#include "diskann/partition_and_pq.h"
+#include "diskann/percentile_stats.h"
+#include "diskann/pq_flash_index.h"
 #include "tsl/robin_set.h"
 
-#include "utils.h"
+#include "diskann/utils.h"
 
 namespace diskann {
 
@@ -62,7 +62,7 @@ namespace diskann {
     }
 
     size_t num_blocks = DIV_ROUND_UP(fsize, read_blk_size);
-    char  *dump = new char[read_blk_size];
+    char * dump = new char[read_blk_size];
     for (_u64 i = 0; i < num_blocks; i++) {
       size_t cur_block_size = read_blk_size > fsize - (i * read_blk_size)
                                   ? fsize - (i * read_blk_size)
@@ -239,7 +239,7 @@ namespace diskann {
   T *load_warmup(MemoryMappedFiles &files, const std::string &cache_warmup_file,
                  uint64_t &warmup_num, uint64_t warmup_dim,
                  uint64_t warmup_aligned_dim) {
-    T       *warmup = nullptr;
+    T *      warmup = nullptr;
     uint64_t file_dim, file_aligned_dim;
 
     if (files.fileExists(cache_warmup_file)) {
@@ -272,7 +272,7 @@ namespace diskann {
   template<typename T>
   T *load_warmup(const std::string &cache_warmup_file, uint64_t &warmup_num,
                  uint64_t warmup_dim, uint64_t warmup_aligned_dim) {
-    T       *warmup = nullptr;
+    T *      warmup = nullptr;
     uint64_t file_dim, file_aligned_dim;
 
     if (file_exists(cache_warmup_file)) {
@@ -449,7 +449,7 @@ namespace diskann {
         // Gopal. random_shuffle() is deprecated.
         std::shuffle(final_nhood.begin(), final_nhood.end(), urng);
         nnbrs =
-            (unsigned) (std::min)(final_nhood.size(), (uint64_t) max_degree);
+            (unsigned) (std::min) (final_nhood.size(), (uint64_t) max_degree);
         // write into merged ofstream
         merged_vamana_writer.write((char *) &nnbrs, sizeof(unsigned));
         merged_vamana_writer.write((char *) final_nhood.data(),
@@ -481,7 +481,7 @@ namespace diskann {
 
     // Gopal. random_shuffle() is deprecated.
     std::shuffle(final_nhood.begin(), final_nhood.end(), urng);
-    nnbrs = (unsigned) (std::min)(final_nhood.size(), (uint64_t) max_degree);
+    nnbrs = (unsigned) (std::min) (final_nhood.size(), (uint64_t) max_degree);
     // write into merged ofstream
     merged_vamana_writer.write((char *) &nnbrs, sizeof(unsigned));
     merged_vamana_writer.write((char *) final_nhood.data(),
@@ -648,7 +648,7 @@ namespace diskann {
       if (qps > max_qps && lat_999 < (15000) + mean_latency * 2) {
         max_qps = qps;
         best_bw = cur_bw;
-        cur_bw = (uint32_t) (std::ceil)((float) cur_bw * 1.1f);
+        cur_bw = (uint32_t) (std::ceil) ((float) cur_bw * 1.1f);
       } else {
         stop_flag = true;
       }
@@ -817,8 +817,8 @@ namespace diskann {
         vamana_reader.read(nnbrs, sizeof(unsigned));
 
         // sanity checks on nnbrs
-        assert(*nnbrs > 0);
-        assert(*nnbrs <= width_u32);
+        assert(static_cast<uint32_t>(*nnbrs) > 0);
+        assert(static_cast<uint32_t>(*nnbrs) <= width_u32);
 
         // read node's nhood
         vamana_reader.read(nhood_buf, *((unsigned *) nnbrs) * sizeof(unsigned));
@@ -852,8 +852,8 @@ namespace diskann {
         vamana_reader.read(nnbrs, sizeof(unsigned));
 
         // sanity checks on nnbrs
-        assert(*nnbrs > 0);
-        assert(*nnbrs <= width_u32);
+        assert(static_cast<uint32_t>(*nnbrs) > 0);
+        assert(static_cast<uint32_t>(*nnbrs) <= width_u32);
 
         // read node's nhood
         vamana_reader.read(nhood_buf, *((unsigned *) nnbrs) * sizeof(unsigned));
@@ -985,7 +985,7 @@ namespace diskann {
     diskann::get_bin_metadata(data_file_to_use.c_str(), points_num, dim);
 
     size_t num_pq_chunks =
-        (size_t) (std::floor)(_u64(pq_code_size_limit / points_num));
+        (size_t) (std::floor) (_u64(pq_code_size_limit / points_num));
 
     num_pq_chunks = num_pq_chunks <= 0 ? 1 : num_pq_chunks;
     num_pq_chunks = num_pq_chunks > dim ? dim : num_pq_chunks;

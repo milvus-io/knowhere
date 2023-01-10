@@ -1,4 +1,4 @@
-#include "distance_neon.h"
+#include "diskann/distance_neon.h"
 #if defined(__ARM_NEON__) || defined(__aarch64__)
 #include <arm_neon.h>
 #endif

@@ -4,9 +4,9 @@
 #include <limits>
 #include <unordered_set>
 #include <malloc.h>
-#include <math_utils.h>
-#include "logger.h"
-#include "utils.h"
+#include <diskann/math_utils.h>
+#include "diskann/logger.h"
+#include "diskann/utils.h"
 
 #ifndef FINTEGER
 #define FINTEGER long
@@ -527,9 +527,9 @@ namespace kmeans {
                   dim * sizeof(float));
 
       for (int64_t i = 0; i < (_s64) num_points; i++) {
-        dist[i] = (std::min)(
-            dist[i], math_utils::calc_distance(data + i * dim,
-                                               data + tmp_pivot * dim, dim));
+        dist[i] = (std::min) (dist[i],
+                              math_utils::calc_distance(
+                                  data + i * dim, data + tmp_pivot * dim, dim));
       }
       num_picked++;
       if (num_picked % 32 == 0)

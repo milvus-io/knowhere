@@ -1,14 +1,14 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
 
-#include "linux_aligned_file_reader.h"
+#include "diskann/linux_aligned_file_reader.h"
 
 #include <cassert>
 #include <cstdio>
 #include <iostream>
 #include <sstream>
 #include "tsl/robin_map.h"
-#include "utils.h"
+#include "diskann/utils.h"
 
 namespace {
   typedef struct io_event io_event_t;
