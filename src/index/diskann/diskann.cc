@@ -165,6 +165,7 @@ namespace knowhere {
 namespace {
 static constexpr float kCacheExpansionRate = 1.2;
 static constexpr uint32_t kLinuxAioMaxnrLimit = 65536;
+static constexpr int kSearchListSizeMaxValue = 200;
 template <typename T>
 expected<T, Status>
 TryDiskANNCall(std::function<T()>&& diskann_call) {
@@ -227,20 +228,17 @@ AnyIndexFileExist(const std::string& index_prefix) {
            file_exist(GetOptionalFilenames(index_prefix));
 }
 
-inline Status
-CheckAddParams(const DiskANNConfig& diskann_cfg) {
-    if (diskann_cfg.metric_type != knowhere::metric::L2 || diskann_cfg.metric_type != knowhere::metric::IP) {
-        LOG_KNOWHERE_ERROR_ << "DiskANN currently only supports floating point data for Max Inner Product Search. "
+inline bool
+CheckMetric(const std::string& diskann_metric) {
+    if (diskann_metric != knowhere::metric::L2 && diskann_metric != knowhere::metric::IP) {
+        LOG_KNOWHERE_ERROR_ << "DiskANN currently only supports floating point data for Max Inner Product Search(IP) "
+                               "and minimum Euclidean distance(L2). "
                             << std::endl;
-        return Status::invalid_metric_type;
+        return false;
+    } else {
+        return true;
     }
-    if (AnyIndexFileExist(diskann_cfg.index_prefix)) {
-        LOG_KNOWHERE_ERROR_ << "This index prefix already has index files." << std::endl;
-        return Status::diskann_file_error;
-    }
-    return Status::success;
 }
-
 }  // namespace
 
 template <typename T>
@@ -249,7 +247,13 @@ DiskANNIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
     assert(file_manager_ != nullptr);
     std::lock_guard<std::mutex> lock(preparation_lock_);
     auto build_conf = static_cast<const DiskANNConfig&>(cfg);
-    CheckAddParams(build_conf);
+    if (!CheckMetric(build_conf.metric_type)) {
+        return Status::invalid_metric_type;
+    }
+    if (AnyIndexFileExist(build_conf.index_prefix)) {
+        LOG_KNOWHERE_ERROR_ << "This index prefix already has index files." << std::endl;
+        return Status::diskann_file_error;
+    }
     if (!LoadFile(build_conf.data_path)) {
         LOG_KNOWHERE_ERROR_ << "Failed load the raw data before building." << std::endl;
         return Status::diskann_file_error;
@@ -308,6 +312,9 @@ bool
 DiskANNIndexNode<T>::Prepare(const Config& cfg) {
     std::lock_guard<std::mutex> lock(preparation_lock_);
     auto prep_conf = static_cast<const DiskANNConfig&>(cfg);
+    if (!CheckMetric(prep_conf.metric_type)) {
+        return false;
+    }
     if (is_prepared_.load()) {
         return true;
     }
@@ -376,8 +383,8 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
     auto num_nodes_to_cache = GetCachedNodeNum(prep_conf.search_cache_budget_gb, pq_flash_index_->get_data_dim(),
                                                pq_flash_index_->get_max_degree());
     if (num_nodes_to_cache > pq_flash_index_->get_num_points() / 3) {
-        LOG_KNOWHERE_ERROR_
-            << "Failed to generate cache, num_nodes_to_cache is larger than 1/3 of the total data number.";
+        LOG_KNOWHERE_ERROR_ << "Failed to generate cache, num_nodes_to_cache(" << num_nodes_to_cache
+                            << ") is larger than 1/3 of the total data number.";
         return false;
     }
     if (num_nodes_to_cache > 0) {
@@ -479,6 +486,14 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
     }
 
     auto search_conf = static_cast<const DiskANNConfig&>(cfg);
+    if (!CheckMetric(search_conf.metric_type)) {
+        return unexpected(Status::invalid_metric_type);
+    }
+    auto max_search_list_size = std::max(kSearchListSizeMaxValue, search_conf.k * 10);
+    if (search_conf.search_list_size > max_search_list_size || search_conf.search_list_size < search_conf.k) {
+        LOG_KNOWHERE_ERROR_ << "search_list_size should be in range: [topk, max(200, topk * 10)]";
+        return unexpected(Status::invalid_args);
+    }
     auto k = static_cast<uint64_t>(search_conf.k);
     auto lsearch = static_cast<uint64_t>(search_conf.search_list_size);
     auto beamwidth = static_cast<uint64_t>(search_conf.beamwidth);
@@ -536,6 +551,13 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
     }
 
     auto search_conf = static_cast<const DiskANNConfig&>(cfg);
+    if (!CheckMetric(search_conf.metric_type)) {
+        return unexpected(Status::invalid_metric_type);
+    }
+    if (search_conf.min_k > search_conf.max_k) {
+        LOG_KNOWHERE_ERROR_ << "min_k should be smaller than max_k";
+        return unexpected(Status::invalid_args);
+    }
     auto beamwidth = static_cast<uint64_t>(search_conf.beamwidth);
     auto min_k = static_cast<uint64_t>(search_conf.min_k);
     auto max_k = static_cast<uint64_t>(search_conf.max_k);
