@@ -343,6 +343,7 @@ namespace diskann {
       node_list.push_back(this->node_visit_counter[i].first);
     }
     this->count_visited_nodes = false;
+    std::vector<std::pair<_u32, _u32>>().swap(this->node_visit_counter);
 
     diskann::aligned_free(samples);
   }
