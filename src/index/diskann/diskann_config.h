@@ -90,7 +90,7 @@ class DiskANNConfig : public BaseConfig {
         KNOWHERE_CONFIG_DECLARE_FIELD(max_degree)
             .description("the degree of the graph index.")
             .set_default(48)
-            .set_range(1, 512)
+            .set_range(1, std::numeric_limits<CFG_INT>::max())
             .for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(search_list_size)
             .description("the size of search list during the index build.")

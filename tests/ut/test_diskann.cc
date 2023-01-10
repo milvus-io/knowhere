@@ -55,6 +55,91 @@ WriteRawDataToDisk(const std::string data_path, const float* raw_data, const uin
 
 }  // namespace
 
+TEST_CASE("Invalid diskann params test", "[diskann]") {
+    fs::remove_all(kDir);
+    fs::remove(kDir);
+    REQUIRE_NOTHROW(fs::create_directory(kDir));
+    REQUIRE_NOTHROW(fs::create_directory(kL2IndexDir));
+    REQUIRE_NOTHROW(fs::create_directory(kIPIndexDir));
+    auto test_gen = []() {
+        knowhere::Json json;
+        json["dim"] = kDim;
+        json["metric_type"] = "L2";
+        json["k"] = 100;
+        json["index_prefix"] = kL2IndexPrefix;
+        json["data_path"] = kRawDataPath;
+        json["max_degree"] = 24;
+        json["search_list_size"] = 64;
+        json["pq_code_budget_gb"] = sizeof(float) * kDim * kNumRows * 0.125 / (1024 * 1024 * 1024);
+        json["build_dram_budget_gb"] = 32.0;
+        json["search_cache_budget_gb"] = sizeof(float) * kDim * kNumRows * 0.05 / (1024 * 1024 * 1024);
+        json["beamwidth"] = 8;
+        json["min_k"] = 10;
+        json["max_k"] = 8000;
+        json["search_list_and_k_ratio"] = 2.0;
+        return json;
+    };
+    std::shared_ptr<knowhere::FileManager> file_manager = std::make_shared<knowhere::LocalFileManager>();
+    auto diskann_index_pack = knowhere::Pack(file_manager);
+    auto base_ds = GenDataSet(kNumRows, kDim, 30);
+    auto base_ptr = static_cast<const float*>(base_ds->GetTensor());
+    WriteRawDataToDisk(kRawDataPath, base_ptr, kNumRows, kDim);
+    // build process
+    SECTION("Invalid build params test") {
+        knowhere::DataSet* ds_ptr = nullptr;
+        auto diskann = knowhere::IndexFactory::Instance().Create("DISKANN", diskann_index_pack);
+        knowhere::Json test_json;
+        knowhere::Status test_stat;
+        // invalid metric type
+        test_json = test_gen();
+        test_json["metric_type"] = knowhere::metric::TANIMOTO;
+        test_stat = diskann.Build(*ds_ptr, test_json);
+        REQUIRE(test_stat == knowhere::Status::invalid_metric_type);
+        // raw data path not exist
+        test_json = test_gen();
+        test_json["data_path"] = kL2IndexPrefix + ".temp";
+        test_stat = diskann.Build(*ds_ptr, test_json);
+        REQUIRE(test_stat == knowhere::Status::diskann_file_error);
+    }
+
+    SECTION("Invalid search params test") {
+        knowhere::DataSet* ds_ptr = nullptr;
+        auto diskann = knowhere::IndexFactory::Instance().Create("DISKANN", diskann_index_pack);
+        diskann.Build(*ds_ptr, test_gen());
+
+        knowhere::Json test_json;
+        auto query_ds = GenDataSet(kNumQueries, kDim, 42);
+
+        // large cache size
+        {
+            test_json = test_gen();
+            test_json["search_cache_budget_gb"] = 1.0;
+            auto res = diskann.Search(*query_ds, test_json, nullptr);
+            REQUIRE_FALSE(res.has_value());
+            REQUIRE(res.error() == knowhere::Status::empty_index);
+        }
+        // search list size < topk
+        {
+            test_json = test_gen();
+            test_json["search_list_size"] = 1;
+            auto res = diskann.Search(*query_ds, test_json, nullptr);
+            REQUIRE_FALSE(res.has_value());
+            REQUIRE(res.error() == knowhere::Status::invalid_args);
+        }
+        // min_k > max_k
+        {
+            test_json = test_gen();
+            test_json["min_k"] = 10000;
+            test_json["max_k"] = 100;
+            auto res = diskann.RangeSearch(*query_ds, test_json, nullptr);
+            REQUIRE_FALSE(res.has_value());
+            REQUIRE(res.error() == knowhere::Status::invalid_args);
+        }
+    }
+    fs::remove_all(kDir);
+    fs::remove(kDir);
+}
+
 TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
     fs::remove_all(kDir);
     fs::remove(kDir);

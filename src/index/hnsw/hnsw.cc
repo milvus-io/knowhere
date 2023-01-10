@@ -91,14 +91,15 @@ class HnswIndexNode : public IndexNode {
             LOG_KNOWHERE_WARNING_ << "search on empty index";
             return unexpected(Status::empty_index);
         }
-
         auto nq = dataset.GetRows();
         auto dim = dataset.GetDim();
         const float* xq = static_cast<const float*>(dataset.GetTensor());
 
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
         auto k = hnsw_cfg.k;
-
+        if (k > hnsw_cfg.ef) {
+            return unexpected(Status::invalid_args);
+        }
         feder::hnsw::FederResultUniq feder_result;
         if (hnsw_cfg.trace_visit) {
             if (nq != 1) {
