@@ -342,23 +342,12 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
     }
 
     // set thread pool
-    auto num_thread_max_value = kLinuxAioMaxnrLimit / prep_conf.aio_maxnr;
     pool_ = ThreadPool::GetGlobalThreadPool();
-
-    // The number of threads used for preparing and searching. Threads run in parallel and one thread handles one query
-    // at a time. More threads will result in higher aggregate query throughput, but will also use more IOs/second
-    // across the system, which may lead to higher per-query latency. So find the balance depending on the maximum
-    // number of IOPs supported by the SSD.
-    if (num_thread_max_value < pool_->size()) {
-        LOG_KNOWHERE_ERROR_ << "The global thread pool is too large for DiskANN. Expected max: " << num_thread_max_value
-                            << ", actual:" << pool_->size();
-        return false;
-    }
 
     // load diskann pq code and meta info
     std::shared_ptr<AlignedFileReader> reader = nullptr;
 
-    reader.reset(new LinuxAlignedFileReader(prep_conf.aio_maxnr));
+    reader.reset(new LinuxAlignedFileReader());
 
     pq_flash_index_ = std::make_unique<diskann::PQFlashIndex<T>>(reader, diskann_metric);
 

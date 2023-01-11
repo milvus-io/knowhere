@@ -139,8 +139,6 @@ namespace diskann {
     for (_s64 thread = 0; thread < (_s64) nthreads; thread++) {
 #pragma omp critical
       {
-        this->reader->register_thread();
-        IOContext      &ctx = this->reader->get_ctx();
         QueryScratch<T> scratch;
         _u64 coord_alloc_size = ROUND_UP(sizeof(T) * this->aligned_dim, 256);
         diskann::alloc_aligned((void **) &scratch.coord_scratch,
@@ -170,7 +168,6 @@ namespace diskann {
                this->aligned_dim * sizeof(float));
 
         ThreadData<T> data;
-        data.ctx = ctx;
         data.scratch = scratch;
         this->thread_data.push(data);
       }
@@ -199,7 +196,6 @@ namespace diskann {
 
       delete scratch.visited;
     }
-    this->reader->deregister_all_threads();
   }
 
   template<typename T>
@@ -214,7 +210,7 @@ namespace diskann {
       this_thread_data = this->thread_data.pop();
     }
 
-    IOContext &ctx = this_thread_data.ctx;
+    auto ctx = this->reader->get_ctx();
 
     nhood_cache_buf = new unsigned[num_cached_nodes * (max_degree + 1)];
     memset(nhood_cache_buf, 0, num_cached_nodes * (max_degree + 1));
@@ -278,6 +274,7 @@ namespace diskann {
     // return thread data
     this->thread_data.push(this_thread_data);
     this->thread_data.push_notify_all();
+    this->reader->put_ctx(ctx);
     LOG(DEBUG) << "done.";
   }
 
@@ -362,7 +359,7 @@ namespace diskann {
       this_thread_data = this->thread_data.pop();
     }
 
-    IOContext &ctx = this_thread_data.ctx;
+    auto ctx = this->reader->get_ctx();
 
     std::unique_ptr<tsl::robin_set<unsigned>> cur_level, prev_level;
     cur_level = std::make_unique<tsl::robin_set<unsigned>>();
@@ -473,6 +470,7 @@ namespace diskann {
     // return thread data
     this->thread_data.push(this_thread_data);
     this->thread_data.push_notify_all();
+    this->reader->put_ctx(ctx);
 
     LOG(INFO) << "done";
   }
@@ -491,7 +489,7 @@ namespace diskann {
       this->thread_data.wait_for_push_notify();
       data = this->thread_data.pop();
     }
-    IOContext &ctx = data.ctx;
+    auto ctx = this->reader->get_ctx();
     LOG(INFO) << "Loading centroid data from medoids vector data of "
               << num_medoids << " medoid(s)";
     for (uint64_t cur_m = 0; cur_m < num_medoids; cur_m++) {
@@ -528,6 +526,7 @@ namespace diskann {
     // return ctx
     this->thread_data.push(data);
     this->thread_data.push_notify_all();
+    this->reader->put_ctx(ctx);
   }
 
 #ifdef EXEC_ENV_OLS
@@ -817,6 +816,7 @@ namespace diskann {
       this->thread_data.wait_for_push_notify();
       data = this->thread_data.pop();
     }
+    auto ctx = this->reader->get_ctx();
 
     if (beam_width > MAX_N_SECTOR_READS)
       throw ANNException("Beamwidth can not be higher than MAX_N_SECTOR_READS",
@@ -857,7 +857,6 @@ namespace diskann {
       }
     }
 
-    IOContext &ctx = data.ctx;
     auto       query_scratch = &(data.scratch);
 
     // reset query
@@ -1150,8 +1149,8 @@ namespace diskann {
               continue;
             Neighbor nn(id, dist, true);
             auto     r = InsertIntoPool(
-                    retset.data(), cur_list_size,
-                    nn);  // Return position in sorted list where nn inserted.
+                retset.data(), cur_list_size,
+                nn);  // Return position in sorted list where nn inserted.
             if (cur_list_size < l_search)
               ++cur_list_size;
             if (r < nk)
@@ -1255,7 +1254,7 @@ namespace diskann {
 
     this->thread_data.push(data);
     this->thread_data.push_notify_all();
-
+    this->reader->put_ctx(ctx);
     // std::cout << num_ios << " " <<stats << std::endl;
 
     if (stats != nullptr) {
