@@ -56,7 +56,6 @@ namespace diskann {
   template<typename T>
   struct ThreadData {
     QueryScratch<T> scratch;
-    IOContext       ctx;
   };
 
   template<typename T>

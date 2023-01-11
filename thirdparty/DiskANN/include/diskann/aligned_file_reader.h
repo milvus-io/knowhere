@@ -80,17 +80,11 @@ class AlignedFileReader {
   std::mutex                                 ctx_mut;
 
  public:
-  // returns the thread-specific context
-  // returns (io_context_t)(-1) if thread is not registered
-  virtual IOContext& get_ctx() = 0;
-
   virtual ~AlignedFileReader(){};
 
-  // register thread-id for a context
-  virtual void register_thread() = 0;
-  // de-register thread-id for a context
-  virtual void deregister_thread() = 0;
-  virtual void deregister_all_threads() = 0;
+  virtual IOContext get_ctx() = 0;
+
+  virtual void put_ctx(IOContext) = 0;
 
   // Open & close ops
   // Blocking calls
