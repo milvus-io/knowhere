@@ -164,7 +164,6 @@ class DiskANNIndexNode : public IndexNode {
 namespace knowhere {
 namespace {
 static constexpr float kCacheExpansionRate = 1.2;
-static constexpr uint32_t kLinuxAioMaxnrLimit = 65536;
 static constexpr int kSearchListSizeMaxValue = 200;
 template <typename T>
 expected<T, Status>
