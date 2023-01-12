@@ -117,8 +117,13 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere, public ::testi
         assert(metric_str_ == METRIC_IP_STR || metric_str_ == METRIC_L2_STR);
         metric_type_ = (metric_str_ == METRIC_IP_STR) ? knowhere::metric::IP : knowhere::metric::L2;
         knowhere::SetMetaMetricType(cfg_, metric_type_);
-        knowhere::SetMetaRadiusLowBound(cfg_, 0.0f);
-        knowhere::SetMetaRadiusHighBound(cfg_, *gt_radius_);
+        if (metric_type_ == knowhere::metric::IP) {
+            knowhere::SetMetaRadiusLowBound(cfg_, *gt_radius_);
+            knowhere::SetMetaRadiusHighBound(cfg_, 1.01f);
+        } else {
+            knowhere::SetMetaRadiusLowBound(cfg_, 0.0f);
+            knowhere::SetMetaRadiusHighBound(cfg_, *gt_radius_);
+        }
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX2);
         printf("faiss::distance_compute_blas_threshold: %ld\n", knowhere::KnowhereConfig::GetBlasThreshold());
     }

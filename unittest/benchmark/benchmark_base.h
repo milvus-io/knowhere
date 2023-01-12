@@ -24,6 +24,7 @@ class Benchmark_base {
  public:
     inline void
     normalize(float* arr, int32_t nq, int32_t dim) {
+#pragma omp parallel for
         for (int32_t i = 0; i < nq; i++) {
             double vecLen = 0.0, inv_vecLen = 0.0;
             for (int32_t j = 0; j < dim; j++) {
