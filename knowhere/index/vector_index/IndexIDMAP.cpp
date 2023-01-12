@@ -231,14 +231,18 @@ IDMAP::QueryByRangeImpl(int64_t n,
                         const Config& config,
                         const faiss::BitsetView bitset) {
     auto idmap_index = dynamic_cast<faiss::IndexFlat*>(index_.get());
-    float low_bound = GetMetaRadiusLowBound(config);
-    float high_bound = GetMetaRadiusHighBound(config);
+    float radius = GetMetaRadius(config);
     bool is_ip = (idmap_index->metric_type == faiss::METRIC_INNER_PRODUCT);
-    float radius = (is_ip ? low_bound : high_bound);
 
     faiss::RangeSearchResult res(n);
     idmap_index->range_search(n, reinterpret_cast<const float*>(data), radius, &res, bitset);
-    GetRangeSearchResult(res, is_ip, n, low_bound, high_bound, distances, labels, lims, bitset);
+
+    if (CheckKeyInConfig(config, meta::RANGE_FILTER)) {
+        float range_filter = GetMetaRangeFilter(config);
+        GetRangeSearchResult(res, is_ip, n, radius, range_filter, distances, labels, lims, bitset);
+    } else {
+        GetRangeSearchResult(res, is_ip, n, radius, distances, labels, lims);
+    }
 }
 
 }  // namespace knowhere

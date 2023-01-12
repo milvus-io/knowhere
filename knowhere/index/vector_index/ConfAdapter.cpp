@@ -104,14 +104,7 @@ bool
 ConfAdapter::CheckRangeSearch(Config& cfg, const IndexType type, const IndexMode mode) {
     const float DEFAULT_MIN_RADIUS = -1.0;
     const float DEFAULT_MAX_RADIUS = std::numeric_limits<float>::max();
-    CheckFloatRange(cfg, meta::RADIUS_LOW_BOUND, DEFAULT_MIN_RADIUS, DEFAULT_MAX_RADIUS);
-    CheckFloatRange(cfg, meta::RADIUS_HIGH_BOUND, DEFAULT_MIN_RADIUS, DEFAULT_MAX_RADIUS);
-    float low_bound = GetValueFromConfig<float>(cfg, meta::RADIUS_LOW_BOUND);
-    float high_bound = GetValueFromConfig<float>(cfg, meta::RADIUS_HIGH_BOUND);
-    if (low_bound >= high_bound) {
-        KNOWHERE_THROW_FORMAT("Param 'RADIUS_LOW_BOUND'(%f) must be smaller than 'RADIUS_HIGH_BOUND'(%f)", low_bound,
-                              high_bound);
-    }
+    CheckFloatRange(cfg, meta::RADIUS, DEFAULT_MIN_RADIUS, DEFAULT_MAX_RADIUS);
     return true;
 }
 

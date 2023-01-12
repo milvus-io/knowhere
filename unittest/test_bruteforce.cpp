@@ -103,7 +103,7 @@ TEST_P(BruteForceTest, float_range_search_l2) {
 
     auto qd = knowhere::GenDataset(nq, dim, xq.data());
 
-    auto test_range_search_l2 = [&](const float low_bound, const float high_bound, const faiss::BitsetView bitset) {
+    auto test_range_search_l2 = [&](const float range_filter, const float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
@@ -113,15 +113,15 @@ TEST_P(BruteForceTest, float_range_search_l2) {
         auto config = knowhere::Config{
             {knowhere::meta::METRIC_TYPE, metric_type},
             {knowhere::meta::DIM, dim},
-            {knowhere::meta::RADIUS_LOW_BOUND, low_bound},
-            {knowhere::meta::RADIUS_HIGH_BOUND, high_bound},
+            {knowhere::meta::RADIUS, radius},
+            {knowhere::meta::RANGE_FILTER, range_filter},
         };
 
         RunFloatRangeSearchBF(golden_labels, golden_distances, golden_lims, metric_type,
-                              xb.data(), nb, xq.data(), nq, dim, low_bound, high_bound, bitset);
+                              xb.data(), nb, xq.data(), nq, dim, radius, range_filter, bitset);
 
         auto result = knowhere::BruteForce::RangeSearch(base_dataset, query_dataset, config, bitset);
-        CheckRangeSearchResult(result, metric_type, nq, low_bound, high_bound,
+        CheckRangeSearchResult(result, metric_type, nq, radius, range_filter,
                                golden_labels.data(), golden_lims.data(), true, bitset);
     };
 
@@ -146,7 +146,7 @@ TEST_P(BruteForceTest, float_range_search_ip) {
     normalize(xb.data(), nb, dim);
     normalize(xq.data(), nq, dim);
 
-    auto test_range_search_ip = [&](const float low_bound, const float high_bound, const faiss::BitsetView bitset) {
+    auto test_range_search_ip = [&](const float range_filter, const float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
@@ -156,15 +156,15 @@ TEST_P(BruteForceTest, float_range_search_ip) {
         auto config = knowhere::Config{
             {knowhere::meta::METRIC_TYPE, metric_type},
             {knowhere::meta::DIM, dim},
-            {knowhere::meta::RADIUS_LOW_BOUND, low_bound},
-            {knowhere::meta::RADIUS_HIGH_BOUND, high_bound},
+            {knowhere::meta::RADIUS, radius},
+            {knowhere::meta::RANGE_FILTER, range_filter},
         };
 
         RunFloatRangeSearchBF(golden_labels, golden_distances, golden_lims, metric_type,
-                              xb.data(), nb, xq.data(), nq, dim, low_bound, high_bound, bitset);
+                              xb.data(), nb, xq.data(), nq, dim, radius, range_filter, bitset);
 
         auto result = knowhere::BruteForce::RangeSearch(base_dataset, query_dataset, config, bitset);
-        CheckRangeSearchResult(result, metric_type, nq, low_bound, high_bound,
+        CheckRangeSearchResult(result, metric_type, nq, radius, range_filter,
                                golden_labels.data(), golden_lims.data(), true, bitset);
     };
 
@@ -172,9 +172,9 @@ TEST_P(BruteForceTest, float_range_search_ip) {
     for (int64_t blas_threshold : {0, 20}) {
         knowhere::KnowhereConfig::SetBlasThreshold(blas_threshold);
         for (std::pair<float, float> range: {
-        std::make_pair<float, float>(0.70f, 0.75f),
-        std::make_pair<float, float>(0.75f, 0.80f),
-        std::make_pair<float, float>(0.80f, 1.01f)}) {
+            std::make_pair<float, float>(1.01f, 0.80f),
+            std::make_pair<float, float>(0.80f, 0.75f),
+            std::make_pair<float, float>(0.75f, 0.70f)}) {
             test_range_search_ip(range.first, range.second, nullptr);
             test_range_search_ip(range.first, range.second, *bitset);
         }
@@ -186,7 +186,7 @@ TEST_P(BruteForceTest, binary_range_search_hamming) {
     Init_with_default(true);
     auto metric_type = knowhere::metric::HAMMING;
 
-    auto test_range_search_hamming = [&](const float low_bound, const float high_bound, const faiss::BitsetView bitset) {
+    auto test_range_search_hamming = [&](const float range_filter, const float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
@@ -196,15 +196,15 @@ TEST_P(BruteForceTest, binary_range_search_hamming) {
         auto config = knowhere::Config{
             {knowhere::meta::METRIC_TYPE, metric_type},
             {knowhere::meta::DIM, dim},
-            {knowhere::meta::RADIUS_LOW_BOUND, low_bound},
-            {knowhere::meta::RADIUS_HIGH_BOUND, high_bound},
+            {knowhere::meta::RADIUS, radius},
+            {knowhere::meta::RANGE_FILTER, range_filter},
         };
 
         RunBinaryRangeSearchBF(golden_labels, golden_distances, golden_lims, metric_type,
-                               xb_bin.data(), nb, xq_bin.data(), nq, dim, low_bound, high_bound, bitset);
+                               xb_bin.data(), nb, xq_bin.data(), nq, dim, radius, range_filter, bitset);
 
         auto result = knowhere::BruteForce::RangeSearch(base_dataset, query_dataset, config, bitset);
-        CheckRangeSearchResult(result, metric_type, nq, low_bound, high_bound,
+        CheckRangeSearchResult(result, metric_type, nq, radius, range_filter,
                                golden_labels.data(), golden_lims.data(), true, bitset);
     };
 
@@ -221,7 +221,7 @@ TEST_P(BruteForceTest, binary_range_search_jaccard) {
     Init_with_default(true);
     auto metric_type = knowhere::metric::JACCARD;
 
-    auto test_range_search_jaccard = [&](const float low_bound, const float high_bound, const faiss::BitsetView bitset) {
+    auto test_range_search_jaccard = [&](const float range_filter, const float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
@@ -231,14 +231,14 @@ TEST_P(BruteForceTest, binary_range_search_jaccard) {
         auto config = knowhere::Config{
             {knowhere::meta::METRIC_TYPE, metric_type},
             {knowhere::meta::DIM, dim},
-            {knowhere::meta::RADIUS_LOW_BOUND, low_bound},
-            {knowhere::meta::RADIUS_HIGH_BOUND, high_bound},
+            {knowhere::meta::RADIUS, radius},
+            {knowhere::meta::RANGE_FILTER, range_filter},
         };
         RunBinaryRangeSearchBF(golden_labels, golden_distances, golden_lims, knowhere::metric::JACCARD,
-                               xb_bin.data(), nb, xq_bin.data(), nq, dim, low_bound, high_bound, bitset);
+                               xb_bin.data(), nb, xq_bin.data(), nq, dim, radius, range_filter, bitset);
 
         auto result = knowhere::BruteForce::RangeSearch(base_dataset, query_dataset, config, bitset);
-        CheckRangeSearchResult(result, metric_type, nq, low_bound, high_bound,
+        CheckRangeSearchResult(result, metric_type, nq, radius, range_filter,
                                golden_labels.data(), golden_lims.data(), true, bitset);
     };
 
@@ -255,7 +255,7 @@ TEST_P(BruteForceTest, binary_range_search_tanimoto) {
     Init_with_default(true);
     auto metric_type = knowhere::metric::TANIMOTO;
 
-    auto test_range_search_tanimoto = [&](const float low_bound, const float high_bound, const faiss::BitsetView bitset) {
+    auto test_range_search_tanimoto = [&](const float range_filter, const float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
@@ -265,14 +265,14 @@ TEST_P(BruteForceTest, binary_range_search_tanimoto) {
         auto config = knowhere::Config{
             {knowhere::meta::METRIC_TYPE, metric_type},
             {knowhere::meta::DIM, dim},
-            {knowhere::meta::RADIUS_LOW_BOUND, low_bound},
-            {knowhere::meta::RADIUS_HIGH_BOUND, high_bound},
+            {knowhere::meta::RADIUS, radius},
+            {knowhere::meta::RANGE_FILTER, range_filter},
         };
         RunBinaryRangeSearchBF(golden_labels, golden_distances, golden_lims, metric_type,
-                               xb_bin.data(), nb, xq_bin.data(), nq, dim, low_bound, high_bound, bitset);
+                               xb_bin.data(), nb, xq_bin.data(), nq, dim, radius, range_filter, bitset);
 
         auto result = knowhere::BruteForce::RangeSearch(base_dataset, query_dataset, config, bitset);
-        CheckRangeSearchResult(result, metric_type, nq, low_bound, high_bound,
+        CheckRangeSearchResult(result, metric_type, nq, radius, range_filter,
                                golden_labels.data(), golden_lims.data(), true, bitset);
     };
 

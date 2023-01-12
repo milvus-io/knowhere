@@ -66,8 +66,8 @@ inline void RunFloatRangeSearchBF(
     const float* xq,
     const int64_t nq,
     const int64_t dim,
-    const float low_bound,
-    const float high_bound,
+    const float radius,
+    const float range_filter,
     const faiss::BitsetView bitset) {
 
     bool is_ip = (metric_type == knowhere::metric::IP);
@@ -81,7 +81,7 @@ inline void RunFloatRangeSearchBF(
             if (bitset.empty() || !bitset.test(j)) {
                 const float* pb = xb + j * dim;
                 auto dist = float_vec_dist(metric_type, pq, pb, dim);
-                if (knowhere::distance_in_range(dist, low_bound, high_bound, is_ip)) {
+                if (knowhere::distance_in_range(dist, radius, range_filter, is_ip)) {
                     ids_v[i].push_back(j);
                     distances_v[i].push_back(dist);
                 }
@@ -107,8 +107,8 @@ inline void RunBinaryRangeSearchBF(
     const uint8_t* xq,
     const int64_t nq,
     const int64_t dim,
-    const float low_bound,
-    const float high_bound,
+    const float radius,
+    const float range_filter,
     const faiss::BitsetView bitset) {
 
     std::vector<std::vector<int64_t>> ids_v(nq);
@@ -121,7 +121,7 @@ inline void RunBinaryRangeSearchBF(
             if (bitset.empty() || !bitset.test(j)) {
                 const uint8_t* pb = xb + j * dim / 8;
                 auto dist = binary_vec_dist(metric_type, pq, pb, dim/8);
-                if (knowhere::distance_in_range(dist, low_bound, high_bound, false)) {
+                if (knowhere::distance_in_range(dist, radius, range_filter, false)) {
                     ids_v[i].push_back(j);
                     distances_v[i].push_back(dist);
                 }
@@ -141,8 +141,8 @@ inline void CheckRangeSearchResult(
     const knowhere::DatasetPtr& result,
     const knowhere::MetricType& metric_type,
     const int64_t nq,
-    const float low_bound,
-    const float high_bound,
+    const float radius,
+    const float range_filter,
     const int64_t* golden_ids,
     const size_t* golden_lims,
     const bool is_idmap,
@@ -173,7 +173,7 @@ inline void CheckRangeSearchResult(
                 // only IDMAP always hit
                 ASSERT_TRUE(hit);
             }
-            ASSERT_TRUE(knowhere::distance_in_range(distances[j], low_bound, high_bound, is_ip));
+            ASSERT_TRUE(knowhere::distance_in_range(distances[j], radius, range_filter, is_ip));
         }
 
         int64_t accuracy_cnt = 0;

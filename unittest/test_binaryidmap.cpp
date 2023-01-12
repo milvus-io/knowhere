@@ -167,18 +167,18 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_hamming) {
 
     auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
 
-    auto test_range_search_hamming = [&](const float low_bound, const float high_bound, const faiss::BitsetView bitset) {
+    auto test_range_search_hamming = [&](const float range_filter, const float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
         RunBinaryRangeSearchBF(golden_labels, golden_distances, golden_lims, knowhere::metric::HAMMING,
-                               xb_bin.data(), nb, xq_bin.data(), nq, dim, low_bound, high_bound, bitset);
+                               xb_bin.data(), nb, xq_bin.data(), nq, dim, radius, range_filter, bitset);
 
         auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
         ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult(result, metric_type, nq, low_bound, high_bound, golden_labels.data(), golden_lims.data(),
+        CheckRangeSearchResult(result, metric_type, nq, radius, range_filter, golden_labels.data(), golden_lims.data(),
                                true, bitset);
     };
 
@@ -186,8 +186,8 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_hamming) {
         std::make_pair<float, float>(0.0f, 45.0f),
         std::make_pair<float, float>(45.0f, 48.0f),
         std::make_pair<float, float>(48.0f, 50.0f)}) {
-        knowhere::SetMetaRadiusLowBound(conf_, range.first);
-        knowhere::SetMetaRadiusHighBound(conf_, range.second);
+        knowhere::SetMetaRangeFilter(conf_, range.first);
+        knowhere::SetMetaRadius(conf_, range.second);
         test_range_search_hamming(range.first, range.second, nullptr);
         test_range_search_hamming(range.first, range.second, *bitset);
     }
@@ -204,18 +204,18 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_jaccard) {
 
     auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
 
-    auto test_range_search_jaccard = [&](const float low_bound, const float high_bound, const faiss::BitsetView bitset) {
+    auto test_range_search_jaccard = [&](const float range_filter, const float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
         RunBinaryRangeSearchBF(golden_labels, golden_distances, golden_lims, knowhere::metric::JACCARD,
-                               xb_bin.data(), nb, xq_bin.data(), nq, dim, low_bound, high_bound, bitset);
+                               xb_bin.data(), nb, xq_bin.data(), nq, dim, radius, range_filter, bitset);
 
         auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
         ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult(result, metric_type, nq, low_bound, high_bound,
+        CheckRangeSearchResult(result, metric_type, nq, radius, range_filter,
                                golden_labels.data(), golden_lims.data(), true, bitset);
     };
 
@@ -223,8 +223,8 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_jaccard) {
         std::make_pair<float, float>(0.0f, 0.5f),
         std::make_pair<float, float>(0.5f, 0.55f),
         std::make_pair<float, float>(0.55f, 0.6f)}) {
-        knowhere::SetMetaRadiusLowBound(conf_, range.first);
-        knowhere::SetMetaRadiusHighBound(conf_, range.second);
+        knowhere::SetMetaRangeFilter(conf_, range.first);
+        knowhere::SetMetaRadius(conf_, range.second);
         test_range_search_jaccard(range.first, range.second, nullptr);
         test_range_search_jaccard(range.first, range.second, *bitset);
     }
@@ -240,18 +240,18 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_tanimoto) {
 
     auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
 
-    auto test_range_search_tanimoto = [&](const float low_bound, const float high_bound, const faiss::BitsetView bitset) {
+    auto test_range_search_tanimoto = [&](const float range_filter, const float radius, const faiss::BitsetView bitset) {
         std::vector<int64_t> golden_labels;
         std::vector<float> golden_distances;
         std::vector<size_t> golden_lims;
         RunBinaryRangeSearchBF(golden_labels, golden_distances, golden_lims, knowhere::metric::TANIMOTO,
-                               xb_bin.data(), nb, xq_bin.data(), nq, dim, low_bound, high_bound, bitset);
+                               xb_bin.data(), nb, xq_bin.data(), nq, dim, radius, range_filter, bitset);
 
         auto adapter = knowhere::AdapterMgr::GetInstance().GetAdapter(index_type_);
         ASSERT_TRUE(adapter->CheckRangeSearch(conf_, index_type_, index_mode_));
 
         auto result = index_->QueryByRange(qd, conf_, bitset);
-        CheckRangeSearchResult(result, metric_type, nq, low_bound, high_bound,
+        CheckRangeSearchResult(result, metric_type, nq, radius, range_filter,
                                golden_labels.data(), golden_lims.data(), true, bitset);
     };
 
@@ -259,8 +259,8 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_tanimoto) {
         std::make_pair<float, float>(0.0f, 1.0f),
         std::make_pair<float, float>(1.0f, 1.2f),
         std::make_pair<float, float>(1.2f, 1.5f)}) {
-        knowhere::SetMetaRadiusLowBound(conf_, range.first);
-        knowhere::SetMetaRadiusHighBound(conf_, range.second);
+        knowhere::SetMetaRangeFilter(conf_, range.first);
+        knowhere::SetMetaRadius(conf_, range.second);
         test_range_search_tanimoto(range.first, range.second, nullptr);
         test_range_search_tanimoto(range.first, range.second, *bitset);
     }
@@ -273,8 +273,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_superstructure) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
-    knowhere::SetMetaRadiusLowBound(conf_, 1.0);
-    knowhere::SetMetaRadiusHighBound(conf_, 2.0);
+    knowhere::SetMetaRadius(conf_, 2.0);
     auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
     ASSERT_ANY_THROW(index_->QueryByRange(qd, conf_, nullptr));
 }
@@ -286,8 +285,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_range_search_substructure) {
     EXPECT_EQ(index_->Count(), nb);
     EXPECT_EQ(index_->Dim(), dim);
 
-    knowhere::SetMetaRadiusLowBound(conf_, 1.0);
-    knowhere::SetMetaRadiusHighBound(conf_, 2.0);
+    knowhere::SetMetaRadius(conf_, 2.0);
     auto qd = knowhere::GenDataset(nq, dim, xq_bin.data());
     ASSERT_ANY_THROW(index_->QueryByRange(qd, conf_, nullptr));
 }

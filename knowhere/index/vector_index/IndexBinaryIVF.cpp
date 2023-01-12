@@ -308,12 +308,16 @@ BinaryIVF::QueryByRangeImpl(int64_t n,
     auto ivf_index = dynamic_cast<faiss::IndexBinaryIVF*>(index_.get());
     ivf_index->nprobe = params->nprobe;
 
-    float low_bound = GetMetaRadiusLowBound(config);
-    float high_bound = GetMetaRadiusHighBound(config);
-
+    float radius = GetMetaRadius(config);
     faiss::RangeSearchResult res(n);
-    index_->range_search(n, data, high_bound, &res, bitset);
-    GetRangeSearchResult(res, false, n, low_bound, high_bound, distances, labels, lims, bitset);
+    index_->range_search(n, data, radius, &res, bitset);
+
+    if (CheckKeyInConfig(config, meta::RANGE_FILTER)) {
+        float range_filter = GetMetaRangeFilter(config);
+        GetRangeSearchResult(res, false, n, radius, range_filter, distances, labels, lims, bitset);
+    } else {
+        GetRangeSearchResult(res, false, n, radius, distances, labels, lims);
+    }
 }
 
 }  // namespace knowhere

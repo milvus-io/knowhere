@@ -38,8 +38,9 @@ static constexpr const char* kAioMaxnr = "aio_maxnr";
 static constexpr const char* kK = "k";
 static constexpr const char* kBeamwidth = "beamwidth";
 
-static constexpr const char* kRadiusLowBound = "radius_low_bound";
-static constexpr const char* kRadiusHighBound = "radius_high_bound";
+static constexpr const char* kRadius = "radius";
+static constexpr const char* kRangeFilter = "range_filter";
+static constexpr const char* kNeedFilter = "need_filter";
 static constexpr const char* kMinK = "min_k";
 static constexpr const char* kMaxK = "max_k";
 static constexpr const char* kSearchListAndKRatio = "search_list_and_k_ratio";
@@ -221,8 +222,9 @@ from_json(const Config& config, DiskANNQueryConfig& query_conf) {
 
 void
 to_json(Config& config, const DiskANNQueryByRangeConfig& query_conf) {
-    config = Config{{kRadiusLowBound, query_conf.radius_low_bound},
-                    {kRadiusHighBound, query_conf.radius_high_bound},
+    config = Config{{kRadius, query_conf.radius},
+                    {kRangeFilter, query_conf.range_filter},
+                    {kNeedFilter, query_conf.need_filter},
                     {kMinK, query_conf.min_k},
                     {kMaxK, query_conf.max_k},
                     {kBeamwidth, query_conf.beamwidth},
@@ -231,10 +233,13 @@ to_json(Config& config, const DiskANNQueryByRangeConfig& query_conf) {
 
 void
 from_json(const Config& config, DiskANNQueryByRangeConfig& query_conf) {
-    CheckNumericParamAndSet<float>(config, kRadiusLowBound, kRadiusMinValue, kRadiusMaxValue,
-                                   query_conf.radius_low_bound);
-    CheckNumericParamAndSet<float>(config, kRadiusHighBound, kRadiusMinValue, kRadiusMaxValue,
-                                   query_conf.radius_high_bound);
+    CheckNumericParamAndSet<float>(config, kRadius, kRadiusMinValue, kRadiusMaxValue, query_conf.radius);
+    if (config.contains(kRangeFilter)) {
+        query_conf.need_filter = true;
+        CheckNumericParamAndSet<float>(config, kRangeFilter, kRadiusMinValue, kRadiusMaxValue, query_conf.range_filter);
+    } else {
+        query_conf.need_filter = false;
+    }
     CheckNumericParamAndSet<uint64_t>(config, kMinK, kMinKMinValue, kMinKMaxValue, query_conf.min_k);
     CheckNumericParamAndSet<uint64_t>(config, kMaxK, query_conf.min_k, kMaxKMaxValue, query_conf.max_k);
     CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, kBeamwidthMinValue, kBeamwidthMaxValue, query_conf.beamwidth);
