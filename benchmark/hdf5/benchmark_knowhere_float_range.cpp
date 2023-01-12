@@ -120,8 +120,13 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere, public ::testi
         assert(metric_str_ == METRIC_IP_STR || metric_str_ == METRIC_L2_STR);
         metric_type_ = (metric_str_ == METRIC_IP_STR) ? knowhere::metric::IP : knowhere::metric::L2;
         cfg_[knowhere::meta::METRIC_TYPE] = metric_type_;
-        cfg_[knowhere::meta::RADIUS_LOW_BOUND] = 0.0f;
-        cfg_[knowhere::meta::RADIUS_HIGH_BOUND] = *gt_radius_;
+        if (metric_type_ == knowhere::metric::IP) {
+            cfg_[knowhere::meta::RADIUS_LOW_BOUND] = *gt_radius_;
+            cfg_[knowhere::meta::RADIUS_HIGH_BOUND] = 1.01f;
+        } else {
+            cfg_[knowhere::meta::RADIUS_LOW_BOUND] = 0.0f;
+            cfg_[knowhere::meta::RADIUS_HIGH_BOUND] = *gt_radius_;
+        }
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX2);
         printf("faiss::distance_compute_blas_threshold: %ld\n", knowhere::KnowhereConfig::GetBlasThreshold());
     }
