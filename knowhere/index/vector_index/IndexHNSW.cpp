@@ -288,8 +288,8 @@ IndexHNSW::QueryByRangeImpl(int64_t n, const float* xq, float*& distances, int64
     hnswlib::SearchParam param{ef};
 
     float radius = GetMetaRadius(config);
-    bool need_filter = CheckKeyInConfig(config, meta::RANGE_FILTER);
-    float range_filter = need_filter ? GetMetaRangeFilter(config) : (1.0/0.0);
+    bool range_filter_exist = CheckKeyInConfig(config, meta::RANGE_FILTER);
+    float range_filter = range_filter_exist ? GetMetaRangeFilter(config) : (1.0/0.0);
     bool is_ip = (index_->metric_type_ == 1);  // L2: 0, InnerProduct: 1
 
     std::vector<std::vector<int64_t>> result_id_array(n);
@@ -314,7 +314,7 @@ IndexHNSW::QueryByRangeImpl(int64_t n, const float* xq, float*& distances, int64
             result_size[index] = rst.size();
 
             // filter range search result
-            if (need_filter) {
+            if (range_filter_exist) {
                 FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, radius,
                                                 range_filter);
             }
