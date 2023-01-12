@@ -28,8 +28,7 @@ Checks: >
     performance-noexcept-move-constructor, performance-no-automatic-move,
     performance-type-promotion-in-math-fn
 
-# produce HeaderFilterRegex from core/build-support/lint_exclusions.txt with:
-# echo -n '^?!('; sed -e 's/*/\.*/g' core/build-support/lint_exclusions.txt | tr '\n' '|'; echo ')$'
+WarningsAsErrors: '*'
 HeaderFilterRegex: '^(?:.*\/knowhere\/include\/.+\.h)|(?:.*\/knowhere\/src\/.+\.h)$'
 CheckOptions:
   - key:             google-readability-braces-around-statements.ShortStatementLines
