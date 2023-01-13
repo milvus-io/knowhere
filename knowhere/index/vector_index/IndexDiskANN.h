@@ -24,8 +24,7 @@ namespace knowhere {
 
 template <typename T>
 class IndexDiskANN : public VecIndex {
-    static_assert(std::is_same_v<T, float> || std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t>,
-                  "DiskANN only support float, int8 and uint8");
+    static_assert(std::is_same_v<T, float>, "DiskANN only support float");
 
  public:
     explicit IndexDiskANN(std::string index_prefix, MetricType metric_type, std::shared_ptr<FileManager> file_manager);

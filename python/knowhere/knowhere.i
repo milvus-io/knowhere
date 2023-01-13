@@ -77,8 +77,6 @@ import_array();
 %template(DatasetPtr) std::shared_ptr<Dataset>;
 #ifdef KNOWHERE_WITH_DISKANN
 %shared_ptr(knowhere::IndexDiskANN<float>)
-%shared_ptr(knowhere::IndexDiskANN<int8_t>)
-%shared_ptr(knowhere::IndexDiskANN<uint8_t>)
 #endif
 %shared_ptr(knowhere::AsyncIndex)
 %include <common/Dataset.h>
@@ -130,8 +128,6 @@ import_array();
 // Support for DiskANN
 #ifdef KNOWHERE_WITH_DISKANN
 %template(IndexDiskANNf) knowhere::IndexDiskANN<float>;
-%template(IndexDiskANNi8) knowhere::IndexDiskANN<int8_t>;
-%template(IndexDiskANNui8) knowhere::IndexDiskANN<uint8_t>;
 
 %inline %{
 
@@ -142,20 +138,6 @@ std::shared_ptr<knowhere::IndexDiskANN<float>>
 buildDiskANNf(std::string index_prefix, std::string metric_type) {
     TOUPPER(metric_type);
     return std::make_shared<knowhere::IndexDiskANN<float>>(index_prefix, metric_type,
-            std::shared_ptr<knowhere::FileManager>(new knowhere::LocalFileManager));
-}
-
-std::shared_ptr<knowhere::IndexDiskANN<int8_t>>
-buildDiskANNi8(std::string index_prefix, std::string metric_type) {
-    TOUPPER(metric_type);
-    return std::make_shared<knowhere::IndexDiskANN<int8_t>>(index_prefix, metric_type,
-            std::shared_ptr<knowhere::FileManager>(new knowhere::LocalFileManager));
-}
-
-std::shared_ptr<knowhere::IndexDiskANN<uint8_t>>
-buildDiskANNui8(std::string index_prefix, std::string metric_type) {
-    TOUPPER(metric_type);
-    return std::make_shared<knowhere::IndexDiskANN<uint8_t>>(index_prefix, metric_type,
             std::shared_ptr<knowhere::FileManager>(new knowhere::LocalFileManager));
 }
 

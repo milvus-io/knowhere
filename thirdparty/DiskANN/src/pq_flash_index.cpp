@@ -19,7 +19,6 @@
 #include "timer.h"
 #include "utils.h"
 
-#include "cosine_similarity.h"
 #include "tsl/robin_set.h"
 
 #ifdef _WINDOWS
@@ -93,8 +92,8 @@ namespace diskann {
       }
     }
 
-    this->dist_cmp.reset(diskann::get_distance_function<T>(m));
-    this->dist_cmp_float.reset(diskann::get_distance_function<float>(m));
+    this->dist_cmp = diskann::get_distance_function<T>(m);
+    this->dist_cmp_float = diskann::get_distance_function<float>(m);
   }
 
 
@@ -884,9 +883,9 @@ namespace diskann {
     float                       best_dist = (std::numeric_limits<float>::max)();
     std::vector<SimpleNeighbor> medoid_dists;
     for (_u64 cur_m = 0; cur_m < num_medoids; cur_m++) {
-      float cur_expanded_dist = dist_cmp_float->compare(
+      float cur_expanded_dist = dist_cmp_float(
           query_float, centroid_data + aligned_dim * cur_m,
-          (unsigned) aligned_dim);
+          (size_t) aligned_dim);
       if (cur_expanded_dist < best_dist) {
         best_medoid = medoids[cur_m];
         best_dist = cur_expanded_dist;
@@ -991,8 +990,8 @@ namespace diskann {
         T *   node_fp_coords_copy = global_cache_iter->second;
         float cur_expanded_dist;
         if (!use_disk_index_pq) {
-          cur_expanded_dist = dist_cmp->compare(query, node_fp_coords_copy,
-                                                (unsigned) aligned_dim);
+          cur_expanded_dist = dist_cmp(query, node_fp_coords_copy,
+                                       (size_t) aligned_dim);
         } else {
           if (metric == diskann::Metric::INNER_PRODUCT)
             cur_expanded_dist = disk_pq_table.inner_product(
@@ -1079,8 +1078,8 @@ namespace diskann {
         memcpy(node_fp_coords_copy, node_fp_coords, disk_bytes_per_point);
         float cur_expanded_dist;
         if (!use_disk_index_pq) {
-          cur_expanded_dist = dist_cmp->compare(query, node_fp_coords_copy,
-                                                (unsigned) aligned_dim);
+          cur_expanded_dist = dist_cmp(query, node_fp_coords_copy,
+                                       (size_t) aligned_dim);
         } else {
           if (metric == diskann::Metric::INNER_PRODUCT)
             cur_expanded_dist = disk_pq_table.inner_product(
@@ -1204,7 +1203,7 @@ namespace diskann {
         auto location =
             (sector_scratch + i * SECTOR_LEN) + VECTOR_SECTOR_OFFSET(id);
         full_retset[i].distance =
-            dist_cmp->compare(query, (T *) location, this->data_dim);
+            dist_cmp(query, (T *) location, (size_t)this->data_dim);
       }
 
       std::sort(full_retset.begin(), full_retset.end(),

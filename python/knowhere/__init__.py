@@ -49,13 +49,8 @@ def CreateIndexDiskANN(index_name, index_prefix, metric_type, simd_type="auto"):
 
     if index_name == "diskann_f":
         return buildDiskANNf(index_prefix, metric_type)
-    if index_name == "diskann_i8":
-        return buildDiskANNi8(index_prefix, metric_type)
-    if index_name == "diskann_ui8":
-        return buildDiskANNui8(index_prefix, metric_type)
     raise ValueError(
-        """ index name only support 
-            'diskann_f' 'diskann_i8' 'diskann_ui8'."""
+        """ index name only support 'diskann_f'. """
     )
 
 
@@ -67,15 +62,15 @@ def CreateAsyncIndex(index_name, index_prefix="", metric_type="", simd_type="aut
 
     if index_name not in ["bin_flat", "bin_ivf_flat", "flat", "ivf_flat", "ivf_pq", "ivf_sq8",
                           "hnsw", "annoy", "gpu_flat", "gpu_ivf_flat",
-                          "gpu_ivf_pq", "gpu_ivf_sq8", "diskann_f", "diskann_i8", "diskann_ui8"]:
+                          "gpu_ivf_pq", "gpu_ivf_sq8", "diskann_f"]:
         raise ValueError(
             """ index name only support
             'bin_flat', 'bin_ivf_flat', 'flat', 'ivf_flat', 'ivf_pq', 'ivf_sq8',
             'hnsw', 'annoy', 'gpu_flat', 'gpu_ivf_flat',
-            'gpu_ivf_pq', 'gpu_ivf_sq8', 'diskann_f', 'diskann_i8', 'diskann_ui8'."""
+            'gpu_ivf_pq', 'gpu_ivf_sq8', 'diskann_f'."""
         )
 
-    if index_name in ["diskann_f", "diskann_i8", "diskann_ui8"]:
+    if index_name == "diskann_f":
         if index_prefix == "":
             raise ValueError("Must pass index_prefix to DiskANN")
         if metric_type == "":

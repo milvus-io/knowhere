@@ -536,6 +536,4 @@ IndexDiskANN<T>::GetCachedNodeNum(const float cache_dram_budget, const uint64_t 
 
 // Explicit template instantiation
 template class IndexDiskANN<float>;
-template class IndexDiskANN<uint8_t>;
-template class IndexDiskANN<int8_t>;
 }  // namespace knowhere
