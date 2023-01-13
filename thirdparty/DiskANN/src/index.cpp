@@ -42,6 +42,7 @@
 #include <xmmintrin.h>
 #endif
 #include "index.h"
+#include "knowhere/utils/FaissHookFvec.h"
 
 #define MAX_POINTS_FOR_USING_BITSET 10000000
 
@@ -278,16 +279,7 @@ namespace diskann {
       _in_graph.reserve(_max_points + _num_frozen_pts);
       _in_graph.resize(_max_points + _num_frozen_pts);
     }
-
-    if (m == diskann::Metric::COSINE && std::is_floating_point<T>::value) {
-      // This is safe because T is float inside the if block.
-            this->_distance = (Distance<T> *) new AVXNormalizedCosineDistanceFloat(); 
-            this->_normalize_vecs = true;
-            std::cout<<"Normalizing vectors and using L2 for cosine AVXNormalizedCosineDistanceFloat()." << std::endl;
-      // std::cout << "Need to add functionality for COSINE metric" << std::endl;
-    } else {
-      this->_distance = get_distance_function<T>(m);
-    }
+    this->_distance = get_distance_function<T>(m);
 
     _locks = std::vector<std::mutex>(_max_points + _num_frozen_pts);
 
@@ -311,10 +303,6 @@ namespace diskann {
       LockGuard lg(lock);
     }
 
-    if (this->_distance != nullptr) {
-      delete this->_distance;
-      this->_distance = nullptr;
-    }
     if (this->_data != nullptr) {
       aligned_free(this->_data);
       this->_data = nullptr;
@@ -869,7 +857,7 @@ namespace diskann {
 #pragma omp parallel for schedule(static, 65536)
     for (_s64 i = 0; i < (_s64) _nd; i++) {
       // extract point and distance reference
-      float &  dist = distances[i];
+      float   &dist = distances[i];
       const T *cur_vec = _data + (i * (size_t) _aligned_dim);
       dist = 0;
       float diff = 0;
@@ -954,8 +942,8 @@ namespace diskann {
             __FILE__, __LINE__);
       }
       nn = Neighbor(id,
-                    _distance->compare(_data + _aligned_dim * (size_t) id,
-                                       node_coords, (unsigned) _aligned_dim),
+                    _distance(_data + _aligned_dim * (size_t) id, node_coords,
+                              (size_t) _aligned_dim),
                     true);
       if (fast_iterate) {
         if (inserted_into_pool_bs[id] == 0) {
@@ -1040,9 +1028,9 @@ namespace diskann {
             }
 
             cmps++;
-            float dist = _distance->compare(node_coords,
-                                            _data + _aligned_dim * (size_t) id,
-                                            (unsigned) _aligned_dim);
+            float dist =
+                _distance(node_coords, _data + _aligned_dim * (size_t) id,
+                          (size_t) _aligned_dim);
 
             if (dist >= best_L_nodes[l - 1].distance && (l == Lsize))
               continue;
@@ -1164,9 +1152,9 @@ namespace diskann {
         for (unsigned t = start + 1; t < pool.size() && t < maxc; t++) {
           if (occlude_factor[t] > alpha)
             continue;
-          float djk = _distance->compare(
-              _data + _aligned_dim * (size_t) pool[t].id,
-              _data + _aligned_dim * (size_t) p.id, (unsigned) _aligned_dim);
+          float djk = _distance(_data + _aligned_dim * (size_t) pool[t].id,
+                                _data + _aligned_dim * (size_t) p.id,
+                                (size_t) _aligned_dim);
           if (_dist_metric == diskann::Metric::L2 ||
               _dist_metric == diskann::Metric::COSINE) {
             occlude_factor[t] =
@@ -1191,7 +1179,6 @@ namespace diskann {
     }
   }
 
-
   template<typename T, typename TagT>
   void Index<T, TagT>::prune_neighbors(const unsigned         location,
                                        std::vector<Neighbor> &pool, 
@@ -1203,7 +1190,6 @@ namespace diskann {
   void Index<T, TagT>::prune_neighbors(const unsigned         location,
                                        std::vector<Neighbor> &pool, const _u32 range, const _u32 max_candidate_size, const float alpha, 
                                        std::vector<unsigned> &pruned_list) {
-
     if (pool.size() == 0) {
       std::stringstream ss;
       ss << "Thread id:" << std::this_thread::get_id()
@@ -1336,10 +1322,9 @@ namespace diskann {
         for (auto cur_nbr : copy_of_neighbors) {
           if (dummy_visited.find(cur_nbr) == dummy_visited.end() &&
               cur_nbr != des) {
-            float dist =
-                _distance->compare(_data + _aligned_dim * (size_t) des,
+            float dist = _distance(_data + _aligned_dim * (size_t) des,
                                    _data + _aligned_dim * (size_t) cur_nbr,
-                                   (unsigned) _aligned_dim);
+                                   (size_t) _aligned_dim);
             dummy_pool.emplace_back(Neighbor(cur_nbr, dist, true));
             dummy_visited.insert(cur_nbr);
           }
@@ -1382,7 +1367,6 @@ namespace diskann {
                                     bool                   update_in_graph) {
                                     inter_insert(n, pruned_list, _indexingRange, update_in_graph);
                                     }
-
 
   /* Link():
    * The graph creation function.
@@ -1492,7 +1476,7 @@ namespace diskann {
 
       std::vector<std::vector<unsigned>> pruned_list_vector(round_size);
 
-        auto round_num_syncs = num_syncs;
+      auto round_num_syncs = num_syncs;
       if(accelerate_build && rnd_no == 0){
         round_num_syncs = num_syncs * 0.05;
       }
@@ -1526,10 +1510,9 @@ namespace diskann {
           if (!_final_graph[node].empty())
             for (auto id : _final_graph[node]) {
               if (visited.find(id) == visited.end() && id != node) {
-                float dist =
-                    _distance->compare(_data + _aligned_dim * (size_t) node,
+                float dist = _distance(_data + _aligned_dim * (size_t) node,
                                        _data + _aligned_dim * (size_t) id,
-                                       (unsigned) _aligned_dim);
+                                       (size_t) _aligned_dim);
                 pool.emplace_back(Neighbor(id, dist, true));
                 visited.insert(id);
               }
@@ -1578,10 +1561,9 @@ namespace diskann {
             for (auto cur_nbr : _final_graph[node]) {
               if (dummy_visited.find(cur_nbr) == dummy_visited.end() &&
                   cur_nbr != node) {
-                float dist =
-                    _distance->compare(_data + _aligned_dim * (size_t) node,
+                float dist = _distance(_data + _aligned_dim * (size_t) node,
                                        _data + _aligned_dim * (size_t) cur_nbr,
-                                       (unsigned) _aligned_dim);
+                                       (size_t) _aligned_dim);
                 dummy_pool.emplace_back(Neighbor(cur_nbr, dist, true));
                 dummy_visited.insert(cur_nbr);
               }
@@ -1622,10 +1604,10 @@ namespace diskann {
 #endif
       if (_nd > 0) {
         LOG(INFO) << "Completed Pass " << rnd_no << " of data using L=" << L
-                      << " and alpha=" << _indexingAlpha
-                      << ". Stats: "   << "search+prune_time=" << total_sync_time
-                      << "s, inter_time=" << total_inter_time
-                      << "s, inter_count=" << total_inter_count;
+                  << " and alpha=" << _indexingAlpha << ". Stats: "
+                  << "search+prune_time=" << total_sync_time
+                  << "s, inter_time=" << total_inter_time
+                  << "s, inter_count=" << total_inter_count;
       }
     }
 
@@ -1643,10 +1625,9 @@ namespace diskann {
         for (auto cur_nbr : _final_graph[node]) {
           if (dummy_visited.find(cur_nbr) == dummy_visited.end() &&
               cur_nbr != node) {
-            float dist =
-                _distance->compare(_data + _aligned_dim * (size_t) node,
+            float dist = _distance(_data + _aligned_dim * (size_t) node,
                                    _data + _aligned_dim * (size_t) cur_nbr,
-                                   (unsigned) _aligned_dim);
+                                   (size_t) _aligned_dim);
             dummy_pool.emplace_back(Neighbor(cur_nbr, dist, true));
             dummy_visited.insert(cur_nbr);
           }
@@ -1680,10 +1661,9 @@ namespace diskann {
           for (auto cur_nbr : _final_graph[node]) {
             if (dummy_visited.find(cur_nbr) == dummy_visited.end() &&
                 cur_nbr != node) {
-              float dist =
-                  _distance->compare(_data + _aligned_dim * (size_t) node,
+              float dist = _distance(_data + _aligned_dim * (size_t) node,
                                      _data + _aligned_dim * (size_t) cur_nbr,
-                                     (unsigned) _aligned_dim);
+                                     (size_t) _aligned_dim);
               dummy_pool.emplace_back(Neighbor(cur_nbr, dist, true));
               dummy_visited.insert(cur_nbr);
             }
@@ -2058,7 +2038,7 @@ namespace diskann {
   template<typename T, typename TagT>
   T *Index<T, TagT>::get_data() {
     if (_num_frozen_pts > 0) {
-      T *    ret_data = nullptr;
+      T     *ret_data = nullptr;
       size_t allocSize = ((size_t) _nd) * _aligned_dim * sizeof(T);
       alloc_aligned(((void **) &ret_data), allocSize, 8 * sizeof(T));
       memset(ret_data, 0, allocSize);
@@ -2130,7 +2110,7 @@ namespace diskann {
                                    int delete_mode) {
     if (_lazy_done && (!_data_compacted)) {
       LOG(ERROR) << "Lazy delete requests issued but data not consolidated, "
-                       "cannot proceed with eager deletes.";
+                    "cannot proceed with eager deletes.";
       return -1;
     }
 
@@ -2255,12 +2235,12 @@ namespace diskann {
         }
 
         for (auto j : candidate_set)
-          expanded_nghrs.push_back(
-              Neighbor(j,
-                       _distance->compare(_data + _aligned_dim * (size_t) ngh,
-                                          _data + _aligned_dim * (size_t) j,
-                                          (unsigned) _aligned_dim),
-                       true));
+          expanded_nghrs.push_back(Neighbor(
+              j,
+              _distance((const T *) (_data + _aligned_dim * (size_t) ngh),
+                        _data + _aligned_dim * (size_t) j,
+                        (size_t) _aligned_dim),
+              true));
         std::sort(expanded_nghrs.begin(), expanded_nghrs.end());
         occlude_list(expanded_nghrs, alpha, range, maxc, result);
 
@@ -2380,9 +2360,9 @@ namespace diskann {
             for (auto j : candidate_set) {
               expanded_nghrs.push_back(
                   Neighbor(j,
-                           _distance->compare(_data + _aligned_dim * i,
-                                              _data + _aligned_dim * (size_t) j,
-                                              (unsigned) _aligned_dim),
+                           _distance(_data + _aligned_dim * i,
+                                     _data + _aligned_dim * (size_t) j,
+                                     (size_t) _aligned_dim),
                            true));
             }
 
@@ -3034,10 +3014,9 @@ namespace diskann {
     _neighbor_len = (_width + 1) * sizeof(unsigned);
     _node_size = _data_len + _neighbor_len;
     _opt_graph = (char *) malloc(_node_size * _nd);
-    DistanceFastL2<T> *dist_fast = (DistanceFastL2<T> *) _distance;
     for (unsigned i = 0; i < _nd; i++) {
       char *cur_node_offset = _opt_graph + i * _node_size;
-      float cur_norm = dist_fast->norm(_data + i * _aligned_dim, _aligned_dim);
+      float cur_norm = norm_l2sqr(_data + i * _aligned_dim, _aligned_dim);
       std::memcpy(cur_node_offset, &cur_norm, sizeof(float));
       std::memcpy(cur_node_offset + sizeof(float), _data + i * _aligned_dim,
                   _data_len - sizeof(float));
@@ -3056,8 +3035,8 @@ namespace diskann {
   template<typename T, typename TagT>
   void Index<T, TagT>::search_with_optimized_layout(const T *query, size_t K, size_t L,
                                              unsigned *indices) {
-    DistanceFastL2<T> *dist_fast = (DistanceFastL2<T> *) _distance;
-
+    auto fast_distance =
+        get_distance_function<T>(diskann::Metric::INNER_PRODUCT);
     std::vector<Neighbor> retset(L + 1);
     std::vector<unsigned> init_ids(L);
     // std::mt19937 rng(rand());
@@ -3098,8 +3077,8 @@ namespace diskann {
       T *   x = (T *) (_opt_graph + _node_size * id);
       float norm_x = *x;
       x++;
-      float dist =
-          dist_fast->compare(x, query, norm_x, (unsigned) _aligned_dim);
+      // dist = x * x + 2 * x * query
+      float dist = norm_x - 2 * fast_distance(x, query, (size_t) _aligned_dim);
       retset[i] = Neighbor(id, dist, true);
       flags[id] = true;
       L++;
@@ -3131,7 +3110,7 @@ namespace diskann {
           float norm = *data;
           data++;
           float dist =
-              dist_fast->compare(query, data, norm, (unsigned) _aligned_dim);
+              norm - 2 * fast_distance(query, data, (size_t) _aligned_dim);
           if (dist >= retset[L - 1].distance)
             continue;
           Neighbor nn(id, dist, true);

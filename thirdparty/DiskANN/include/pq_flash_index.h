@@ -14,6 +14,7 @@
 
 #include "aligned_file_reader.h"
 #include "concurrent_queue.h"
+#include "distance.h"
 #include "neighbor.h"
 #include "parameters.h"
 #include "percentile_stats.h"
@@ -184,9 +185,9 @@ namespace diskann {
     _u64              n_chunks;
     FixedChunkPQTable pq_table;
 
-    // distance comparator
-    std::shared_ptr<Distance<T>>     dist_cmp;
-    std::shared_ptr<Distance<float>> dist_cmp_float;
+    // distance function
+    DISTFUN<T>    dist_cmp;
+    DISTFUN<float>  dist_cmp_float;
 
     // for very large datasets: we use PQ even for the disk resident index
     bool              use_disk_index_pq = false;

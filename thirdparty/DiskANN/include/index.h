@@ -358,7 +358,7 @@ namespace diskann {
     size_t       _max_points = 0;  // total number of points in given data set
     size_t       _num_frozen_pts = 0;
     bool         _has_built = false;
-    Distance<T> *_distance = nullptr;
+    DISTFUN<T>   _distance = nullptr;
     unsigned     _width = 0;
     unsigned     _ep = 0;
     size_t       _max_range_of_loaded_graph = 0;

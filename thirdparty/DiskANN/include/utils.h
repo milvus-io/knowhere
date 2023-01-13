@@ -33,7 +33,6 @@ typedef HANDLE FileHandle;
 typedef int FileHandle;
 #endif
 
-#include "distance.h"
 #include "utils.h"
 #include "logger.h"
 #include "cached_io.h"
@@ -162,7 +161,7 @@ inline int delete_file(const std::string& fileName) {
 namespace diskann {
   static const size_t MAX_SIZE_OF_STREAMBUF = 2LL * 1024 * 1024 * 1024;
 
-  enum Metric { L2 = 0, INNER_PRODUCT = 1, COSINE = 2, FAST_L2 = 3, PQ = 4 };
+  enum Metric { L2 = 0, INNER_PRODUCT = 1, COSINE = 2};
 
   inline void alloc_aligned(void** ptr, size_t size, size_t align) {
     *ptr = nullptr;
@@ -848,9 +847,6 @@ namespace diskann {
 
   DISKANN_DLLEXPORT void normalize_data_file(const std::string& inFileName,
                                              const std::string& outFileName);
-
-  template<typename T>
-  Distance<T>* get_distance_function(Metric m);
 
   inline std::string get_pq_pivots_filename(const std::string& prefix) {
     return prefix + "_pq_pivots.bin";
