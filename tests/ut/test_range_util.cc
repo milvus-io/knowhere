@@ -15,22 +15,23 @@
 #include "utils.h"
 
 TEST_CASE("Test distance_in_range", "[range search]") {
-    const float low_bound = 0.0f;
-    const float high_bound = 1.0f;
-
     bool is_ip = false;
-    REQUIRE(knowhere::distance_in_range(0.0, low_bound, high_bound, is_ip) == true);
-    REQUIRE(knowhere::distance_in_range(1.0, low_bound, high_bound, is_ip) == false);
-    REQUIRE(knowhere::distance_in_range(0.314, low_bound, high_bound, is_ip) == true);
-    REQUIRE(knowhere::distance_in_range(-1.0, low_bound, high_bound, is_ip) == false);
-    REQUIRE(knowhere::distance_in_range(1.23, low_bound, high_bound, is_ip) == false);
+    float radius = 1.0f;
+    float range_filter = 0.0f;
+    REQUIRE(knowhere::distance_in_range(0.0, radius, range_filter, is_ip) == true);
+    REQUIRE(knowhere::distance_in_range(1.0, radius, range_filter, is_ip) == false);
+    REQUIRE(knowhere::distance_in_range(0.314, radius, range_filter, is_ip) == true);
+    REQUIRE(knowhere::distance_in_range(-1.0, radius, range_filter, is_ip) == false);
+    REQUIRE(knowhere::distance_in_range(1.23, radius, range_filter, is_ip) == false);
 
     is_ip = true;
-    REQUIRE(knowhere::distance_in_range(0.0, low_bound, high_bound, is_ip) == false);
-    REQUIRE(knowhere::distance_in_range(1.0, low_bound, high_bound, is_ip) == true);
-    REQUIRE(knowhere::distance_in_range(0.314, low_bound, high_bound, is_ip) == true);
-    REQUIRE(knowhere::distance_in_range(-1.0, low_bound, high_bound, is_ip) == false);
-    REQUIRE(knowhere::distance_in_range(1.23, low_bound, high_bound, is_ip) == false);
+    radius = 0.0f;
+    range_filter = 1.0f;
+    REQUIRE(knowhere::distance_in_range(0.0, radius, range_filter, is_ip) == false);
+    REQUIRE(knowhere::distance_in_range(1.0, radius, range_filter, is_ip) == true);
+    REQUIRE(knowhere::distance_in_range(0.314, radius, range_filter, is_ip) == true);
+    REQUIRE(knowhere::distance_in_range(-1.0, radius, range_filter, is_ip) == false);
+    REQUIRE(knowhere::distance_in_range(1.23, radius, range_filter, is_ip) == false);
 }
 
 namespace {
@@ -57,12 +58,12 @@ GenRangeSearchResult(std::vector<std::vector<int64_t>>& labels, std::vector<std:
 }
 
 size_t
-CountValidRangeSearchResult(const std::vector<std::vector<float>>& distances, const float low_bound,
-                            const float high_bound, const bool is_ip) {
+CountValidRangeSearchResult(const std::vector<std::vector<float>>& distances, const float radius,
+                            const float range_filter, const bool is_ip) {
     int64_t valid = 0;
     for (size_t i = 0; i < distances.size(); i++) {
         for (size_t j = 0; j < distances[i].size(); j++) {
-            if (knowhere::distance_in_range(distances[i][j], low_bound, high_bound, is_ip)) {
+            if (knowhere::distance_in_range(distances[i][j], radius, range_filter, is_ip)) {
                 valid++;
             }
         }
@@ -86,32 +87,31 @@ TEST_CASE("Test GetRangeSearchResult for HNSW/DiskANN", "[range search]") {
 
     auto GetRangeSearchResult = [](std::vector<std::vector<float>>& result_distances,
                                    std::vector<std::vector<int64_t>>& result_labels, const bool is_ip, const int64_t nq,
-                                   const float low_bound, const float high_bound, float*& distances, int64_t*& labels,
+                                   const float radius, const float range_filter, float*& distances, int64_t*& labels,
                                    size_t*& lims) {
         for (auto i = 0; i < nq; i++) {
-            knowhere::FilterRangeSearchResultForOneNq(result_distances[i], result_labels[i], is_ip, low_bound,
-                                                      high_bound);
+            knowhere::FilterRangeSearchResultForOneNq(result_distances[i], result_labels[i], is_ip, radius,
+                                                      range_filter);
         }
-        knowhere::GetRangeSearchResult(result_distances, result_labels, is_ip, nq, low_bound, high_bound, distances,
+        knowhere::GetRangeSearchResult(result_distances, result_labels, is_ip, nq, radius, range_filter, distances,
                                        labels, lims);
     };
 
-    std::vector<std::tuple<bool, float, float>> test_sets = {
-        std::make_tuple(false, -10.0, -1.0), std::make_tuple(false, -10.0, 0.0),   std::make_tuple(false, -10.0, 50.0),
-        std::make_tuple(false, 0.0, 50.0),   std::make_tuple(false, 0.0, 100.0),   std::make_tuple(false, 50.0, 100.0),
-        std::make_tuple(false, 50.0, 200.0), std::make_tuple(false, 100.0, 200.0),
-
-        std::make_tuple(true, -10.0, -1.0),  std::make_tuple(true, -10.0, 0.0),    std::make_tuple(true, -10.0, 50.0),
-        std::make_tuple(true, 0.0, 50.0),    std::make_tuple(true, 0.0, 100.0),    std::make_tuple(true, 50.0, 100.0),
-        std::make_tuple(true, 50.0, 200.0),  std::make_tuple(true, 100.0, 200.0),
+    std::vector<std::tuple<float, float>> test_sets = {
+        std::make_tuple(-10.0, -1.0), std::make_tuple(-10.0, 0.0),   std::make_tuple(-10.0, 50.0),
+        std::make_tuple(0.0, 50.0),   std::make_tuple(0.0, 100.0),   std::make_tuple(50.0, 100.0),
+        std::make_tuple(50.0, 200.0), std::make_tuple(100.0, 200.0),
     };
 
     for (auto& item : test_sets) {
-        bool is_ip = std::get<0>(item);
-        float low_bound = std::get<1>(item);
-        float high_bound = std::get<2>(item);
-        GetRangeSearchResult(gen_distances, gen_labels, is_ip, nq, low_bound, high_bound, distances, labels, lims);
-        REQUIRE(lims[nq] == CountValidRangeSearchResult(gen_distances, low_bound, high_bound, is_ip));
+        for (bool is_ip : {true, false}) {
+            float radius = is_ip ? std::get<0>(item) : std::get<1>(item);
+            float range_filter = is_ip ? std::get<1>(item) : std::get<0>(item);
+            std::vector<std::vector<int64_t>> bak_labels = gen_labels;
+            std::vector<std::vector<float>> bak_distances = gen_distances;
+            GetRangeSearchResult(bak_distances, bak_labels, is_ip, nq, radius, range_filter, distances, labels, lims);
+            REQUIRE(lims[nq] == CountValidRangeSearchResult(gen_distances, radius, range_filter, is_ip));
+        }
     }
 }
 
@@ -144,12 +144,12 @@ GenRangeSearchResult(faiss::RangeSearchResult& res, const int64_t nq, const int6
 }
 
 size_t
-CountValidRangeSearchResult(const float* distances, const size_t* lims, const int64_t nq, const float low_bound,
-                            const float high_bound, const bool is_ip) {
+CountValidRangeSearchResult(const float* distances, const size_t* lims, const int64_t nq, const float radius,
+                            const float range_filter, const bool is_ip) {
     int64_t valid = 0;
     for (int64_t i = 0; i < nq; i++) {
         for (size_t j = lims[i]; j < lims[i + 1]; j++) {
-            if (knowhere::distance_in_range(distances[j], low_bound, high_bound, is_ip)) {
+            if (knowhere::distance_in_range(distances[j], radius, range_filter, is_ip)) {
                 valid++;
             }
         }
@@ -170,21 +170,18 @@ TEST_CASE("Test GetRangeSearchResult for Faiss", "[range search]") {
     int64_t* labels;
     size_t* lims;
 
-    std::vector<std::tuple<bool, float, float>> test_sets = {
-        std::make_tuple(false, -10.0, -1.0), std::make_tuple(false, -10.0, 0.0),   std::make_tuple(false, -10.0, 50.0),
-        std::make_tuple(false, 0.0, 50.0),   std::make_tuple(false, 0.0, 100.0),   std::make_tuple(false, 50.0, 100.0),
-        std::make_tuple(false, 50.0, 200.0), std::make_tuple(false, 100.0, 200.0),
-
-        std::make_tuple(true, -10.0, -1.0),  std::make_tuple(true, -10.0, 0.0),    std::make_tuple(true, -10.0, 50.0),
-        std::make_tuple(true, 0.0, 50.0),    std::make_tuple(true, 0.0, 100.0),    std::make_tuple(true, 50.0, 100.0),
-        std::make_tuple(true, 50.0, 200.0),  std::make_tuple(true, 100.0, 200.0),
+    std::vector<std::tuple<float, float>> test_sets = {
+        std::make_tuple(-10.0, -1.0), std::make_tuple(-10.0, 0.0),   std::make_tuple(-10.0, 50.0),
+        std::make_tuple(0.0, 50.0),   std::make_tuple(0.0, 100.0),   std::make_tuple(50.0, 100.0),
+        std::make_tuple(50.0, 200.0), std::make_tuple(100.0, 200.0),
     };
 
     for (auto& item : test_sets) {
-        bool is_ip = std::get<0>(item);
-        float low_bound = std::get<1>(item);
-        float high_bound = std::get<2>(item);
-        knowhere::GetRangeSearchResult(res, is_ip, nq, low_bound, high_bound, distances, labels, lims, nullptr);
-        REQUIRE(lims[nq] == CountValidRangeSearchResult(res.distances, res.lims, nq, low_bound, high_bound, is_ip));
+        for (bool is_ip : {true, false}) {
+            float radius = is_ip ? std::get<0>(item) : std::get<1>(item);
+            float range_filter = is_ip ? std::get<1>(item) : std::get<0>(item);
+            knowhere::GetRangeSearchResult(res, is_ip, nq, radius, range_filter, distances, labels, lims, nullptr);
+            REQUIRE(lims[nq] == CountValidRangeSearchResult(res.distances, res.lims, nq, radius, range_filter, is_ip));
+        }
     }
 }

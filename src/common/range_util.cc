@@ -18,14 +18,14 @@ namespace knowhere {
 ///////////////////////////////////////////////////////////////////////////////
 // For Faiss index types
 size_t
-CountValidRangeSearchResult(const faiss::RangeSearchResult& res, const bool is_ip, const int64_t nq,
-                            const float low_bound, const float high_bound, size_t*& lims) {
+CountValidRangeSearchResult(const faiss::RangeSearchResult& res, const bool is_ip, const int64_t nq, const float radius,
+                            const float range_filter, size_t*& lims) {
     lims = new size_t[nq + 1];
     lims[0] = 0;
     for (int64_t i = 0; i < nq; i++) {
         int64_t valid = 0;
         for (size_t j = res.lims[i]; j < res.lims[i + 1]; j++) {
-            if (distance_in_range(res.distances[j], low_bound, high_bound, is_ip)) {
+            if (distance_in_range(res.distances[j], radius, range_filter, is_ip)) {
                 valid++;
             }
         }
@@ -36,14 +36,14 @@ CountValidRangeSearchResult(const faiss::RangeSearchResult& res, const bool is_i
 
 void
 FilterRangeSearchResultForOneNq(const int64_t i_size, const float* i_distances, const int64_t* i_labels,
-                                const bool is_ip, const float low_bound, const float high_bound, const int64_t o_size,
+                                const bool is_ip, const float radius, const float range_filter, const int64_t o_size,
                                 float* o_distances, int64_t* o_labels, const BitsetView& bitset) {
     int64_t num = 0;
     for (int64_t i = 0; i < i_size; i++) {
         auto dis = i_distances[i];
         auto id = i_labels[i];
         KNOWHERE_THROW_IF_NOT_MSG(bitset.empty() || !bitset.test(id), "bitset invalid");
-        if (distance_in_range(dis, low_bound, high_bound, is_ip)) {
+        if (distance_in_range(dis, radius, range_filter, is_ip)) {
             o_labels[num] = id;
             o_distances[num] = dis;
             num++;
@@ -53,12 +53,12 @@ FilterRangeSearchResultForOneNq(const int64_t i_size, const float* i_distances, 
 }
 
 void
-GetRangeSearchResult(const faiss::RangeSearchResult& res, const bool is_ip, const int64_t nq, const float low_bound,
-                     const float high_bound, float*& distances, int64_t*& labels, size_t*& lims,
+GetRangeSearchResult(const faiss::RangeSearchResult& res, const bool is_ip, const int64_t nq, const float radius,
+                     const float range_filter, float*& distances, int64_t*& labels, size_t*& lims,
                      const BitsetView& bitset) {
-    auto total_valid = CountValidRangeSearchResult(res, is_ip, nq, low_bound, high_bound, lims);
-    LOG_KNOWHERE_DEBUG_ << "Range search metric type: " << (is_ip ? "IP" : "L2") << " low_bound " << low_bound
-                        << " high_bound " << high_bound << " total result num: " << total_valid;
+    auto total_valid = CountValidRangeSearchResult(res, is_ip, nq, radius, range_filter, lims);
+    LOG_KNOWHERE_DEBUG_ << "Range search metric type: " << (is_ip ? "IP" : "L2") << ", radius " << radius
+                        << ", range_filter " << range_filter << ", total result num " << total_valid;
 
     distances = new float[total_valid];
     labels = new int64_t[total_valid];
@@ -66,16 +66,31 @@ GetRangeSearchResult(const faiss::RangeSearchResult& res, const bool is_ip, cons
 #pragma omp parallel for
     for (auto i = 0; i < nq; i++) {
         FilterRangeSearchResultForOneNq(res.lims[i + 1] - res.lims[i], res.distances + res.lims[i],
-                                        res.labels + res.lims[i], is_ip, low_bound, high_bound, lims[i + 1] - lims[i],
+                                        res.labels + res.lims[i], is_ip, radius, range_filter, lims[i + 1] - lims[i],
                                         distances + lims[i], labels + lims[i], bitset);
     }
+}
+
+void
+GetRangeSearchResult(faiss::RangeSearchResult& res, const bool is_ip, const int64_t nq, const float radius,
+                     float*& distances, int64_t*& labels, size_t*& lims) {
+    distances = res.distances;
+    labels = res.labels;
+    lims = res.lims;
+
+    LOG_KNOWHERE_DEBUG_ << "Range search metric type: " << (is_ip ? "IP" : "L2") << ", radius " << radius
+                        << ", total result num " << lims[nq];
+
+    res.distances = nullptr;
+    res.labels = nullptr;
+    res.lims = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // for HNSW and DiskANN
 void
 FilterRangeSearchResultForOneNq(std::vector<float>& distances, std::vector<int64_t>& labels, const bool is_ip,
-                                const float low_bound, const float high_bound) {
+                                const float radius, const float range_filter) {
     KNOWHERE_THROW_IF_NOT_FMT(distances.size() == labels.size(), "distances' size %ld not equal to labels' size %ld",
                               distances.size(), labels.size());
     auto len = distances.size();
@@ -83,7 +98,7 @@ FilterRangeSearchResultForOneNq(std::vector<float>& distances, std::vector<int64
     for (size_t i = 0; i < len; i++) {
         auto dist = distances[i];
         auto id = labels[i];
-        if (distance_in_range(dist, low_bound, high_bound, is_ip)) {
+        if (distance_in_range(dist, radius, range_filter, is_ip)) {
             distances[valid_cnt] = dist;
             labels[valid_cnt] = id;
             valid_cnt++;
@@ -98,8 +113,7 @@ FilterRangeSearchResultForOneNq(std::vector<float>& distances, std::vector<int64
 void
 GetRangeSearchResult(const std::vector<std::vector<float>>& result_distances,
                      const std::vector<std::vector<int64_t>>& result_labels, const bool is_ip, const int64_t nq,
-                     const float low_bound, const float high_bound, float*& distances, int64_t*& labels,
-                     size_t*& lims) {
+                     const float radius, const float range_filter, float*& distances, int64_t*& labels, size_t*& lims) {
     KNOWHERE_THROW_IF_NOT_FMT(result_distances.size() == (size_t)nq, "result distances size %ld not equal to %ld",
                               result_distances.size(), nq);
     KNOWHERE_THROW_IF_NOT_FMT(result_labels.size() == (size_t)nq, "result labels size %ld not equal to %ld",
@@ -113,8 +127,8 @@ GetRangeSearchResult(const std::vector<std::vector<float>>& result_distances,
     }
 
     size_t total_valid = lims[nq];
-    LOG_KNOWHERE_DEBUG_ << "Range search metric type: " << (is_ip ? "IP" : "L2") << " low_bound " << low_bound
-                        << " high_bound " << high_bound << " total result num: " << total_valid;
+    LOG_KNOWHERE_DEBUG_ << "Range search metric type: " << (is_ip ? "IP" : "L2") << ", radius " << radius
+                        << ", range_filter " << range_filter << ", total result num " << total_valid;
 
     distances = new float[total_valid];
     labels = new int64_t[total_valid];

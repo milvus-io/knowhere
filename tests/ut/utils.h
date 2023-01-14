@@ -96,10 +96,9 @@ GetKNNGroundTruth(const knowhere::DataSet& base, const knowhere::DataSet& query,
     return gt;
 }
 
-inline std::unique_ptr<knowhere::DataSet>
+inline knowhere::DataSetPtr
 GetRangeSearchGroundTruth(const knowhere::DataSet& base, const knowhere::DataSet& query, const std::string& metric,
-                          const float radius_low_bound, const float radius_high_bound,
-                          const knowhere::BitsetView bitset = nullptr) {
+                          const float radius, const float range_filter, const knowhere::BitsetView bitset = nullptr) {
     auto nb = base.GetRows();
     auto nq = query.GetRows();
     auto ndim = base.GetDim();
@@ -125,7 +124,7 @@ GetRangeSearchGroundTruth(const knowhere::DataSet& base, const knowhere::DataSet
                                  (base_p[ndim * row + dim] - query_p[query_index * ndim + dim]));
                 }
             }
-            if (knowhere::distance_in_range(distance, radius_low_bound, radius_high_bound, is_ip)) {
+            if (knowhere::distance_in_range(distance, radius, range_filter, is_ip)) {
                 ids_v[query_index].emplace_back(row);
                 dis_v[query_index].emplace_back(distance);
             }
@@ -134,15 +133,9 @@ GetRangeSearchGroundTruth(const knowhere::DataSet& base, const knowhere::DataSet
     int64_t* ids_p = nullptr;
     float* distances_p = nullptr;
     size_t* lims_p = nullptr;
-    knowhere::GetRangeSearchResult(dis_v, ids_v, is_ip, nq, radius_low_bound, radius_high_bound, distances_p, ids_p,
-                                   lims_p);
+    knowhere::GetRangeSearchResult(dis_v, ids_v, is_ip, nq, radius, range_filter, distances_p, ids_p, lims_p);
 
-    auto gt = std::make_unique<knowhere::DataSet>();
-    gt->SetRows(nq);
-    gt->SetIds(ids_p);
-    gt->SetDistance(distances_p);
-    gt->SetLims(lims_p);
-    return gt;
+    return knowhere::GenResultDataSet(nq, ids_p, distances_p, lims_p);
 }
 
 inline float

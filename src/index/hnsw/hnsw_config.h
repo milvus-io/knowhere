@@ -36,7 +36,8 @@ class HnswConfig : public BaseConfig {
             .description("hnsw ef")
             .set_default(32)
             .set_range(1, std::numeric_limits<CFG_INT>::max())
-            .for_search();
+            .for_search()
+            .for_range_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(overview_levels)
             .description("hnsw overview levels for feder")
             .set_default(3)

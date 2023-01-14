@@ -393,10 +393,8 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
         parallel_mode = 1;
     }
 
-    float low_bound = ivf_cfg.radius_low_bound;
-    float high_bound = ivf_cfg.radius_high_bound;
+    float radius = ivf_cfg.radius;
     bool is_ip = (index_->metric_type == faiss::METRIC_INNER_PRODUCT);
-    float radius = (is_ip ? low_bound : high_bound);
 
     int64_t* ids = nullptr;
     float* distances = nullptr;
@@ -412,7 +410,11 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
             index_->range_search_thread_safe(nq, (const float*)xq, radius, &res, ivf_cfg.nprobe, parallel_mode,
                                              max_codes, bitset);
         }
-        GetRangeSearchResult(res, is_ip, nq, low_bound, high_bound, distances, ids, lims, bitset);
+        if (ivf_cfg.range_filter_exist) {
+            GetRangeSearchResult(res, is_ip, nq, radius, ivf_cfg.range_filter, distances, ids, lims, bitset);
+        } else {
+            GetRangeSearchResult(res, is_ip, nq, radius, distances, ids, lims);
+        }
     } catch (const std::exception& e) {
         LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return unexpected(Status::faiss_inner_error);
@@ -475,8 +477,7 @@ IvfIndexNode<faiss::IndexBinaryIVF>::RangeSearch(const DataSet& dataset, const C
     auto xq = dataset.GetTensor();
     auto ivf_bin_cfg = static_cast<const IvfBinConfig&>(cfg);
 
-    float low_bound = ivf_bin_cfg.radius_low_bound;
-    float high_bound = ivf_bin_cfg.radius_high_bound;
+    float radius = ivf_bin_cfg.radius;
 
     int64_t* ids = nullptr;
     float* distances = nullptr;
@@ -485,8 +486,12 @@ IvfIndexNode<faiss::IndexBinaryIVF>::RangeSearch(const DataSet& dataset, const C
     try {
         index_->nprobe = ivf_bin_cfg.nprobe;
         faiss::RangeSearchResult res(nq);
-        index_->range_search(nq, (const uint8_t*)xq, high_bound, &res, bitset);
-        GetRangeSearchResult(res, false, nq, low_bound, high_bound, distances, ids, lims, bitset);
+        index_->range_search(nq, (const uint8_t*)xq, radius, &res, bitset);
+        if (ivf_bin_cfg.range_filter_exist) {
+            GetRangeSearchResult(res, false, nq, radius, ivf_bin_cfg.range_filter, distances, ids, lims, bitset);
+        } else {
+            GetRangeSearchResult(res, false, nq, radius, distances, ids, lims);
+        }
     } catch (const std::exception& e) {
         LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return unexpected(Status::faiss_inner_error);
