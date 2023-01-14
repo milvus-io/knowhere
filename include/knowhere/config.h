@@ -415,8 +415,9 @@ class BaseConfig : public Config {
  public:
     CFG_STRING metric_type;
     CFG_INT k;
-    CFG_FLOAT radius_low_bound;
-    CFG_FLOAT radius_high_bound;
+    CFG_FLOAT radius;
+    CFG_FLOAT range_filter;
+    CFG_BOOL range_filter_exist;
     CFG_BOOL trace_visit;
     KNOHWERE_DECLARE_CONFIG(BaseConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(metric_type).set_default("L2").description("metric type").for_all();
@@ -425,13 +426,17 @@ class BaseConfig : public Config {
             .description("search for top k similar vector.")
             .set_range(1, std::numeric_limits<CFG_INT>::max())
             .for_search();
-        KNOWHERE_CONFIG_DECLARE_FIELD(radius_low_bound)
-            .set_default(-1.0)
-            .description("radius low bound for range search")
+        KNOWHERE_CONFIG_DECLARE_FIELD(radius)
+            .set_default(0.0)
+            .description("radius for range search")
             .for_range_search();
-        KNOWHERE_CONFIG_DECLARE_FIELD(radius_high_bound)
-            .set_default(std::numeric_limits<float>::max())
-            .description("radius high bound for range search")
+        KNOWHERE_CONFIG_DECLARE_FIELD(range_filter)
+            .set_default(0.0)
+            .description("result filter for range search")
+            .for_range_search();
+        KNOWHERE_CONFIG_DECLARE_FIELD(range_filter_exist)
+            .set_default(false)
+            .description("range filter exist or not")
             .for_range_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(trace_visit)
             .set_default(false)

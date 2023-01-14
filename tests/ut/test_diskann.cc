@@ -155,11 +155,11 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
         json["metric_type"] = metric_str;
         json["k"] = kK;
         if (metric_str == knowhere::metric::L2) {
-            json["radius_low_bound"] = CFG_FLOAT(0);
-            json["radius_high_bound"] = CFG_FLOAT(200000);
+            json["radius"] = CFG_FLOAT(200000);
+            json["range_filter"] = CFG_FLOAT(0);
         } else {
-            json["radius_low_bound"] = CFG_FLOAT(50000);
-            json["radius_high_bound"] = std::numeric_limits<CFG_FLOAT>::max();
+            json["radius"] = CFG_FLOAT(50000);
+            json["range_filter"] = std::numeric_limits<CFG_FLOAT>::max();
         }
         return json;
     };
@@ -209,8 +209,9 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
         // generate the gt of knn search and range search
         auto base_json = base_gen();
         knn_gt_ptr = GetKNNGroundTruth(*base_ds, *query_ds, metric_str, kK);
-        range_search_gt_ptr = GetRangeSearchGroundTruth(*base_ds, *query_ds, metric_str, base_json["radius_low_bound"],
-                                                        base_json["radius_high_bound"]);
+        float radius = base_json["radius"];
+        float range_filter = base_json["range_filter"];
+        range_search_gt_ptr = GetRangeSearchGroundTruth(*base_ds, *query_ds, metric_str, radius, range_filter);
     }
 
     SECTION("Test L2/IP metric.") {

@@ -20,22 +20,26 @@
 namespace knowhere {
 
 inline bool
-distance_in_range(const float dist, const float low_bound, const float high_bound, const bool is_ip) {
-    return ((is_ip && low_bound < dist && dist <= high_bound) || (!is_ip && low_bound <= dist && dist < high_bound));
+distance_in_range(const float dist, const float radius, const float range_filter, const bool is_ip) {
+    return ((is_ip && radius < dist && dist <= range_filter) || (!is_ip && range_filter <= dist && dist < radius));
 }
 
 void
-GetRangeSearchResult(const faiss::RangeSearchResult& res, const bool is_ip, const int64_t nq, const float low_bound,
-                     const float high_bound, float*& distances, int64_t*& labels, size_t*& lims,
+GetRangeSearchResult(const faiss::RangeSearchResult& res, const bool is_ip, const int64_t nq, const float radius,
+                     const float range_filter, float*& distances, int64_t*& labels, size_t*& lims,
                      const BitsetView& bitset);
 
 void
+GetRangeSearchResult(faiss::RangeSearchResult& res, const bool is_ip, const int64_t nq, const float radius,
+                     float*& distances, int64_t*& labels, size_t*& lims);
+
+void
 FilterRangeSearchResultForOneNq(std::vector<float>& distances, std::vector<int64_t>& labels, const bool is_ip,
-                                const float low_bound, const float high_bound);
+                                const float radius, const float range_filter);
 
 void
 GetRangeSearchResult(const std::vector<std::vector<float>>& result_distances,
                      const std::vector<std::vector<int64_t>>& result_labels, const bool is_ip, const int64_t nq,
-                     const float low_bound, const float high_bound, float*& distances, int64_t*& labels, size_t*& lims);
+                     const float radius, const float range_filter, float*& distances, int64_t*& labels, size_t*& lims);
 
 }  // namespace knowhere

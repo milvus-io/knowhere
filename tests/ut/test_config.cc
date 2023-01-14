@@ -41,8 +41,8 @@ TEST_CASE("Test config json parse", "[config]") {
             "k": 100,
             "nlist": 128,
             "nprobe": 16,
-            "radius_low_bound": -1.0,
-            "radius_high_bound": 1000.0,
+            "radius": 1000.0,
+            "range_filter": 1.0,
             "trace_visit": true
         })");
         knowhere::IvfFlatConfig train_cfg;
@@ -62,8 +62,8 @@ TEST_CASE("Test config json parse", "[config]") {
         s = knowhere::Config::Load(range_cfg, json, knowhere::RANGE_SEARCH);
         CHECK(s == knowhere::Status::success);
         CHECK(range_cfg.metric_type == "L2");
-        CHECK(range_cfg.radius_low_bound == -1.0);
-        CHECK(range_cfg.radius_high_bound == 1000);
+        CHECK(range_cfg.radius == 1000.0);
+        CHECK(range_cfg.range_filter == 1.0);
 
         knowhere::IvfFlatConfig feder_cfg;
         s = knowhere::Config::Load(feder_cfg, json, knowhere::FEDER);
@@ -78,8 +78,8 @@ TEST_CASE("Test config json parse", "[config]") {
             "M": 32,
             "efConstruction": 100,
             "ef": 16,
-            "radius_low_bound": -1.0,
-            "radius_high_bound": 1000.0,
+            "range_filter": 1.0,
+            "radius": 1000.0,
             "trace_visit": true
         })");
         knowhere::HnswConfig train_cfg;
@@ -100,8 +100,8 @@ TEST_CASE("Test config json parse", "[config]") {
         s = knowhere::Config::Load(range_cfg, json, knowhere::RANGE_SEARCH);
         CHECK(s == knowhere::Status::success);
         CHECK(range_cfg.metric_type == "L2");
-        CHECK(range_cfg.radius_low_bound == -1.0);
-        CHECK(range_cfg.radius_high_bound == 1000);
+        CHECK(range_cfg.radius == 1000);
+        CHECK(range_cfg.range_filter == 1.0);
 
         knowhere::HnswConfig feder_cfg;
         s = knowhere::Config::Load(feder_cfg, json, knowhere::FEDER);
@@ -118,8 +118,8 @@ TEST_CASE("Test config json parse", "[config]") {
             "data_path": "/tmp",
             "pq_code_budget_gb": 1.0,
             "build_dram_budget_gb": 1.0,
-            "radius_low_bound": -10.0,
-            "radius_high_bound": 1000.0 ,
+            "radius": 1000.0 ,
+            "range_filter": 1.0,
             "trace_visit": true
         })");
         knowhere::DiskANNConfig train_cfg;
@@ -137,8 +137,8 @@ TEST_CASE("Test config json parse", "[config]") {
         s = knowhere::Config::Load(range_cfg, json, knowhere::RANGE_SEARCH);
         CHECK(s == knowhere::Status::success);
         CHECK(range_cfg.metric_type == "L2");
-        CHECK(range_cfg.radius_low_bound == -10.0);
-        CHECK(range_cfg.radius_high_bound == 1000);
+        CHECK(range_cfg.radius == 1000.0);
+        CHECK(range_cfg.range_filter == 1.0);
 
         knowhere::DiskANNConfig feder_cfg;
         s = knowhere::Config::Load(feder_cfg, json, knowhere::FEDER);

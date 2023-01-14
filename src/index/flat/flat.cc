@@ -131,19 +131,24 @@ class FlatIndexNode : public IndexNode {
         float* distances = nullptr;
         size_t* lims = nullptr;
         try {
-            float low_bound = f_cfg.radius_low_bound;
-            float high_bound = f_cfg.radius_high_bound;
-
+            float radius = f_cfg.radius;
             faiss::RangeSearchResult res(nq);
             if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
                 bool is_ip = (index_->metric_type == faiss::METRIC_INNER_PRODUCT);
-                float radius = (is_ip ? low_bound : high_bound);
                 index_->range_search(nq, (const float*)xq, radius, &res, bitset);
-                GetRangeSearchResult(res, is_ip, nq, low_bound, high_bound, distances, ids, lims, bitset);
+                if (f_cfg.range_filter_exist) {
+                    GetRangeSearchResult(res, is_ip, nq, radius, f_cfg.range_filter, distances, ids, lims, bitset);
+                } else {
+                    GetRangeSearchResult(res, is_ip, nq, radius, distances, ids, lims);
+                }
             }
             if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
-                index_->range_search(nq, (const uint8_t*)xq, high_bound, &res, bitset);
-                GetRangeSearchResult(res, false, nq, low_bound, high_bound, distances, ids, lims, bitset);
+                index_->range_search(nq, (const uint8_t*)xq, radius, &res, bitset);
+                if (f_cfg.range_filter_exist) {
+                    GetRangeSearchResult(res, false, nq, radius, f_cfg.range_filter, distances, ids, lims, bitset);
+                } else {
+                    GetRangeSearchResult(res, false, nq, radius, distances, ids, lims);
+                }
             }
         } catch (const std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "error inner faiss, " << e.what();
