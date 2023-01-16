@@ -15,9 +15,7 @@ set(DISKANN_SOURCES
     thirdparty/DiskANN/src/pq_flash_index.cpp
     thirdparty/DiskANN/src/logger.cpp
     thirdparty/DiskANN/src/utils.cpp)
-if(__AARCH64)
-  list(APPEND DISKANN_SOURCES thirdparty/DiskANN/src/distance_neon.cpp)
-endif()
+
 add_library(diskann STATIC ${DISKANN_SOURCES})
 target_link_libraries(diskann PUBLIC ${AIO_LIBRARIES}
                                      ${DISKANN_BOOST_PROGRAM_OPTIONS_LIB})

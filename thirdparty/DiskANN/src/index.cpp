@@ -280,18 +280,7 @@ namespace diskann {
       _in_graph.resize(_max_points + _num_frozen_pts);
     }
 
-    if (m == diskann::Metric::COSINE && std::is_floating_point<T>::value) {
-      // This is safe because T is float inside the if block.
-      this->_distance = (Distance<T> *) new AVXNormalizedCosineDistanceFloat();
-      this->_normalize_vecs = true;
-      std::cout << "Normalizing vectors and using L2 for cosine "
-                   "AVXNormalizedCosineDistanceFloat()."
-                << std::endl;
-      // std::cout << "Need to add functionality for COSINE metric" <<
-      // std::endl;
-    } else {
-      this->_distance = get_distance_function<T>(m);
-    }
+    this->_distance = get_distance_function<T>(m);
 
     _locks = std::vector<std::mutex>(_max_points + _num_frozen_pts);
 
@@ -315,10 +304,6 @@ namespace diskann {
       LockGuard lg(lock);
     }
 
-    if (this->_distance != nullptr) {
-      delete this->_distance;
-      this->_distance = nullptr;
-    }
     if (this->_data != nullptr) {
       aligned_free(this->_data);
       this->_data = nullptr;
@@ -367,7 +352,7 @@ namespace diskann {
       return 0;
     }
     size_t tag_bytes_written;
-    TagT  *tag_data = new TagT[_nd + _num_frozen_pts];
+    TagT * tag_data = new TagT[_nd + _num_frozen_pts];
     for (_u32 i = 0; i < _nd; i++) {
       if (_location_to_tag.find(i) != _location_to_tag.end()) {
         tag_data[i] = _location_to_tag[i];
@@ -505,7 +490,7 @@ namespace diskann {
     }
 
     size_t file_dim, file_num_points;
-    TagT  *tag_data;
+    TagT * tag_data;
 #ifdef EXEC_ENV_OLS
     load_bin<TagT>(reader, tag_data, file_num_points, file_dim);
 #else
@@ -877,7 +862,7 @@ namespace diskann {
 #pragma omp parallel for schedule(static, 65536)
     for (_s64 i = 0; i < (_s64) _nd; i++) {
       // extract point and distance reference
-      float   &dist = distances[i];
+      float &  dist = distances[i];
       const T *cur_vec = _data + (i * (size_t) _aligned_dim);
       dist = 0;
       float diff = 0;
@@ -917,8 +902,8 @@ namespace diskann {
   std::pair<uint32_t, uint32_t> Index<T, TagT>::iterate_to_fixed_point(
       const T *node_coords, const unsigned Lsize,
       const std::vector<unsigned> &init_ids,
-      std::vector<Neighbor>       &expanded_nodes_info,
-      tsl::robin_set<unsigned>    &expanded_nodes_ids,
+      std::vector<Neighbor> &      expanded_nodes_info,
+      tsl::robin_set<unsigned> &   expanded_nodes_ids,
       std::vector<Neighbor> &best_L_nodes, std::vector<unsigned> &des,
       tsl::robin_set<unsigned> &inserted_into_pool_rs,
       boost::dynamic_bitset<> &inserted_into_pool_bs, bool ret_frozen,
@@ -962,8 +947,8 @@ namespace diskann {
             __FILE__, __LINE__);
       }
       nn = Neighbor(id,
-                    _distance->compare(_data + _aligned_dim * (size_t) id,
-                                       node_coords, (unsigned) _aligned_dim),
+                    _distance(_data + _aligned_dim * (size_t) id, node_coords,
+                              (unsigned) _aligned_dim),
                     true);
       if (fast_iterate) {
         if (inserted_into_pool_bs[id] == 0) {
@@ -1048,9 +1033,9 @@ namespace diskann {
             }
 
             cmps++;
-            float dist = _distance->compare(node_coords,
-                                            _data + _aligned_dim * (size_t) id,
-                                            (unsigned) _aligned_dim);
+            float dist =
+                _distance(node_coords, _data + _aligned_dim * (size_t) id,
+                          (unsigned) _aligned_dim);
 
             if (dist >= best_L_nodes[l - 1].distance && (l == Lsize))
               continue;
@@ -1097,11 +1082,11 @@ namespace diskann {
   void Index<T, TagT>::get_expanded_nodes(
       const size_t node_id, const unsigned Lindex,
       std::vector<unsigned>     init_ids,
-      std::vector<Neighbor>    &expanded_nodes_info,
+      std::vector<Neighbor> &   expanded_nodes_info,
       tsl::robin_set<unsigned> &expanded_nodes_ids, std::vector<unsigned> &des,
-      std::vector<Neighbor>    &best_L_nodes,
+      std::vector<Neighbor> &   best_L_nodes,
       tsl::robin_set<unsigned> &inserted_into_pool_rs,
-      boost::dynamic_bitset<>  &inserted_into_pool_bs) {
+      boost::dynamic_bitset<> & inserted_into_pool_bs) {
     const T *node_coords = _data + _aligned_dim * node_id;
 
     if (init_ids.size() == 0)
@@ -1116,7 +1101,7 @@ namespace diskann {
   void Index<T, TagT>::get_expanded_nodes(
       const size_t node_id, const unsigned Lindex,
       std::vector<unsigned>     init_ids,
-      std::vector<Neighbor>    &expanded_nodes_info,
+      std::vector<Neighbor> &   expanded_nodes_info,
       tsl::robin_set<unsigned> &expanded_nodes_ids) {
     const T *node_coords = _data + _aligned_dim * node_id;
 
@@ -1149,7 +1134,7 @@ namespace diskann {
                                     const float alpha, const unsigned degree,
                                     const unsigned         maxc,
                                     std::vector<Neighbor> &result,
-                                    std::vector<float>    &occlude_factor) {
+                                    std::vector<float> &   occlude_factor) {
     if (pool.empty())
       return;
     assert(std::is_sorted(pool.begin(), pool.end()));
@@ -1172,9 +1157,9 @@ namespace diskann {
         for (unsigned t = start + 1; t < pool.size() && t < maxc; t++) {
           if (occlude_factor[t] > alpha)
             continue;
-          float djk = _distance->compare(
-              _data + _aligned_dim * (size_t) pool[t].id,
-              _data + _aligned_dim * (size_t) p.id, (unsigned) _aligned_dim);
+          float djk = _distance(_data + _aligned_dim * (size_t) pool[t].id,
+                                _data + _aligned_dim * (size_t) p.id,
+                                (size_t) _aligned_dim);
           if (_dist_metric == diskann::Metric::L2 ||
               _dist_metric == diskann::Metric::COSINE) {
             occlude_factor[t] =
@@ -1223,7 +1208,7 @@ namespace diskann {
                                   -1);
     }
 
-    _width = (std::max)(_width, range);
+    _width = (std::max) (_width, range);
 
     // sort the pool based on distance to query
     std::sort(pool.begin(), pool.end());
@@ -1312,7 +1297,7 @@ namespace diskann {
       /* des.id is the id of the neighbors of n */
       assert(des >= 0 && des < _max_points + _num_frozen_pts);
       /* des_pool contains the neighbors of the neighbors of n */
-      auto                 &des_pool = _final_graph[des];
+      auto &                des_pool = _final_graph[des];
       std::vector<unsigned> copy_of_neighbors;
       bool                  prune_needed = false;
       {
@@ -1345,10 +1330,9 @@ namespace diskann {
         for (auto cur_nbr : copy_of_neighbors) {
           if (dummy_visited.find(cur_nbr) == dummy_visited.end() &&
               cur_nbr != des) {
-            float dist =
-                _distance->compare(_data + _aligned_dim * (size_t) des,
+            float dist = _distance(_data + _aligned_dim * (size_t) des,
                                    _data + _aligned_dim * (size_t) cur_nbr,
-                                   (unsigned) _aligned_dim);
+                                   (size_t) _aligned_dim);
             dummy_pool.emplace_back(Neighbor(cur_nbr, dist, true));
             dummy_visited.insert(cur_nbr);
           }
@@ -1507,7 +1491,7 @@ namespace diskann {
       for (uint32_t sync_num = 0; sync_num < round_num_syncs; sync_num++) {
         size_t start_id = sync_num * round_size;
         size_t end_id =
-            (std::min)(_nd + _num_frozen_pts, (sync_num + 1) * round_size);
+            (std::min) (_nd + _num_frozen_pts, (sync_num + 1) * round_size);
 
         auto s = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> diff;
@@ -1533,10 +1517,9 @@ namespace diskann {
           if (!_final_graph[node].empty())
             for (auto id : _final_graph[node]) {
               if (visited.find(id) == visited.end() && id != node) {
-                float dist =
-                    _distance->compare(_data + _aligned_dim * (size_t) node,
+                float dist = _distance(_data + _aligned_dim * (size_t) node,
                                        _data + _aligned_dim * (size_t) id,
-                                       (unsigned) _aligned_dim);
+                                       (size_t) _aligned_dim);
                 pool.emplace_back(Neighbor(id, dist, true));
                 visited.insert(id);
               }
@@ -1585,10 +1568,9 @@ namespace diskann {
             for (auto cur_nbr : _final_graph[node]) {
               if (dummy_visited.find(cur_nbr) == dummy_visited.end() &&
                   cur_nbr != node) {
-                float dist =
-                    _distance->compare(_data + _aligned_dim * (size_t) node,
+                float dist = _distance(_data + _aligned_dim * (size_t) node,
                                        _data + _aligned_dim * (size_t) cur_nbr,
-                                       (unsigned) _aligned_dim);
+                                       (size_t) _aligned_dim);
                 dummy_pool.emplace_back(Neighbor(cur_nbr, dist, true));
                 dummy_visited.insert(cur_nbr);
               }
@@ -1652,10 +1634,9 @@ namespace diskann {
         for (auto cur_nbr : _final_graph[node]) {
           if (dummy_visited.find(cur_nbr) == dummy_visited.end() &&
               cur_nbr != node) {
-            float dist =
-                _distance->compare(_data + _aligned_dim * (size_t) node,
+            float dist = _distance(_data + _aligned_dim * (size_t) node,
                                    _data + _aligned_dim * (size_t) cur_nbr,
-                                   (unsigned) _aligned_dim);
+                                   (size_t) _aligned_dim);
             dummy_pool.emplace_back(Neighbor(cur_nbr, dist, true));
             dummy_visited.insert(cur_nbr);
           }
@@ -1690,10 +1671,9 @@ namespace diskann {
           for (auto cur_nbr : _final_graph[node]) {
             if (dummy_visited.find(cur_nbr) == dummy_visited.end() &&
                 cur_nbr != node) {
-              float dist =
-                  _distance->compare(_data + _aligned_dim * (size_t) node,
+              float dist = _distance(_data + _aligned_dim * (size_t) node,
                                      _data + _aligned_dim * (size_t) cur_nbr,
-                                     (unsigned) _aligned_dim);
+                                     (size_t) _aligned_dim);
               dummy_pool.emplace_back(Neighbor(cur_nbr, dist, true));
               dummy_visited.insert(cur_nbr);
             }
@@ -1712,8 +1692,8 @@ namespace diskann {
     size_t max = 0, min = 1 << 30, total = 0, cnt = 0;
     for (size_t i = 0; i < (_nd + _num_frozen_pts); i++) {
       auto &pool = _final_graph[i];
-      max = (std::max)(max, pool.size());
-      min = (std::min)(min, pool.size());
+      max = (std::max) (max, pool.size());
+      min = (std::min) (min, pool.size());
       total += pool.size();
       if (pool.size() < 2)
         cnt++;
@@ -1728,9 +1708,9 @@ namespace diskann {
   }
 
   template<typename T, typename TagT>
-  void Index<T, TagT>::build(const char              *filename,
+  void Index<T, TagT>::build(const char *             filename,
                              const size_t             num_points_to_load,
-                             Parameters              &parameters,
+                             Parameters &             parameters,
                              const std::vector<TagT> &tags) {
     if (!file_exists(filename)) {
       std::stringstream stream;
@@ -1809,8 +1789,8 @@ namespace diskann {
     size_t max = 0, min = 1 << 30, total = 0, cnt = 0;
     for (size_t i = 0; i < _nd; i++) {
       auto &pool = _final_graph[i];
-      max = (std::max)(max, pool.size());
-      min = (std::min)(min, pool.size());
+      max = (std::max) (max, pool.size());
+      min = (std::min) (min, pool.size());
       total += pool.size();
       if (pool.size() < 2)
         cnt++;
@@ -1822,12 +1802,12 @@ namespace diskann {
                          << (float) total / (float) (_nd + _num_frozen_pts)
                          << "  min:" << min << "  count(deg<2):" << cnt;
     }
-    _width = (std::max)((unsigned) max, _width);
+    _width = (std::max) ((unsigned) max, _width);
     _has_built = true;
   }
 
   template<typename T, typename TagT>
-  void Index<T, TagT>::build(const char  *filename,
+  void Index<T, TagT>::build(const char * filename,
                              const size_t num_points_to_load,
                              Parameters &parameters, const char *tag_filename) {
     if (!file_exists(filename)) {
@@ -1883,7 +1863,7 @@ namespace diskann {
           if (file_exists(tag_filename)) {
             LOG_KNOWHERE_DEBUG_ << "Loading tags from " << tag_filename
                                 << " for vamana index build";
-            TagT  *tag_data = nullptr;
+            TagT * tag_data = nullptr;
             size_t npts, ndim;
             diskann::load_bin(tag_filename, tag_data, npts, ndim);
             if (npts != num_points_to_load) {
@@ -1921,8 +1901,8 @@ namespace diskann {
     size_t max = 0, min = 1 << 30, total = 0, cnt = 0;
     for (size_t i = 0; i < _nd; i++) {
       auto &pool = _final_graph[i];
-      max = (std::max)(max, pool.size());
-      min = (std::min)(min, pool.size());
+      max = (std::max) (max, pool.size());
+      min = (std::min) (min, pool.size());
       total += pool.size();
       if (pool.size() < 2)
         cnt++;
@@ -1934,16 +1914,16 @@ namespace diskann {
                          << (float) total / (float) (_nd + _num_frozen_pts)
                          << "  min:" << min << "  count(deg<2):" << cnt;
     }
-    _width = (std::max)((unsigned) max, _width);
+    _width = (std::max) ((unsigned) max, _width);
     _has_built = true;
   }
 
   template<typename T, typename TagT>
   template<typename IdType>
-  std::pair<uint32_t, uint32_t> Index<T, TagT>::search(const T       *query,
+  std::pair<uint32_t, uint32_t> Index<T, TagT>::search(const T *      query,
                                                        const size_t   K,
                                                        const unsigned L,
-                                                       IdType        *indices,
+                                                       IdType *       indices,
                                                        float *distances) {
     ScratchStoreManager<T> manager(_query_scratch);
     auto                   scratch = manager.scratch_space();
@@ -1956,9 +1936,9 @@ namespace diskann {
   std::pair<uint32_t, uint32_t> Index<T, TagT>::search_impl(
       const T *query, const size_t K, const unsigned L, IdType *indices,
       float *distances, InMemQueryScratch<T> &scratch) {
-    std::vector<Neighbor>    &expanded_nodes_info = scratch.pool();
+    std::vector<Neighbor> &   expanded_nodes_info = scratch.pool();
     tsl::robin_set<unsigned> &expanded_nodes_ids = scratch.visited();
-    std::vector<unsigned>    &des = scratch.des();
+    std::vector<unsigned> &   des = scratch.des();
     std::vector<Neighbor>     best_L_nodes = scratch.best_l_nodes();
     tsl::robin_set<unsigned> &inserted_into_pool_rs =
         scratch.inserted_into_pool_rs();
@@ -2010,7 +1990,7 @@ namespace diskann {
   template<typename T, typename TagT>
   size_t Index<T, TagT>::search_with_tags(const T *query, const uint64_t K,
                                           const unsigned L, TagT *tags,
-                                          float            *distances,
+                                          float *           distances,
                                           std::vector<T *> &res_vectors) {
     ScratchStoreManager<T> manager(_query_scratch);
     auto                   scratch = manager.scratch_space();
@@ -2021,7 +2001,7 @@ namespace diskann {
           << "Expanding query scratch_space. Was created with Lsize: "
           << scratch.search_l << " but search L is: " << L;
     }
-    _u32  *indices = scratch.indices;             // new unsigned[L];
+    _u32 * indices = scratch.indices;             // new unsigned[L];
     float *dist_interim = scratch.interim_dists;  // new float[L];
     search_impl(query, L, L, indices, dist_interim, scratch);
 
@@ -2068,7 +2048,7 @@ namespace diskann {
   template<typename T, typename TagT>
   T *Index<T, TagT>::get_data() {
     if (_num_frozen_pts > 0) {
-      T     *ret_data = nullptr;
+      T *    ret_data = nullptr;
       size_t allocSize = ((size_t) _nd) * _aligned_dim * sizeof(T);
       alloc_aligned(((void **) &ret_data), allocSize, 8 * sizeof(T));
       memset(ret_data, 0, allocSize);
@@ -2267,9 +2247,9 @@ namespace diskann {
         for (auto j : candidate_set)
           expanded_nghrs.push_back(
               Neighbor(j,
-                       _distance->compare(_data + _aligned_dim * (size_t) ngh,
-                                          _data + _aligned_dim * (size_t) j,
-                                          (unsigned) _aligned_dim),
+                       _distance(_data + _aligned_dim * (size_t) ngh,
+                                 _data + _aligned_dim * (size_t) j,
+                                 (size_t) _aligned_dim),
                        true));
         std::sort(expanded_nghrs.begin(), expanded_nghrs.end());
         occlude_list(expanded_nghrs, alpha, range, maxc, result);
@@ -2390,9 +2370,9 @@ namespace diskann {
             for (auto j : candidate_set) {
               expanded_nghrs.push_back(
                   Neighbor(j,
-                           _distance->compare(_data + _aligned_dim * i,
-                                              _data + _aligned_dim * (size_t) j,
-                                              (unsigned) _aligned_dim),
+                           _distance(_data + _aligned_dim * i,
+                                     _data + _aligned_dim * (size_t) j,
+                                     (unsigned) _aligned_dim),
                            true));
             }
 
@@ -2478,8 +2458,8 @@ namespace diskann {
     size_t max = 0, min = 1 << 30, total = 0, cnt = 0;
     for (size_t i = 0; i < (_nd + _num_frozen_pts); i++) {
       auto &pool = _final_graph[i];
-      max = (std::max)(max, pool.size());
-      min = (std::min)(min, pool.size());
+      max = (std::max) (max, pool.size());
+      min = (std::min) (min, pool.size());
       total += pool.size();
       if (pool.size() < 2)
         cnt++;
@@ -2753,7 +2733,7 @@ namespace diskann {
     ScratchStoreManager<T> manager(_query_scratch);
     auto                   scratch = manager.scratch_space();
 
-    std::vector<Neighbor>    &pool = scratch.pool();
+    std::vector<Neighbor> &   pool = scratch.pool();
     tsl::robin_set<unsigned> &visited = scratch.visited();
 
     {
@@ -2950,7 +2930,7 @@ namespace diskann {
   // TODO: Check if this function needs a shared_lock on _tag_lock.
   template<typename T, typename TagT>
   int Index<T, TagT>::lazy_delete(const tsl::robin_set<TagT> &tags,
-                                  std::vector<TagT>          &failed_tags) {
+                                  std::vector<TagT> &         failed_tags) {
     if (failed_tags.size() > 0) {
       diskann::cerr << "failed_tags should be passed as an empty list"
                     << std::endl;
@@ -3042,10 +3022,9 @@ namespace diskann {
     _neighbor_len = (_width + 1) * sizeof(unsigned);
     _node_size = _data_len + _neighbor_len;
     _opt_graph = (char *) malloc(_node_size * _nd);
-    DistanceFastL2<T> *dist_fast = (DistanceFastL2<T> *) _distance;
     for (unsigned i = 0; i < _nd; i++) {
       char *cur_node_offset = _opt_graph + i * _node_size;
-      float cur_norm = dist_fast->norm(_data + i * _aligned_dim, _aligned_dim);
+      float cur_norm = norm_l2sqr(_data + i * _aligned_dim, _aligned_dim);
       std::memcpy(cur_node_offset, &cur_norm, sizeof(float));
       std::memcpy(cur_node_offset + sizeof(float), _data + i * _aligned_dim,
                   _data_len - sizeof(float));
@@ -3065,8 +3044,8 @@ namespace diskann {
   void Index<T, TagT>::search_with_optimized_layout(const T *query, size_t K,
                                                     size_t    L,
                                                     unsigned *indices) {
-    DistanceFastL2<T> *dist_fast = (DistanceFastL2<T> *) _distance;
-
+    auto fast_distance =
+        get_distance_function<T>(diskann::Metric::INNER_PRODUCT);
     std::vector<Neighbor> retset(L + 1);
     std::vector<unsigned> init_ids(L);
     // std::mt19937 rng(rand());
@@ -3074,7 +3053,7 @@ namespace diskann {
 
     boost::dynamic_bitset<> flags{_nd, 0};
     unsigned                tmp_l = 0;
-    unsigned               *neighbors =
+    unsigned *              neighbors =
         (unsigned *) (_opt_graph + _node_size * _ep + _data_len);
     unsigned MaxM_ep = *neighbors;
     neighbors++;
@@ -3108,11 +3087,10 @@ namespace diskann {
       unsigned id = init_ids[i];
       if (id >= _nd)
         continue;
-      T    *x = (T *) (_opt_graph + _node_size * id);
+      T *   x = (T *) (_opt_graph + _node_size * id);
       float norm_x = *x;
       x++;
-      float dist =
-          dist_fast->compare(x, query, norm_x, (unsigned) _aligned_dim);
+      float dist = norm_x - 2 * fast_distance(x, query, (size_t) _aligned_dim);
       retset[i] = Neighbor(id, dist, true);
       flags[id] = true;
       L++;
@@ -3149,11 +3127,11 @@ namespace diskann {
           if (flags[id])
             continue;
           flags[id] = 1;
-          T    *data = (T *) (_opt_graph + _node_size * id);
+          T *   data = (T *) (_opt_graph + _node_size * id);
           float norm = *data;
           data++;
           float dist =
-              dist_fast->compare(query, data, norm, (unsigned) _aligned_dim);
+              norm - 2 * fast_distance(query, data, (size_t) _aligned_dim);
           if (dist >= retset[L - 1].distance)
             continue;
           Neighbor nn(id, dist, true);
@@ -3204,12 +3182,12 @@ namespace diskann {
   Index<uint8_t, uint64_t>::search<uint64_t>(const uint8_t *query,
                                              const size_t K, const unsigned L,
                                              uint64_t *indices,
-                                             float    *distances);
+                                             float *   distances);
   template DISKANN_DLLEXPORT std::pair<uint32_t, uint32_t>
   Index<uint8_t, uint64_t>::search<uint32_t>(const uint8_t *query,
                                              const size_t K, const unsigned L,
                                              uint32_t *indices,
-                                             float    *distances);
+                                             float *   distances);
   template DISKANN_DLLEXPORT std::pair<uint32_t, uint32_t>
   Index<int8_t, uint64_t>::search<uint64_t>(const int8_t *query, const size_t K,
                                             const unsigned L, uint64_t *indices,
@@ -3231,12 +3209,12 @@ namespace diskann {
   Index<uint8_t, uint32_t>::search<uint64_t>(const uint8_t *query,
                                              const size_t K, const unsigned L,
                                              uint64_t *indices,
-                                             float    *distances);
+                                             float *   distances);
   template DISKANN_DLLEXPORT std::pair<uint32_t, uint32_t>
   Index<uint8_t, uint32_t>::search<uint32_t>(const uint8_t *query,
                                              const size_t K, const unsigned L,
                                              uint32_t *indices,
-                                             float    *distances);
+                                             float *   distances);
   template DISKANN_DLLEXPORT std::pair<uint32_t, uint32_t>
   Index<int8_t, uint32_t>::search<uint64_t>(const int8_t *query, const size_t K,
                                             const unsigned L, uint64_t *indices,
