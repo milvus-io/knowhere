@@ -106,9 +106,10 @@ def test_index_with_sift(recall, error, name, config):
         knowhere.ArrayToDataSet(xb),
         json.dumps(config),
     )
-    ans = idx.Search(
+    ans, _ = idx.Search(
         knowhere.ArrayToDataSet(xq),
         json.dumps(config),
+        knowhere.GetNullBitSetView()
     )
     _, ids = knowhere.DataSetToArray(ans)
     assert recall(ids_true, ids) >= 0.99

@@ -61,13 +61,15 @@ def test_index(gen_data, faiss_ans, recall, error):
 
     print(index_name, diskann_config["build_config"])
     diskann = knowhere.CreateIndex(index_name)
-    diskann.Build(
+    build_status = diskann.Build(
         knowhere.GetNullDataSet(),
         json.dumps(diskann_config["build_config"]),
     )
-    ans = diskann.Search(
+    assert knowhere.Status(build_status) == knowhere.Status.success
+    ans, _ = diskann.Search(
         knowhere.ArrayToDataSet(xq),
         json.dumps(diskann_config["search_config"]),
+        knowhere.GetNullBitSetView()
     )
     k_dis, k_ids = knowhere.DataSetToArray(ans)
     f_dis, f_ids = faiss_ans(xb, xq, diskann_config["search_config"]["metric_type"], diskann_config["search_config"]["k"])

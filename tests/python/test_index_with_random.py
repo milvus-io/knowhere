@@ -79,9 +79,10 @@ def test_index(gen_data, faiss_ans, recall, error, name, config):
         knowhere.ArrayToDataSet(xb),
         json.dumps(config),
     )
-    ans = idx.Search(
+    ans, _ = idx.Search(
         knowhere.ArrayToDataSet(xq),
         json.dumps(config),
+        knowhere.GetNullBitSetView()
     )
     k_dis, k_ids = knowhere.DataSetToArray(ans)
     f_dis, f_ids = faiss_ans(xb, xq, config["metric_type"], config["k"])
