@@ -1,9 +1,14 @@
 from . import swigknowhere
+from .swigknowhere import Status
+from .swigknowhere import GetBinarySet, GetNullDataSet, GetNullBitSetView
 import numpy as np
-
 
 def CreateIndex(name):
     return swigknowhere.IndexWrap(name)
+
+
+def CreateBitSet(bits_num):
+    return swigknowhere.BitSet(bits_num)
 
 
 def ArrayToDataSet(arr):
@@ -58,7 +63,3 @@ def RangeSearchDataSetToArray(ans):
         ids_list.append(ids[lims[idx] : lims[idx + 1]])
 
     return dis_list, ids_list
-
-
-def GetNullDataSet():
-    return swigknowhere.GetNullDataSet()

@@ -17,7 +17,6 @@ typedef uint64_t size_t;
 %ignore knowhere::IndexNode;
 %ignore knowhere::Index;
 %ignore knowhere::expected;
-
 %{
 #include <stdint.h>
 #include <memory>
@@ -27,6 +26,7 @@ typedef uint64_t size_t;
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 #endif
+#include <knowhere/expected.h>
 #include <knowhere/factory.h>
 #include <knowhere/comp/local_file_manager.h>
 using namespace knowhere;
@@ -36,6 +36,7 @@ using namespace knowhere;
 #define SWIG_FILE_WITH_INIT
 %}
 %include "numpy.i"
+%include "typemaps.i"
 %init %{
 import_array();
 %}
@@ -52,7 +53,9 @@ import_array();
 %include <knowhere/expected.h>
 %include <knowhere/dataset.h>
 %include <knowhere/binaryset.h>
+%include <knowhere/bitsetview.h>
 %include <knowhere/expected.h>
+
 %apply (float* IN_ARRAY2, int DIM1, int DIM2) {(float* xb, int nb, int dim)}
 %apply (int* IN_ARRAY2, int DIM1, int DIM2) {(int* xb, int nb, int dim)}
 %apply (uint8_t *IN_ARRAY1, int DIM1) {(uint8_t *block, int size)}
@@ -62,11 +65,33 @@ import_array();
 %apply (float* INPLACE_ARRAY2, int DIM1, int DIM2){(float *dis,int nq_1,int k_1)}
 %apply (int *INPLACE_ARRAY2, int DIM1, int DIM2){(int *ids,int nq_2,int k_2)}
 
+%typemap(in, numinputs=0) knowhere::Status& status(knowhere::Status tmp) %{
+    $1 = &tmp;
+%}
+%typemap(argout) knowhere::Status& status %{
+    PyObject *o;
+    o = PyInt_FromLong(long(*$1));
+    $result = SWIG_Python_AppendOutput($result, o);
+%}
+
+%pythoncode %{
+from enum import Enum
+def redo(prefix):
+    tmpD = { k : v for k,v in globals().items() if k.startswith(prefix + '_')}
+    for k,v in tmpD.items():
+        del globals()[k]
+    tmpD = {k[len(prefix)+1:]:v for k,v in tmpD.items()}
+    globals()[prefix] = Enum(prefix,tmpD)
+redo('Status')
+del redo
+del Enum
+%}
+
 %inline %{
 class IndexWrap {
  public:
     IndexWrap(const std::string& name) {
-        if (name.rfind("DISKANN", 0) == 0) {
+        if (name == std::string("DISKANN")) {
             std::shared_ptr<knowhere::FileManager> file_manager = std::make_shared<knowhere::LocalFileManager>();
             auto diskann_pack = knowhere::Pack(file_manager);
             idx = IndexFactory::Instance().Create(name, diskann_pack);
@@ -91,36 +116,48 @@ class IndexWrap {
     }
 
     knowhere::DataSetPtr
-    Search(knowhere::DataSetPtr dataset, const std::string& json) {
-        auto res = idx.Search(*dataset, knowhere::Json::parse(json), nullptr);
-        if (res.has_value())
+    Search(knowhere::DataSetPtr dataset, const std::string& json, const knowhere::BitsetView& bitset, knowhere::Status& status) {
+        auto res = idx.Search(*dataset, knowhere::Json::parse(json), bitset);
+        if (res.has_value()) {
+            status = knowhere::Status::success;
             return res.value();
-        return nullptr;
+        } else {
+            status = res.error();
+            return nullptr;
+        }
     }
 
     knowhere::DataSetPtr
-    RangeSearch(knowhere::DataSetPtr dataset, const std::string& json){
-        auto res = idx.RangeSearch(*dataset, knowhere::Json::parse(json), nullptr);
-        if (res.has_value())
+    RangeSearch(knowhere::DataSetPtr dataset, const std::string& json, const knowhere::BitsetView& bitset, knowhere::Status& status){
+        auto res = idx.RangeSearch(*dataset, knowhere::Json::parse(json), bitset);
+        if (res.has_value()) {
+            status = knowhere::Status::success;
             return res.value();
-        return nullptr;
+        } else {
+            status = res.error();
+            return nullptr;
+        }
     }
 
     knowhere::DataSetPtr
-    GetVectorByIds(knowhere::DataSetPtr dataset, const std::string& json) {
+    GetVectorByIds(knowhere::DataSetPtr dataset, const std::string& json, knowhere::Status& status) {
         auto res = idx.GetVectorByIds(*dataset, knowhere::Json::parse(json));
-        if (res.has_value())
+        if (res.has_value()) {
+            status = knowhere::Status::success;
             return res.value();
-        return nullptr;
+        } else {
+            status = res.error();
+            return nullptr;
+        }
     }
 
     knowhere::Status
-    Serialize(BinarySetPtr binset) {
+    Serialize(knowhere::BinarySetPtr binset) {
         return idx.Serialize(*binset);
     }
 
     knowhere::Status
-    Deserialize(BinarySetPtr binset) {
+    Deserialize(knowhere::BinarySetPtr binset) {
         return idx.Deserialize(*binset);
     }
 
@@ -146,6 +183,32 @@ class IndexWrap {
 
  private:
     Index<IndexNode> idx;
+};
+
+class BitSet {
+ public:
+    BitSet(const int num_bits) : num_bits_(num_bits) {
+        bit_set_.resize(num_bits_ / 8, 0);
+    }
+
+    void
+    SetBit(const int idx) {
+        bit_set_[idx >> 3] |= 0x1 << (idx & 0x7);
+    }
+
+    knowhere::BitsetView
+    GetBitSetView() {
+        return knowhere::BitsetView(bit_set_.data(), num_bits_);
+    }
+
+ private:
+    std::vector<uint8_t> bit_set_;
+    int num_bits_ = 0;
+};
+
+knowhere::BitsetView
+GetNullBitSetView() {
+    return nullptr;
 };
 
 knowhere::DataSetPtr
@@ -174,6 +237,10 @@ int64_t DataSet_Rows(knowhere::DataSetPtr results){
 
 int64_t DataSet_Dim(knowhere::DataSetPtr results){
     return results->GetDim();
+}
+
+knowhere::BinarySetPtr GetBinarySet() {
+    return std::make_shared<knowhere::BinarySet>();
 }
 
 knowhere::DataSetPtr GetNullDataSet() {
