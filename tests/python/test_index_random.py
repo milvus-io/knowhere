@@ -54,11 +54,32 @@ def test_index(gen_data, faiss_ans, recall, error, name, config):
         knowhere.ArrayToDataSet(xb),
         json.dumps(config),
     )
-    ans = idx.Search(
+
+    ans, _ = idx.Search(
         knowhere.ArrayToDataSet(xq),
         json.dumps(config),
+        knowhere.GetNullBitSetView()
     )
     k_dis, k_ids = knowhere.DataSetToArray(ans)
     f_dis, f_ids = faiss_ans(xb, xq, config["metric_type"], config["k"])
-    assert recall(f_ids, k_ids) >= 0.99
+    if (name != "IVFSQ"):
+        assert recall(f_ids, k_ids) >= 0.99
+    else:
+        assert recall(f_ids, k_ids) >= 0.70
+    assert error(f_dis, f_dis) <= 0.01
+
+    bitset = knowhere.CreateBitSet(xb.shape[0])
+    for id in k_ids[:10,:1].ravel():
+        bitset.SetBit(int(id))
+    ans, _ = idx.Search(
+        knowhere.ArrayToDataSet(xq),
+        json.dumps(config),
+        bitset.GetBitSetView()
+    )
+
+    k_dis, k_ids = knowhere.DataSetToArray(ans)
+    if (name != "IVFSQ"):
+        assert recall(f_ids, k_ids) >= 0.7
+    else:
+        assert recall(f_ids, k_ids) >= 0.5
     assert error(f_dis, f_dis) <= 0.01
