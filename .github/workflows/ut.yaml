@@ -32,10 +32,10 @@ jobs:
           submodules: recursive
       - name: Install Dependency
         run: |
-          sudo apt update && sudo apt install -y cmake g++ gcc libopenblas-dev
+          sudo apt update && sudo apt install -y cmake g++ gcc libopenblas-dev libboost-program-options-dev libaio-dev
       - name: Build & Run
         run: |
-          mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_UT=ON \
+          mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_DISKANN=ON -DWITH_UT=ON \
           && make -j8 \
           && ./tests/ut/knowhere_tests
 
@@ -50,10 +50,11 @@ jobs:
           submodules: recursive
       - name: Install Dependency
         run: |
-          sudo apt update && sudo apt install -y cmake g++ gcc libopenblas-dev python3 python3-pip python3-setuptools
+          sudo apt update && sudo apt install -y cmake g++ gcc libopenblas-dev libboost-program-options-dev libaio-dev \
+          python3 python3-pip python3-setuptools
       - name: Build
         run: |
-          mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug \
+          mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_DISKANN=ON \
           && make -j8
       - name: Swig Build
         run: |
