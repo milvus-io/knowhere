@@ -20,6 +20,7 @@
 #include "pq_table.h"
 #include "utils.h"
 #include "windows_customizations.h"
+#include "diskann/distance.h"
 
 #define MAX_GRAPH_DEGREE 512
 #define SECTOR_LEN (_u64) 4096
@@ -42,7 +43,7 @@ namespace diskann {
         nullptr;  // MUST BE AT LEAST diskann MAX_DEGREE
     _u8 *aligned_pq_coord_scratch =
         nullptr;  // MUST BE AT LEAST  [N_CHUNKS * MAX_DEGREE]
-    T     *aligned_query_T = nullptr;
+    T *    aligned_query_T = nullptr;
     float *aligned_query_float = nullptr;
 
     tsl::robin_set<_u64> *visited = nullptr;
@@ -176,13 +177,13 @@ namespace diskann {
     // data: _u8 * n_chunks
     // chunk_size = chunk size of each dimension chunk
     // pq_tables = float* [[2^8 * [chunk_size]] * n_chunks]
-    _u8              *data = nullptr;
+    _u8 *             data = nullptr;
     _u64              n_chunks;
     FixedChunkPQTable pq_table;
 
     // distance comparator
-    std::shared_ptr<Distance<T>>     dist_cmp;
-    std::shared_ptr<Distance<float>> dist_cmp_float;
+    DISTFUN<T>     dist_cmp;
+    DISTFUN<float> dist_cmp_float;
 
     // for very large datasets: we use PQ even for the disk resident index
     bool              use_disk_index_pq = false;
@@ -207,7 +208,7 @@ namespace diskann {
         nhood_cache;  // <id, <neihbors_num, neihbors>>
 
     // coord_cache
-    T                        *coord_cache_buf = nullptr;
+    T *                       coord_cache_buf = nullptr;
     tsl::robin_map<_u32, T *> coord_cache;
 
     // thread-specific scratch
@@ -223,7 +224,7 @@ namespace diskann {
     // any additions we make to the header. This is an outer limit
     // on how big the header can be.
     static const int HEADER_SIZE = SECTOR_LEN;
-    char            *getHeaderBytes();
+    char *           getHeaderBytes();
 #endif
   };
 }  // namespace diskann
