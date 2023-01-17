@@ -21,14 +21,12 @@ class Benchmark_knowhere_float_range_qps : public Benchmark_knowhere, public ::t
     test_ivf(const knowhere::Config& cfg) {
         auto conf = cfg;
         auto nlist = knowhere::GetIndexParamNlist(conf);
-        auto low_bound = knowhere::GetMetaRadiusLowBound(conf);
-        auto high_bound = knowhere::GetMetaRadiusHighBound(conf);
+        auto radius = knowhere::GetMetaRadius(conf);
 
         knowhere::SetIndexParamNprobe(conf, nprobe_);
 
-        printf("\n[%0.3f s] %s | %s | nlist=%ld, nprobe=%d\n", get_time_diff(), ann_test_name_.c_str(),
-               index_type_.c_str(), nlist, nprobe_);
-        printf("[%0.3f s] radius_low_bound=%.3f, radius_high_bound=%.3f\n", get_time_diff(), low_bound, high_bound);
+        printf("\n[%0.3f s] %s | %s | nlist=%ld, nprobe=%d, radius=%.3f\n", get_time_diff(), ann_test_name_.c_str(),
+               index_type_.c_str(), nlist, nprobe_, radius);
         printf("================================================================================\n");
         for (auto thread_num : THREAD_NUMs_) {
             CALC_TIME_SPAN(task(conf, nq_, thread_num));
@@ -44,13 +42,11 @@ class Benchmark_knowhere_float_range_qps : public Benchmark_knowhere, public ::t
         auto conf = cfg;
         auto M = knowhere::GetIndexParamHNSWM(conf);
         auto efConstruction = knowhere::GetIndexParamEfConstruction(conf);
-        auto low_bound = knowhere::GetMetaRadiusLowBound(conf);
-        auto high_bound = knowhere::GetMetaRadiusHighBound(conf);
+        auto radius = knowhere::GetMetaRadius(conf);
         knowhere::SetIndexParamEf(conf, ef_);
 
-        printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld, ef=%d\n", get_time_diff(),
-               ann_test_name_.c_str(), index_type_.c_str(), M, efConstruction, ef_);
-        printf("[%0.3f s] radius_low_bound=%.3f, radius_high_bound=%.3f\n", get_time_diff(), low_bound, high_bound);
+        printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld, ef=%d, radius=%.3f\n", get_time_diff(),
+               ann_test_name_.c_str(), index_type_.c_str(), M, efConstruction, ef_, radius);
         printf("================================================================================\n");
         for (auto thread_num : THREAD_NUMs_) {
             CALC_TIME_SPAN(task(conf, nq_, thread_num));
@@ -101,8 +97,7 @@ class Benchmark_knowhere_float_range_qps : public Benchmark_knowhere, public ::t
         assert(metric_str_ == METRIC_IP_STR || metric_str_ == METRIC_L2_STR);
         metric_type_ = (metric_str_ == METRIC_IP_STR) ? knowhere::metric::IP : knowhere::metric::L2;
         knowhere::SetMetaMetricType(cfg_, metric_type_);
-        knowhere::SetMetaRadiusLowBound(cfg_, 0.0f);
-        knowhere::SetMetaRadiusHighBound(cfg_, *gt_radius_);
+        knowhere::SetMetaRadius(cfg_, *gt_radius_);
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX2);
         printf("faiss::distance_compute_blas_threshold: %ld\n", knowhere::KnowhereConfig::GetBlasThreshold());
     }

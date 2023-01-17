@@ -20,11 +20,10 @@ class Benchmark_knowhere_binary_range : public Benchmark_knowhere, public ::test
     void
     test_binary_idmap(const knowhere::Config& cfg) {
         auto conf = cfg;
-        auto low_bound = knowhere::GetMetaRadiusLowBound(conf);
-        auto high_bound = knowhere::GetMetaRadiusHighBound(conf);
+        auto radius = knowhere::GetMetaRadius(conf);
 
-        printf("\n[%0.3f s] %s | %s\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
-        printf("[%0.3f s] radius_low_bound=%.3f, radius_high_bound=%.3f\n", get_time_diff(), low_bound, high_bound);
+        printf("\n[%0.3f s] %s | %s, radius=%.3f\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(),
+               radius);
         printf("================================================================================\n");
         for (auto nq : NQs_) {
             knowhere::DatasetPtr ds_ptr = knowhere::GenDataset(nq, dim_, xq_);
@@ -46,11 +45,10 @@ class Benchmark_knowhere_binary_range : public Benchmark_knowhere, public ::test
     test_binary_ivf(const knowhere::Config& cfg) {
         auto conf = cfg;
         auto nlist = knowhere::GetIndexParamNlist(conf);
-        auto low_bound = knowhere::GetMetaRadiusLowBound(conf);
-        auto high_bound = knowhere::GetMetaRadiusHighBound(conf);
+        auto radius = knowhere::GetMetaRadius(conf);
 
-        printf("\n[%0.3f s] %s | %s | nlist=%ld\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(), nlist);
-        printf("[%0.3f s] radius_low_bound=%.3f, radius_high_bound=%.3f\n", get_time_diff(), low_bound, high_bound);
+        printf("\n[%0.3f s] %s | %s | nlist=%ld, radius=%.3f\n", get_time_diff(), ann_test_name_.c_str(),
+               index_type_.c_str(), nlist, radius);
         printf("================================================================================\n");
         for (auto nprobe : NPROBEs_) {
             knowhere::SetIndexParamNprobe(conf, nprobe);
@@ -89,8 +87,7 @@ class Benchmark_knowhere_binary_range : public Benchmark_knowhere, public ::test
                        : (metric_str_ == METRIC_JAC_STR) ? knowhere::metric::JACCARD
                                                          : knowhere::metric::TANIMOTO;
         knowhere::SetMetaMetricType(cfg_, metric_type_);
-        knowhere::SetMetaRadiusLowBound(cfg_, 0.0f);
-        knowhere::SetMetaRadiusHighBound(cfg_, *gt_radius_);
+        knowhere::SetMetaRadius(cfg_, *gt_radius_);
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX2);
         printf("faiss::distance_compute_blas_threshold: %ld\n", knowhere::KnowhereConfig::GetBlasThreshold());
     }

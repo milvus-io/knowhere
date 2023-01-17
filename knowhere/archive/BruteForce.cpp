@@ -110,31 +110,32 @@ BruteForce::RangeSearch(const DatasetPtr base_dataset,
     auto nq = GetDatasetRows(query_dataset);
 
     auto metric_type = GetMetaMetricType(config);
-    auto low_bound = GetMetaRadiusLowBound(config);
-    auto high_bound = GetMetaRadiusHighBound(config);
+    auto radius = GetMetaRadius(config);
 
     auto faiss_metric_type = GetFaissMetricType(metric_type);
+    bool is_ip = false;
 
     faiss::RangeSearchResult res(nq);
 
     switch (faiss_metric_type) {
         case faiss::METRIC_L2:
-            faiss::range_search_L2sqr((const float*)xq, (const float*)xb, dim, nq, nb, high_bound, &res, bitset);
+            faiss::range_search_L2sqr((const float*)xq, (const float*)xb, dim, nq, nb, radius, &res, bitset);
             break;
         case faiss::METRIC_INNER_PRODUCT:
-            faiss::range_search_inner_product((const float*)xq, (const float*)xb, dim, nq, nb, low_bound, &res, bitset);
+            is_ip = true;
+            faiss::range_search_inner_product((const float*)xq, (const float*)xb, dim, nq, nb, radius, &res, bitset);
             break;
         case faiss::METRIC_Jaccard:
             faiss::binary_range_search<faiss::CMin<float, int64_t>, float>(faiss::METRIC_Jaccard,
-                    (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, high_bound, dim / 8, &res, bitset);
+                    (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, radius, dim / 8, &res, bitset);
             break;
         case faiss::METRIC_Tanimoto:
             faiss::binary_range_search<faiss::CMin<float, int64_t>, float>(faiss::METRIC_Tanimoto,
-                    (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, high_bound, dim / 8, &res, bitset);
+                    (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, radius, dim / 8, &res, bitset);
             break;
         case faiss::METRIC_Hamming:
             faiss::binary_range_search<faiss::CMin<int, int64_t>, int>(faiss::METRIC_Hamming,
-                    (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, (int)high_bound, dim / 8, &res, bitset);
+                    (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, (int)radius, dim / 8, &res, bitset);
             break;
         default:
             KNOWHERE_THROW_MSG("BruteForce range search not support metric type: " + metric_type);
@@ -143,8 +144,13 @@ BruteForce::RangeSearch(const DatasetPtr base_dataset,
     float* distances = nullptr;
     int64_t* labels = nullptr;
     size_t* lims = nullptr;
-    GetRangeSearchResult(res, (faiss_metric_type == faiss::METRIC_INNER_PRODUCT), nq, low_bound, high_bound,
-                         distances, labels, lims, bitset);
+
+    if (CheckKeyInConfig(config, meta::RANGE_FILTER)) {
+        auto range_filter = GetMetaRangeFilter(config);
+        GetRangeSearchResult(res, is_ip, nq, radius, range_filter, distances, labels, lims, bitset);
+    } else {
+        GetRangeSearchResult(res, is_ip, nq, radius, distances, labels, lims);
+    }
 
     return GenResultDataset(labels, distances, lims);
 }

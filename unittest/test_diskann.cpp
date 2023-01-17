@@ -51,20 +51,20 @@ constexpr uint32_t kDim = 56;
 constexpr float kMax = 100;
 constexpr uint32_t kK = 10;
 constexpr uint32_t kBigK = kNumRows * 2;
-constexpr float kL2RadiusLowBound = 0;
-constexpr float kL2RadiusHighBound = 300000;
-constexpr float kIPRadiusLowBound = 50000;
-constexpr float kIPRadiusHighBound = std::numeric_limits<float>::max();
+constexpr float kL2Radius = 300000;
+constexpr float kL2RangeFilter = 0;
+constexpr float kIPRadius = 50000;
+constexpr float kIPRangeFilter = std::numeric_limits<float>::max();
 constexpr float kDisLossTolerance = 0.5;
 
 constexpr uint32_t kLargeDimNumRows = 1000;
 constexpr uint32_t kLargeDimNumQueries = 10;
 constexpr uint32_t kLargeDim = 5600;
 constexpr uint32_t kLargeDimBigK = kLargeDimNumRows * 2;
-constexpr float kLargeDimL2RadiusLowBound = 0;
-constexpr float kLargeDimL2RadiusHighBound = 36000000;
-constexpr float kLargeDimIPRadiusLowBound = 400000;
-constexpr float kLargeDimIPRadiusHighBound = std::numeric_limits<float>::max();
+constexpr float kLargeDimL2Radius = 36000000;
+constexpr float kLargeDimL2RangeFilter = 0;
+constexpr float kLargeDimIPRadius = 400000;
+constexpr float kLargeDimIPRangeFilter = std::numeric_limits<float>::max();
 
 std::string kDir = fs::current_path().string() + "/diskann_test";
 std::string kRawDataPath = kDir + "/raw_data";
@@ -78,10 +78,10 @@ const knowhere::DiskANNBuildConfig build_conf{kRawDataPath, 50, 90, 0.2, 0.2, 4,
 const knowhere::DiskANNBuildConfig large_dim_build_conf{kLargeDimRawDataPath, 50, 90, 0.2, 0.2, 4, 0};
 const knowhere::DiskANNPrepareConfig prep_conf{4, 0, false, false};
 const knowhere::DiskANNQueryConfig query_conf{kK, kK * 10, 3};
-const knowhere::DiskANNQueryByRangeConfig l2_range_search_conf{kL2RadiusLowBound, kL2RadiusHighBound, 10, 10000, 3};
-const knowhere::DiskANNQueryByRangeConfig ip_range_search_conf{kIPRadiusLowBound, kIPRadiusHighBound, 10, 10000, 3};
-const knowhere::DiskANNQueryByRangeConfig large_dim_l2_range_search_conf{kLargeDimL2RadiusLowBound, kLargeDimL2RadiusHighBound, 10, 1000, 3};
-const knowhere::DiskANNQueryByRangeConfig large_dim_ip_range_search_conf{kLargeDimIPRadiusLowBound, kLargeDimIPRadiusHighBound, 10, 1000, 3};
+const knowhere::DiskANNQueryByRangeConfig l2_range_search_conf{kL2Radius, kL2RangeFilter, true, 10, 10000, 3};
+const knowhere::DiskANNQueryByRangeConfig ip_range_search_conf{kIPRadius, kIPRangeFilter, true, 10, 10000, 3};
+const knowhere::DiskANNQueryByRangeConfig large_dim_l2_range_search_conf{kLargeDimL2Radius, kLargeDimL2RangeFilter, true, 10, 1000, 3};
+const knowhere::DiskANNQueryByRangeConfig large_dim_ip_range_search_conf{kLargeDimIPRadius, kLargeDimIPRangeFilter, true, 10, 1000, 3};
 
 std::random_device rd;
 size_t x = rd();
@@ -152,8 +152,8 @@ GenGroundTruth(const float* data_p, const float* query_p, const std::string metr
 
 GroundTruthPtr
 GenRangeSearchGrounTruth(const float* data_p, const float* query_p, const std::string metric, const uint32_t num_rows,
-                         const uint32_t num_dims, const uint32_t num_queries, const float radius_low_bound,
-                         const float radius_high_bound, const faiss::BitsetView bitset = nullptr) {
+                         const uint32_t num_dims, const uint32_t num_queries, const float radius,
+                         const float range_filter, const faiss::BitsetView bitset = nullptr) {
     GroundTruthPtr ground_truth = std::make_shared<GroundTruth>();
     ground_truth->resize(num_queries);
     bool is_ip = (metric == knowhere::metric::IP);
@@ -175,7 +175,7 @@ GenRangeSearchGrounTruth(const float* data_p, const float* query_p, const std::s
                     dis += std::pow(xb[dim] - xq[dim], 2);
                 }
             }
-            if (knowhere::distance_in_range(dis, radius_low_bound, radius_high_bound, is_ip)) {
+            if (knowhere::distance_in_range(dis, radius, range_filter, is_ip)) {
                 ground_truth->at(query_index).emplace_back(row);
             }
         }
@@ -283,8 +283,8 @@ class DiskANNTest : public TestWithParam<std::tuple<std::string, bool>> {
             range_search_ground_truth_ =
                 metric_ == knowhere::metric::L2 ? l2_range_search_ground_truth_ : ip_range_search_ground_truth_;
             range_search_conf_ = metric_ == knowhere::metric::L2 ? l2_range_search_conf : ip_range_search_conf;
-            radius_low_bound_ = metric_ == knowhere::metric::L2 ? kL2RadiusLowBound : kIPRadiusLowBound;
-            radius_high_bound_ = metric_ == knowhere::metric::L2 ? kL2RadiusHighBound : kIPRadiusHighBound;
+            radius_ = metric_ == knowhere::metric::L2 ? kL2Radius : kIPRadius;
+            range_filter_ = metric_ == knowhere::metric::L2 ? kL2RangeFilter : kIPRangeFilter;
         } else {
             dim_ = kLargeDim;
             num_rows_ = kLargeDimNumRows;
@@ -297,8 +297,8 @@ class DiskANNTest : public TestWithParam<std::tuple<std::string, bool>> {
                                                                          : large_dim_ip_range_search_ground_truth_;
             range_search_conf_ =
                 metric_ == knowhere::metric::L2 ? large_dim_l2_range_search_conf : large_dim_ip_range_search_conf;
-            radius_low_bound_ = metric_ == knowhere::metric::L2 ? kLargeDimL2RadiusLowBound : kLargeDimIPRadiusLowBound;
-            radius_high_bound_ = metric_ == knowhere::metric::L2 ? kLargeDimL2RadiusHighBound : kLargeDimIPRadiusHighBound;
+            radius_ = metric_ == knowhere::metric::L2 ? kLargeDimL2Radius : kLargeDimIPRadius;
+            range_filter_ = metric_ == knowhere::metric::L2 ? kLargeDimL2RangeFilter : kLargeDimIPRangeFilter;
         }
         InitDiskANN();
     }
@@ -336,9 +336,9 @@ class DiskANNTest : public TestWithParam<std::tuple<std::string, bool>> {
         l2_ground_truth_ =
             GenGroundTruth(global_raw_data_, global_query_data_, knowhere::metric::L2, kNumRows, kDim, kNumQueries);
         ip_range_search_ground_truth_ = GenRangeSearchGrounTruth(
-            global_raw_data_, global_query_data_, knowhere::metric::IP, kNumRows, kDim, kNumQueries, kIPRadiusLowBound, kIPRadiusHighBound);
+            global_raw_data_, global_query_data_, knowhere::metric::IP, kNumRows, kDim, kNumQueries, kIPRadius, kIPRangeFilter);
         l2_range_search_ground_truth_ = GenRangeSearchGrounTruth(
-            global_raw_data_, global_query_data_, knowhere::metric::L2, kNumRows, kDim, kNumQueries, kL2RadiusLowBound, kL2RadiusHighBound);
+            global_raw_data_, global_query_data_, knowhere::metric::L2, kNumRows, kDim, kNumQueries, kL2Radius, kL2RangeFilter);
 
         large_dim_ip_ground_truth_ =
             GenGroundTruth(global_large_dim_raw_data_, global_large_dim_query_data_, knowhere::metric::IP,
@@ -348,10 +348,10 @@ class DiskANNTest : public TestWithParam<std::tuple<std::string, bool>> {
                            kLargeDimNumRows, kLargeDim, kLargeDimNumQueries);
         large_dim_ip_range_search_ground_truth_ =
             GenRangeSearchGrounTruth(global_large_dim_raw_data_, global_large_dim_query_data_, knowhere::metric::IP,
-                                     kLargeDimNumRows, kLargeDim, kLargeDimNumQueries, kLargeDimIPRadiusLowBound, kLargeDimIPRadiusHighBound);
+                                     kLargeDimNumRows, kLargeDim, kLargeDimNumQueries, kLargeDimIPRadius, kLargeDimIPRangeFilter);
         large_dim_l2_range_search_ground_truth_ =
             GenRangeSearchGrounTruth(global_large_dim_raw_data_, global_large_dim_query_data_, knowhere::metric::L2,
-                                     kLargeDimNumRows, kLargeDim, kLargeDimNumQueries, kLargeDimL2RadiusLowBound, kLargeDimL2RadiusHighBound);
+                                     kLargeDimNumRows, kLargeDim, kLargeDimNumQueries, kLargeDimL2Radius, kLargeDimL2RangeFilter);
 
         // prepare the dir
         ASSERT_TRUE(fs::create_directory(kDir));
@@ -429,8 +429,8 @@ class DiskANNTest : public TestWithParam<std::tuple<std::string, bool>> {
     GroundTruthPtr range_search_ground_truth_;
     float* raw_data_;
     float* query_data_;
-    float radius_low_bound_;
-    float radius_high_bound_;
+    float radius_;
+    float range_filter_;
     knowhere::DiskANNQueryByRangeConfig range_search_conf_;
     std::unique_ptr<knowhere::VecIndex> diskann;
 };
@@ -513,7 +513,7 @@ TEST_P(DiskANNTest, bitset_view_test) {
     }
     faiss::BitsetView range_search_bitset(range_search_bitset_data.data(), num_rows_);
     ground_truth = GenRangeSearchGrounTruth(raw_data_, query_data_, metric_, num_rows_, dim_, num_queries_,
-                                            radius_low_bound_, radius_high_bound_, range_search_bitset);
+                                            radius_, range_filter_, range_search_bitset);
 
     // query with bitset view
     result = diskann->QueryByRange(data_set_ptr, cfg, range_search_bitset);

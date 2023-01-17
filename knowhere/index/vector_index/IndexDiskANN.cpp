@@ -429,10 +429,10 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
     CheckPreparation(is_prepared_.load());
 
     auto query_conf = DiskANNQueryByRangeConfig::Get(config);
-    auto low_bound = query_conf.radius_low_bound;
-    auto high_bound = query_conf.radius_high_bound;
+    auto radius = query_conf.radius;
+    auto need_filter = query_conf.need_filter;
+    auto range_filter = query_conf.range_filter;
     bool is_ip = (pq_flash_index_->get_metric() == diskann::Metric::INNER_PRODUCT);
-    float radius = (is_ip ? low_bound : high_bound);
 
     GET_TENSOR_DATA_DIM(dataset_ptr);
     auto query = static_cast<const T*>(p_data);
@@ -453,8 +453,10 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
                                                            query_conf.search_list_and_k_ratio, bitset);
 
             // filter range search result
-            FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, low_bound,
-                                            high_bound);
+            if (need_filter) {
+                FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, radius,
+                                                range_filter);
+            }
         }));
     }
 
@@ -466,7 +468,7 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
     int64_t* p_id = nullptr;
     float* p_dist = nullptr;
 
-    GetRangeSearchResult(result_dist_array, result_id_array, is_ip, rows, low_bound, high_bound, p_dist, p_id, p_lims);
+    GetRangeSearchResult(result_dist_array, result_id_array, is_ip, rows, radius, range_filter, p_dist, p_id, p_lims);
 
     return GenResultDataset(p_id, p_dist, p_lims);
 }

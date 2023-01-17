@@ -209,12 +209,17 @@ BinaryIDMAP::QueryByRangeImpl(int64_t n,
                               const Config& config,
                               const faiss::BitsetView bitset) {
     auto index = dynamic_cast<faiss::IndexBinaryFlat*>(index_.get());
-    float low_bound = GetMetaRadiusLowBound(config);
-    float high_bound = GetMetaRadiusHighBound(config);
+    float radius = GetMetaRadius(config);
 
     faiss::RangeSearchResult res(n);
-    index->range_search(n, data, high_bound, &res, bitset);
-    GetRangeSearchResult(res, false, n, low_bound, high_bound, distances, labels, lims, bitset);
+    index->range_search(n, data, radius, &res, bitset);
+
+    if (CheckKeyInConfig(config, meta::RANGE_FILTER)) {
+        float range_filter = GetMetaRangeFilter(config);
+        GetRangeSearchResult(res, false, n, radius, range_filter, distances, labels, lims, bitset);
+    } else {
+        GetRangeSearchResult(res, false, n, radius, distances, labels, lims);
+    }
 }
 
 }  // namespace knowhere
