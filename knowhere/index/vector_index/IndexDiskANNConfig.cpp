@@ -40,7 +40,7 @@ static constexpr const char* kBeamwidth = "beamwidth";
 
 static constexpr const char* kRadius = "radius";
 static constexpr const char* kRangeFilter = "range_filter";
-static constexpr const char* kNeedFilter = "need_filter";
+static constexpr const char* kRangeFilterExist = "range_filter_exist";
 static constexpr const char* kMinK = "min_k";
 static constexpr const char* kMaxK = "max_k";
 static constexpr const char* kSearchListAndKRatio = "search_list_and_k_ratio";
@@ -224,7 +224,7 @@ void
 to_json(Config& config, const DiskANNQueryByRangeConfig& query_conf) {
     config = Config{{kRadius, query_conf.radius},
                     {kRangeFilter, query_conf.range_filter},
-                    {kNeedFilter, query_conf.need_filter},
+                    {kRangeFilterExist, query_conf.range_filter_exist},
                     {kMinK, query_conf.min_k},
                     {kMaxK, query_conf.max_k},
                     {kBeamwidth, query_conf.beamwidth},
@@ -235,10 +235,10 @@ void
 from_json(const Config& config, DiskANNQueryByRangeConfig& query_conf) {
     CheckNumericParamAndSet<float>(config, kRadius, kRadiusMinValue, kRadiusMaxValue, query_conf.radius);
     if (config.contains(kRangeFilter)) {
-        query_conf.need_filter = true;
+        query_conf.range_filter_exist = true;
         CheckNumericParamAndSet<float>(config, kRangeFilter, kRadiusMinValue, kRadiusMaxValue, query_conf.range_filter);
     } else {
-        query_conf.need_filter = false;
+        query_conf.range_filter_exist = false;
     }
     CheckNumericParamAndSet<uint64_t>(config, kMinK, kMinKMinValue, kMinKMaxValue, query_conf.min_k);
     CheckNumericParamAndSet<uint64_t>(config, kMaxK, query_conf.min_k, kMaxKMaxValue, query_conf.max_k);

@@ -430,7 +430,7 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
 
     auto query_conf = DiskANNQueryByRangeConfig::Get(config);
     auto radius = query_conf.radius;
-    auto need_filter = query_conf.need_filter;
+    auto range_filter_exist = query_conf.range_filter_exist;
     auto range_filter = query_conf.range_filter;
     bool is_ip = (pq_flash_index_->get_metric() == diskann::Metric::INNER_PRODUCT);
 
@@ -453,7 +453,7 @@ IndexDiskANN<T>::QueryByRange(const DatasetPtr& dataset_ptr, const Config& confi
                                                            query_conf.search_list_and_k_ratio, bitset);
 
             // filter range search result
-            if (need_filter) {
+            if (range_filter_exist) {
                 FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, radius,
                                                 range_filter);
             }
