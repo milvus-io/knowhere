@@ -17,7 +17,7 @@
 #include <type_traits>
 
 #include <arm_neon.h>
-
+#include <faiss/impl/FaissAssert.h>
 namespace faiss {
 
 namespace detail {

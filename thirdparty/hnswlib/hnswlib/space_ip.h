@@ -1,7 +1,7 @@
 #pragma once
 
 #include "hnswlib.h"
-#include "simd/FaissHookFvec.h"
+#include "simd/hook.h"
 
 namespace hnswlib {
 

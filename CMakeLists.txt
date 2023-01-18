@@ -1,11 +1,9 @@
 cmake_minimum_required(VERSION 3.2)
 project(knowhere CXX C)
 
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(cmake/utils/utils.cmake)
-
 
 knowhere_option(USE_CUDA "Build with CUDA" OFF)
 knowhere_option(WITH_UT "Build with UT test" OFF)
@@ -16,7 +14,6 @@ if(USE_CUDA)
     enable_language(CUDA)
     find_package(CUDAToolkit REQUIRED)
 endif()
-
 
 include(cmake/utils/compile_flags.cmake)
 include(cmake/utils/platform_check.cmake)
@@ -30,9 +27,9 @@ include_directories(thirdparty/bitset)
 include_directories(thirdparty)
 find_package(OpenMP REQUIRED)
 
-if (OPENMP_FOUND)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+if(OPENMP_FOUND)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
 knowhere_file_glob(GLOB_RECURSE KNOWHERE_SRCS src/common/*.cc
@@ -52,6 +49,6 @@ add_library(knowhere SHARED ${KNOWHERE_SRCS})
 add_dependencies(knowhere faiss)
 target_link_libraries(knowhere PUBLIC faiss)
 
-if (WITH_UT)
+if(WITH_UT)
     add_subdirectory(tests/ut)
 endif()

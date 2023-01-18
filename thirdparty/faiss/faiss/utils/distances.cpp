@@ -108,7 +108,7 @@ void exhaustive_parallel_on_nx(
         size_t nx,
         size_t ny,
         ResultHandler& res,
-        fvec_func_ptr dis_compute_func,
+        decltype(fvec_inner_product) dis_compute_func,
         const BitsetView bitset) {
     using SingleResultHandler = typename ResultHandler::SingleResultHandler;
 #pragma omp parallel
@@ -140,7 +140,7 @@ void exhaustive_parallel_on_ny(
         size_t nx,
         size_t ny,
         ResultHandler& res,
-        fvec_func_ptr dis_compute_func,
+        decltype(fvec_inner_product) dis_compute_func,
         const BitsetView bitset) {
     using SingleResultHandler = typename ResultHandler::SingleResultHandler;
     size_t k = res.k;
@@ -206,7 +206,7 @@ void exhaustive_L2sqr_IP_seq(
         size_t nx,
         size_t ny,
         ResultHandler& res,
-        fvec_func_ptr dis_compute_func,
+        decltype(fvec_inner_product) dis_compute_func,
         const BitsetView bitset) {
     size_t thread_max_num = omp_get_max_threads();
     if (ny > parallel_policy_threshold ||

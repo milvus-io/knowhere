@@ -1,8 +1,8 @@
 macro(__knowhere_option variable description value)
   if(NOT DEFINED ${variable})
     set(${variable}
-        ${value}
-        CACHE STRING ${description})
+      ${value}
+      CACHE STRING ${description})
   endif()
 endmacro()
 
@@ -13,6 +13,7 @@ macro(knowhere_option variable description value)
   set(__condition "")
   set(__varname "__value")
   list(APPEND knowhere_ALL_OPTIONS ${variable})
+
   foreach(arg ${ARGN})
     if(arg STREQUAL "IF" OR arg STREQUAL "if")
       set(__varname "__condition")
@@ -20,7 +21,9 @@ macro(knowhere_option variable description value)
       list(APPEND ${__varname} ${arg})
     endif()
   endforeach()
+
   unset(__varname)
+
   if("${__condition}" STREQUAL "")
     set(__condition 2 GREATER 1)
   endif()

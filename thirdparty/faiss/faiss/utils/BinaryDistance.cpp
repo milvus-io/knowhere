@@ -24,8 +24,7 @@
 #include <faiss/utils/substructure-inl.h>
 #include <faiss/utils/superstructure-inl.h>
 #include <faiss/utils/utils.h>
-#include <simd/FaissHookFvec.h>
-#include <simd/distances_simd.h>
+#include <simd/hook.h>
 
 namespace faiss {
 
@@ -478,12 +477,6 @@ void binary_distance_knn_hc(
         const BitsetView bitset) {
     switch (metric_type) {
         case METRIC_Jaccard: {
-#ifdef __linux__
-            if (cpu_support_avx2() && ncodes > 64) {
-                binary_distance_knn_hc<C, faiss::JaccardComputerAVX2>(
-                        ncodes, ha, a, b, nb, bitset);
-            } else
-#endif
             {
                 switch (ncodes) {
 #define binary_distance_knn_hc_jaccard(ncodes)                     \
@@ -511,12 +504,6 @@ void binary_distance_knn_hc(
         }
 
         case METRIC_Hamming: {
-#ifdef __linux__
-            if (cpu_support_avx2() && ncodes > 64) {
-                binary_distance_knn_hc<C, faiss::HammingComputerAVX2>(
-                        ncodes, ha, a, b, nb, bitset);
-            } else
-#endif
             {
                 switch (ncodes) {
 #define binary_distance_knn_hc_hamming(ncodes)                     \
@@ -610,12 +597,6 @@ void binary_range_search(
         case METRIC_Tanimoto:
             radius = Tanimoto_2_Jaccard(radius);
         case METRIC_Jaccard: {
-#ifdef __linux__
-            if (cpu_support_avx2() && code_size > 64) {
-                binary_range_search<C, T, faiss::JaccardComputerAVX2>(
-                        a, b, na, nb, radius, code_size, res, bitset);
-            } else
-#endif
             {
                 switch (code_size) {
 #define binary_range_search_jaccard(ncodes)                        \
@@ -649,12 +630,6 @@ void binary_range_search(
         }
 
         case METRIC_Hamming: {
-#ifdef __linux__
-            if (cpu_support_avx2() && code_size > 64) {
-                binary_range_search<C, T, faiss::HammingComputerAVX2>(
-                        a, b, na, nb, radius, code_size, res, bitset);
-            } else
-#endif
             {
                 switch (code_size) {
 #define binary_range_search_hamming(ncodes)                        \

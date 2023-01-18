@@ -1,20 +1,9 @@
-/**
- * Copyright (c) Facebook, Inc. and its affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
+#ifndef DISTANCES_REF_H
+#define DISTANCES_REF_H
 
-#pragma once
-
-#include <stdint.h>
+#include <cstdio>
 
 namespace faiss {
-
-/*********************************************************
- * Optimized distance/norm/inner prod computations
- *********************************************************/
-extern uint8_t lookup8bit[256];
 
 /// Squared L2 distance between two vectors
 float
@@ -51,3 +40,5 @@ int
 fvec_madd_and_argmin_ref(size_t n, const float* a, float bf, const float* b, float* c);
 
 }  // namespace faiss
+
+#endif /* DISTANCES_REF_H */

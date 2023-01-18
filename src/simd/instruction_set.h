@@ -1,5 +1,5 @@
-
-#pragma once
+#ifndef INSTRUCTION_SET_H
+#define INSTRUCTION_SET_H
 
 #include <cpuid.h>
 
@@ -354,3 +354,5 @@ class InstructionSet {
 };
 
 }  // namespace faiss
+
+#endif /* INSTRUCTION_SET_H */
