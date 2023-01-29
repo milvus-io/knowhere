@@ -300,12 +300,8 @@ IvfIndexNode<T>::Add(const DataSet& dataset, const Config&) {
     auto data = dataset.GetTensor();
     auto rows = dataset.GetRows();
     try {
-        if constexpr (std::is_same<faiss::IndexBinaryIVF, T>::value) {
-            index_->add(rows, (const uint8_t*)data);
-        } else {
-            index_->add(rows, (const float*)data);
-        }
         if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
+            index_->add_without_codes(rows, (const float*)data);
             auto raw_data = dataset.GetTensor();
             auto invlists = index_->invlists;
             auto d = index_->d;
@@ -324,6 +320,10 @@ IvfIndexNode<T>::Add(const DataSet& dataset, const Config&) {
                 index_->prefix_sum[i] = curr_index;
                 curr_index += list_size;
             }
+        } else if constexpr (std::is_same<faiss::IndexBinaryIVF, T>::value) {
+            index_->add(rows, (const uint8_t*)data);
+        } else {
+            index_->add(rows, (const float*)data);
         }
 
     } catch (std::exception& e) {
