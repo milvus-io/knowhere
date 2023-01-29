@@ -99,8 +99,13 @@ class Index {
     Build(const DataSet& dataset, const Json& json) {
         Json json_(json);
         auto cfg = this->node->CreateConfig();
-        Config::Format(*cfg, json_);
-        LOG_KNOWHERE_INFO_ << json_.dump();
+        {
+            auto res = Config::Format(*cfg, json_);
+            LOG_KNOWHERE_INFO_ << json_.dump();
+            if (res != Status::success) {
+                return res;
+            }
+        }
         auto res = Config::Load(*cfg, json_, knowhere::TRAIN);
         if (res != Status::success) {
             return res;
@@ -112,8 +117,13 @@ class Index {
     Train(const DataSet& dataset, const Json& json) {
         Json json_(json);
         auto cfg = this->node->CreateConfig();
-        Config::Format(*cfg, json_);
-        LOG_KNOWHERE_INFO_ << json_.dump();
+        {
+            auto res = Config::Format(*cfg, json_);
+            LOG_KNOWHERE_INFO_ << json_.dump();
+            if (res != Status::success) {
+                return res;
+            }
+        }
         auto res = Config::Load(*cfg, json_, knowhere::TRAIN);
         if (res != Status::success) {
             return res;
@@ -125,8 +135,13 @@ class Index {
     Add(const DataSet& dataset, const Json& json) {
         Json json_(json);
         auto cfg = this->node->CreateConfig();
-        Config::Format(*cfg, json_);
-        LOG_KNOWHERE_INFO_ << json_.dump();
+        {
+            auto res = Config::Format(*cfg, json_);
+            LOG_KNOWHERE_INFO_ << json_.dump();
+            if (res != Status::success) {
+                return res;
+            }
+        }
         auto res = Config::Load(*cfg, json_, knowhere::TRAIN);
         if (res != Status::success) {
             return res;
@@ -138,8 +153,13 @@ class Index {
     Search(const DataSet& dataset, const Json& json, const BitsetView& bitset) const {
         Json json_(json);
         auto cfg = this->node->CreateConfig();
-        Config::Format(*cfg, json_);
-        LOG_KNOWHERE_INFO_ << json_.dump();
+        {
+            auto res = Config::Format(*cfg, json_);
+            LOG_KNOWHERE_INFO_ << json_.dump();
+            if (res != Status::success) {
+                return unexpected(res);
+            }
+        }
         auto res = Config::Load(*cfg, json_, knowhere::SEARCH);
         if (res != Status::success) {
             return unexpected(res);
@@ -151,8 +171,13 @@ class Index {
     RangeSearch(const DataSet& dataset, const Json& json, const BitsetView& bitset) const {
         Json json_(json);
         auto cfg = this->node->CreateConfig();
-        Config::Format(*cfg, json_);
-        LOG_KNOWHERE_INFO_ << json_.dump();
+        {
+            auto res = Config::Format(*cfg, json_);
+            LOG_KNOWHERE_INFO_ << json_.dump();
+            if (res != Status::success) {
+                return unexpected(res);
+            }
+        }
         auto res = Config::Load(*cfg, json_, knowhere::RANGE_SEARCH);
         if (res != Status::success) {
             return unexpected(res);
@@ -164,8 +189,13 @@ class Index {
     GetVectorByIds(const DataSet& dataset, const Json& json) const {
         Json json_(json);
         auto cfg = this->node->CreateConfig();
-        Config::Format(*cfg, json_);
-        LOG_KNOWHERE_INFO_ << json_.dump();
+        {
+            auto res = Config::Format(*cfg, json_);
+            LOG_KNOWHERE_INFO_ << json_.dump();
+            if (res != Status::success) {
+                return unexpected(res);
+            }
+        }
         auto res = Config::Load(*cfg, json_, knowhere::SEARCH);
         if (res != Status::success) {
             return unexpected(res);
@@ -177,8 +207,13 @@ class Index {
     GetIndexMeta(const Json& json) const {
         Json json_(json);
         auto cfg = this->node->CreateConfig();
-        Config::Format(*cfg, json_);
-        LOG_KNOWHERE_INFO_ << json_.dump();
+        {
+            auto res = Config::Format(*cfg, json_);
+            LOG_KNOWHERE_INFO_ << json_.dump();
+            if (res != Status::success) {
+                return unexpected(res);
+            }
+        }
         auto res = Config::Load(*cfg, json_, knowhere::FEDER);
         if (res != Status::success) {
             return unexpected(res);

@@ -253,33 +253,31 @@ class Config {
 
     static Status
     Format(const Config& cfg, Json& json) {
-        for (const auto& it : cfg.__DICT__) {
-            const auto& var = it.second;
-            if (json.find(it.first) != json.end() && json[it.first].is_string()) {
-                if (std::get_if<Entry<CFG_INT>>(&var)) {
-                    std::stringstream ss;
-                    CFG_INT v;
-                    ss.str(json[it.first]);
-                    ss >> v;
-                    json[it.first] = v;
-                }
-                if (std::get_if<Entry<CFG_FLOAT>>(&var)) {
-                    std::stringstream ss;
-                    CFG_FLOAT v;
-                    ss << json[it.first];
-                    ss >> v;
-                    json[it.first] = v;
-                }
-
-                if (std::get_if<Entry<CFG_BOOL>>(&var)) {
-                    if (json[it.first] == "true") {
-                        json[it.first] = true;
+        try {
+            for (const auto& it : cfg.__DICT__) {
+                const auto& var = it.second;
+                if (json.find(it.first) != json.end() && json[it.first].is_string()) {
+                    if (std::get_if<Entry<CFG_INT>>(&var)) {
+                        CFG_INT v = std::stoi(json[it.first].get<std::string>().c_str());
+                        json[it.first] = v;
                     }
-                    if (json[it.first] == "false") {
-                        json[it.first] = false;
+                    if (std::get_if<Entry<CFG_FLOAT>>(&var)) {
+                        CFG_FLOAT v = std::stof(json[it.first].get<std::string>().c_str());
+                        json[it.first] = v;
+                    }
+
+                    if (std::get_if<Entry<CFG_BOOL>>(&var)) {
+                        if (json[it.first] == "true") {
+                            json[it.first] = true;
+                        }
+                        if (json[it.first] == "false") {
+                            json[it.first] = false;
+                        }
                     }
                 }
             }
+        } catch (std::exception&) {
+            return Status::invalid_param_in_json;
         }
         return Status::success;
     }

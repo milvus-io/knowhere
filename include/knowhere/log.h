@@ -12,6 +12,9 @@
 #ifndef KNOWHERE_LOG_H
 #define KNOWHERE_LOG_H
 
+#ifndef ELPP_THREAD_SAFE
+#define ELPP_THREAD_SAFE
+#endif
 #include "easylogging++.h"
 #define KNOWHERE_MODULE_NAME "KNOWHERE"
 #define KNOWHERE_MODULE_CLASS_FUNCTION                                                                \
