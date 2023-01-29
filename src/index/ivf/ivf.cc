@@ -369,7 +369,9 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
         return unexpected(Status::faiss_inner_error);
     }
 
-    return GenResultDataSet(rows, ivf_cfg.k, ids, dis);
+    auto res = GenResultDataSet(rows, ivf_cfg.k, ids, dis);
+    res->SetIsOwner(true);
+    return res;
 }
 
 template <typename T>

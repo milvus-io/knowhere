@@ -101,7 +101,7 @@ if(WITH_BENCHMARK)
   add_subdirectory(benchmark)
 endif()
 
-install(TARGETS knowhere DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
+install(TARGETS knowhere DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 install(
   FILES "${PROJECT_SOURCE_DIR}/thirdparty/easyloggingpp/src/easylogging++.h"
   DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
