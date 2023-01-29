@@ -28,8 +28,6 @@ class CustomBuildPy(build_py):
 DEFINE_MACROS = [
     ("FINTEGER", "int"),
     ("SWIGWORDSIZE64", "1"),
-    ("AUTO_INITIALIZE_EASYLOGGINGPP", "1"),
-    ("ELPP_THREAD_SAFE", "1"),
 ]
 
 INCLUDE_DIRS = [
