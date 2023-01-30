@@ -17,6 +17,7 @@ project(knowhere CXX C)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
+include(GNUInstallDirs)
 include(cmake/utils/utils.cmake)
 
 knowhere_option(USE_CUDA "Build with CUDA" OFF)

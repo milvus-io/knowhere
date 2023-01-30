@@ -12,6 +12,9 @@
 #ifndef BINARYSET_H
 #define BINARYSET_H
 
+#if defined(__APPLE__)
+#include <string>
+#endif
 #include <cstring>
 #include <map>
 #include <memory>
