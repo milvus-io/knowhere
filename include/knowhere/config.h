@@ -258,7 +258,12 @@ class Config {
                 const auto& var = it.second;
                 if (json.find(it.first) != json.end() && json[it.first].is_string()) {
                     if (std::get_if<Entry<CFG_INT>>(&var)) {
-                        CFG_INT v = std::stoi(json[it.first].get<std::string>().c_str());
+                        std::string::size_type sz;
+                        auto value_str = json[it.first].get<std::string>();
+                        CFG_INT v = std::stoi(value_str.c_str(), &sz);
+                        if (sz < value_str.length()) {
+                            return Status::invalid_param_in_json;
+                        }
                         json[it.first] = v;
                     }
                     if (std::get_if<Entry<CFG_FLOAT>>(&var)) {
