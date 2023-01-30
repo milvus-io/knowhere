@@ -21,11 +21,16 @@ class IvfConfig : public BaseConfig {
     int nlist;
     int nprobe;
     KNOHWERE_DECLARE_CONFIG(IvfConfig) {
-        KNOWHERE_CONFIG_DECLARE_FIELD(nlist).set_default(1024).description("number of inverted lists.").for_train();
+        KNOWHERE_CONFIG_DECLARE_FIELD(nlist)
+            .set_default(1024)
+            .description("number of inverted lists.")
+            .for_train()
+            .set_range(1, std::numeric_limits<CFG_INT>::max());
         KNOWHERE_CONFIG_DECLARE_FIELD(nprobe)
             .set_default(1024)
             .description("number of probes at query time.")
             .for_search()
+            .set_range(1, std::numeric_limits<CFG_INT>::max())
             .for_range_search();
     }
 };
@@ -37,8 +42,10 @@ class IvfPqConfig : public IvfConfig {
     int m;
     int nbits;
     KNOHWERE_DECLARE_CONFIG(IvfPqConfig) {
-        KNOWHERE_CONFIG_DECLARE_FIELD(m).description("m").set_default(4).for_train();
-        KNOWHERE_CONFIG_DECLARE_FIELD(nbits).description("nbits").set_default(8).for_train();
+        KNOWHERE_CONFIG_DECLARE_FIELD(m).description("m").set_default(4).for_train().set_range(
+            1, std::numeric_limits<CFG_INT>::max());
+        KNOWHERE_CONFIG_DECLARE_FIELD(nbits).description("nbits").set_default(8).for_train().set_range(
+            1, std::numeric_limits<CFG_INT>::max());
     }
 };
 

@@ -25,7 +25,11 @@ class AnnoyConfig : public BaseConfig {
             .set_default(8)
             .set_range(1, std::numeric_limits<CFG_INT>::max())
             .for_train();
-        KNOWHERE_CONFIG_DECLARE_FIELD(search_k).description("annoy search k.").set_default(100).for_search();
+        KNOWHERE_CONFIG_DECLARE_FIELD(search_k)
+            .description("annoy search k.")
+            .set_default(100)
+            .set_range(-1, std::numeric_limits<CFG_INT>::max())
+            .for_search();
     }
 };
 
