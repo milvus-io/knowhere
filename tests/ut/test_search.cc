@@ -16,7 +16,7 @@
 #include "knowhere/factory.h"
 #include "utils.h"
 
-TEST_CASE("Test All Mem Index Search.", "[search]") {
+TEST_CASE("Test All Mem Index Search", "[search]") {
     using Catch::Approx;
 
     int64_t nb = 10000, nq = 1000;
@@ -25,23 +25,24 @@ TEST_CASE("Test All Mem Index Search.", "[search]") {
 
     auto base_gen = [&]() {
         knowhere::Json json;
-        json["dim"] = dim;
-        json["metric_type"] = "L2";
-        json["k"] = 1;
+        json[knowhere::meta::DIM] = dim;
+        json[knowhere::meta::METRIC_TYPE] = knowhere::metric::L2;
+        json[knowhere::meta::TOPK] = 1;
+        json[knowhere::meta::RADIUS] = 10.0;
         return json;
     };
 
     auto annoy_gen = [&base_gen]() {
         knowhere::Json json = base_gen();
-        json["n_trees"] = 16;
-        json["search_k"] = 100;
+        json[knowhere::indexparam::N_TREES] = 16;
+        json[knowhere::indexparam::SEARCH_K] = 100;
         return json;
     };
 
     auto ivfflat_gen = [&base_gen]() {
         knowhere::Json json = base_gen();
-        json["nlist"] = 1024;
-        json["nprobe"] = 1024;
+        json[knowhere::indexparam::NLIST] = 16;
+        json[knowhere::indexparam::NPROBE] = 4;
         return json;
     };
 
@@ -51,17 +52,16 @@ TEST_CASE("Test All Mem Index Search.", "[search]") {
 
     auto ivfpq_gen = [&ivfflat_gen]() {
         knowhere::Json json = ivfflat_gen();
-        json["m"] = 4;
-        json["nbits"] = 8;
+        json[knowhere::indexparam::M] = 4;
+        json[knowhere::indexparam::NBITS] = 8;
         return json;
     };
 
     auto hnsw_gen = [&base_gen]() {
         knowhere::Json json = base_gen();
-        json["M"] = 128;
-        json["efConstruction"] = 200;
-        json["ef"] = 32;
-        json["range_k"] = 20;
+        json[knowhere::indexparam::HNSW_M] = 128;
+        json[knowhere::indexparam::EFCONSTRUCTION] = 200;
+        json[knowhere::indexparam::EF] = 32;
         return json;
     };
 
@@ -87,10 +87,9 @@ TEST_CASE("Test All Mem Index Search.", "[search]") {
         return json;
     };
 #endif
-    SECTION("Test Cpu Index Search.") {
+    SECTION("Test Cpu Index Search") {
         using std::make_tuple;
         auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
-
             make_tuple(knowhere::IndexEnum::INDEX_ANNOY, annoy_gen),
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IDMAP, flat_gen),
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFFLAT, ivfflat_gen),
@@ -119,15 +118,44 @@ TEST_CASE("Test All Mem Index Search.", "[search]") {
         auto results = idx.Search(*query_ds, json, nullptr);
         REQUIRE(results.has_value());
         auto ids = results.value()->GetIds();
-        for (int i = 0; i < 1000; ++i) {
+        for (int i = 0; i < nq; ++i) {
             CHECK(ids[i] == i);
         }
     }
 
-    SECTION("Test Cpu Index Serial/Deserial.") {
+    SECTION("Test Cpu Index Range Search") {
         using std::make_tuple;
         auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
+            make_tuple(knowhere::IndexEnum::INDEX_FAISS_IDMAP, flat_gen),
+            make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFFLAT, ivfflat_gen),
+            make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFSQ8, ivfsq_gen),
+            // make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFPQ, ivfpq_gen),
+            make_tuple(knowhere::IndexEnum::INDEX_HNSW, hnsw_gen),
+        }));
+        auto idx = knowhere::IndexFactory::Instance().Create(name);
+        auto cfg_json = gen().dump();
+        CAPTURE(name, cfg_json);
+        knowhere::Json json = knowhere::Json::parse(cfg_json);
+        auto train_ds = GenDataSet(nb, dim, seed);
+        auto query_ds = GenDataSet(nq, dim, seed);
+        REQUIRE(idx.Type() == name);
+        auto res = idx.Build(*train_ds, json);
+        REQUIRE(res == knowhere::Status::success);
+        if (name == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
+            load_raw_data(idx, *train_ds, json);
+        }
+        auto results = idx.RangeSearch(*query_ds, json, nullptr);
+        REQUIRE(results.has_value());
+        auto ids = results.value()->GetIds();
+        auto lims = results.value()->GetLims();
+        for (int i = 0; i < nq; ++i) {
+            CHECK(ids[lims[i]] == i);
+        }
+    }
 
+    SECTION("Test Cpu Index Serialize/Deserialize") {
+        using std::make_tuple;
+        auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
             make_tuple(knowhere::IndexEnum::INDEX_ANNOY, annoy_gen),
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IDMAP, flat_gen),
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFFLAT, ivfflat_gen),
@@ -162,22 +190,22 @@ TEST_CASE("Test All Mem Index Search.", "[search]") {
         auto results = idx_.Search(*query_ds, json, nullptr);
         REQUIRE(results.has_value());
         auto ids = results.value()->GetIds();
-        for (int i = 0; i < 1000; ++i) {
+        for (int i = 0; i < nq; ++i) {
             CHECK(ids[i] == i);
         }
     }
 
-    SECTION("Test build IVFPQ with invalid params.") {
+    SECTION("Test build IVFPQ with invalid params") {
         auto idx = knowhere::IndexFactory::Instance().Create(knowhere::IndexEnum::INDEX_FAISS_IVFPQ);
         uint32_t nb = 1000;
         uint32_t dim = 128;
         auto ivf_pq_gen = [&]() {
             knowhere::Json json;
-            json["dim"] = dim;
-            json["metric_type"] = "L2";
-            json["k"] = 10;
-            json["m"] = 15;
-            json["nbits"] = 8;
+            json[knowhere::meta::DIM] = dim;
+            json[knowhere::meta::METRIC_TYPE] = knowhere::metric::L2;
+            json[knowhere::meta::TOPK] = 10;
+            json[knowhere::indexparam::M] = 15;
+            json[knowhere::indexparam::NBITS] = 8;
             return json;
         };
         auto train_ds = GenDataSet(nb, dim, seed);
