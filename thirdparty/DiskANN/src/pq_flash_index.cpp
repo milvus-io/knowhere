@@ -1000,19 +1000,19 @@ namespace diskann {
       for (auto &cached_nhood : cached_nhoods) {
         auto  global_cache_iter = coord_cache.find(cached_nhood.first);
         T *   node_fp_coords_copy = global_cache_iter->second;
-        float cur_expanded_dist;
-        if (!use_disk_index_pq) {
-          cur_expanded_dist =
-              dist_cmp(query, node_fp_coords_copy, (size_t) aligned_dim);
-        } else {
-          if (metric == diskann::Metric::INNER_PRODUCT)
-            cur_expanded_dist = disk_pq_table.inner_product(
-                query_float, (_u8 *) node_fp_coords_copy);
-          else
-            cur_expanded_dist = disk_pq_table.l2_distance(
-                query_float, (_u8 *) node_fp_coords_copy);
-        }
         if (bitset_view.empty() || !bitset_view.test(cached_nhood.first)) {
+          float cur_expanded_dist;
+          if (!use_disk_index_pq) {
+            cur_expanded_dist =
+              dist_cmp(query, node_fp_coords_copy, (size_t) aligned_dim);
+          } else {
+            if (metric == diskann::Metric::INNER_PRODUCT)
+              cur_expanded_dist = disk_pq_table.inner_product(
+                  query_float, (_u8 *) node_fp_coords_copy);
+            else
+              cur_expanded_dist = disk_pq_table.l2_distance(
+                  query_float, (_u8 *) node_fp_coords_copy);
+          }
           full_retset.push_back(
               Neighbor((unsigned) cached_nhood.first, cur_expanded_dist, true));
 
@@ -1090,19 +1090,19 @@ namespace diskann {
 
         T *node_fp_coords_copy = data_buf;
         memcpy(node_fp_coords_copy, node_fp_coords, disk_bytes_per_point);
-        float cur_expanded_dist;
-        if (!use_disk_index_pq) {
-          cur_expanded_dist =
-              dist_cmp(query, node_fp_coords_copy, (size_t) aligned_dim);
-        } else {
-          if (metric == diskann::Metric::INNER_PRODUCT)
-            cur_expanded_dist = disk_pq_table.inner_product(
-                query_float, (_u8 *) node_fp_coords_copy);
-          else
-            cur_expanded_dist = disk_pq_table.l2_distance(
-                query_float, (_u8 *) node_fp_coords_copy);
-        }
         if (bitset_view.empty() || !bitset_view.test(frontier_nhood.first)) {
+          float cur_expanded_dist;
+          if (!use_disk_index_pq) {
+            cur_expanded_dist =
+                dist_cmp(query, node_fp_coords_copy, (size_t) aligned_dim);
+          } else {
+            if (metric == diskann::Metric::INNER_PRODUCT)
+              cur_expanded_dist = disk_pq_table.inner_product(
+                  query_float, (_u8 *) node_fp_coords_copy);
+            else
+              cur_expanded_dist = disk_pq_table.l2_distance(
+                  query_float, (_u8 *) node_fp_coords_copy);
+          }
           full_retset.push_back(
               Neighbor(frontier_nhood.first, cur_expanded_dist, true));
 
