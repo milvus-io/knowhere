@@ -63,7 +63,6 @@ test_data = [
             "M": 10000,
             "efConstruction": 200,
             "ef": 32,
-            "range_k": 100,
         },
     ),
 ]
