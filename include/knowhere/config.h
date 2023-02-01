@@ -20,6 +20,7 @@
 #include <variant>
 
 #include "expected.h"
+#include "knowhere/log.h"
 #include "nlohmann/json.hpp"
 
 namespace knowhere {
@@ -289,6 +290,12 @@ class Config {
 
     static Status
     Load(Config& cfg, const Json& json, PARAM_TYPE type) {
+        for (const auto& json_item : json.items()) {
+            if (cfg.__DICT__.find(json_item.key()) == cfg.__DICT__.end()) {
+                LOG_KNOWHERE_ERROR_ << "invalid json key: " << json_item.key() << std::endl;
+                return Status::invalid_args;
+            }
+        }
         for (const auto& it : cfg.__DICT__) {
             const auto& var = it.second;
 
@@ -422,6 +429,17 @@ class BaseConfig : public Config {
     CFG_FLOAT range_filter;
     CFG_BOOL range_filter_exist;
     CFG_BOOL trace_visit;
+    // milvus extra config
+    CFG_INT dim;
+    CFG_STRING index_type;
+    CFG_STRING index_mode;
+    CFG_STRING collection_id;
+    CFG_STRING partition_id;
+    CFG_STRING segment_id;
+    CFG_STRING field_id;
+    CFG_STRING index_build_id;
+    CFG_STRING index_id;
+    CFG_STRING index_version;
     KNOHWERE_DECLARE_CONFIG(BaseConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(metric_type).set_default("L2").description("metric type").for_all();
         KNOWHERE_CONFIG_DECLARE_FIELD(k)
@@ -446,6 +464,16 @@ class BaseConfig : public Config {
             .description("trace visit for feder")
             .for_search()
             .for_range_search();
+        KNOWHERE_CONFIG_DECLARE_FIELD(dim).set_default(0).description("dim").for_all();
+        KNOWHERE_CONFIG_DECLARE_FIELD(index_type).set_default("").description("index_type").for_all();
+        KNOWHERE_CONFIG_DECLARE_FIELD(index_mode).set_default("").description("index_mode").for_all();
+        KNOWHERE_CONFIG_DECLARE_FIELD(collection_id).set_default("").description("collection_id").for_all();
+        KNOWHERE_CONFIG_DECLARE_FIELD(partition_id).set_default("").description("partition_id").for_all();
+        KNOWHERE_CONFIG_DECLARE_FIELD(segment_id).set_default("").description("segment_id").for_all();
+        KNOWHERE_CONFIG_DECLARE_FIELD(field_id).set_default("").description("field_id").for_all();
+        KNOWHERE_CONFIG_DECLARE_FIELD(index_build_id).set_default("").description("index_build_id").for_all();
+        KNOWHERE_CONFIG_DECLARE_FIELD(index_id).set_default("").description("index_id").for_all();
+        KNOWHERE_CONFIG_DECLARE_FIELD(index_version).set_default("").description("index_version").for_all();
     }
 };
 

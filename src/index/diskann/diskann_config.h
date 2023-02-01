@@ -75,6 +75,15 @@ class DiskANNConfig : public BaseConfig {
     // DiskANN uses TopK search to simulate range search, this is the ratio of search list size and k. With larger
     // ratio, the accuracy will get higher but throughput will get affected.
     CFG_FLOAT search_list_and_k_ratio;
+    // milvus extra config
+    CFG_FLOAT pq_code_budget_gb_ratio;
+    CFG_FLOAT num_build_thread_ratio;
+    CFG_FLOAT search_cache_budget_gb_ratio;
+    CFG_FLOAT num_load_thread_ratio;
+    CFG_FLOAT beamwidth_ratio;
+    CFG_INT search_list;
+    CFG_INT num_build_thread;
+    CFG_INT num_load_thread;
     KNOHWERE_DECLARE_CONFIG(DiskANNConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(index_prefix)
             .description("path to load or save Diskann.")
@@ -159,6 +168,36 @@ class DiskANNConfig : public BaseConfig {
             .set_default(2.0)
             .set_range(1.0, 5.0)
             .for_range_search();
+        KNOWHERE_CONFIG_DECLARE_FIELD(pq_code_budget_gb_ratio)
+            .description("pq_code_budget_gb_ratio")
+            .for_train()
+            .set_default(0.0);
+        KNOWHERE_CONFIG_DECLARE_FIELD(num_build_thread_ratio)
+            .description("num_build_thread_ratio")
+            .for_train()
+            .set_default(0.0);
+        KNOWHERE_CONFIG_DECLARE_FIELD(search_cache_budget_gb_ratio)
+            .description("search_cache_budget_gb_ratio")
+            .for_search()
+            .for_range_search()
+            .set_default(0.0);
+        KNOWHERE_CONFIG_DECLARE_FIELD(num_load_thread_ratio)
+            .description("num_load_thread_ratio")
+            .for_search()
+            .for_range_search()
+            .set_default(0.0);
+        KNOWHERE_CONFIG_DECLARE_FIELD(beamwidth_ratio)
+            .description("beamwidth_ratio")
+            .for_search()
+            .for_range_search()
+            .set_default(0.0);
+        KNOWHERE_CONFIG_DECLARE_FIELD(search_list).description("search_list").for_all().set_default(0);
+        KNOWHERE_CONFIG_DECLARE_FIELD(num_build_thread).description("num_build_thread").for_train().set_default(0);
+        KNOWHERE_CONFIG_DECLARE_FIELD(num_load_thread)
+            .description("num_load_thread")
+            .for_search()
+            .for_range_search()
+            .set_default(0);
     }
 };
 }  // namespace knowhere

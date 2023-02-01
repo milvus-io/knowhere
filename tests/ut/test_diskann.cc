@@ -172,14 +172,14 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
         json["search_list_size"] = 128;
         json["pq_code_budget_gb"] = sizeof(float) * kDim * kNumRows * 0.125 / (1024 * 1024 * 1024);
         json["build_dram_budget_gb"] = 32.0;
-        json["build_threads_num"] = 8;
+        json["num_threads"] = 8;
         return json;
     };
 
     auto knn_search_gen = [&base_gen, &metric_str]() {
         knowhere::Json json = base_gen();
         json["index_prefix"] = (metric_str == knowhere::metric::L2 ? kL2IndexPrefix : kIPIndexPrefix);
-        json["search_threads_num"] = 8;
+        json["num_threads"] = 8;
         json["search_cache_budget_gb"] = sizeof(float) * kDim * kNumRows * 0.125 / (1024 * 1024 * 1024);
         json["search_list_size"] = 36;
         json["beamwidth"] = 8;
@@ -189,7 +189,7 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
     auto range_search_gen = [&base_gen, &metric_str]() {
         knowhere::Json json = base_gen();
         json["index_prefix"] = (metric_str == knowhere::metric::L2 ? kL2IndexPrefix : kIPIndexPrefix);
-        json["search_threads_num"] = 8;
+        json["num_threads"] = 8;
         json["search_cache_budget_gb"] = sizeof(float) * kDim * kNumRows * 0.125 / (1024 * 1024 * 1024);
         json["beamwidth"] = 8;
         json["min_k"] = 10;

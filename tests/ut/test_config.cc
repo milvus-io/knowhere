@@ -18,6 +18,16 @@
 
 TEST_CASE("Test config json parse", "[config]") {
     knowhere::Status s;
+    SECTION("check invalid config") {
+        knowhere::Json json = knowhere::Json::parse(R"({
+            "metric_type": "L2",
+            "invalid_key": 100
+        })");
+        knowhere::FlatConfig train_cfg;
+        s = knowhere::Config::Load(train_cfg, json, knowhere::TRAIN);
+        CHECK(s == knowhere::Status::invalid_args);
+    }
+
     SECTION("check flat index config") {
         knowhere::Json json = knowhere::Json::parse(R"({
             "metric_type": "L2",
@@ -122,6 +132,34 @@ TEST_CASE("Test config json parse", "[config]") {
             "range_filter": 1.0,
             "trace_visit": true
         })");
+
+        knowhere::Json large_build_json = knowhere::Json::parse(R"({
+            "beamwidth_ratio":"4.000000",
+            "build_dram_budget_gb":4.38,
+            "collection_id":"438538303581716485",
+            "data_path":"temp",
+            "dim":128,
+            "disk_pq_dims":0,
+            "field_id":"102",
+            "index_build_id":"438538303582116508",
+            "index_id":"0",
+            "index_prefix":"temp",
+            "index_type":"DISKANN",
+            "index_version":"1",
+            "max_degree":56,
+            "metric_type":"L2",
+            "num_build_thread":2,
+            "num_build_thread_ratio":"1.000000",
+            "num_load_thread":8,
+            "num_load_thread_ratio":"8.000000",
+            "partition_id":"438538303581716486",
+            "pq_code_budget_gb":0.011920999735593796,
+            "pq_code_budget_gb_ratio":"0.125000",
+            "search_cache_budget_gb_ratio":"0.100000",
+            "search_list_size":100,
+            "segment_id":"438538303581916493"
+        })");
+
         knowhere::DiskANNConfig train_cfg;
         s = knowhere::Config::Load(train_cfg, json, knowhere::TRAIN);
         CHECK(s == knowhere::Status::success);
@@ -144,5 +182,11 @@ TEST_CASE("Test config json parse", "[config]") {
         s = knowhere::Config::Load(feder_cfg, json, knowhere::FEDER);
         CHECK(s == knowhere::Status::success);
         CHECK(range_cfg.trace_visit == true);
+
+        knowhere::DiskANNConfig large_build_cfg;
+        auto format_res = knowhere::Config::Format(large_build_cfg, large_build_json);
+        CHECK(format_res == knowhere::Status::success);
+        s = knowhere::Config::Load(large_build_cfg, large_build_json, knowhere::TRAIN);
+        CHECK(s == knowhere::Status::success);
     }
 }
