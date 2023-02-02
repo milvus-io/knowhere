@@ -81,20 +81,19 @@ TEST_CASE("Test GetRangeSearchResult for HNSW/DiskANN", "[range search]") {
 
     GenRangeSearchResult(gen_labels, gen_distances, nq, label_min, label_max, dist_min, dist_max);
 
-    float* distances;
-    int64_t* labels;
-    size_t* lims;
-
     auto GetRangeSearchResult = [](std::vector<std::vector<float>>& result_distances,
                                    std::vector<std::vector<int64_t>>& result_labels, const bool is_ip, const int64_t nq,
-                                   const float radius, const float range_filter, float*& distances, int64_t*& labels,
-                                   size_t*& lims) {
+                                   const float radius, const float range_filter) -> knowhere::DataSetPtr {
+        float* distances;
+        int64_t* labels;
+        size_t* lims;
         for (auto i = 0; i < nq; i++) {
             knowhere::FilterRangeSearchResultForOneNq(result_distances[i], result_labels[i], is_ip, radius,
                                                       range_filter);
         }
         knowhere::GetRangeSearchResult(result_distances, result_labels, is_ip, nq, radius, range_filter, distances,
                                        labels, lims);
+        return knowhere::GenResultDataSet(nq, labels, distances, lims);
     };
 
     std::vector<std::tuple<float, float>> test_sets = {
@@ -109,8 +108,8 @@ TEST_CASE("Test GetRangeSearchResult for HNSW/DiskANN", "[range search]") {
             float range_filter = is_ip ? std::get<1>(item) : std::get<0>(item);
             std::vector<std::vector<int64_t>> bak_labels = gen_labels;
             std::vector<std::vector<float>> bak_distances = gen_distances;
-            GetRangeSearchResult(bak_distances, bak_labels, is_ip, nq, radius, range_filter, distances, labels, lims);
-            REQUIRE(lims[nq] == CountValidRangeSearchResult(gen_distances, radius, range_filter, is_ip));
+            auto result = GetRangeSearchResult(bak_distances, bak_labels, is_ip, nq, radius, range_filter);
+            REQUIRE(result->GetLims()[nq] == CountValidRangeSearchResult(gen_distances, radius, range_filter, is_ip));
         }
     }
 }
@@ -181,7 +180,9 @@ TEST_CASE("Test GetRangeSearchResult for Faiss", "[range search]") {
             float radius = is_ip ? std::get<0>(item) : std::get<1>(item);
             float range_filter = is_ip ? std::get<1>(item) : std::get<0>(item);
             knowhere::GetRangeSearchResult(res, is_ip, nq, radius, range_filter, distances, labels, lims, nullptr);
-            REQUIRE(lims[nq] == CountValidRangeSearchResult(res.distances, res.lims, nq, radius, range_filter, is_ip));
+            auto result = knowhere::GenResultDataSet(nq, labels, distances, lims);
+            REQUIRE(result->GetLims()[nq] ==
+                    CountValidRangeSearchResult(res.distances, res.lims, nq, radius, range_filter, is_ip));
         }
     }
 }
