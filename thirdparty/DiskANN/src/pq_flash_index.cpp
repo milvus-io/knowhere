@@ -874,7 +874,7 @@ namespace diskann {
                        dists_out);
     };
     Timer                 query_timer, io_timer, cpu_timer;
-    std::vector<Neighbor> retset(l_search + 1);
+    NeighborSet           retset(l_search);
     tsl::robin_set<_u64> &visited = *(query_scratch->visited);
 
     std::vector<Neighbor> full_retset;
@@ -891,21 +891,18 @@ namespace diskann {
         best_dist = cur_expanded_dist;
       }
     }
-
-    compute_dists(&best_medoid, 1, dist_scratch);
-    retset[0].id = best_medoid;
-    retset[0].distance = dist_scratch[0];
-    retset[0].flag = true;
+    if (bitset_view.empty() || !bitset_view.test(best_medoid)) {
+      compute_dists(&best_medoid, 1, dist_scratch);
+      retset.insert(StatefulNeighbor(best_medoid, dist_scratch[0], StatefulNeighbor::kValid));
+    } else {
+      retset.insert(StatefulNeighbor(best_medoid, std::numeric_limits<float>::max(),
+                             StatefulNeighbor::kInvalid));
+    }
     visited.insert(best_medoid);
-
-    unsigned cur_list_size = 1;
-
-    std::sort(retset.begin(), retset.begin() + cur_list_size);
 
     unsigned cmps = 0;
     unsigned hops = 0;
     unsigned num_ios = 0;
-    unsigned k = 0;
 
     // cleared every iteration
     std::vector<unsigned>                    frontier;
@@ -918,8 +915,7 @@ namespace diskann {
         cached_nhoods;
     cached_nhoods.reserve(2 * beam_width);
 
-    while (k < cur_list_size) {
-      auto nk = cur_list_size;
+    while (retset.has_next()) {
       // clear iteration state
       frontier.clear();
       frontier_nhoods.clear();
@@ -927,30 +923,26 @@ namespace diskann {
       cached_nhoods.clear();
       sector_scratch_idx = 0;
       // find new beam
-      _u32 marker = k;
       _u32 num_seen = 0;
-      while (marker < cur_list_size && frontier.size() < beam_width &&
+      while (retset.has_next() && frontier.size() < beam_width &&
              num_seen < beam_width) {
-        if (retset[marker].flag) {
-          num_seen++;
-          auto iter = nhood_cache.find(retset[marker].id);
-          if (iter != nhood_cache.end()) {
-            cached_nhoods.push_back(
-                std::make_pair(retset[marker].id, iter->second));
-            if (stats != nullptr) {
-              stats->n_cache_hits++;
-            }
-          } else {
-            frontier.push_back(retset[marker].id);
+        auto nbr = retset.pop();
+        num_seen++;
+        auto iter = nhood_cache.find(nbr.id);
+        if (iter != nhood_cache.end()) {
+          cached_nhoods.push_back(
+              std::make_pair(nbr.id, iter->second));
+          if (stats != nullptr) {
+            stats->n_cache_hits++;
           }
-          retset[marker].flag = false;
-          if (this->count_visited_nodes) {
-            reinterpret_cast<std::atomic<_u32> &>(
-                this->node_visit_counter[retset[marker].id].second)
-                .fetch_add(1);
-          }
+        } else {
+          frontier.push_back(nbr.id);
         }
-        marker++;
+        if (this->count_visited_nodes) {
+          reinterpret_cast<std::atomic<_u32> &>(
+              this->node_visit_counter[nbr.id].second)
+              .fetch_add(1);
+        }
       }
 
       // read nhoods of frontier ids
@@ -1037,18 +1029,13 @@ namespace diskann {
             visited.insert(id);
             cmps++;
             float dist = dist_scratch[m];
-            if (dist >= retset[cur_list_size - 1].distance &&
-                (cur_list_size == l_search))
-              continue;
-            Neighbor nn(id, dist, true);
+            int status = StatefulNeighbor::kValid;
+            if (!bitset_view.empty() && bitset_view.test((int64_t)id)) {
+                status = StatefulNeighbor::kInvalid;
+            }
+            StatefulNeighbor nn(id, dist, status);
             // Return position in sorted list where nn inserted.
-            auto r = InsertIntoPool(retset.data(), cur_list_size, nn);
-            if (cur_list_size < l_search)
-              ++cur_list_size;
-            if (r < nk)
-              // nk logs the best position in the retset that was
-              // updated due to neighbors of n.
-              nk = r;
+            retset.insert(nn);
           }
         }
       }
@@ -1127,18 +1114,13 @@ namespace diskann {
             if (stats != nullptr) {
               stats->n_cmps++;
             }
-            if (dist >= retset[cur_list_size - 1].distance &&
-                (cur_list_size == l_search))
-              continue;
-            Neighbor nn(id, dist, true);
-            auto     r = InsertIntoPool(
-                retset.data(), cur_list_size,
-                nn);  // Return position in sorted list where nn inserted.
-            if (cur_list_size < l_search)
-              ++cur_list_size;
-            if (r < nk)
-              nk = r;  // nk logs the best position in the retset that was
-                       // updated due to neighbors of n.
+            int status = StatefulNeighbor::kValid;
+            if (!bitset_view.empty() && bitset_view.test((int64_t)id)) {
+                status = StatefulNeighbor::kInvalid;
+            }
+            StatefulNeighbor nn(id, dist, status);
+            // Return position in sorted list where nn inserted.
+            retset.insert(nn);
           }
         }
 
@@ -1146,12 +1128,6 @@ namespace diskann {
           stats->cpu_us += (double) cpu_timer.elapsed();
         }
       }
-
-      // update best inserted position
-      if (nk <= k)
-        k = nk;  // k is the best position in retset updated in this round.
-      else
-        ++k;
 
       hops++;
     }

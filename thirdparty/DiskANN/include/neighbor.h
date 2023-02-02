@@ -10,6 +10,101 @@
 
 namespace diskann {
 
+  struct StatefulNeighbor {
+    static constexpr int kChecked = 0;
+    static constexpr int kValid = 1;
+    static constexpr int kInvalid = 2;
+
+    unsigned id;
+    float    distance;
+    int      status;
+
+    StatefulNeighbor() = default;
+    StatefulNeighbor(unsigned id, float distance, int status)
+        : id{id}, distance{distance}, status(status) {
+    }
+
+    inline bool operator<(const StatefulNeighbor &other) const {
+      return distance < other.distance;
+    }
+  };
+
+  class NeighborSet {
+   public:
+    explicit NeighborSet(size_t capacity = 0)
+        : capacity_(capacity), data_(capacity_ + 1) {
+    }
+
+    bool insert(StatefulNeighbor nbr) {
+      if (size_ == capacity_ && nbr.distance >= data_[size_ - 1].distance) {
+        return false;
+      }
+      int lo = 0, hi = size_;
+      while (lo < hi) {
+        int mid = (lo + hi) >> 1;
+        if (data_[mid].distance > nbr.distance) {
+          hi = mid;
+        } else {
+          lo = mid + 1;
+        }
+      }
+      std::memmove(&data_[lo + 1], &data_[lo], (size_ - lo) * sizeof(StatefulNeighbor));
+      data_[lo] = nbr;
+      if (size_ < capacity_) {
+        size_++;
+      }
+      if (lo < cur_) {
+        cur_ = lo;
+      }
+      return true;
+    }
+
+    StatefulNeighbor pop() {
+      auto ret = data_[cur_];
+      if (data_[cur_].status == StatefulNeighbor::kValid) {
+        data_[cur_].status = StatefulNeighbor::kChecked;
+      } else if (data_[cur_].status == StatefulNeighbor::kInvalid) {
+        std::memmove(&data_[cur_], &data_[cur_ + 1],
+                     (size_ - cur_ - 1) * sizeof(StatefulNeighbor));
+        size_--;
+      }
+      while (cur_ < size_ && data_[cur_].status == StatefulNeighbor::kChecked) {
+        cur_++;
+      }
+      return ret;
+    }
+
+    bool has_next() const {
+      return cur_ < size_;
+    }
+
+    size_t size() const {
+      return size_;
+    }
+    size_t capacity() const {
+      return capacity_;
+    }
+
+    StatefulNeighbor &operator[](size_t i) {
+      return data_[i];
+    }
+
+    const StatefulNeighbor &operator[](size_t i) const {
+      return data_[i];
+    }
+
+    void clear() {
+      size_ = 0;
+      cur_ = 0;
+    }
+
+   private:
+    size_t                size_ = 0;
+    size_t                capacity_;
+    size_t                cur_ = 0;
+    std::vector<StatefulNeighbor> data_;
+  };
+
   struct Neighbor {
     unsigned id;
     float    distance;
