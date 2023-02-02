@@ -17,6 +17,7 @@
 #include <optional>
 #include <sstream>
 #include <unordered_map>
+#include <unordered_set>
 #include <variant>
 
 #include "expected.h"
@@ -25,6 +26,28 @@
 namespace knowhere {
 
 typedef nlohmann::json Json;
+
+const std::unordered_set<std::string> ext_legal_json_keys = {
+    "dim",
+    "index_type",
+    "index_mode",
+    "collection_id",
+    "partition_id",
+    "segment_id",
+    "field_id",
+    "index_build_id",
+    "index_id",
+    "index_version",
+    "pq_code_budget_gb_ratio",
+    "num_build_thread_ratio",
+    "search_cache_budget_gb_ratio",
+    "num_load_thread_ratio",
+    "beamwidth_ratio",
+    "search_list",
+    "num_build_thread",
+    "num_load_thread",
+    "index_files",
+};
 
 #ifndef CFG_INT
 #define CFG_INT int32_t
@@ -252,7 +275,27 @@ class Config {
     }
 
     static Status
-    Format(const Config& cfg, Json& json) {
+    FormatAndCheck(const Config& cfg, Json& json) {
+        for (auto& it : json.items()) {
+            bool status = true;
+            {
+                auto it_ = cfg.__DICT__.find(it.key());
+                if (it_ == cfg.__DICT__.end())
+                    status = false;
+            }
+            {
+                auto it_ = ext_legal_json_keys.find(it.key());
+                if (it_ == ext_legal_json_keys.end()) {
+                    status |= false;
+                } else {
+                    status |= true;
+                }
+            }
+            if (!status) {
+                return Status::invalid_param_in_json;
+            }
+        }
+
         try {
             for (const auto& it : cfg.__DICT__) {
                 const auto& var = it.second;
@@ -282,7 +325,7 @@ class Config {
                 }
             }
         } catch (std::exception&) {
-            return Status::invalid_param_in_json;
+            return Status::invalid_value_in_json;
         }
         return Status::success;
     }

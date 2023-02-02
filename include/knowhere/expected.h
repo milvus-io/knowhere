@@ -35,7 +35,8 @@ enum class Status {
     hnsw_inner_error = 12,
     malloc_error = 13,
     diskann_inner_error = 14,
-    diskann_file_error = 15
+    diskann_file_error = 15,
+    invalid_value_in_json = 16,
 };
 
 template <typename E>
