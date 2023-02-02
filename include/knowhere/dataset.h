@@ -13,9 +13,9 @@
 #define DATASET_H
 
 #include <any>
-#include <map>
 #include <memory>
 #include <shared_mutex>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 
@@ -222,7 +222,7 @@ class DataSet {
 
  private:
     mutable std::shared_mutex mutex_;
-    std::map<std::string, Var> data_;
+    std::unordered_map<std::string, Var> data_;
     bool is_owner = true;
 };
 using DataSetPtr = std::shared_ptr<DataSet>;
