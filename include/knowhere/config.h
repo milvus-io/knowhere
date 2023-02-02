@@ -48,6 +48,8 @@ const std::unordered_set<std::string> ext_legal_json_keys = {
     "num_load_thread",
     "index_files",
     "gpu_id",
+    "nbits",
+    "m",
 };
 
 #ifndef CFG_INT
