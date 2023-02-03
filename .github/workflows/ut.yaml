@@ -35,7 +35,7 @@ jobs:
           sudo apt update && sudo apt install -y cmake g++ gcc libopenblas-dev libboost-program-options-dev libaio-dev
       - name: Build & Run
         run: |
-          mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_DISKANN=ON -DWITH_UT=ON \
+          mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_DISKANN=ON -DWITH_UT=ON -DWITH_ASAN=ON \
           && make -j8 \
           && ./tests/ut/knowhere_tests
 

@@ -13,6 +13,32 @@
 
 #include "knowhere/log.h"
 namespace knowhere {
+
+static const std::unordered_set<std::string> ext_legal_json_keys = {
+    "dim",
+    "index_type",
+    "index_mode",
+    "collection_id",
+    "partition_id",
+    "segment_id",
+    "field_id",
+    "index_build_id",
+    "index_id",
+    "index_version",
+    "pq_code_budget_gb_ratio",
+    "num_build_thread_ratio",
+    "search_cache_budget_gb_ratio",
+    "num_load_thread_ratio",
+    "beamwidth_ratio",
+    "search_list",
+    "num_build_thread",
+    "num_load_thread",
+    "index_files",
+    "gpu_id",
+    "nbits",
+    "m",
+};
+
 Status
 Config::FormatAndCheck(const Config& cfg, Json& json) {
     for (auto& it : json.items()) {
