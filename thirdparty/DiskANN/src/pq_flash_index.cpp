@@ -894,8 +894,8 @@ namespace diskann {
 
     compute_dists(&best_medoid, 1, dist_scratch);
     retset[0].id = best_medoid;
-    retset[0].distance = dist_scratch[0];
     retset[0].flag = true;
+    retset[0].distance = dist_scratch[0];
     visited.insert(best_medoid);
 
     unsigned cur_list_size = 1;
@@ -949,8 +949,16 @@ namespace diskann {
                 this->node_visit_counter[retset[marker].id].second)
                 .fetch_add(1);
           }
+          if (!bitset_view.empty() && bitset_view.test(retset[marker].id)) {
+            std::memmove(&retset[marker], &retset[marker + 1],
+                        (cur_list_size - marker - 1) * sizeof(Neighbor));
+            cur_list_size--;
+          } else {
+            marker++;
+          }
+        } else {
+          marker++;
         }
-        marker++;
       }
 
       // read nhoods of frontier ids
@@ -1037,7 +1045,7 @@ namespace diskann {
             visited.insert(id);
             cmps++;
             float dist = dist_scratch[m];
-            if (dist >= retset[cur_list_size - 1].distance &&
+            if (cur_list_size > 0 && dist >= retset[cur_list_size - 1].distance &&
                 (cur_list_size == l_search))
               continue;
             Neighbor nn(id, dist, true);
@@ -1127,7 +1135,7 @@ namespace diskann {
             if (stats != nullptr) {
               stats->n_cmps++;
             }
-            if (dist >= retset[cur_list_size - 1].distance &&
+            if (cur_list_size > 0 && dist >= retset[cur_list_size - 1].distance &&
                 (cur_list_size == l_search))
               continue;
             Neighbor nn(id, dist, true);
