@@ -29,6 +29,7 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
         json[knowhere::meta::METRIC_TYPE] = knowhere::metric::L2;
         json[knowhere::meta::TOPK] = 1;
         json[knowhere::meta::RADIUS] = 10.0;
+        json[knowhere::meta::RANGE_FILTER] = 0.0;
         return json;
     };
 

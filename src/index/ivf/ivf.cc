@@ -412,7 +412,7 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
             index_->range_search_thread_safe(nq, (const float*)xq, radius, &res, ivf_cfg.nprobe, parallel_mode,
                                              max_codes, bitset);
         }
-        if (ivf_cfg.range_filter_exist) {
+        if (ivf_cfg.range_filter != defaultRangeFilter) {
             GetRangeSearchResult(res, is_ip, nq, radius, ivf_cfg.range_filter, distances, ids, lims, bitset);
         } else {
             GetRangeSearchResult(res, is_ip, nq, radius, distances, ids, lims);
@@ -489,7 +489,7 @@ IvfIndexNode<faiss::IndexBinaryIVF>::RangeSearch(const DataSet& dataset, const C
         index_->nprobe = ivf_bin_cfg.nprobe;
         faiss::RangeSearchResult res(nq);
         index_->range_search(nq, (const uint8_t*)xq, radius, &res, bitset);
-        if (ivf_bin_cfg.range_filter_exist) {
+        if (ivf_bin_cfg.range_filter != defaultRangeFilter) {
             GetRangeSearchResult(res, false, nq, radius, ivf_bin_cfg.range_filter, distances, ids, lims, bitset);
         } else {
             GetRangeSearchResult(res, false, nq, radius, distances, ids, lims);

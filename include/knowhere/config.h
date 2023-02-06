@@ -382,13 +382,14 @@ class Config {
     EntryAccess<decltype(PARAM)> PARAM##_access(std::get_if<Entry<decltype(PARAM)>>(&__DICT__[#PARAM])); \
     PARAM##_access
 
+const float defaultRangeFilter = 1.0f / 0.0;
+
 class BaseConfig : public Config {
  public:
     CFG_STRING metric_type;
     CFG_INT k;
     CFG_FLOAT radius;
     CFG_FLOAT range_filter;
-    CFG_BOOL range_filter_exist;
     CFG_BOOL trace_visit;
     KNOHWERE_DECLARE_CONFIG(BaseConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(metric_type).set_default("L2").description("metric type").for_all();
@@ -402,12 +403,8 @@ class BaseConfig : public Config {
             .description("radius for range search")
             .for_range_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(range_filter)
-            .set_default(0.0)
+            .set_default(defaultRangeFilter)
             .description("result filter for range search")
-            .for_range_search();
-        KNOWHERE_CONFIG_DECLARE_FIELD(range_filter_exist)
-            .set_default(false)
-            .description("range filter exist or not")
             .for_range_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(trace_visit)
             .set_default(false)

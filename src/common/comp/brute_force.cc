@@ -221,7 +221,7 @@ BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_da
     float* distances = nullptr;
     size_t* lims = nullptr;
 
-    if (cfg.range_filter_exist) {
+    if (cfg.range_filter != defaultRangeFilter) {
         GetRangeSearchResult(res, is_ip, nq, radius, cfg.range_filter, distances, labels, lims, bitset);
     } else {
         GetRangeSearchResult(res, is_ip, nq, radius, distances, labels, lims);
