@@ -109,10 +109,10 @@ namespace diskann {
     std::vector<SimpleNeighbor> pool;
   };
 
-  static inline unsigned InsertIntoPool(Neighbor *addr, unsigned K,
+  static inline unsigned InsertIntoPool(Neighbor *addr, int K,
                                         Neighbor nn) {
     // find the location to insert
-    unsigned left = 0, right = K - 1;
+    int left = 0, right = K - 1;
     if (addr[left].distance > nn.distance) {
       memmove((char *) &addr[left + 1], &addr[left], K * sizeof(Neighbor));
       addr[left] = nn;
@@ -123,7 +123,7 @@ namespace diskann {
       return K;
     }
     while (right > 1 && left < right - 1) {
-      unsigned mid = (left + right) / 2;
+      int mid = (left + right) / 2;
       if (addr[mid].distance > nn.distance)
         right = mid;
       else
