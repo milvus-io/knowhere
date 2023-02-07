@@ -25,33 +25,29 @@ namespace knowhere {
 
 class DataSet {
  public:
-    typedef std::variant<const float*, const size_t*, const int64_t*, const void*, int64_t, std::string, std::any> Var;
     DataSet() = default;
     ~DataSet() {
         if (!is_owner) {
             return;
         }
         for (auto&& x : this->data_) {
-            {
-                auto ptr = std::get_if<0>(&x.second);
+            if (x.second.type() == typeid(const float*)) {
+                auto ptr = std::any_cast<const float*>(&x.second);
                 if (ptr != nullptr) {
                     delete[] * ptr;
                 }
-            }
-            {
-                auto ptr = std::get_if<1>(&x.second);
+            } else if (x.second.type() == typeid(const size_t*)) {
+                auto ptr = std::any_cast<const size_t*>(&x.second);
                 if (ptr != nullptr) {
                     delete[] * ptr;
                 }
-            }
-            {
-                auto ptr = std::get_if<2>(&x.second);
+            } else if (x.second.type() == typeid(const int64_t*)) {
+                auto ptr = std::any_cast<const int64_t*>(&x.second);
                 if (ptr != nullptr) {
                     delete[] * ptr;
                 }
-            }
-            {
-                auto ptr = std::get_if<3>(&x.second);
+            } else if (x.second.type() == typeid(const void*)) {
+                auto ptr = std::any_cast<const void*>(&x.second);
                 if (ptr != nullptr) {
                     delete[](char*)(*ptr);
                 }
@@ -62,57 +58,57 @@ class DataSet {
     void
     SetDistance(const float* dis) {
         std::unique_lock lock(mutex_);
-        this->data_[meta::DISTANCE] = Var(std::in_place_index<0>, dis);
+        this->data_[meta::DISTANCE] = dis;
     }
 
     void
     SetLims(const size_t* lims) {
         std::unique_lock lock(mutex_);
-        this->data_[meta::LIMS] = Var(std::in_place_index<1>, lims);
+        this->data_[meta::LIMS] = lims;
     }
 
     void
     SetIds(const int64_t* ids) {
         std::unique_lock lock(mutex_);
-        this->data_[meta::IDS] = Var(std::in_place_index<2>, ids);
+        this->data_[meta::IDS] = ids;
     }
 
     void
     SetTensor(const void* tensor) {
         std::unique_lock lock(mutex_);
-        this->data_[meta::TENSOR] = Var(std::in_place_index<3>, tensor);
+        this->data_[meta::TENSOR] = tensor;
     }
 
     void
     SetRows(const int64_t rows) {
         std::unique_lock lock(mutex_);
-        this->data_[meta::ROWS] = Var(std::in_place_index<4>, rows);
+        this->data_[meta::ROWS] = rows;
     }
 
     void
     SetDim(const int64_t dim) {
         std::unique_lock lock(mutex_);
-        this->data_[meta::DIM] = Var(std::in_place_index<4>, dim);
+        this->data_[meta::DIM] = dim;
     }
 
     void
     SetJsonInfo(const std::string& info) {
         std::unique_lock lock(mutex_);
-        this->data_[meta::JSON_INFO] = Var(std::in_place_index<5>, info);
+        this->data_[meta::JSON_INFO] = info;
     }
 
     void
     SetJsonIdSet(const std::string& idset) {
         std::unique_lock lock(mutex_);
-        this->data_[meta::JSON_ID_SET] = Var(std::in_place_index<5>, idset);
+        this->data_[meta::JSON_ID_SET] = idset;
     }
 
     const float*
     GetDistance() const {
         std::shared_lock lock(mutex_);
         auto it = this->data_.find(meta::DISTANCE);
-        if (it != this->data_.end()) {
-            const float* res = *std::get_if<0>(&it->second);
+        if (it != this->data_.end() && it->second.type() == typeid(const float*)) {
+            auto res = *std::any_cast<const float*>(&it->second);
             return res;
         }
         return nullptr;
@@ -122,8 +118,8 @@ class DataSet {
     GetLims() const {
         std::shared_lock lock(mutex_);
         auto it = this->data_.find(meta::LIMS);
-        if (it != this->data_.end()) {
-            const size_t* res = *std::get_if<1>(&it->second);
+        if (it != this->data_.end() && it->second.type() == typeid(const size_t*)) {
+            auto res = *std::any_cast<const size_t*>(&it->second);
             return res;
         }
         return nullptr;
@@ -133,8 +129,8 @@ class DataSet {
     GetIds() const {
         std::shared_lock lock(mutex_);
         auto it = this->data_.find(meta::IDS);
-        if (it != this->data_.end()) {
-            const int64_t* res = *std::get_if<2>(&it->second);
+        if (it != this->data_.end() && it->second.type() == typeid(const int64_t*)) {
+            auto res = *std::any_cast<const int64_t*>(&it->second);
             return res;
         }
         return nullptr;
@@ -144,8 +140,8 @@ class DataSet {
     GetTensor() const {
         std::shared_lock lock(mutex_);
         auto it = this->data_.find(meta::TENSOR);
-        if (it != this->data_.end()) {
-            const void* res = *std::get_if<3>(&it->second);
+        if (it != this->data_.end() && it->second.type() == typeid(const void*)) {
+            auto res = *std::any_cast<const void*>(&it->second);
             return res;
         }
         return nullptr;
@@ -156,7 +152,7 @@ class DataSet {
         std::shared_lock lock(mutex_);
         auto it = this->data_.find(meta::ROWS);
         if (it != this->data_.end()) {
-            int64_t res = *std::get_if<4>(&it->second);
+            int64_t res = *std::any_cast<int64_t>(&it->second);
             return res;
         }
         return 0;
@@ -167,7 +163,7 @@ class DataSet {
         std::shared_lock lock(mutex_);
         auto it = this->data_.find(meta::DIM);
         if (it != this->data_.end()) {
-            int64_t res = *std::get_if<4>(&it->second);
+            int64_t res = *std::any_cast<int64_t>(&it->second);
             return res;
         }
         return 0;
@@ -178,7 +174,7 @@ class DataSet {
         std::shared_lock lock(mutex_);
         auto it = this->data_.find(meta::JSON_INFO);
         if (it != this->data_.end()) {
-            std::string res = *std::get_if<5>(&it->second);
+            std::string res = *std::any_cast<std::string>(&it->second);
             return res;
         }
         return "";
@@ -189,7 +185,7 @@ class DataSet {
         std::shared_lock lock(mutex_);
         auto it = this->data_.find(meta::JSON_ID_SET);
         if (it != this->data_.end()) {
-            std::string res = *std::get_if<5>(&it->second);
+            std::string res = *std::any_cast<std::string>(&it->second);
             return res;
         }
         return "";
@@ -206,7 +202,7 @@ class DataSet {
     void
     Set(const std::string& k, T&& v) {
         std::unique_lock lock(mutex_);
-        data_[k] = Var(std::in_place_type<std::any>, std::forward<T>(v));
+        data_[k] = std::forward<T>(v);
     }
 
     template <typename T>
@@ -215,14 +211,14 @@ class DataSet {
         std::shared_lock lock(mutex_);
         auto it = this->data_.find(k);
         if (it != this->data_.end()) {
-            return *std::any_cast<T>(std::get_if<std::any>(&it->second));
+            return *std::any_cast<T>(&it->second);
         }
         return T();
     }
 
  private:
     mutable std::shared_mutex mutex_;
-    std::map<std::string, Var> data_;
+    std::map<std::string, std::any> data_;
     bool is_owner = true;
 };
 using DataSetPtr = std::shared_ptr<DataSet>;
