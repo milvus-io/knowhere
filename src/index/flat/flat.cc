@@ -136,7 +136,7 @@ class FlatIndexNode : public IndexNode {
             if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
                 bool is_ip = (index_->metric_type == faiss::METRIC_INNER_PRODUCT);
                 index_->range_search(nq, (const float*)xq, radius, &res, bitset);
-                if (f_cfg.range_filter_exist) {
+                if (f_cfg.range_filter != defaultRangeFilter) {
                     GetRangeSearchResult(res, is_ip, nq, radius, f_cfg.range_filter, distances, ids, lims, bitset);
                 } else {
                     GetRangeSearchResult(res, is_ip, nq, radius, distances, ids, lims);
@@ -144,7 +144,7 @@ class FlatIndexNode : public IndexNode {
             }
             if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
                 index_->range_search(nq, (const uint8_t*)xq, radius, &res, bitset);
-                if (f_cfg.range_filter_exist) {
+                if (f_cfg.range_filter != defaultRangeFilter) {
                     GetRangeSearchResult(res, false, nq, radius, f_cfg.range_filter, distances, ids, lims, bitset);
                 } else {
                     GetRangeSearchResult(res, false, nq, radius, distances, ids, lims);

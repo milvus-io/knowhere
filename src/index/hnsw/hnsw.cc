@@ -201,7 +201,7 @@ class HnswIndexNode : public IndexNode {
                     result_id_array[index][j] = p.second;
                 }
                 result_size[index] = rst.size();
-                if (hnsw_cfg.range_filter_exist) {
+                if (hnsw_cfg.range_filter != defaultRangeFilter) {
                     FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, radius,
                                                     range_filter);
                 }

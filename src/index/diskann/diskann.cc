@@ -574,7 +574,7 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
             pq_flash_index_->range_search(xq + (index * dim), radius, min_k, max_k, result_id_array[index],
                                           result_dist_array[index], beamwidth, search_list_and_k_ratio, bitset);
             // filter range search result
-            if (search_conf.range_filter_exist) {
+            if (search_conf.range_filter != defaultRangeFilter) {
                 FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, radius,
                                                 search_conf.range_filter);
             }
