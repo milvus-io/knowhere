@@ -17,6 +17,7 @@
 #include "common/range_util.h"
 #include "faiss/utils/BinaryDistance.h"
 #include "faiss/utils/distances.h"
+#include "knowhere/comp/thread_pool.h"
 #include "knowhere/config.h"
 
 namespace knowhere {
@@ -49,51 +50,59 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
     auto distances = new float[nq * topk];
 
     auto faiss_metric_type = metric_type.value();
-    switch (faiss_metric_type) {
-        case faiss::METRIC_L2: {
-            faiss::float_maxheap_array_t buf{(size_t)nq, (size_t)topk, labels, distances};
-            faiss::knn_L2sqr((const float*)xq, (const float*)xb, dim, nq, nb, &buf, nullptr, bitset);
-            break;
-        }
-        case faiss::METRIC_INNER_PRODUCT: {
-            faiss::float_minheap_array_t buf{(size_t)nq, (size_t)topk, labels, distances};
-            faiss::knn_inner_product((const float*)xq, (const float*)xb, dim, nq, nb, &buf, bitset);
-            break;
-        }
-        case faiss::METRIC_Jaccard:
-        case faiss::METRIC_Tanimoto: {
-            faiss::float_maxheap_array_t res = {size_t(nq), size_t(topk), labels, distances};
-            binary_distance_knn_hc(faiss::METRIC_Jaccard, &res, (const uint8_t*)xq, (const uint8_t*)xb, nb, dim / 8,
-                                   bitset);
 
-            if (faiss_metric_type == faiss::METRIC_Tanimoto) {
-                for (int i = 0; i < topk * nq; i++) {
-                    distances[i] = faiss::Jaccard_2_Tanimoto(distances[i]);
+    auto pool = ThreadPool::GetGlobalThreadPool();
+    auto future = pool->push([&] {
+        switch (faiss_metric_type) {
+            case faiss::METRIC_L2: {
+                faiss::float_maxheap_array_t buf{(size_t)nq, (size_t)topk, labels, distances};
+                faiss::knn_L2sqr((const float*)xq, (const float*)xb, dim, nq, nb, &buf, nullptr, bitset);
+                break;
+            }
+            case faiss::METRIC_INNER_PRODUCT: {
+                faiss::float_minheap_array_t buf{(size_t)nq, (size_t)topk, labels, distances};
+                faiss::knn_inner_product((const float*)xq, (const float*)xb, dim, nq, nb, &buf, bitset);
+                break;
+            }
+            case faiss::METRIC_Jaccard:
+            case faiss::METRIC_Tanimoto: {
+                faiss::float_maxheap_array_t res = {size_t(nq), size_t(topk), labels, distances};
+                binary_distance_knn_hc(faiss::METRIC_Jaccard, &res, (const uint8_t*)xq, (const uint8_t*)xb, nb, dim / 8,
+                                       bitset);
+
+                if (faiss_metric_type == faiss::METRIC_Tanimoto) {
+                    for (int i = 0; i < topk * nq; i++) {
+                        distances[i] = faiss::Jaccard_2_Tanimoto(distances[i]);
+                    }
                 }
+                break;
             }
-            break;
-        }
-        case faiss::METRIC_Hamming: {
-            std::vector<int32_t> int_distances(nq * topk);
-            faiss::int_maxheap_array_t res = {size_t(nq), size_t(topk), labels, int_distances.data()};
-            binary_distance_knn_hc(faiss::METRIC_Hamming, &res, (const uint8_t*)xq, (const uint8_t*)xb, nb, dim / 8,
-                                   bitset);
-            for (int i = 0; i < nq * topk; ++i) {
-                distances[i] = int_distances[i];
+            case faiss::METRIC_Hamming: {
+                std::vector<int32_t> int_distances(nq * topk);
+                faiss::int_maxheap_array_t res = {size_t(nq), size_t(topk), labels, int_distances.data()};
+                binary_distance_knn_hc(faiss::METRIC_Hamming, &res, (const uint8_t*)xq, (const uint8_t*)xb, nb, dim / 8,
+                                       bitset);
+                for (int i = 0; i < nq * topk; ++i) {
+                    distances[i] = int_distances[i];
+                }
+                break;
             }
-            break;
+            case faiss::METRIC_Substructure:
+            case faiss::METRIC_Superstructure: {
+                // only matched ids will be chosen, not to use heap
+                binary_distance_knn_mc(faiss_metric_type, (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, topk, dim / 8,
+                                       distances, labels, bitset);
+                break;
+            }
+            default:
+                return Status::invalid_metric_type;
         }
-        case faiss::METRIC_Substructure:
-        case faiss::METRIC_Superstructure: {
-            // only matched ids will be chosen, not to use heap
-            binary_distance_knn_mc(faiss_metric_type, (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, topk, dim / 8,
-                                   distances, labels, bitset);
-            break;
-        }
-        default:
-            return unexpected(Status::invalid_metric_type);
+        return Status::success;
+    });
+    auto ret = future.get();
+    if (ret != Status::success) {
+        return unexpected(ret);
     }
-
     return GenResultDataSet(nq, cfg.k, labels, distances);
 }
 
@@ -120,51 +129,56 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
     auto distances = dis;
 
     auto faiss_metric_type = metric_type.value();
-    switch (faiss_metric_type) {
-        case faiss::METRIC_L2: {
-            faiss::float_maxheap_array_t buf{(size_t)nq, (size_t)topk, labels, distances};
-            faiss::knn_L2sqr((const float*)xq, (const float*)xb, dim, nq, nb, &buf, nullptr, bitset);
-            break;
-        }
-        case faiss::METRIC_INNER_PRODUCT: {
-            faiss::float_minheap_array_t buf{(size_t)nq, (size_t)topk, labels, distances};
-            faiss::knn_inner_product((const float*)xq, (const float*)xb, dim, nq, nb, &buf, bitset);
-            break;
-        }
-        case faiss::METRIC_Jaccard:
-        case faiss::METRIC_Tanimoto: {
-            faiss::float_maxheap_array_t res = {size_t(nq), size_t(topk), labels, distances};
-            binary_distance_knn_hc(faiss::METRIC_Jaccard, &res, (const uint8_t*)xq, (const uint8_t*)xb, nb, dim / 8,
-                                   bitset);
 
-            if (faiss_metric_type == faiss::METRIC_Tanimoto) {
-                for (int i = 0; i < topk * nq; i++) {
-                    distances[i] = faiss::Jaccard_2_Tanimoto(distances[i]);
+    auto pool = ThreadPool::GetGlobalThreadPool();
+    auto future = pool->push([&] {
+        switch (faiss_metric_type) {
+            case faiss::METRIC_L2: {
+                faiss::float_maxheap_array_t buf{(size_t)nq, (size_t)topk, labels, distances};
+                faiss::knn_L2sqr((const float*)xq, (const float*)xb, dim, nq, nb, &buf, nullptr, bitset);
+                break;
+            }
+            case faiss::METRIC_INNER_PRODUCT: {
+                faiss::float_minheap_array_t buf{(size_t)nq, (size_t)topk, labels, distances};
+                faiss::knn_inner_product((const float*)xq, (const float*)xb, dim, nq, nb, &buf, bitset);
+                break;
+            }
+            case faiss::METRIC_Jaccard:
+            case faiss::METRIC_Tanimoto: {
+                faiss::float_maxheap_array_t res = {size_t(nq), size_t(topk), labels, distances};
+                binary_distance_knn_hc(faiss::METRIC_Jaccard, &res, (const uint8_t*)xq, (const uint8_t*)xb, nb, dim / 8,
+                                       bitset);
+
+                if (faiss_metric_type == faiss::METRIC_Tanimoto) {
+                    for (int i = 0; i < topk * nq; i++) {
+                        distances[i] = faiss::Jaccard_2_Tanimoto(distances[i]);
+                    }
                 }
+                break;
             }
-            break;
-        }
-        case faiss::METRIC_Hamming: {
-            std::vector<int32_t> int_distances(nq * topk);
-            faiss::int_maxheap_array_t res = {size_t(nq), size_t(topk), labels, int_distances.data()};
-            binary_distance_knn_hc(faiss::METRIC_Hamming, &res, (const uint8_t*)xq, (const uint8_t*)xb, nb, dim / 8,
-                                   bitset);
-            for (int i = 0; i < nq * topk; ++i) {
-                distances[i] = int_distances[i];
+            case faiss::METRIC_Hamming: {
+                std::vector<int32_t> int_distances(nq * topk);
+                faiss::int_maxheap_array_t res = {size_t(nq), size_t(topk), labels, int_distances.data()};
+                binary_distance_knn_hc(faiss::METRIC_Hamming, &res, (const uint8_t*)xq, (const uint8_t*)xb, nb, dim / 8,
+                                       bitset);
+                for (int i = 0; i < nq * topk; ++i) {
+                    distances[i] = int_distances[i];
+                }
+                break;
             }
-            break;
+            case faiss::METRIC_Substructure:
+            case faiss::METRIC_Superstructure: {
+                // only matched ids will be chosen, not to use heap
+                binary_distance_knn_mc(faiss_metric_type, (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, topk, dim / 8,
+                                       distances, labels, bitset);
+                break;
+            }
+            default:
+                return Status::invalid_metric_type;
         }
-        case faiss::METRIC_Substructure:
-        case faiss::METRIC_Superstructure: {
-            // only matched ids will be chosen, not to use heap
-            binary_distance_knn_mc(faiss_metric_type, (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, topk, dim / 8,
-                                   distances, labels, bitset);
-            break;
-        }
-        default:
-            return Status::invalid_metric_type;
-    }
-    return Status::success;
+        return Status::success;
+    });
+    return future.get();
 }
 
 /** knowhere wrapper API to call faiss brute force range search for all metric types
@@ -192,29 +206,41 @@ BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_da
 
     faiss::RangeSearchResult res(nq);
     auto faiss_metric_type = metric_type.value();
-    switch (faiss_metric_type) {
-        case faiss::METRIC_L2:
-            faiss::range_search_L2sqr((const float*)xq, (const float*)xb, dim, nq, nb, radius, &res, bitset);
-            break;
-        case faiss::METRIC_INNER_PRODUCT:
-            is_ip = true;
-            faiss::range_search_inner_product((const float*)xq, (const float*)xb, dim, nq, nb, radius, &res, bitset);
-            break;
-        case faiss::METRIC_Jaccard:
-            faiss::binary_range_search<faiss::CMin<float, int64_t>, float>(
-                faiss::METRIC_Jaccard, (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, radius, dim / 8, &res, bitset);
-            break;
-        case faiss::METRIC_Tanimoto:
-            faiss::binary_range_search<faiss::CMin<float, int64_t>, float>(
-                faiss::METRIC_Tanimoto, (const uint8_t*)xq, (const uint8_t*)xb, nq, nb, radius, dim / 8, &res, bitset);
-            break;
-        case faiss::METRIC_Hamming:
-            faiss::binary_range_search<faiss::CMin<int, int64_t>, int>(faiss::METRIC_Hamming, (const uint8_t*)xq,
-                                                                       (const uint8_t*)xb, nq, nb, (int)radius, dim / 8,
-                                                                       &res, bitset);
-            break;
-        default:
-            return unexpected(Status::invalid_metric_type);
+
+    auto pool = ThreadPool::GetGlobalThreadPool();
+    auto future = pool->push([&] {
+        switch (faiss_metric_type) {
+            case faiss::METRIC_L2:
+                faiss::range_search_L2sqr((const float*)xq, (const float*)xb, dim, nq, nb, radius, &res, bitset);
+                break;
+            case faiss::METRIC_INNER_PRODUCT:
+                is_ip = true;
+                faiss::range_search_inner_product((const float*)xq, (const float*)xb, dim, nq, nb, radius, &res,
+                                                  bitset);
+                break;
+            case faiss::METRIC_Jaccard:
+                faiss::binary_range_search<faiss::CMin<float, int64_t>, float>(faiss::METRIC_Jaccard,
+                                                                               (const uint8_t*)xq, (const uint8_t*)xb,
+                                                                               nq, nb, radius, dim / 8, &res, bitset);
+                break;
+            case faiss::METRIC_Tanimoto:
+                faiss::binary_range_search<faiss::CMin<float, int64_t>, float>(faiss::METRIC_Tanimoto,
+                                                                               (const uint8_t*)xq, (const uint8_t*)xb,
+                                                                               nq, nb, radius, dim / 8, &res, bitset);
+                break;
+            case faiss::METRIC_Hamming:
+                faiss::binary_range_search<faiss::CMin<int, int64_t>, int>(faiss::METRIC_Hamming, (const uint8_t*)xq,
+                                                                           (const uint8_t*)xb, nq, nb, (int)radius,
+                                                                           dim / 8, &res, bitset);
+                break;
+            default:
+                return Status::invalid_metric_type;
+        }
+        return Status::success;
+    });
+    auto ret = future.get();
+    if (ret != Status::success) {
+        return unexpected(ret);
     }
 
     int64_t* labels = nullptr;

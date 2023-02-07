@@ -19,6 +19,8 @@
 #ifndef __ctpl_stl_thread_pool_H__
 #define __ctpl_stl_thread_pool_H__
 
+#include <omp.h>
+
 #include <atomic>
 #include <exception>
 #include <functional>
@@ -223,6 +225,7 @@ class thread_pool {
     set_thread(int i) {
         std::shared_ptr<std::atomic<bool>> flag(this->flags[i]);  // a copy of the shared ptr to the flag
         auto f = [this, i, flag /* a copy of the shared ptr to the flag */]() {
+            omp_set_num_threads(1);
             std::atomic<bool>& _flag = *flag;
             std::function<void(int id)>* _f;
             bool isPop = this->q.pop(_f);
