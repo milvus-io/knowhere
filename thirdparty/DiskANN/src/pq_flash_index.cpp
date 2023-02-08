@@ -470,34 +470,36 @@ namespace diskann {
                   num_medoids * aligned_dim * sizeof(float), 32);
     std::memset(centroid_data, 0, num_medoids * aligned_dim * sizeof(float));
 
-    // borrow ctx
     ThreadData<T> data = this->thread_data.pop();
+
     while (data.scratch.sector_scratch == nullptr) {
       this->thread_data.wait_for_push_notify();
       data = this->thread_data.pop();
     }
+    // borrow ctx
     IOContext &ctx = data.ctx;
+    // borrow buf
+    auto scratch = &(data.scratch);
+    scratch->reset();
+    char *sector_scratch = scratch->sector_scratch;
+    T* medoid_coords = scratch->coord_scratch;
+
     LOG(INFO) << "Loading centroid data from medoids vector data of "
               << num_medoids << " medoid(s)";
     for (uint64_t cur_m = 0; cur_m < num_medoids; cur_m++) {
       auto medoid = medoids[cur_m];
       // read medoid nhood
-      char *medoid_buf = nullptr;
-      alloc_aligned((void **) &medoid_buf, read_len_for_node, SECTOR_LEN);
       std::vector<AlignedRead> medoid_read(1);
       medoid_read[0].len = read_len_for_node;
-      medoid_read[0].buf = medoid_buf;
+      medoid_read[0].buf = sector_scratch;
       medoid_read[0].offset = get_node_sector_offset(medoid);
       reader->read(medoid_read, ctx);
-
       // all data about medoid
-      char *medoid_node_buf = get_offset_to_node(medoid_buf, medoid);
+      char *medoid_node_buf = get_offset_to_node(sector_scratch, medoid);
 
       // add medoid coords to `coord_cache`
-      T *medoid_coords = new T[data_dim];
       T *medoid_disk_coords = OFFSET_TO_NODE_COORDS(medoid_node_buf);
       memcpy(medoid_coords, medoid_disk_coords, disk_bytes_per_point);
-
       if (!use_disk_index_pq) {
         for (uint32_t i = 0; i < data_dim; i++)
           centroid_data[cur_m * aligned_dim + i] = medoid_coords[i];
@@ -505,9 +507,6 @@ namespace diskann {
         disk_pq_table.inflate_vector((_u8 *) medoid_coords,
                                      (centroid_data + cur_m * aligned_dim));
       }
-
-      aligned_free(medoid_buf);
-      delete[] medoid_coords;
     }
 
     // return ctx
