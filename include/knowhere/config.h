@@ -275,7 +275,7 @@ class Config {
                     return Status::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
-                    auto v = json[it.first];
+                    CFG_INT v = json[it.first];
                     if (ptr->range.value().first <= v && v <= ptr->range.value().second) {
                         *ptr->val = v;
                     } else {
@@ -301,7 +301,7 @@ class Config {
                     return Status::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
-                    auto v = json[it.first];
+                    CFG_FLOAT v = json[it.first];
                     if (ptr->range.value().first <= v && v <= ptr->range.value().second) {
                         *ptr->val = v;
                     } else {

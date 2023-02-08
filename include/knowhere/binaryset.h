@@ -12,7 +12,7 @@
 #ifndef BINARYSET_H
 #define BINARYSET_H
 
-#if defined(__APPLE__)
+#if defined(__clang__)
 #include <string>
 #endif
 #include <cstring>
