@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.2)
 project(knowhere CXX C)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/")
 include(GNUInstallDirs)
 include(cmake/utils/utils.cmake)
 
