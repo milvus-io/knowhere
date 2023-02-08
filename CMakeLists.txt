@@ -48,7 +48,6 @@ include(cmake/libs/libannoy.cmake)
 include(cmake/libs/libhnsw.cmake)
 include(cmake/libs/libeasylogging.cmake)
 
-include_directories(${CMAKE_SOURCE_DIR})
 include_directories(thirdparty/faiss)
 include_directories(thirdparty/bitset)
 include_directories(thirdparty)
@@ -92,6 +91,9 @@ list(APPEND KNOWHERE_LINKER_LIBS easyloggingpp)
 add_library(knowhere SHARED ${KNOWHERE_SRCS})
 add_dependencies(knowhere ${KNOWHERE_LINKER_LIBS})
 target_link_libraries(knowhere PUBLIC ${KNOWHERE_LINKER_LIBS})
+target_include_directories(
+  knowhere PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
+                  ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/easyloggingpp/src/)
 
 if(WITH_UT)
   add_subdirectory(tests/ut)
@@ -102,7 +104,8 @@ if(WITH_BENCHMARK)
   add_subdirectory(benchmark)
 endif()
 
-install(TARGETS knowhere DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+install(TARGETS knowhere
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 install(
   FILES "${PROJECT_SOURCE_DIR}/thirdparty/easyloggingpp/src/easylogging++.h"
   DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
