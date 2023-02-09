@@ -216,9 +216,10 @@ namespace diskann {
 #else
     ::_aligned_free(ptr);
 #endif
-    if (malloc_trim(0) == 0) {
-      LOG_KNOWHERE_DEBUG_ << "Failed to release free memory from the heap.";
-    }
+    // Note: malloc_trim() combines with jemalloc/tcmalloc may cause crash
+    // if (malloc_trim(0) == 0) {
+    //   LOG_KNOWHERE_DEBUG_ << "Failed to release free memory from the heap.";
+    // }
   }
 
   inline void GenRandom(std::mt19937& rng, unsigned* addr, unsigned size,
