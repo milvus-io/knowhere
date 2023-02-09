@@ -275,7 +275,7 @@ class Config {
                     return Status::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
-                    if (json[it.first] > std::numeric_limits<CFG_INT>::max())
+                    if (json[it.first].get<long>() > std::numeric_limits<CFG_INT>::max())
                         return Status::arithmetic_overflow;
                     CFG_INT v = json[it.first];
                     if (ptr->range.value().first <= v && v <= ptr->range.value().second) {
@@ -303,7 +303,7 @@ class Config {
                     return Status::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
-                    if (json[it.first] > std::numeric_limits<CFG_FLOAT>::max())
+                    if (json[it.first].get<double>() > std::numeric_limits<CFG_FLOAT>::max())
                         return Status::arithmetic_overflow;
                     CFG_FLOAT v = json[it.first];
                     if (ptr->range.value().first <= v && v <= ptr->range.value().second) {
