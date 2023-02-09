@@ -37,6 +37,7 @@ enum class Status {
     diskann_inner_error = 14,
     diskann_file_error = 15,
     invalid_value_in_json = 16,
+    arithmetic_overflow = 17,
 };
 
 template <typename E>
