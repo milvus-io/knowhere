@@ -15,6 +15,17 @@
 #include "knowhere/config.h"
 
 namespace knowhere {
+static constexpr int kMDefaultValue = 16;
+static constexpr int kMMinValue = 1;
+static constexpr int kMMaxValue = 2048;
+static constexpr int kEfConstructionDefaultValue = 200;
+static constexpr int kEfConstructionMinValue = 1;
+static constexpr int kEfConstructionMaxValue = 65536;
+static constexpr int kEfDefaultValue = 32;
+static constexpr int kEfMinValue = 1;
+static constexpr int kEfMaxValue = 65536;
+static constexpr int kOverviewLevelsDefaultValue = 3;
+
 class HnswConfig : public BaseConfig {
  public:
     int M;
@@ -24,23 +35,23 @@ class HnswConfig : public BaseConfig {
     KNOHWERE_DECLARE_CONFIG(HnswConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(M)
             .description("hnsw M")
-            .set_default(16)
-            .set_range(1, std::numeric_limits<CFG_INT>::max())
+            .set_default(kMDefaultValue)
+            .set_range(kMMinValue, kMMaxValue)
             .for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(efConstruction)
             .description("hnsw efConstruction")
-            .set_default(200)
-            .set_range(1, std::numeric_limits<CFG_INT>::max())
+            .set_default(kEfConstructionDefaultValue)
+            .set_range(kEfConstructionMinValue, kEfConstructionMaxValue)
             .for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(ef)
             .description("hnsw ef")
-            .set_default(32)
-            .set_range(1, std::numeric_limits<CFG_INT>::max())
+            .set_default(kEfDefaultValue)
+            .set_range(kEfMinValue, kEfMaxValue)
             .for_search()
             .for_range_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(overview_levels)
             .description("hnsw overview levels for feder")
-            .set_default(3)
+            .set_default(kOverviewLevelsDefaultValue)
             .for_feder();
     }
 };
