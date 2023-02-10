@@ -277,7 +277,7 @@ class Config {
                 if (ptr->range.has_value()) {
                     if (json[it.first].get<long>() > std::numeric_limits<CFG_INT>::max())
                         return Status::arithmetic_overflow;
-                    CFG_INT v = json[it.first];
+                    CFG_INT v = json[it.first].get<CFG_INT>();
                     if (ptr->range.value().first <= v && v <= ptr->range.value().second) {
                         *ptr->val = v;
                     } else {
@@ -305,7 +305,7 @@ class Config {
                 if (ptr->range.has_value()) {
                     if (json[it.first].get<double>() > std::numeric_limits<CFG_FLOAT>::max())
                         return Status::arithmetic_overflow;
-                    CFG_FLOAT v = json[it.first];
+                    CFG_FLOAT v = json[it.first].get<CFG_FLOAT>();
                     if (ptr->range.value().first <= v && v <= ptr->range.value().second) {
                         *ptr->val = v;
                     } else {
