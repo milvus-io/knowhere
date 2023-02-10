@@ -1,0 +1,28 @@
+filters:
+  ".*":
+    reviewers:
+      - cydrain
+      - xiaofan-luan
+      - liliu-z
+      - Presburger
+      - foxspy
+      - hhy3
+      - smellthemoon
+      - cqy123456
+
+    approvers:
+      - cydrain
+      - xiaofan-luan
+      - liliu-z
+      - Presburger
+      - foxspy
+      - hhy3
+      - smellthemoon
+      - cqy123456
+
+  "tests":
+    reviewers:
+      - yanliang567
+
+    approvers:
+      - yanliang567
