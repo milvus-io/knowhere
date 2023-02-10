@@ -3,7 +3,7 @@ name: Analyzer
 on:
   pull_request:
   push:
-    branches: [refactoring]
+    branches: [main]
 
 jobs:
   analyzer:
