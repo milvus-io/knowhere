@@ -1,7 +1,7 @@
 pull_request_rules:
   - name: Add needs-dco label when DCO check failed
     conditions:
-      - base=refactoring
+      - base=main
       - -status-success=DCO
     actions:
       label:
@@ -12,7 +12,7 @@ pull_request_rules:
 
   - name: Add dco-passed label when DCO check passed
     conditions:
-      - base=refactoring
+      - base=main
       - status-success=DCO
     actions:
       label:
@@ -23,7 +23,7 @@ pull_request_rules:
 
   - name: Blocking PR if missing a related issue or PR doesn't have kind/improvement label
     conditions:
-      - base=refactoring
+      - base=main
       - and:
         - -body~=\#[0-9]{1,6}(\s+|$)
         - -body~=https://github.com/milvus-io/knowhere/issues/[0-9]{1,6}(\s+|$)
@@ -41,12 +41,12 @@ pull_request_rules:
     conditions:
       - or:
         - and:
-          - base=refactoring
+          - base=main
           - or:
             - body~=\#[0-9]{1,6}(\s+|$)
             - body~=https://github.com/milvus-io/knowhere/issues/[0-9]{1,6}(\s+|$)
         - and:
-          - base=refactoring
+          - base=main
           - label=kind/improvement
     actions:
       label:
@@ -55,7 +55,7 @@ pull_request_rules:
 
   - name: Test passed for code changed
     conditions:
-      - base=refactoring
+      - base=main
       - "status-success=ut on ubuntu-20.04"
       - 'status-success=pre-commit'
       - 'status-success=analyzer'
@@ -68,7 +68,7 @@ pull_request_rules:
 
   - name: Remove ci-passed label when ut failed
     conditions:
-      - base=refactoring
+      - base=main
       - "status-success!=ut on ubuntu-20.04"
       - "status-success!=pre-commit"
       - "status-success!=analyzer"
