@@ -15,6 +15,7 @@
 #include <any>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <shared_mutex>
 #include <utility>
 #include <variant>
