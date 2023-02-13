@@ -10,11 +10,14 @@
 #include "concurrent_queue.h"
 
 namespace {
-  size_t       global_aio_pool_size = 0;
-  size_t       global_aio_max_events = 0;
-  std::mutex   global_aio_pool_mut;
-  const size_t default_pool_size = std::thread::hardware_concurrency() * 100;
+  size_t           global_aio_pool_size = 0;
+  size_t           global_aio_max_events = 0;
+  std::mutex       global_aio_pool_mut;
+  constexpr size_t default_max_nr = 65536;
   constexpr size_t default_max_events = 32;
+  const size_t     default_pool_size =
+      std::min(size_t(std::thread::hardware_concurrency() * 10),
+               default_max_nr / default_max_events);
 }  // namespace
 
 class AioContextPool {
