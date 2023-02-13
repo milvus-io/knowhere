@@ -12,12 +12,10 @@
 #ifndef BINARYSET_H
 #define BINARYSET_H
 
-#if defined(__clang__)
-#include <string>
-#endif
 #include <cstring>
 #include <map>
 #include <memory>
+#include <string>
 
 namespace knowhere {
 
