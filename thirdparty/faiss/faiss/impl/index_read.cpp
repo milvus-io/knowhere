@@ -481,7 +481,6 @@ static void read_NSG(NSG* nsg, IOReader* f) {
     graph = std::make_shared<nsg::Graph<int>>(N, R);
     std::fill_n(graph->data, N * R, EMPTY_ID);
 
-    int size = 0;
 
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < R + 1; j++) {
@@ -489,7 +488,6 @@ static void read_NSG(NSG* nsg, IOReader* f) {
             READ1(id);
             if (id != EMPTY_ID) {
                 graph->at(i, j) = id;
-                size += 1;
             } else {
                 break;
             }

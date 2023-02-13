@@ -26,7 +26,7 @@
 #include <faiss/utils/hamming.h>
 #include <faiss/utils/jaccard-inl.h>
 #include <faiss/utils/utils.h>
-
+#include <cinttypes>
 namespace faiss {
 
 IndexBinaryIVF::IndexBinaryIVF(IndexBinary* quantizer, size_t d, size_t nlist)
@@ -675,7 +675,7 @@ void search_knn_binary_dis_heap(
                 }
                 FAISS_THROW_IF_NOT_FMT(
                         key < (idx_t)ivf.nlist,
-                        "Invalid key=%ld  at ik=%ld nlist=%ld\n",
+                        "Invalid key=%" SCNd64 "  at ik=%ld nlist=%ld\n",
                         key,
                         ik,
                         ivf.nlist);

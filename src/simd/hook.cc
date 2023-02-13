@@ -16,18 +16,24 @@
 #include <iostream>
 #include <mutex>
 
+#include "faiss/FaissHook.h"
+
+#if defined(__x86_64__)
 #include "distances_avx.h"
 #include "distances_avx512.h"
-#include "distances_ref.h"
 #include "distances_sse.h"
-#include "faiss/FaissHook.h"
 #include "instruction_set.h"
+#endif
+
+#include "distances_ref.h"
 #include "knowhere/log.h"
 namespace faiss {
 
+#if defined(__x86_64__)
 bool use_avx512 = true;
 bool use_avx2 = true;
 bool use_sse4_2 = true;
+#endif
 
 decltype(fvec_inner_product) fvec_inner_product = fvec_inner_product_ref;
 decltype(fvec_L2sqr) fvec_L2sqr = fvec_L2sqr_ref;
@@ -39,6 +45,7 @@ decltype(fvec_inner_products_ny) fvec_inner_products_ny = fvec_inner_products_ny
 decltype(fvec_madd) fvec_madd = fvec_madd_ref;
 decltype(fvec_madd_and_argmin) fvec_madd_and_argmin = fvec_madd_and_argmin_ref;
 
+#if defined(__x86_64__)
 bool
 cpu_support_avx512() {
     InstructionSet& instruction_set_inst = InstructionSet::GetInstance();
@@ -57,11 +64,14 @@ cpu_support_sse4_2() {
     return (instruction_set_inst.SSE42());
 }
 
+#endif
+
 void
 fvec_hook(std::string& simd_type) {
     static std::mutex hook_mutex;
     std::lock_guard<std::mutex> lock(hook_mutex);
     simd_type = "REF";
+#if defined(__x86_64__)
     if (use_avx512 && cpu_support_avx512()) {
         fvec_inner_product = fvec_inner_product_avx512;
         fvec_L2sqr = fvec_L2sqr_avx512;
@@ -106,6 +116,8 @@ fvec_hook(std::string& simd_type) {
 
         simd_type = "SSE4_2";
     }
+
+#endif
 }
 
 static int init_hook_ = []() {

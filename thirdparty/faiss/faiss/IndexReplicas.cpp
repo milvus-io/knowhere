@@ -204,7 +204,7 @@ void IndexReplicasTemplate<IndexBinary>::syncWithSubIndexes() {
 }
 
 // explicit instantiations
-template struct IndexReplicasTemplate<Index>;
-template struct IndexReplicasTemplate<IndexBinary>;
+template class IndexReplicasTemplate<Index>;
+template class IndexReplicasTemplate<IndexBinary>;
 
 } // namespace faiss

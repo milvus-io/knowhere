@@ -46,6 +46,11 @@ if(__X86_64)
     $<TARGET_OBJECTS:utils_avx512>)
 endif()
 
+if(__AARCH64)
+  set(UTILS_SRC src/simd/hook.cc src/simd/distances_ref.cc)
+  add_library(knowhere_utils STATIC ${UTILS_SRC})
+endif()
+
 if(LINUX)
   set(BLA_VENDOR OpenBLAS)
 endif()
@@ -98,5 +103,33 @@ if(__X86_64)
   target_link_libraries(
     faiss PUBLIC OpenMP::OpenMP_CXX ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}
                  faiss_avx512 knowhere_utils)
+  target_compile_definitions(faiss PRIVATE FINTEGER=int)
+endif()
+
+if(__AARCH64)
+  knowhere_file_glob(GLOB FAISS_AVX_SRCS thirdparty/faiss/faiss/impl/*avx.cpp)
+
+  list(REMOVE_ITEM FAISS_SRCS ${FAISS_AVX_SRCS})
+  add_library(faiss STATIC ${FAISS_SRCS})
+
+  if(USE_CUDA)
+    target_link_libraries(faiss PUBLIC CUDA::cudart CUDA::cublas)
+    target_compile_options(
+      faiss PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xfatbin=-compress-all>)
+  endif()
+
+  target_compile_options(
+    faiss
+    PRIVATE $<$<COMPILE_LANGUAGE:CXX>:
+            -Wno-sign-compare
+            -Wno-unused-variable
+            -Wno-reorder
+            -Wno-unused-local-typedefs
+            -Wno-unused-function
+            -Wno-strict-aliasing>)
+
+  add_dependencies(faiss knowhere_utils)
+  target_link_libraries(faiss PUBLIC OpenMP::OpenMP_CXX ${BLAS_LIBRARIES}
+                                     ${LAPACK_LIBRARIES} knowhere_utils)
   target_compile_definitions(faiss PRIVATE FINTEGER=int)
 endif()

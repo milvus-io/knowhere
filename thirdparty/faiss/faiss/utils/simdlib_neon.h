@@ -135,7 +135,7 @@ static inline std::string elements_to_string(const char* fmt, const S& simd) {
     simd.store(bytes);
     char res[1000], *ptr = res;
     for (size_t i = 0; i < N; ++i) {
-        ptr += sprintf(ptr, fmt, bytes[i]);
+        ptr += snprintf(ptr, 1000, fmt, bytes[i]);
     }
     // strip last ,
     ptr[-1] = 0;

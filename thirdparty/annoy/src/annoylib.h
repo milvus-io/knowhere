@@ -55,10 +55,10 @@ typedef signed __int64 int64_t;
 
 #include <algorithm>
 #include <cerrno>
+#include <cinttypes>
 #include <limits>
 #include <queue>
 #include <vector>
-
 #ifdef ANNOYLIB_MULTITHREADED_BUILD
 #include <mutex>
 #include <shared_mutex>
@@ -95,7 +95,7 @@ set_error_from_errno(char** error, const char* msg) {
     showUpdate("%s: %s (%d)\n", msg, strerror(errno), errno);
     if (error) {
         *error = (char*)malloc(256);  // TODO: win doesn't support snprintf
-        sprintf(*error, "%s: %s (%d)", msg, strerror(errno), errno);
+        snprintf(*error, 256, "%s: %s (%d)", msg, strerror(errno), errno);
     }
 }
 
@@ -121,18 +121,18 @@ set_error_from_string(char** error, const char* msg) {
 
 // always disable USE_AVX and USE_AVX512
 // share distance calculation with faiss
-//#if !defined(NO_MANUAL_VECTORIZATION) && defined(__GNUC__) && (__GNUC__ >6) && defined(__AVX512F__)  // See #402
-//#define USE_AVX512
-//#elif !defined(NO_MANUAL_VECTORIZATION) && defined(__AVX__) && defined (__SSE__) && defined(__SSE2__) &&
+// #if !defined(NO_MANUAL_VECTORIZATION) && defined(__GNUC__) && (__GNUC__ >6) && defined(__AVX512F__)  // See #402
+// #define USE_AVX512
+// #elif !defined(NO_MANUAL_VECTORIZATION) && defined(__AVX__) && defined (__SSE__) && defined(__SSE2__) &&
 // defined(__SSE3__) #define USE_AVX #else #endif
 //
-//#if defined(USE_AVX) || defined(USE_AVX512)
-//#if defined(_MSC_VER)
-//#include <intrin.h>
-//#elif defined(__GNUC__)
-//#include <x86intrin.h>
-//#endif
-//#endif
+// #if defined(USE_AVX) || defined(USE_AVX512)
+// #if defined(_MSC_VER)
+// #include <intrin.h>
+// #elif defined(__GNUC__)
+// #include <x86intrin.h>
+// #endif
+// #endif
 
 #if !defined(__MINGW32__)
 #define FTRUNCATE_SIZE(x) static_cast<int64_t>(x)
@@ -1074,7 +1074,7 @@ class AnnoyIndex : public AnnoyIndexInterface<S, T> {
         _n_nodes += _roots.size();
 
         if (_verbose)
-            showUpdate("has %ld nodes\n", _n_nodes);
+            showUpdate("has %" SCNd64 " nodes\n", _n_nodes);
 
         if (_on_disk) {
             if (!remap_memory_and_truncate(&_nodes, _fd, static_cast<size_t>(_s) * static_cast<size_t>(_nodes_size),
@@ -1222,7 +1222,7 @@ class AnnoyIndex : public AnnoyIndexInterface<S, T> {
         _built = true;
         _n_items = m;
         if (_verbose)
-            showUpdate("found %lu roots with degree %ld\n", _roots.size(), m);
+            showUpdate("found %lu roots with degree %" SCNd64 "\n", _roots.size(), m);
         return true;
     }
 
@@ -1334,7 +1334,8 @@ class AnnoyIndex : public AnnoyIndexInterface<S, T> {
 
         _nodes_size = new_nodes_size;
         if (_verbose)
-            showUpdate("Reallocating to %ld nodes: old_address=%p, new_address=%p\n", new_nodes_size, old, _nodes); //NOLINT
+            showUpdate("Reallocating to %" SCNd64 " nodes: old_address=%p, new_address=%p\n", new_nodes_size, old,
+                       _nodes);  // NOLINT
     }
 
     void
@@ -1422,7 +1423,7 @@ class AnnoyIndex : public AnnoyIndexInterface<S, T> {
                     bool side = D::side(m, n->v, _f, _random);
                     children_indices[side].push_back(j);
                 } else {
-                    showUpdate("No node for index %ld?\n", j);
+                    showUpdate("No node for index %" SCNd64 "?\n", j);
                 }
             }
 
@@ -1604,7 +1605,7 @@ class AnnoyIndex : public AnnoyIndexInterface<S, T> {
         _built = true;
         _n_items = m;
         if (_verbose)
-            showUpdate("found %lu roots with degree %ld\n", _roots.size(), m);
+            showUpdate("found %lu roots with degree %" SCNd64 "\n", _roots.size(), m);
         return true;
     }
 };
