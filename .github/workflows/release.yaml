@@ -1,0 +1,68 @@
+name: Release Build
+
+# [TODO] Running action on ubuntu , it will generate the files under share & lib/pkgconfig that are not needed, so remove them manually.
+# Need to figure out why they exists after build.
+# This workflow is triggered on pushes or pull request to the repository.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release Tag ( v*.*.*)'
+        required: true
+        type: string
+
+jobs:
+  Build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    env:
+      RELEASE_NAME: "knowhere-${{ github.event.inputs.tag }}"
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ ubuntu-18.04, macos-11, centos7 ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Dependency
+        run: |
+          ./scripts/install_deps.sh
+      - name: Build
+        env:
+          ARTIFACT_NAME: ${{ env.RELEASE_NAME }}-${{ matrix.os }}
+        run: |
+          ./build.sh -t Release -p tmp
+          mkdir -p artifacts && mv cmake_build/tmp artifacts/${{ env.ARTIFACT_NAME }}
+          rm -rf artifacts/${{ env.ARTIFACT_NAME }}/share
+          rm -rf artifacts/${{ env.ARTIFACT_NAME }}/lib/pkgconfig
+          cd artifacts && tar -zcvf ${{ env.ARTIFACT_NAME }}.tar.gz ${{ env.ARTIFACT_NAME }}/
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: release build
+          path: artifacts/*.tar.gz
+          if-no-files-found: error
+  Release:
+    needs: Build
+    name: Create a Release
+    env:
+      RELEASE_NAME: "knowhere-${{ github.event.inputs.tag }}"
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        id: download
+        with:
+          name: release build
+      - name: Create a Release
+        uses: ncipollo/release-action@v1.11.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          body: "Release : ${{ env.RELEASE_NAME }}"
+          artifacts: "*.tar.gz"
+          prerelease: true
+          tag: "${{ github.event.inputs.tag }}"
+          name: ${{ env.RELEASE_NAME }}
+          commit: "${{ github.ref_name }}"
