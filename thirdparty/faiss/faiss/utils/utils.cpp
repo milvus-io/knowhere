@@ -34,7 +34,7 @@
 #include <faiss/impl/FaissAssert.h>
 #include <faiss/impl/platform_macros.h>
 #include <faiss/utils/random.h>
-
+#include <cinttypes>
 #ifndef FINTEGER
 #define FINTEGER long
 #endif
@@ -704,22 +704,21 @@ int64_t get_l3_size() {
     static int64_t l3_size = -1;
     constexpr int64_t KB = 1024;
     if (l3_size == -1) {
-
-        FILE* file = fopen("/sys/devices/system/cpu/cpu0/cache/index3/size","r");
+        FILE* file =
+                fopen("/sys/devices/system/cpu/cpu0/cache/index3/size", "r");
         int64_t result = 0;
         constexpr int64_t line_length = 128;
         char line[line_length];
-        if (file){
+        if (file) {
             char* ret = fgets(line, sizeof(line) - 1, file);
 
-            sscanf(line, "%luK", &result);
+            sscanf(line, "%" SCNd64 "K", &result);
             l3_size = result * KB;
 
             fclose(file);
         } else {
             l3_size = 12 * KB * KB; // 12M
         }
-
     }
     return l3_size;
 }

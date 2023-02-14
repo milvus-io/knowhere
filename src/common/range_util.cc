@@ -11,8 +11,9 @@
 
 #include "range_util.h"
 
-#include "knowhere/log.h"
+#include <cinttypes>
 
+#include "knowhere/log.h"
 namespace knowhere {
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,7 +50,7 @@ FilterRangeSearchResultForOneNq(const int64_t i_size, const float* i_distances, 
             num++;
         }
     }
-    KNOWHERE_THROW_IF_NOT_FMT(num == o_size, "%ld not equal %ld", num, o_size);
+    KNOWHERE_THROW_IF_NOT_FMT(num == o_size, "%" SCNd64 " not equal %" SCNd64, num, o_size);
 }
 
 void
@@ -114,9 +115,9 @@ void
 GetRangeSearchResult(const std::vector<std::vector<float>>& result_distances,
                      const std::vector<std::vector<int64_t>>& result_labels, const bool is_ip, const int64_t nq,
                      const float radius, const float range_filter, float*& distances, int64_t*& labels, size_t*& lims) {
-    KNOWHERE_THROW_IF_NOT_FMT(result_distances.size() == (size_t)nq, "result distances size %ld not equal to %ld",
+    KNOWHERE_THROW_IF_NOT_FMT(result_distances.size() == (size_t)nq, "result distances size %ld not equal to %" SCNd64,
                               result_distances.size(), nq);
-    KNOWHERE_THROW_IF_NOT_FMT(result_labels.size() == (size_t)nq, "result labels size %ld not equal to %ld",
+    KNOWHERE_THROW_IF_NOT_FMT(result_labels.size() == (size_t)nq, "result labels size %ld not equal to %" SCNd64,
                               result_labels.size(), nq);
 
     lims = new size_t[nq + 1];
