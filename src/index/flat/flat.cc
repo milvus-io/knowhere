@@ -172,7 +172,7 @@ class FlatIndexNode : public IndexNode {
                 }
                 return GenResultDataSet(xq);
             } catch (const std::exception& e) {
-                LOG_KNOWHERE_WARNING_ << "error inner faiss, " << e.what();
+                LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
                 return unexpected(Status::faiss_inner_error);
             }
         }

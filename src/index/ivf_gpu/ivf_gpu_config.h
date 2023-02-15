@@ -13,12 +13,12 @@
 
 namespace knowhere {
 
-class IvfGpuFlatConfig : public IvfFlatConfig {
+class GpuIvfFlatConfig : public IvfFlatConfig {
  public:
     CFG_LIST gpu_ids;
-    KNOHWERE_DECLARE_CONFIG(IvfGpuFlatConfig) {
+    KNOHWERE_DECLARE_CONFIG(GpuIvfFlatConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(gpu_ids)
-            .description("the gpu id, which device use")
+            .description("gpu device ids")
             .set_default({
                 0,
             })
@@ -26,12 +26,12 @@ class IvfGpuFlatConfig : public IvfFlatConfig {
     }
 };
 
-class IvfGpuPqConfig : public IvfPqConfig {
+class GpuIvfPqConfig : public IvfPqConfig {
  public:
     CFG_LIST gpu_ids;
-    KNOHWERE_DECLARE_CONFIG(IvfGpuPqConfig) {
+    KNOHWERE_DECLARE_CONFIG(GpuIvfPqConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(gpu_ids)
-            .description("the gpu id, which device use")
+            .description("gpu device ids")
             .set_default({
                 0,
             })
@@ -39,12 +39,12 @@ class IvfGpuPqConfig : public IvfPqConfig {
     }
 };
 
-class IvfGpuSqConfig : public IvfSqConfig {
+class GpuIvfSqConfig : public IvfSqConfig {
  public:
     CFG_LIST gpu_ids;
-    KNOHWERE_DECLARE_CONFIG(IvfGpuSqConfig) {
+    KNOHWERE_DECLARE_CONFIG(GpuIvfSqConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(gpu_ids)
-            .description("the gpu id, which device use")
+            .description("gpu device ids")
             .set_default({
                 0,
             })
