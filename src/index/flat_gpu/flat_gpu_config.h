@@ -21,7 +21,7 @@ class GpuFlatConfig : public FlatConfig {
     CFG_LIST gpu_ids;
     KNOHWERE_DECLARE_CONFIG(GpuFlatConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(gpu_ids)
-            .description("the gpu id, which device use")
+            .description("gpu device ids")
             .set_default({
                 0,
             })

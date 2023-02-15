@@ -21,6 +21,7 @@
 #include "index/flat_gpu/flat_gpu_config.h"
 #include "io/FaissIO.h"
 #include "knowhere/factory.h"
+#include "knowhere/index_node_thread_pool_wrapper.h"
 
 namespace knowhere {
 
@@ -65,9 +66,10 @@ class GpuFlatIndexNode : public IndexNode {
 
         const void* x = dataset.GetTensor();
         const int64_t n = dataset.GetRows();
+        const int64_t dim = dataset.GetDim();
         faiss::Index* gpu_index = nullptr;
         try {
-            auto host_index = std::make_unique<faiss::IndexFlat>(f_cfg.dim, metric.value());
+            auto host_index = std::make_unique<faiss::IndexFlat>(dim, metric.value());
             gpu_index = faiss::gpu::index_cpu_to_gpu_multiple(this->res_, this->devs_, host_index.get());
             gpu_index->add(n, (const float*)x);
         } catch (const std::exception& e) {
@@ -109,25 +111,33 @@ class GpuFlatIndexNode : public IndexNode {
         return GenResultDataSet(nq, f_cfg.k, ids, dis);
     }
 
+    expected<DataSetPtr, Status>
+    RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
+        return unexpected(Status::not_implemented);
+    }
+
     virtual expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
         DataSetPtr results = std::make_shared<DataSet>();
         auto nq = dataset.GetRows();
+        auto dim = dataset.GetDim();
         auto in_ids = dataset.GetIds();
-        const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
         try {
-            float* xq = new (std::nothrow) float[nq * f_cfg.dim];
+            float* xq = new (std::nothrow) float[nq * dim];
             for (int64_t i = 0; i < nq; i++) {
                 int64_t id = in_ids[i];
-                gpu_index_->reconstruct(id, xq + i * f_cfg.dim);
+                gpu_index_->reconstruct(id, xq + i * dim);
             }
-            results->SetTensor(xq);
-            return results;
+            return GenResultDataSet(xq);
         } catch (const std::exception& e) {
-            LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
+            LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
-        return results;
+    }
+
+    expected<DataSetPtr, Status>
+    GetIndexMeta(const Config& cfg) const override {
+        return unexpected(Status::not_implemented);
     }
 
     virtual Status
@@ -220,6 +230,8 @@ class GpuFlatIndexNode : public IndexNode {
     faiss::Index* gpu_index_;
 };
 
-KNOWHERE_REGISTER_GLOBAL(GPUFLAT, [](const Object& object) { return Index<GpuFlatIndexNode>::Create(object); });
+KNOWHERE_REGISTER_GLOBAL(GPUFLAT, [](const Object& object) {
+    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<GpuFlatIndexNode>(object));
+});
 
 }  // namespace knowhere
