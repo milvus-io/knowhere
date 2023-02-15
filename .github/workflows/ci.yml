@@ -1,0 +1,62 @@
+name: knowhere ARM CI
+# This workflow is triggered on pushes or pull request to the repository.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    # File paths to consider in the event. Optional; defaults to all.
+    paths:
+      - 'include/**'
+      - 'python/**'
+      - 'src/**'
+      - 'thirdparty/**'
+      - 'benchmark/**'
+      - 'cmake/**'
+      - '.github/workflows/ut.yaml'
+      - 'CMakeLists.txt'
+      - '!**.md'
+
+jobs:
+  knowhere_arm_ci:
+    runs-on: [self-hosted, Linux, ARM64]
+    steps:
+      - name: Check python
+        run: |
+          python3 --version
+          pip3 --version
+          pip list
+      - name: Build knowhere
+        run: |
+          git submodule update --recursive --init
+          mkdir build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_UT=ON -DWITH_DISKANN=ON -G Ninja
+          ninja -v
+          cd ../python
+          python3 setup.py bdist_wheel
+          cd dist
+          pip3 uninstall knowhere -y
+          pip3 install *.whl
+      - name: Checkout test
+        uses: actions/checkout@v3
+
+      - name: Checkout knowhere
+        uses: actions/checkout@v3
+        with:
+          repository: 'milvus-io/knowhere-test'
+      - name: Install dependency
+        working-directory: tests
+        run: |
+          pip install -r requirements.txt
+      - name: Run test
+        working-directory: tests
+        run: |
+          pytest -v -m 'L0 and cpu'
+      - name: Upload test result
+        uses: actions/upload-artifact@v2
+        if: ${{ ! success() }}
+        with:
+          name: test-log
+          path: /tmp/knowhere_ci.log
+
+
