@@ -9,6 +9,7 @@
 # is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 # or implied. See the License for the specific language governing permissions and limitations under the License
 
+include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 include_directories(/usr/local/hdf5/include)
@@ -24,12 +25,12 @@ set(depend_libs
         ${LAPACK_LIBRARIES}
         )
 
-if ( LINUX AND ENABLE_PROFILING )
-    set( depend_libs
+if(WITH_PROFILER)
+    set(depend_libs
         ${depend_libs}
-        gperftools
-        )
-endif ()
+        tcmalloc_and_profiler
+    )
+endif()
 
 #==============================================================================
 macro(benchmark_test target file)
