@@ -32,8 +32,9 @@ jobs:
         env:
           ARTIFACT_NAME: ${{ env.RELEASE_NAME }}-${{ matrix.os }}
         run: |
-          ./build.sh -t Release -p tmp
-          mkdir -p artifacts && mv cmake_build/tmp artifacts/${{ env.ARTIFACT_NAME }}
+          mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_UT=OFF -DWITH_DISKANN=ON \
+          && cd .. && find src -type f | grep -E "\.cc$" | xargs /usr/lib/llvm-10/share/clang/run-clang-tidy.py -quiet -p=./build
+          mkdir -p artifacts && mv build artifacts/${{ env.ARTIFACT_NAME }}
           rm -rf artifacts/${{ env.ARTIFACT_NAME }}/share
           rm -rf artifacts/${{ env.ARTIFACT_NAME }}/lib/pkgconfig
           cd artifacts && tar -zcvf ${{ env.ARTIFACT_NAME }}.tar.gz ${{ env.ARTIFACT_NAME }}/
