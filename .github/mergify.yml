@@ -107,6 +107,7 @@ pull_request_rules:
         - "status-success!=analyzer"
         - "status-success!=python3 wheel"
         - "status-success!=e2e"
+      - files~=^(?=.*((\.(h|cpp)|CMakeLists.txt))).*$
     actions:
       label:
         remove:
