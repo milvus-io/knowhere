@@ -32,7 +32,7 @@ pipeline {
                         sh "git config --global --add safe.directory '*'"
                         sh "git submodule update --recursive --init"
                         sh "mkdir build"
-                        sh "cd build/ && cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_UT=ON -DWITH_DISKANN=ON -G Ninja"
+                        sh "cd build/ && cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_UT=ON -DWITH_DISKANN=ON -DUSE_CUDA=ON -G Ninja"
                         sh "pwd"
                         sh "ls -la"
                         sh "cd build/ && ninja -v"
