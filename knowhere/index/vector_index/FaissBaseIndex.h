@@ -17,6 +17,7 @@
 #include <faiss/Index.h>
 
 #include "knowhere/common/BinarySet.h"
+#include "knowhere/common/ThreadPool.h"
 #include "knowhere/index/IndexType.h"
 
 namespace knowhere {
@@ -24,6 +25,7 @@ namespace knowhere {
 class FaissBaseIndex {
  protected:
     explicit FaissBaseIndex(std::shared_ptr<faiss::Index> index) : index_(std::move(index)) {
+        pool_ = ThreadPool::GetGlobalThreadPool();
     }
 
     virtual BinarySet
@@ -37,6 +39,7 @@ class FaissBaseIndex {
 
  public:
     std::shared_ptr<faiss::Index> index_ = nullptr;
+    std::shared_ptr<ThreadPool> pool_;
 };
 
 }  // namespace knowhere
