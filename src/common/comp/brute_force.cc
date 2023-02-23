@@ -38,7 +38,10 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
     auto nq = query_dataset->GetRows();
 
     BruteForceConfig cfg;
-    Config::Load(cfg, config, knowhere::SEARCH);
+    auto load_res = Config::Load(cfg, config, knowhere::SEARCH);
+    if (load_res != Status::success) {
+        return unexpected(load_res);
+    }
 
     auto metric_type = Str2FaissMetricType(cfg.metric_type);
     if (!metric_type.has_value()) {
@@ -130,7 +133,10 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
     auto nq = query_dataset->GetRows();
 
     BruteForceConfig cfg;
-    Config::Load(cfg, config, knowhere::SEARCH);
+    auto load_res = Config::Load(cfg, config, knowhere::SEARCH);
+    if (load_res != Status::success) {
+        return load_res;
+    }
 
     auto metric_type = Str2FaissMetricType(cfg.metric_type);
     if (!metric_type.has_value()) {
@@ -224,7 +230,10 @@ BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_da
     auto nq = query_dataset->GetRows();
 
     BruteForceConfig cfg;
-    Config::Load(cfg, config, knowhere::RANGE_SEARCH);
+    auto load_res = Config::Load(cfg, config, knowhere::RANGE_SEARCH);
+    if (load_res != Status::success) {
+        return unexpected(load_res);
+    }
 
     auto metric_type = Str2FaissMetricType(cfg.metric_type);
     if (!metric_type.has_value()) {
