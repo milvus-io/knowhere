@@ -63,6 +63,7 @@ include(cmake/libs/libeasylogging.cmake)
 
 include_directories(thirdparty/faiss)
 include_directories(thirdparty/bitset)
+include_directories(thirdparty/raft)
 include_directories(thirdparty)
 
 find_package(OpenMP REQUIRED)
