@@ -46,6 +46,7 @@ class IvfIndexNode : public IndexNode {
                           std::is_same<T, faiss::IndexIVFScalarQuantizer>::value ||
                           std::is_same<T, faiss::IndexBinaryIVF>::value,
                       "not support.");
+        pool_ = ThreadPool::GetGlobalThreadPool();
     }
     Status
     Build(const DataSet& dataset, const Config& cfg) override;
@@ -159,6 +160,7 @@ class IvfIndexNode : public IndexNode {
 
  private:
     T* index_;
+    std::shared_ptr<ThreadPool> pool_;
     typename QuantizerT<T>::type* qzr_;
 };
 
@@ -355,12 +357,25 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
     float* dis(new (std::nothrow) float[rows * ivf_cfg.k]);
     try {
         size_t max_codes = 0;
-        if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
-            index_->search_without_codes_thread_safe(rows, (const float*)data, ivf_cfg.k, dis, ids, ivf_cfg.nprobe,
-                                                     parallel_mode, max_codes, bitset);
-        } else {
-            index_->search_thread_safe(rows, (const float*)data, ivf_cfg.k, dis, ids, ivf_cfg.nprobe, parallel_mode,
-                                       max_codes, bitset);
+        std::vector<std::future<void>> futs;
+        futs.reserve(rows);
+        for (int i = 0; i < rows; ++i) {
+            futs.push_back(pool_->push([&, index = i] {
+                ThreadPool::ScopedOmpSetter setter(1);
+                auto cur_data = (const float*)data + index * Dim();
+                auto cur_dis = dis + ivf_cfg.k * index;
+                auto cur_ids = ids + ivf_cfg.k * index;
+                if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
+                    index_->search_without_codes_thread_safe(1, cur_data, ivf_cfg.k, cur_dis, cur_ids, ivf_cfg.nprobe,
+                                                             parallel_mode, max_codes, bitset);
+                } else {
+                    index_->search_thread_safe(1, cur_data, ivf_cfg.k, cur_dis, cur_ids, ivf_cfg.nprobe, parallel_mode,
+                                               max_codes, bitset);
+                }
+            }));
+        }
+        for (auto& fut : futs) {
+            fut.get();
         }
     } catch (const std::exception& e) {
         delete[] ids;
@@ -397,26 +412,51 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
 
     float radius = ivf_cfg.radius;
     bool is_ip = (index_->metric_type == faiss::METRIC_INNER_PRODUCT);
+    float range_filter = ivf_cfg.range_filter;
 
     int64_t* ids = nullptr;
     float* distances = nullptr;
     size_t* lims = nullptr;
 
+    std::vector<std::vector<int64_t>> result_id_array(nq);
+    std::vector<std::vector<float>> result_dist_array(nq);
+    std::vector<size_t> result_size(nq);
+    std::vector<size_t> result_lims(nq + 1);
+
     try {
         size_t max_codes = 0;
-        faiss::RangeSearchResult res(nq);
-        if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
-            index_->range_search_without_codes_thread_safe(nq, (const float*)xq, radius, &res, ivf_cfg.nprobe,
-                                                           parallel_mode, max_codes, bitset);
-        } else {
-            index_->range_search_thread_safe(nq, (const float*)xq, radius, &res, ivf_cfg.nprobe, parallel_mode,
-                                             max_codes, bitset);
+        std::vector<std::future<void>> futs;
+        futs.reserve(nq);
+        for (int i = 0; i < nq; ++i) {
+            futs.push_back(pool_->push([&, index = i] {
+                ThreadPool::ScopedOmpSetter setter(1);
+                auto cur_data = (const float*)xq + index * Dim();
+                faiss::RangeSearchResult res(1);
+                if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
+                    index_->range_search_without_codes_thread_safe(1, cur_data, radius, &res, ivf_cfg.nprobe,
+                                                                   parallel_mode, max_codes, bitset);
+                } else {
+                    index_->range_search_thread_safe(1, cur_data, radius, &res, ivf_cfg.nprobe, parallel_mode,
+                                                     max_codes, bitset);
+                }
+                auto elem_cnt = res.lims[1];
+                result_dist_array[index].resize(elem_cnt);
+                result_id_array[index].resize(elem_cnt);
+                result_size[index] = elem_cnt;
+                for (size_t j = 0; j < elem_cnt; j++) {
+                    result_dist_array[index][j] = res.distances[j];
+                    result_id_array[index][j] = res.labels[j];
+                }
+                if (ivf_cfg.range_filter != defaultRangeFilter) {
+                    FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, radius,
+                                                    range_filter);
+                }
+            }));
         }
-        if (ivf_cfg.range_filter != defaultRangeFilter) {
-            GetRangeSearchResult(res, is_ip, nq, radius, ivf_cfg.range_filter, distances, ids, lims, bitset);
-        } else {
-            GetRangeSearchResult(res, is_ip, nq, radius, distances, ids, lims);
+        for (auto& fut : futs) {
+            fut.get();
         }
+        GetRangeSearchResult(result_dist_array, result_id_array, is_ip, nq, radius, range_filter, distances, ids, lims);
     } catch (const std::exception& e) {
         LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return unexpected(Status::faiss_inner_error);
@@ -698,33 +738,27 @@ IvfIndexNode<faiss::IndexIVFFlat>::Deserialize(const BinarySet& binset) {
 }
 
 KNOWHERE_REGISTER_GLOBAL(IVFBIN, [](const Object& object) {
-    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<IvfIndexNode<faiss::IndexBinaryIVF>>(object));
+    return Index<IvfIndexNode<faiss::IndexBinaryIVF>>::Create(object);
 });
 
 KNOWHERE_REGISTER_GLOBAL(BIN_IVF_FLAT, [](const Object& object) {
-    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<IvfIndexNode<faiss::IndexBinaryIVF>>(object));
+    return Index<IvfIndexNode<faiss::IndexBinaryIVF>>::Create(object);
 });
 
-KNOWHERE_REGISTER_GLOBAL(IVFFLAT, [](const Object& object) {
-    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<IvfIndexNode<faiss::IndexIVFFlat>>(object));
-});
-KNOWHERE_REGISTER_GLOBAL(IVF_FLAT, [](const Object& object) {
-    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<IvfIndexNode<faiss::IndexIVFFlat>>(object));
-});
-KNOWHERE_REGISTER_GLOBAL(IVFPQ, [](const Object& object) {
-    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<IvfIndexNode<faiss::IndexIVFPQ>>(object));
-});
-KNOWHERE_REGISTER_GLOBAL(IVF_PQ, [](const Object& object) {
-    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<IvfIndexNode<faiss::IndexIVFPQ>>(object));
-});
+KNOWHERE_REGISTER_GLOBAL(IVFFLAT,
+                         [](const Object& object) { return Index<IvfIndexNode<faiss::IndexIVFFlat>>::Create(object); });
+KNOWHERE_REGISTER_GLOBAL(IVF_FLAT,
+                         [](const Object& object) { return Index<IvfIndexNode<faiss::IndexIVFFlat>>::Create(object); });
+KNOWHERE_REGISTER_GLOBAL(IVFPQ,
+                         [](const Object& object) { return Index<IvfIndexNode<faiss::IndexIVFPQ>>::Create(object); });
+KNOWHERE_REGISTER_GLOBAL(IVF_PQ,
+                         [](const Object& object) { return Index<IvfIndexNode<faiss::IndexIVFPQ>>::Create(object); });
 
 KNOWHERE_REGISTER_GLOBAL(IVFSQ, [](const Object& object) {
-    return Index<IndexNodeThreadPoolWrapper>::Create(
-        std::make_unique<IvfIndexNode<faiss::IndexIVFScalarQuantizer>>(object));
+    return Index<IvfIndexNode<faiss::IndexIVFScalarQuantizer>>::Create(object);
 });
 KNOWHERE_REGISTER_GLOBAL(IVF_SQ8, [](const Object& object) {
-    return Index<IndexNodeThreadPoolWrapper>::Create(
-        std::make_unique<IvfIndexNode<faiss::IndexIVFScalarQuantizer>>(object));
+    return Index<IvfIndexNode<faiss::IndexIVFScalarQuantizer>>::Create(object);
 });
 
 }  // namespace knowhere

@@ -16,8 +16,8 @@
 #include "faiss/index_io.h"
 #include "index/flat/flat_config.h"
 #include "io/FaissIO.h"
+#include "knowhere/comp/thread_pool.h"
 #include "knowhere/factory.h"
-#include "knowhere/index_node_thread_pool_wrapper.h"
 
 namespace knowhere {
 
@@ -27,6 +27,7 @@ class FlatIndexNode : public IndexNode {
     FlatIndexNode(const Object&) : index_(nullptr) {
         static_assert(std::is_same<T, faiss::IndexFlat>::value || std::is_same<T, faiss::IndexBinaryFlat>::value,
                       "not suppprt.");
+        pool_ = ThreadPool::GetGlobalThreadPool();
     }
 
     Status
@@ -93,18 +94,29 @@ class FlatIndexNode : public IndexNode {
         try {
             ids = new (std::nothrow) int64_t[len];
             dis = new (std::nothrow) float[len];
-            if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
-                index_->search(nq, (const float*)x, f_cfg.k, dis, ids, bitset);
-            }
-            if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
-                auto i_dis = reinterpret_cast<int32_t*>(dis);
-                index_->search(nq, (const uint8_t*)x, f_cfg.k, i_dis, ids, bitset);
-                if (index_->metric_type == faiss::METRIC_Hamming) {
-                    int64_t num = nq * f_cfg.k;
-                    for (int64_t i = 0; i < num; i++) {
-                        dis[i] = static_cast<float>(i_dis[i]);
+            std::vector<std::future<void>> futs;
+            futs.reserve(nq);
+            for (int i = 0; i < nq; ++i) {
+                futs.push_back(pool_->push([&, index = i] {
+                    ThreadPool::ScopedOmpSetter setter(1);
+                    auto cur_ids = ids + f_cfg.k * index;
+                    auto cur_dis = dis + f_cfg.k * index;
+                    if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
+                        index_->search(1, (const float*)x + index * Dim(), f_cfg.k, cur_dis, cur_ids, bitset);
                     }
-                }
+                    if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
+                        auto cur_i_dis = reinterpret_cast<int32_t*>(cur_dis);
+                        index_->search(1, (const uint8_t*)x + index * Dim(), f_cfg.k, cur_i_dis, cur_ids, bitset);
+                        if (index_->metric_type == faiss::METRIC_Hamming) {
+                            for (int64_t j = 0; j < f_cfg.k; j++) {
+                                cur_dis[j] = static_cast<float>(cur_i_dis[j]);
+                            }
+                        }
+                    }
+                }));
+            }
+            for (auto& fut : futs) {
+                fut.get();
             }
         } catch (const std::exception& e) {
             std::unique_ptr<int64_t[]> auto_delete_ids(ids);
@@ -132,24 +144,43 @@ class FlatIndexNode : public IndexNode {
         size_t* lims = nullptr;
         try {
             float radius = f_cfg.radius;
-            faiss::RangeSearchResult res(nq);
-            if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
-                bool is_ip = (index_->metric_type == faiss::METRIC_INNER_PRODUCT);
-                index_->range_search(nq, (const float*)xq, radius, &res, bitset);
-                if (f_cfg.range_filter != defaultRangeFilter) {
-                    GetRangeSearchResult(res, is_ip, nq, radius, f_cfg.range_filter, distances, ids, lims, bitset);
-                } else {
-                    GetRangeSearchResult(res, is_ip, nq, radius, distances, ids, lims);
-                }
+            bool is_ip = index_->metric_type == faiss::METRIC_INNER_PRODUCT && std::is_same_v<T, faiss::IndexFlat>;
+            float range_filter = f_cfg.range_filter;
+            std::vector<std::vector<int64_t>> result_id_array(nq);
+            std::vector<std::vector<float>> result_dist_array(nq);
+            std::vector<size_t> result_size(nq);
+            std::vector<size_t> result_lims(nq + 1);
+            std::vector<std::future<void>> futs;
+            futs.reserve(nq);
+            for (int i = 0; i < nq; ++i) {
+                futs.push_back(pool_->push([&, index = i] {
+                    ThreadPool::ScopedOmpSetter setter(1);
+                    faiss::RangeSearchResult res(1);
+                    if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
+                        index_->range_search(1, (const float*)xq + index * Dim(), radius, &res, bitset);
+                    }
+                    if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
+                        index_->range_search(1, (const uint8_t*)xq + index * Dim(), radius, &res, bitset);
+                    }
+                    auto elem_cnt = res.lims[1];
+                    result_dist_array[index].resize(elem_cnt);
+                    result_id_array[index].resize(elem_cnt);
+                    result_size[index] = elem_cnt;
+                    for (size_t j = 0; j < elem_cnt; j++) {
+                        result_dist_array[index][j] = res.distances[j];
+                        result_id_array[index][j] = res.labels[j];
+                    }
+                    if (f_cfg.range_filter != defaultRangeFilter) {
+                        FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, radius,
+                                                        range_filter);
+                    }
+                }));
             }
-            if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
-                index_->range_search(nq, (const uint8_t*)xq, radius, &res, bitset);
-                if (f_cfg.range_filter != defaultRangeFilter) {
-                    GetRangeSearchResult(res, false, nq, radius, f_cfg.range_filter, distances, ids, lims, bitset);
-                } else {
-                    GetRangeSearchResult(res, false, nq, radius, distances, ids, lims);
-                }
+            for (auto& fut : futs) {
+                fut.get();
             }
+            GetRangeSearchResult(result_dist_array, result_id_array, is_ip, nq, radius, range_filter, distances, ids,
+                                 lims);
         } catch (const std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "error inner faiss, " << e.what();
             return unexpected(Status::faiss_inner_error);
@@ -290,16 +321,16 @@ class FlatIndexNode : public IndexNode {
 
  private:
     T* index_;
+    std::shared_ptr<ThreadPool> pool_;
 };
 
-KNOWHERE_REGISTER_GLOBAL(FLAT, [](const Object& object) {
-    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<FlatIndexNode<faiss::IndexFlat>>(object));
-});
+KNOWHERE_REGISTER_GLOBAL(FLAT,
+                         [](const Object& object) { return Index<FlatIndexNode<faiss::IndexFlat>>::Create(object); });
 KNOWHERE_REGISTER_GLOBAL(BINFLAT, [](const Object& object) {
-    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<FlatIndexNode<faiss::IndexBinaryFlat>>(object));
+    return Index<FlatIndexNode<faiss::IndexBinaryFlat>>::Create(object);
 });
 KNOWHERE_REGISTER_GLOBAL(BIN_FLAT, [](const Object& object) {
-    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<FlatIndexNode<faiss::IndexBinaryFlat>>(object));
+    return Index<FlatIndexNode<faiss::IndexBinaryFlat>>::Create(object);
 });
 
 }  // namespace knowhere
