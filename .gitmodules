@@ -1,0 +1,3 @@
+[submodule "thirdparty/raft"]
+	path = thirdparty/raft
+	url = https://github.com/rapidsai/raft.git
