@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include <omp.h>
+
 #include <memory>
 #include <utility>
 
@@ -94,6 +96,18 @@ class ThreadPool {
         static auto pool = std::make_shared<ThreadPool>(global_thread_pool_size_);
         return pool;
     }
+
+    class ScopedOmpSetter {
+        int omp_before;
+
+     public:
+        explicit ScopedOmpSetter(int num_threads = 1) : omp_before(omp_get_num_threads()) {
+            omp_set_num_threads(num_threads);
+        }
+        ~ScopedOmpSetter() {
+            omp_set_num_threads(omp_before);
+        }
+    };
 
  private:
     std::unique_ptr<ctpl::thread_pool> pool_;
