@@ -93,6 +93,18 @@ class KnowhereConfig {
      */
     static void
     SetAioContextPool(size_t num_ctx, size_t max_events);
+
+    /**
+     * init GPU Resource
+     */
+    static void
+    InitGPUResource(int64_t gpu_id, int64_t res_num = 2);
+
+    /**
+     * free GPU Resource
+     */
+    static void
+    FreeGPUResource();
 };
 
 }  // namespace knowhere

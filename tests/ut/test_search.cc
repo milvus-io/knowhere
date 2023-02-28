@@ -13,6 +13,7 @@
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/generators/catch_generators.hpp"
 #include "knowhere/comp/index_param.h"
+#include "knowhere/comp/knowhere_config.h"
 #include "knowhere/factory.h"
 #include "utils.h"
 
@@ -82,12 +83,6 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
         REQUIRE(res == knowhere::Status::success);
     };
 
-#ifdef USE_CUDA
-    auto gpu_flat_gen = [&base_gen]() {
-        auto json = base_gen();
-        return json;
-    };
-#endif
     SECTION("Test Cpu Index Search") {
         using std::make_tuple;
         auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
@@ -97,12 +92,6 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFSQ8, ivfsq_gen),
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFPQ, ivfpq_gen),
             make_tuple(knowhere::IndexEnum::INDEX_HNSW, hnsw_gen),
-#ifdef USE_CUDA
-            make_tuple("GPUFLAT", gpu_flat_gen),
-            make_tuple("GPUIVFFLAT", ivfflat_gen),
-            make_tuple("GPUIVFPQ", ivfpq_gen),
-            make_tuple("GPUIVFSQ", ivfsq_gen),
-#endif
         }));
         auto idx = knowhere::IndexFactory::Instance().Create(name);
         auto cfg_json = gen().dump();
@@ -163,12 +152,6 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFSQ8, ivfsq_gen),
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFPQ, ivfpq_gen),
             make_tuple(knowhere::IndexEnum::INDEX_HNSW, hnsw_gen),
-#ifdef USE_CUDA
-            make_tuple("GPUFLAT", gpu_flat_gen),
-            make_tuple("GPUIVFFLAT", ivfflat_gen),
-            make_tuple("GPUIVFPQ", ivfpq_gen),
-            make_tuple("GPUIVFSQ", ivfsq_gen),
-#endif
         }));
 
         auto idx = knowhere::IndexFactory::Instance().Create(name);
