@@ -108,6 +108,15 @@ class GpuIndexIVFScalarQuantizer : public GpuIndexIVF {
             Index::idx_t* labels,
             const BitsetView bitset = nullptr) const override;
 
+    void searchThreadSafeImpl_(
+            int n,
+            const float* x,
+            int k,
+            int nprobe,
+            float* distances,
+            Index::idx_t* labels,
+            const BitsetView bitset = nullptr) const override;
+
     /// Called from train to handle SQ residual training
     void trainResiduals_(Index::idx_t n, const float* x);
 

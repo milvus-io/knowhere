@@ -107,6 +107,15 @@ class GpuIndexIVFFlat : public GpuIndexIVF {
             Index::idx_t* labels,
             const BitsetView bitset = nullptr) const override;
 
+    void searchThreadSafeImpl_(
+            int n,
+            const float* x,
+            int k,
+            int nprobe,
+            float* distances,
+            Index::idx_t* labels,
+            const BitsetView bitset = nullptr) const override;
+
    protected:
     /// Our configuration options
     const GpuIndexIVFFlatConfig ivfFlatConfig_;

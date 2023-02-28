@@ -48,7 +48,7 @@ struct KnowhereConfigType<faiss::IndexIVFScalarQuantizer> {
 template <typename T>
 class GpuIvfIndexNode : public IndexNode {
  public:
-    GpuIvfIndexNode(const Object& object) : gpu_index_(nullptr) {
+    GpuIvfIndexNode(const Object& object) : index_(nullptr) {
         static_assert(std::is_same<T, faiss::IndexIVFFlat>::value || std::is_same<T, faiss::IndexIVFPQ>::value ||
                       std::is_same<T, faiss::IndexIVFScalarQuantizer>::value);
     }
@@ -56,14 +56,15 @@ class GpuIvfIndexNode : public IndexNode {
     virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
         auto err = Train(dataset, cfg);
-        if (err != Status::success)
+        if (err != Status::success) {
             return err;
+        }
         return Add(dataset, cfg);
     }
 
     virtual Status
     Train(const DataSet& dataset, const Config& cfg) override {
-        if (gpu_index_ && gpu_index_->is_trained) {
+        if (index_ && index_->is_trained) {
             LOG_KNOWHERE_WARNING_ << "index is already trained";
             return Status::index_already_trained;
         }
@@ -113,21 +114,23 @@ class GpuIvfIndexNode : public IndexNode {
             LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
             return Status::faiss_inner_error;
         }
-        this->gpu_index_ = gpu_index;
+        this->index_ = gpu_index;
         return Status::success;
     }
 
     virtual Status
     Add(const DataSet& dataset, const Config& cfg) override {
-        if (!gpu_index_)
+        if (!index_) {
             return Status::empty_index;
-        if (!gpu_index_->is_trained)
+        }
+        if (!index_->is_trained) {
             return Status::index_not_trained;
+        }
         auto rows = dataset.GetRows();
         auto tensor = dataset.GetTensor();
         try {
             ResScope rs(res_, false);
-            gpu_index_->add(rows, (const float*)tensor);
+            index_->add(rows, (const float*)tensor);
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
             return Status::faiss_inner_error;
@@ -138,10 +141,6 @@ class GpuIvfIndexNode : public IndexNode {
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         auto ivf_gpu_cfg = static_cast<const typename KnowhereConfigType<T>::Type&>(cfg);
-        if (auto ix = dynamic_cast<faiss::gpu::GpuIndexIVF*>(gpu_index_)) {
-            ix->setNumProbes(ivf_gpu_cfg.nprobe);
-        }
-        ResScope rs(res_, false);
 
         constexpr int64_t block_size = 2048;
         auto rows = dataset.GetRows();
@@ -151,10 +150,12 @@ class GpuIvfIndexNode : public IndexNode {
         float* dis = new (std::nothrow) float[rows * k];
         int64_t* ids = new (std::nothrow) int64_t[rows * k];
         try {
+            ResScope rs(res_, false);
+            auto gpu_index = dynamic_cast<faiss::gpu::GpuIndexIVF*>(index_);
             for (int i = 0; i < rows; i += block_size) {
                 int64_t search_size = (rows - i > block_size) ? block_size : (rows - i);
-                gpu_index_->search(search_size, reinterpret_cast<const float*>(tensor) + i * dim, k, dis + i * k,
-                                   ids + i * k, bitset);
+                gpu_index->search_thread_safe(search_size, reinterpret_cast<const float*>(tensor) + i * dim, k,
+                                              ivf_gpu_cfg.nprobe, dis + i * k, ids + i * k, bitset);
             }
         } catch (std::exception& e) {
             std::unique_ptr<float> auto_delete_dis(dis);
@@ -183,15 +184,17 @@ class GpuIvfIndexNode : public IndexNode {
 
     virtual Status
     Serialize(BinarySet& binset) const override {
-        if (!this->gpu_index_)
+        if (!this->index_) {
             return Status::empty_index;
-        if (!this->gpu_index_->is_trained)
+        }
+        if (!this->index_->is_trained) {
             return Status::index_not_trained;
+        }
 
         try {
             MemoryIOWriter writer;
             {
-                faiss::Index* host_index = faiss::gpu::index_gpu_to_cpu(gpu_index_);
+                faiss::Index* host_index = faiss::gpu::index_gpu_to_cpu(index_);
                 faiss::write_index(host_index, &writer);
                 delete host_index;
             }
@@ -216,7 +219,7 @@ class GpuIvfIndexNode : public IndexNode {
             std::unique_ptr<faiss::Index> index(faiss::read_index(&reader));
             auto gpu_res = GPUResMgr::GetInstance().GetRes();
             ResScope rs(gpu_res, true);
-            gpu_index_ = faiss::gpu::index_cpu_to_gpu(gpu_res->faiss_res_.get(), gpu_res->gpu_id_, index.get());
+            index_ = faiss::gpu::index_cpu_to_gpu(gpu_res->faiss_res_.get(), gpu_res->gpu_id_, index.get());
             res_ = gpu_res;
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
@@ -232,8 +235,9 @@ class GpuIvfIndexNode : public IndexNode {
 
     virtual int64_t
     Dim() const override {
-        if (gpu_index_)
-            return gpu_index_->d;
+        if (index_) {
+            return index_->d;
+        }
         return 0;
     }
 
@@ -244,8 +248,9 @@ class GpuIvfIndexNode : public IndexNode {
 
     virtual int64_t
     Count() const override {
-        if (gpu_index_)
-            return gpu_index_->ntotal;
+        if (index_) {
+            return index_->ntotal;
+        }
         return 0;
     }
 
@@ -263,14 +268,14 @@ class GpuIvfIndexNode : public IndexNode {
     }
 
     virtual ~GpuIvfIndexNode() {
-        if (gpu_index_) {
-            delete gpu_index_;
+        if (index_) {
+            delete index_;
         }
     }
 
  private:
     mutable ResWPtr res_;
-    faiss::Index* gpu_index_;
+    faiss::Index* index_;
 };
 
 KNOWHERE_REGISTER_GLOBAL(GPU_IVF_FLAT, [](const Object& object) {
