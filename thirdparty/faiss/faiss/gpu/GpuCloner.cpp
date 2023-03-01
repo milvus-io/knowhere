@@ -18,14 +18,12 @@
 #include <faiss/IndexPreTransform.h>
 #include <faiss/IndexReplicas.h>
 #include <faiss/IndexScalarQuantizer.h>
-#include <faiss/IndexSQHybrid.h>
 #include <faiss/MetaIndexes.h>
 #include <faiss/gpu/GpuIndex.h>
 #include <faiss/gpu/GpuIndexFlat.h>
 #include <faiss/gpu/GpuIndexIVFFlat.h>
 #include <faiss/gpu/GpuIndexIVFPQ.h>
 #include <faiss/gpu/GpuIndexIVFScalarQuantizer.h>
-#include <faiss/gpu/GpuIndexIVFSQHybrid.h>
 #include <faiss/gpu/utils/DeviceUtils.h>
 #include <faiss/impl/FaissAssert.h>
 #include <faiss/index_io.h>
@@ -72,10 +70,6 @@ Index* ToCPUCloner::clone_Index(const Index* index) {
     } else if (
             auto ifl = dynamic_cast<const GpuIndexIVFScalarQuantizer*>(index)) {
         IndexIVFScalarQuantizer* res = new IndexIVFScalarQuantizer();
-        ifl->copyTo(res);
-        return res;
-    } else if(auto ifl = dynamic_cast<const GpuIndexIVFSQHybrid*>(index)) {
-        IndexIVFSQHybrid* res = new IndexIVFSQHybrid();
         ifl->copyTo(res);
         return res;
     } else if (auto ipq = dynamic_cast<const GpuIndexIVFPQ*>(index)) {
@@ -141,64 +135,9 @@ ToGpuCloner::ToGpuCloner(
         const GpuClonerOptions& options)
         : GpuClonerOptions(options), provider(prov), device(device) {}
 
-Index* ToGpuCloner::clone_Index (IndexComposition* index_composition) {
-    Index* index = index_composition->index;
-
-    if (auto ifl = dynamic_cast<faiss::IndexIVFSQHybrid*>(index)) {
-        gpu::GpuIndexFlat*& quantizer = index_composition->quantizer;
-        long mode = index_composition->mode;
-
-        GpuIndexIVFSQHybridConfig config;
-        config.device = device;
-        config.indicesOptions = indicesOptions;
-        config.flatConfig.useFloat16 = useFloat16CoarseQuantizer;
-        config.flatConfig.storeTransposed = storeTransposed;
-
-        GpuIndexIVFSQHybrid* res = new GpuIndexIVFSQHybrid(
-                provider,
-                ifl->d,
-                ifl->nlist,
-                ifl->sq.qtype,
-                ifl->metric_type,
-                ifl->by_residual,
-                config);
-        if (reserveVecs > 0 && ifl->ntotal == 0) {
-            res->reserveMemory(reserveVecs);
-        }
-
-        res->copyFrom(ifl, quantizer, mode);
-        return res;
-    } else {
-        return clone_Index(index);
-    }
-}
-
 Index* ToGpuCloner::clone_Index(const Index* index) {
     using idx_t = Index::idx_t;
-    auto ivf_sqh = dynamic_cast<const faiss::IndexIVFSQHybrid*>(index);
-    if (ivf_sqh) {
-        auto ifl = ivf_sqh;
-        GpuIndexIVFSQHybridConfig config;
-        config.device = device;
-        config.indicesOptions = indicesOptions;
-        config.flatConfig.useFloat16 = useFloat16CoarseQuantizer;
-        config.flatConfig.storeTransposed = storeTransposed;
-
-        GpuIndexIVFSQHybrid* res = new GpuIndexIVFSQHybrid(
-                provider,
-                ifl->d,
-                ifl->nlist,
-                ifl->sq.qtype,
-                ifl->metric_type,
-                ifl->by_residual,
-                config);
-        if (reserveVecs > 0 && ifl->ntotal == 0) {
-            res->reserveMemory(reserveVecs);
-        }
-
-        res->copyFrom(ifl);
-        return res;
-    } else if (auto ifl = dynamic_cast<const IndexFlat*>(index)) {
+    if (auto ifl = dynamic_cast<const IndexFlat*>(index)) {
         GpuIndexFlatConfig config;
         config.device = device;
         config.useFloat16 = useFloat16;
@@ -297,11 +236,7 @@ Index* ToGpuCloner::clone_Index(const Index* index) {
 Index* ToGpuCloner::clone_Index_Without_Codes(
         const Index* index,
         const uint8_t *arranged_data) {
-    auto ivf_sqh = dynamic_cast<const faiss::IndexIVFSQHybrid*>(index);
-    if (ivf_sqh) {
-        // should not happen
-        FAISS_ASSERT(false);
-    } else if (auto ifl = dynamic_cast<const faiss::IndexIVFFlat*>(index)) {
+    if (auto ifl = dynamic_cast<const faiss::IndexIVFFlat*>(index)) {
         GpuIndexIVFFlatConfig config;
         config.device = device;
         config.indicesOptions = indicesOptions;
@@ -366,16 +301,6 @@ faiss::Index* index_cpu_to_gpu_without_codes(
     GpuClonerOptions defaults;
     ToGpuCloner cl(provider, device, options ? *options : defaults);
     return cl.clone_Index_Without_Codes(index, arranged_data);
-}
-
-faiss::Index* index_cpu_to_gpu(
-        GpuResourcesProvider* provider,
-        int device,
-        IndexComposition* index_composition,
-        const GpuClonerOptions* options) {
-    GpuClonerOptions defaults;
-    ToGpuCloner cl(provider, device, options ? *options : defaults);
-    return cl.clone_Index(index_composition);
 }
 
 /**********************************************************

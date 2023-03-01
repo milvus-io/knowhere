@@ -43,10 +43,8 @@
 #include <faiss/IndexPQ.h>
 #include <faiss/IndexPQFastScan.h>
 #include <faiss/IndexPreTransform.h>
-#include <faiss/IndexRHNSW.h>
 #include <faiss/IndexRefine.h>
 #include <faiss/IndexScalarQuantizer.h>
-#include <faiss/IndexSQHybrid.h>
 #include <faiss/MetaIndexes.h>
 #include <faiss/VectorTransform.h>
 
@@ -374,24 +372,6 @@ static void write_HNSW(const HNSW* hnsw, IOWriter* f) {
     WRITE1(hnsw->upper_beam);
 }
 
-static void write_RHNSW(const RHNSW *rhnsw, IOWriter *f) {
-    WRITE1(rhnsw->entry_point);
-    WRITE1(rhnsw->max_level);
-    WRITE1(rhnsw->M);
-    WRITE1(rhnsw->level0_link_size);
-    WRITE1(rhnsw->link_size);
-    WRITE1(rhnsw->level_constant);
-    WRITE1(rhnsw->efConstruction);
-    WRITE1(rhnsw->efSearch);
-
-    WRITEVECTOR(rhnsw->levels);
-    WRITEANDCHECK(rhnsw->level0_links, rhnsw->level0_link_size * rhnsw->levels.size());
-    for (auto i = 0; i < rhnsw->levels.size(); ++ i) {
-        if (rhnsw->levels[i])
-            WRITEANDCHECK(rhnsw->linkLists[i], rhnsw->link_size * rhnsw->levels[i]);
-    }
-}
-
 static void write_NSG(const NSG* nsg, IOWriter* f) {
     WRITE1(nsg->ntotal);
     WRITE1(nsg->R);
@@ -569,16 +549,6 @@ void write_index(const Index* idx, IOWriter* f) {
         WRITE1(ivsc->code_size);
         WRITE1(ivsc->by_residual);
         write_InvertedLists(ivsc->invlists, f);
-    } else if(
-            const IndexIVFSQHybrid *ivfsqhbyrid =
-                    dynamic_cast<const IndexIVFSQHybrid*>(idx)) {
-        uint32_t h = fourcc ("ISqH");
-        WRITE1(h);
-        write_ivf_header (ivfsqhbyrid, f);
-        write_ScalarQuantizer (&ivfsqhbyrid->sq, f);
-        WRITE1(ivfsqhbyrid->code_size);
-        WRITE1(ivfsqhbyrid->by_residual);
-        write_InvertedLists(ivfsqhbyrid->invlists, f);
     } else if (auto iva = dynamic_cast<const IndexIVFAdditiveQuantizer*>(idx)) {
         bool is_LSQ = dynamic_cast<const IndexIVFLocalSearchQuantizer*>(iva);
         uint32_t h = fourcc(is_LSQ ? "IwLS" : "IwRQ");
@@ -667,17 +637,6 @@ void write_index(const Index* idx, IOWriter* f) {
         write_index_header(idxhnsw, f);
         write_HNSW(&idxhnsw->hnsw, f);
         write_index(idxhnsw->storage, f);
-    } else if (const IndexRHNSW * idxrhnsw = dynamic_cast<const IndexRHNSW *>(idx)) {
-        uint32_t h =
-                dynamic_cast<const IndexRHNSWFlat*>(idx)   ? fourcc("IRHf") :
-                dynamic_cast<const IndexRHNSWPQ*>(idx)     ? fourcc("IRHp") :
-                dynamic_cast<const IndexRHNSWSQ*>(idx)     ? fourcc("IRHs") :
-                dynamic_cast<const IndexRHNSW2Level*>(idx) ? fourcc("IRH2") :
-                0;
-        FAISS_THROW_IF_NOT(h != 0);
-        WRITE1(h);
-        write_index_header(idxrhnsw, f);
-        write_RHNSW(&idxrhnsw->hnsw, f);
     } else if (const IndexNSG* idxnsg = dynamic_cast<const IndexNSG*>(idx)) {
         uint32_t h =
                 dynamic_cast<const IndexNSGFlat*>(idx) ? fourcc("INSf") : 0;
@@ -751,15 +710,6 @@ void write_index_nm(const Index *idx, IOWriter *f) {
         WRITE1(ivsc->code_size);
         WRITE1(ivsc->by_residual);
         write_InvertedLists_nm(ivsc->invlists, f);
-    } else if(const IndexIVFSQHybrid *ivfsqhbyrid =
-            dynamic_cast<const IndexIVFSQHybrid*>(idx)) {
-        uint32_t h = fourcc("ISqH");
-        WRITE1(h);
-        write_ivf_header(ivfsqhbyrid, f);
-        write_ScalarQuantizer(&ivfsqhbyrid->sq, f);
-        WRITE1(ivfsqhbyrid->code_size);
-        WRITE1(ivfsqhbyrid->by_residual);
-        write_InvertedLists_nm(ivfsqhbyrid->invlists, f);
     } else {
       FAISS_THROW_MSG("don't know how to serialize this type of index");
     }
