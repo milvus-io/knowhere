@@ -39,8 +39,6 @@ struct ToGpuCloner : faiss::Cloner, GpuClonerOptions {
 
     Index* clone_Index(const Index* index) override;
 
-    Index* clone_Index(IndexComposition* index_composition) override;
-
     Index* clone_Index_Without_Codes(
             const Index* index,
             const uint8_t* arranged_data);
@@ -88,12 +86,6 @@ faiss::Index* index_cpu_to_gpu_without_codes(
         int device,
        const faiss::Index* index,
        const uint8_t* arranged_data,
-       const GpuClonerOptions* options = nullptr);
-
-faiss::Index* index_cpu_to_gpu(
-       GpuResourcesProvider* provider,
-        int device,
-       IndexComposition* index_composition,
        const GpuClonerOptions* options = nullptr);
 
 faiss::Index* index_cpu_to_gpu_multiple(

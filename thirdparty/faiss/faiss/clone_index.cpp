@@ -28,7 +28,6 @@
 #include <faiss/IndexNSG.h>
 #include <faiss/IndexPQ.h>
 #include <faiss/IndexPreTransform.h>
-#include <faiss/IndexSQHybrid.h>
 #include <faiss/IndexScalarQuantizer.h>
 #include <faiss/MetaIndexes.h>
 #include <faiss/VectorTransform.h>
@@ -68,15 +67,10 @@ IndexIVF* Cloner::clone_IndexIVF(const IndexIVF* ivf) {
     TRYCLONE(IndexIVFPQR, ivf)
     TRYCLONE(IndexIVFPQ, ivf)
     TRYCLONE(IndexIVFFlat, ivf)
-    TRYCLONE(IndexIVFScalarQuantizer, ivf)
-    TRYCLONE(IndexIVFSQHybrid, ivf) {
+    TRYCLONE(IndexIVFScalarQuantizer, ivf) {
         FAISS_THROW_MSG("clone not supported for this type of IndexIVF");
     }
     return nullptr;
-}
-
-Index *Cloner::clone_Index(IndexComposition* index_composition) {
-    FAISS_THROW_MSG("Not implemented");
 }
 
 Index* Cloner::clone_Index(const Index* index) {
