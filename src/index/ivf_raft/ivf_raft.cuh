@@ -92,70 +92,75 @@ class RaftIvfIndexNode : public IndexNode {
           LOG_KNOWHERE_WARNING_ << "index is already trained";
           result = Status::index_already_trained;
         } else if (ivf_raft_cfg.gpu_ids.size() == 1) {
-          auto metric = Str2RaftMetricType(ivf_raft_cfg.metric_type);
-          if (!metric.has_value()) {
-              LOG_KNOWHERE_WARNING_ << "please check metric value: " << ivf_raft_cfg.metric_type;
-              return metric.error();
-          }
-          if (
-              metric.value() != raft::distance::DistanceType::L2Expanded
-              && metric.value() != raft::distance::DistanceType::L2Unexpanded
-              && metric.value() != raft::distance::DistanceType::InnerProduct
-          ) {
-              LOG_KNOWHERE_WARNING_ << 
-                "selected metric not supported in RAFT IVF indexes: " << 
-                ivf_raft_cfg.metric_type;
-              return Status::invalid_metric_type;
-          }
+          try {
+            auto metric = Str2RaftMetricType(ivf_raft_cfg.metric_type);
+            if (!metric.has_value()) {
+                LOG_KNOWHERE_WARNING_ << "please check metric value: " << ivf_raft_cfg.metric_type;
+                return metric.error();
+            }
+            if (
+                metric.value() != raft::distance::DistanceType::L2Expanded
+                && metric.value() != raft::distance::DistanceType::L2Unexpanded
+                && metric.value() != raft::distance::DistanceType::InnerProduct
+            ) {
+                LOG_KNOWHERE_WARNING_ << 
+                  "selected metric not supported in RAFT IVF indexes: " << 
+                  ivf_raft_cfg.metric_type;
+                return Status::invalid_metric_type;
+            }
 
-          auto scoped_device = detail::device_setter{
-            *ivf_raft_cfg.gpu_ids.begin()
-          };
-          res_ = std::make_unique<raft::device_resources>();
-          auto rows = dataset.GetRows();
-          auto dim = dataset.GetDim();
-          auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
+            auto scoped_device = detail::device_setter{
+              *ivf_raft_cfg.gpu_ids.begin()
+            };
+            res_ = std::make_unique<raft::device_resources>();
+            auto rows = dataset.GetRows();
+            auto dim = dataset.GetDim();
+            auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
 
-          auto stream = res_->get_stream();
-          auto data_gpu = rmm::device_uvector<float>(rows * dim, stream);
-          RAFT_CUDA_TRY(
-            cudaMemcpyAsync(
-              data_gpu.data(),
-              data,
-              data_gpu.size() * sizeof(float),
-              cudaMemcpyDefault,
-              stream.value()
-            )
-          );
-          if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
-            auto build_params = raft::neighbors::ivf_flat::index_params{};
-            build_params.metric = metric.value();
-            build_params.n_lists = ivf_raft_cfg.nlist;
-            gpu_index_ = raft::neighbors::ivf_flat::build<
-              float, std::int64_t
-            >(
-                *res_,
-                build_params,
+            auto stream = res_->get_stream();
+            auto data_gpu = rmm::device_uvector<float>(rows * dim, stream);
+            RAFT_CUDA_TRY(
+              cudaMemcpyAsync(
                 data_gpu.data(),
-                rows,
-                dim
+                data,
+                data_gpu.size() * sizeof(float),
+                cudaMemcpyDefault,
+                stream.value()
+              )
             );
-          } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
-            auto build_params = raft::neighbors::ivf_pq::index_params{};
-            build_params.metric = metric.value();
-            build_params.n_lists = ivf_raft_cfg.nlist;
-            build_params.pq_bits = ivf_raft_cfg.nbits;
-            gpu_index_ = raft::neighbors::ivf_pq::build<
-              float, std::int64_t
-            >(
-                *res_,
-                build_params,
-                data_gpu.data(),
-                rows,
-                dim
-            );
-          } else {
-            static_assert(std::is_same_v<detail::raft_ivf_flat_index, T>);
+            if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
+              auto build_params = raft::neighbors::ivf_flat::index_params{};
+              build_params.metric = metric.value();
+              build_params.n_lists = ivf_raft_cfg.nlist;
+              gpu_index_ = raft::neighbors::ivf_flat::build<
+                float, std::int64_t
+              >(
+                  *res_,
+                  build_params,
+                  data_gpu.data(),
+                  rows,
+                  dim
+              );
+            } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
+              auto build_params = raft::neighbors::ivf_pq::index_params{};
+              build_params.metric = metric.value();
+              build_params.n_lists = ivf_raft_cfg.nlist;
+              build_params.pq_bits = ivf_raft_cfg.nbits;
+              gpu_index_ = raft::neighbors::ivf_pq::build<
+                float, std::int64_t
+              >(
+                  *res_,
+                  build_params,
+                  data_gpu.data(),
+                  rows,
+                  dim
+              );
+            } else {
+              static_assert(std::is_same_v<detail::raft_ivf_flat_index, T>);
+            }
+          } catch (std::exception& e) {
+            LOG_KNOWHERE_WARNING_ << "RAFT inner error, " << e.what();
+            result = Status::raft_inner_error;
           }
         } else {
           LOG_KNOWHERE_WARNING_ << "RAFT IVF implementation is single-GPU only";
@@ -168,8 +173,68 @@ class RaftIvfIndexNode : public IndexNode {
     Add(const DataSet& dataset, const Config& cfg) override {
         auto result = Status::success;
         if (!gpu_index_) {
-            result = Status::empty_index;
+            result = Status::index_not_trained;
         } else {
+          try {
+            auto rows = dataset.GetRows();
+            auto dim = dataset.GetDim();
+            auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
+
+            auto stream = res_->get_stream();
+            auto data_gpu = rmm::device_uvector<float>(rows * dim, stream);
+            RAFT_CUDA_TRY(
+              cudaMemcpyAsync(
+                data_gpu.data(),
+                data,
+                data_gpu.size() * sizeof(float),
+                cudaMemcpyDefault,
+                stream.value()
+              )
+            );
+
+            auto indices = rmm::device_uvector<std::int64_t>(
+              rows, stream
+            );
+            thrust::sequence(
+              thrust::device,
+              indices.begin(),
+              indices.end(),
+              gpu_index_->size()
+            );
+
+            if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
+              raft::neighbors::ivf_flat::extend<float, std::int64_t>(
+                  *res_,
+                  *gpu_index_,
+                  data_gpu.data(),
+                  indices.data(),
+                  rows
+              );
+            } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
+              raft::neighbors::ivf_pq::extend<float, std::int64_t>(
+                  *res_,
+                  *gpu_index_,
+                  data_gpu.data(),
+                  indices.data(),
+                  rows
+              );
+            } else {
+              static_assert(std::is_same_v<detail::raft_ivf_flat_index, T>);
+            }
+          } catch (std::exception& e) {
+            LOG_KNOWHERE_WARNING_ << "RAFT inner error, " << e.what();
+            result = Status::raft_inner_error;
+          }
+        }
+
+        return result;
+    }
+
+    virtual expected<DataSetPtr, Status>
+    Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
+        auto ivf_raft_cfg = static_cast<const typename KnowhereConfigType<T>::Type&>(cfg);
+
+        try {
           auto rows = dataset.GetRows();
           auto dim = dataset.GetDim();
           auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
@@ -186,115 +251,65 @@ class RaftIvfIndexNode : public IndexNode {
             )
           );
 
-          auto indices = rmm::device_uvector<std::int64_t>(
-            rows, stream
-          );
-          thrust::sequence(
-            thrust::device,
-            indices.begin(),
-            indices.end(),
-            gpu_index_->size()
-          );
+          auto output_size = rows * ivf_raft_cfg.k;
+          auto ids = std::unique_ptr<std::int64_t[]>(new std::int64_t[output_size]);
+          auto dis = std::unique_ptr<float[]>(new float[output_size]);
+
+          auto ids_gpu = rmm::device_uvector<std::int64_t>(output_size, stream);
+          auto dis_gpu = rmm::device_uvector<float>(output_size, stream);
 
           if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
-            raft::neighbors::ivf_flat::extend<float, std::int64_t>(
+            auto search_params = raft::neighbors::ivf_flat::search_params{};
+            search_params.n_probes = ivf_raft_cfg.nprobe;
+            raft::neighbors::ivf_flat::search<float, std::int64_t>(
                 *res_,
+                search_params,
                 *gpu_index_,
                 data_gpu.data(),
-                indices.data(),
-                rows
+                rows,
+                ivf_raft_cfg.k,
+                ids_gpu.data(),
+                dis_gpu.data()
             );
           } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
-            raft::neighbors::ivf_pq::extend<float, std::int64_t>(
+            auto search_params = raft::neighbors::ivf_pq::search_params{};
+            search_params.n_probes = ivf_raft_cfg.nprobe;
+            raft::neighbors::ivf_pq::search<float, std::int64_t>(
                 *res_,
+                search_params,
                 *gpu_index_,
                 data_gpu.data(),
-                indices.data(),
-                rows
+                rows,
+                ivf_raft_cfg.k,
+                ids_gpu.data(),
+                dis_gpu.data()
             );
           } else {
             static_assert(std::is_same_v<detail::raft_ivf_flat_index, T>);
           }
-        }
-
-        return result;
-    }
-
-    virtual expected<DataSetPtr, Status>
-    Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
-        auto ivf_raft_cfg = static_cast<const typename KnowhereConfigType<T>::Type&>(cfg);
-
-        auto rows = dataset.GetRows();
-        auto dim = dataset.GetDim();
-        auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
-
-        auto stream = res_->get_stream();
-        auto data_gpu = rmm::device_uvector<float>(rows * dim, stream);
-        RAFT_CUDA_TRY(
-          cudaMemcpyAsync(
-            data_gpu.data(),
-            data,
-            data_gpu.size() * sizeof(float),
-            cudaMemcpyDefault,
-            stream.value()
-          )
-        );
-
-        auto output_size = rows * ivf_raft_cfg.k;
-        auto ids = std::unique_ptr<std::int64_t[]>(new std::int64_t[output_size]);
-        auto dis = std::unique_ptr<float[]>(new float[output_size]);
-
-        auto ids_gpu = rmm::device_uvector<std::int64_t>(output_size, stream);
-        auto dis_gpu = rmm::device_uvector<float>(output_size, stream);
-
-        if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
-          auto search_params = raft::neighbors::ivf_flat::search_params{};
-          search_params.n_probes = ivf_raft_cfg.nprobe;
-          raft::neighbors::ivf_flat::search<float, std::int64_t>(
-              *res_,
-              search_params,
-              *gpu_index_,
-              data_gpu.data(),
-              rows,
-              ivf_raft_cfg.k,
+          RAFT_CUDA_TRY(
+            cudaMemcpyAsync(
+              ids.get(),
               ids_gpu.data(),
-              dis_gpu.data()
+              ids_gpu.size() * sizeof(std::int64_t),
+              cudaMemcpyDefault,
+              stream.value()
+            )
           );
-        } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
-          auto search_params = raft::neighbors::ivf_pq::search_params{};
-          search_params.n_probes = ivf_raft_cfg.nprobe;
-          raft::neighbors::ivf_pq::search<float, std::int64_t>(
-              *res_,
-              search_params,
-              *gpu_index_,
-              data_gpu.data(),
-              rows,
-              ivf_raft_cfg.k,
-              ids_gpu.data(),
-              dis_gpu.data()
+          RAFT_CUDA_TRY(
+            cudaMemcpyAsync(
+              dis.get(),
+              dis_gpu.data(),
+              dis_gpu.size() * sizeof(float),
+              cudaMemcpyDefault,
+              stream.value()
+            )
           );
-        } else {
-          static_assert(std::is_same_v<detail::raft_ivf_flat_index, T>);
+          stream.synchronize();
+        } catch (std::exception& e) {
+          LOG_KNOWHERE_WARNING_ << "RAFT inner error, " << e.what();
+          return unexpected(Status::raft_inner_error);
         }
-        RAFT_CUDA_TRY(
-          cudaMemcpyAsync(
-            ids.get(),
-            ids_gpu.data(),
-            ids_gpu.size() * sizeof(std::int64_t),
-            cudaMemcpyDefault,
-            stream.value()
-          )
-        );
-        RAFT_CUDA_TRY(
-          cudaMemcpyAsync(
-            dis.get(),
-            dis_gpu.data(),
-            dis_gpu.size() * sizeof(float),
-            cudaMemcpyDefault,
-            stream.value()
-          )
-        );
-        stream.synchronize();
 
         return GenResultDataSet(rows, ivf_raft_cfg.k, ids.release(), dis.release());
     }
