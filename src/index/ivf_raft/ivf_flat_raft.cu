@@ -14,40 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
-#ifndef IVF_RAFT_CONFIG_H
-#define IVF_RAFT_CONFIG_H
-
-#include "index/ivf/ivf_config.h"
+#include "knowhere/factory.h"
+#include "knowhere/index_node_thread_pool_wrapper.h"
+#include "ivf_raft.cuh"
 
 namespace knowhere {
-
-class RaftIvfFlatConfig : public IvfFlatConfig {
- public:
-    CFG_LIST gpu_ids;
-    KNOHWERE_DECLARE_CONFIG(RaftIvfFlatConfig) {
-        KNOWHERE_CONFIG_DECLARE_FIELD(gpu_ids)
-            .description("gpu device ids")
-            .set_default({
-                0,
-            })
-            .for_train();
-    }
-};
-
-class RaftIvfPqConfig : public IvfPqConfig {
- public:
-    CFG_LIST gpu_ids;
-    KNOHWERE_DECLARE_CONFIG(RaftIvfPqConfig) {
-        KNOWHERE_CONFIG_DECLARE_FIELD(gpu_ids)
-            .description("gpu device ids")
-            .set_default({
-                0,
-            })
-            .for_train();
-    }
-};
-
+KNOWHERE_REGISTER_GLOBAL(RAFTIVFFLAT, [](const Object& object) {
+    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<RaftIvfIndexNode<detail::raft_ivf_flat_index>>(object));
+});
 }  // namespace knowhere
-#endif /* IVF_CONFIG_H */

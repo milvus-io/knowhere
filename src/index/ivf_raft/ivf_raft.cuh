@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+#ifndef IVF_RAFT_CUH
+#define IVF_RAFT_CUH
+
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -25,6 +28,8 @@
 #include "raft/neighbors/ivf_flat_types.hpp"
 #include "raft/neighbors/ivf_pq.cuh"
 #include "raft/neighbors/ivf_pq_types.hpp"
+#include "thrust/sequence.h"
+#include "thrust/execution_policy.h"
 #include "index/ivf_raft/ivf_raft_config.h"
 #include "knowhere/factory.h"
 #include "knowhere/index_node_thread_pool_wrapper.h"
@@ -181,12 +186,22 @@ class RaftIvfIndexNode : public IndexNode {
             )
           );
 
+          auto indices = rmm::device_uvector<std::int64_t>(
+            rows, stream
+          );
+          thrust::sequence(
+            thrust::device,
+            indices.begin(),
+            indices.end(),
+            gpu_index_->size()
+          );
+
           if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
             raft::neighbors::ivf_flat::extend<float, std::int64_t>(
                 *res_,
                 *gpu_index_,
                 data_gpu.data(),
-                nullptr, // TODO(wphicks): indices for non-empty
+                indices.data(),
                 rows
             );
           } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
@@ -194,7 +209,7 @@ class RaftIvfIndexNode : public IndexNode {
                 *res_,
                 *gpu_index_,
                 data_gpu.data(),
-                nullptr, // TODO(wphicks): indices for non-empty
+                indices.data(),
                 rows
             );
           } else {
@@ -352,11 +367,5 @@ class RaftIvfIndexNode : public IndexNode {
     std::unique_ptr<raft::device_resources> res_;
     std::optional<T> gpu_index_;
 };
-
-KNOWHERE_REGISTER_GLOBAL(RAFTIVFFLAT, [](const Object& object) {
-    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<RaftIvfIndexNode<detail::raft_ivf_flat_index>>(object));
-});
-KNOWHERE_REGISTER_GLOBAL(RAFTIVFPQ, [](const Object& object) {
-    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<RaftIvfIndexNode<detail::raft_ivf_pq_index>>(object));
-});
 }  // namespace knowhere
+#endif /* IVF_RAFT_CUH */
