@@ -15,17 +15,17 @@ if(WITH_ASAN)
   )
 endif()
 
-if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-  message(STATUS "Build in Debug mode")
-  set(CMAKE_CXX_FLAGS "-O0 -g -Wall -fPIC ${CMAKE_CXX_FLAGS}")
-  if(USE_CUDA)
-    set(CMAKE_CUDA_FLAGS
-        "-O0 -g -Xcompiler=-w -Xcompiler=-fPIC ${CMAKE_CUDA_FLAGS}")
-  endif()
-else()
-  set(CMAKE_CXX_FLAGS "-O2 -Wall -fPIC ${CMAKE_CXX_FLAGS}")
-  if(USE_CUDA)
-    set(CMAKE_CUDA_FLAGS
-        "-O2 -Xcompiler=-w -Xcompiler=-fPIC ${CMAKE_CUDA_FLAGS}")
-  endif()
+set(CMAKE_CXX_FLAGS "-Wall -fPIC ${CMAKE_CXX_FLAGS}")
+
+if(USE_CUDA)
+    set(CMAKE_CUDA_FLAGS "-Xcompiler=-w -Xcompiler=-fPIC ${CMAKE_CUDA_FLAGS}")
+endif()
+
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
+
+if(USE_CUDA)
+    set(CMAKE_CUDA_FLAGS_DEBUG "-O0 -g")
+    set(CMAKE_CUDA_FLAGS_RELEASE "-O3")
 endif()
