@@ -24,29 +24,29 @@
 namespace knowhere {
 
 class RaftIvfFlatConfig : public IvfFlatConfig {
- public:
-    CFG_LIST gpu_ids;
-    KNOHWERE_DECLARE_CONFIG(RaftIvfFlatConfig) {
-        KNOWHERE_CONFIG_DECLARE_FIELD(gpu_ids)
-            .description("gpu device ids")
-            .set_default({
-                0,
-            })
+    public:
+        CFG_LIST gpu_ids;
+        KNOHWERE_DECLARE_CONFIG(RaftIvfFlatConfig) {
+            KNOWHERE_CONFIG_DECLARE_FIELD(gpu_ids)
+                .description("gpu device ids")
+                .set_default({
+                        0,
+                        })
             .for_train();
-    }
+        }
 };
 
 class RaftIvfPqConfig : public IvfPqConfig {
- public:
-    CFG_LIST gpu_ids;
-    KNOHWERE_DECLARE_CONFIG(RaftIvfPqConfig) {
-        KNOWHERE_CONFIG_DECLARE_FIELD(gpu_ids)
-            .description("gpu device ids")
-            .set_default({
-                0,
-            })
+    public:
+        CFG_LIST gpu_ids;
+        KNOHWERE_DECLARE_CONFIG(RaftIvfPqConfig) {
+            KNOWHERE_CONFIG_DECLARE_FIELD(gpu_ids)
+                .description("gpu device ids")
+                .set_default({
+                        0,
+                        })
             .for_train();
-    }
+        }
 };
 
 }  // namespace knowhere
