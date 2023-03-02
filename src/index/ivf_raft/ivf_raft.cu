@@ -18,7 +18,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
-#include "common/metric.h"
+#include <memory>
+#include "common/raft_metric.h"
 #include "raft/core/device_resources.hpp"
 #include "raft/neighbors/ivf_flat.cuh"
 #include "raft/neighbors/ivf_flat_types.hpp"
@@ -31,8 +32,8 @@
 namespace knowhere {
 
 namespace detail {
-using raft_ivf_flat_index = raft::neighbors::ivf_flat::index<float, std::uint32_t>;
-using raft_ivf_pq_index = raft::neighbors::ivf_pq::index<std::uint32_t>;
+using raft_ivf_flat_index = raft::neighbors::ivf_flat::index<float, std::int64_t>;
+using raft_ivf_pq_index = raft::neighbors::ivf_pq::index<std::int64_t>;
 
 // TODO(wphicks): Replace this with version from RAFT once merged
 struct device_setter {
@@ -68,7 +69,7 @@ struct KnowhereConfigType<detail::raft_ivf_pq_index> {
 template <typename T>
 class RaftIvfIndexNode : public IndexNode {
  public:
-    RaftIvfIndexNode(const Object& object) : devs_{}, res_{}, gpu_index_{} {}
+    RaftIvfIndexNode(const Object& object) : devs_{}, res_{std::make_unique<raft::device_resources>()}, gpu_index_{} {}
 
     virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
@@ -86,13 +87,20 @@ class RaftIvfIndexNode : public IndexNode {
           LOG_KNOWHERE_WARNING_ << "index is already trained";
           result = Status::index_already_trained;
         } else if (ivf_raft_cfg.gpu_ids.size() == 1) {
-          auto scoped_device = detail::device_setter{ivf_raft_cfg.gpu_ids[0]};
-          res_ = raft::device_resources{};
+          auto metric = Str2RaftMetricType(ivf_raft_cfg.metric_type);
+          if (!metric.has_value()) {
+              LOG_KNOWHERE_WARNING_ << "please check metric value: " << ivf_raft_cfg.metric_type;
+              return metric.error();
+          }
+          auto scoped_device = detail::device_setter{
+            *ivf_raft_cfg.gpu_ids.begin()
+          };
+          res_ = std::make_unique<raft::device_resources>();
           auto rows = dataset.GetRows();
           auto dim = dataset.GetDim();
-          auto* data = reinterpret_cast<float*>(dataset.GetTensor());
+          auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
 
-          auto stream = res_.get_stream();
+          auto stream = res_->get_stream();
           auto data_gpu = rmm::device_uvector<float>(rows * dim, stream);
           RAFT_CUDA_TRY(
             cudaMemcpyAsync(
@@ -104,29 +112,27 @@ class RaftIvfIndexNode : public IndexNode {
             )
           );
           if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
-            auto build_params = raft::neighbors::ivf_flat::index_params{
-              ivf_raft_cfg.nlist,
-              20,  // TODO(wphicks): Confirm just default
-              0.5,  // TODO(wphicks): Confirm just default
-              false  //TODO(wphicks): Allow configuration?
-            };
-            gpu_index_ = raft::neighbors::ivf_flat::build(
-                res_,
+            auto build_params = raft::neighbors::ivf_flat::index_params{};
+            build_params.metric = metric.value();
+            build_params.n_lists = ivf_raft_cfg.nlist;
+            gpu_index_ = raft::neighbors::ivf_flat::build<
+              float, std::int64_t
+            >(
+                *res_,
                 build_params,
                 data_gpu.data(),
                 rows,
                 dim
             );
           } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
-            // TODO(wphicks): Specify m?
-            auto build_params = raft::neighbors::ivf_pq::index_params{
-              ivf_raft_cfg.nlist,
-              20,  // TODO(wphicks): Confirm just default
-              0.5,  // TODO(wphicks): Confirm just default
-              ivf_raft_cfg.nbits
-            };
-            gpu_index_ = raft::neighbors::ivf_pq::build(
-                res_,
+            auto build_params = raft::neighbors::ivf_pq::index_params{};
+            build_params.metric = metric.value();
+            build_params.n_lists = ivf_raft_cfg.nlist;
+            build_params.pq_bits = ivf_raft_cfg.nbits;
+            gpu_index_ = raft::neighbors::ivf_pq::build<
+              float, std::int64_t
+            >(
+                *res_,
                 build_params,
                 data_gpu.data(),
                 rows,
@@ -149,9 +155,10 @@ class RaftIvfIndexNode : public IndexNode {
             result = Status::empty_index;
         } else {
           auto rows = dataset.GetRows();
-          auto* data = reinterpret_cast<float*>(dataset.GetTensor());
+          auto dim = dataset.GetDim();
+          auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
 
-          auto stream = res_.get_stream();
+          auto stream = res_->get_stream();
           auto data_gpu = rmm::device_uvector<float>(rows * dim, stream);
           RAFT_CUDA_TRY(
             cudaMemcpyAsync(
@@ -164,17 +171,17 @@ class RaftIvfIndexNode : public IndexNode {
           );
 
           if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
-            raft::neighbors::ivf_flat::add(
-                res_,
-                &(*gpu_index_),
+            raft::neighbors::ivf_flat::extend<float, std::int64_t>(
+                *res_,
+                *gpu_index_,
                 data_gpu.data(),
                 nullptr, // TODO(wphicks): indices for non-empty
                 rows
             );
           } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
-            raft::neighbors::ivf_pq::add(
-                res_,
-                &(*gpu_index_),
+            raft::neighbors::ivf_pq::extend<float, std::int64_t>(
+                *res_,
+                *gpu_index_,
                 data_gpu.data(),
                 nullptr, // TODO(wphicks): indices for non-empty
                 rows
@@ -193,9 +200,9 @@ class RaftIvfIndexNode : public IndexNode {
 
         auto rows = dataset.GetRows();
         auto dim = dataset.GetDim();
-        auto* data = reinterpret_cast<float*>(dataset.GetTensor());
+        auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
 
-        auto stream = res_.get_stream();
+        auto stream = res_->get_stream();
         auto data_gpu = rmm::device_uvector<float>(rows * dim, stream);
         RAFT_CUDA_TRY(
           cudaMemcpyAsync(
@@ -208,18 +215,17 @@ class RaftIvfIndexNode : public IndexNode {
         );
 
         auto output_size = rows * ivf_raft_cfg.k;
-        auto ids = std::unique_ptr<std::int32_t[]>(new std::int32_t[output_size]);
+        auto ids = std::unique_ptr<std::int64_t[]>(new std::int64_t[output_size]);
         auto dis = std::unique_ptr<float[]>(new float[output_size]);
 
-        auto stream = res_.get_stream();
-        auto ids_gpu = rmm::device_uvector<std::int32_t>(output_size, stream);
+        auto ids_gpu = rmm::device_uvector<std::int64_t>(output_size, stream);
         auto dis_gpu = rmm::device_uvector<float>(output_size, stream);
 
         if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
-          auto search_params = raft::neighbors::ivf_flat::search_params{
-            ivf_raft_cfg.nprobe
-          };
-          raft::neighbors::ivf_flat::search(
+          auto search_params = raft::neighbors::ivf_flat::search_params{};
+          search_params.n_probes = ivf_raft_cfg.nprobe;
+          raft::neighbors::ivf_flat::search<float, std::int64_t>(
+              *res_,
               search_params,
               *gpu_index_,
               data_gpu.data(),
@@ -229,10 +235,10 @@ class RaftIvfIndexNode : public IndexNode {
               dis_gpu.data()
           );
         } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
-          auto search_params = raft::neighbors::ivf_pq::search_params{
-            ivf_raft_cfg.nprobe
-          };
-          raft::neighbors::ivf_pq::search(
+          auto search_params = raft::neighbors::ivf_pq::search_params{};
+          search_params.n_probes = ivf_raft_cfg.nprobe;
+          raft::neighbors::ivf_pq::search<float, std::int64_t>(
+              *res_,
               search_params,
               *gpu_index_,
               data_gpu.data(),
@@ -248,7 +254,7 @@ class RaftIvfIndexNode : public IndexNode {
           cudaMemcpyAsync(
             ids.get(),
             ids_gpu.data(),
-            ids_gpu.size() * sizeof(std::int32_t),
+            ids_gpu.size() * sizeof(std::int64_t),
             cudaMemcpyDefault,
             stream.value()
           )
@@ -264,7 +270,7 @@ class RaftIvfIndexNode : public IndexNode {
         );
         stream.synchronize();
 
-        return GenResultDataSet(rows, ivf_gpu_cfg.k, ids.release(), dis.release());
+        return GenResultDataSet(rows, ivf_raft_cfg.k, ids.release(), dis.release());
     }
 
     expected<DataSetPtr, Status>
@@ -332,7 +338,7 @@ class RaftIvfIndexNode : public IndexNode {
 
  private:
     std::vector<int32_t> devs_;
-    raft::device_resources res_;
+    std::unique_ptr<raft::device_resources> res_;
     std::optional<T> gpu_index_;
 };
 
