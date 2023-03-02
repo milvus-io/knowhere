@@ -233,11 +233,14 @@ class RaftIvfIndexNode : public IndexNode {
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         auto ivf_raft_cfg = static_cast<const typename KnowhereConfigType<T>::Type&>(cfg);
+        auto rows = dataset.GetRows();
+        auto dim = dataset.GetDim();
+        auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
+        auto output_size = rows * ivf_raft_cfg.k;
+        auto ids = std::unique_ptr<std::int64_t[]>(new std::int64_t[output_size]);
+        auto dis = std::unique_ptr<float[]>(new float[output_size]);
 
         try {
-          auto rows = dataset.GetRows();
-          auto dim = dataset.GetDim();
-          auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
 
           auto stream = res_->get_stream();
           auto data_gpu = rmm::device_uvector<float>(rows * dim, stream);
@@ -250,10 +253,6 @@ class RaftIvfIndexNode : public IndexNode {
               stream.value()
             )
           );
-
-          auto output_size = rows * ivf_raft_cfg.k;
-          auto ids = std::unique_ptr<std::int64_t[]>(new std::int64_t[output_size]);
-          auto dis = std::unique_ptr<float[]>(new float[output_size]);
 
           auto ids_gpu = rmm::device_uvector<std::int64_t>(output_size, stream);
           auto dis_gpu = rmm::device_uvector<float>(output_size, stream);
