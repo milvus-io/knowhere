@@ -299,7 +299,7 @@ class Config {
                     *ptr->val = ptr->default_val.value();
                     continue;
                 }
-                if (!json[it.first].is_number_float()) {
+                if (!json[it.first].is_number()) {
                     return Status::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
