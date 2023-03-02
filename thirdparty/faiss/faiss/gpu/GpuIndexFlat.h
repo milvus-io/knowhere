@@ -136,6 +136,18 @@ class GpuIndexFlat : public GpuIndex {
             Index::idx_t* labels,
             const BitsetView bitset = nullptr) const override;
 
+    // useless API to make build pass
+    void searchThreadSafeImpl_(
+            int n,
+            const float* x,
+            int k,
+            int nprobe,
+            float* distances,
+            Index::idx_t* labels,
+            const BitsetView bitset = nullptr) const override {
+        searchImpl_(n, x, k, distances, labels, bitset);
+    }
+
    protected:
     /// Our configuration options
     const GpuIndexFlatConfig flatConfig_;
