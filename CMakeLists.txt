@@ -53,7 +53,7 @@ if(WITH_CCACHE)
 endif()
 
 if(USE_CUDA)
-  set(CMAKE_CUDA_ARCHITECTURES 75;70;61;60)
+  set(CMAKE_CUDA_ARCHITECTURES 75) #TODO(wphicks): restore this
   enable_language(CUDA)
   find_package(CUDAToolkit REQUIRED)
 endif()
@@ -105,7 +105,7 @@ if(WITH_COVERAGE)
 endif()
 
 knowhere_file_glob(GLOB_RECURSE KNOWHERE_SRCS src/common/*.cc src/index/*.cc
-                   src/io/*.cc)
+                   src/io/*.cc src/index/*.cu)
 
 set(KNOWHERE_LINKER_LIBS "")
 
@@ -116,9 +116,7 @@ else()
   list(REMOVE_ITEM KNOWHERE_SRCS ${KNOWHERE_DISKANN_SRCS})
 endif()
 
-if(USE_CUDA)
-  knowhere_file_glob(GLOB_RECURSE KNOWHERE_SRCS src/index/*.cu)
-else()
+if(NOT USE_CUDA)
   knowhere_file_glob(GLOB_RECURSE KNOWHERE_GPU_SRCS src/index/ivf_gpu/*.cc
                      src/index/flat_gpu/*.cc)
   list(REMOVE_ITEM KNOWHERE_SRCS ${KNOWHERE_GPU_SRCS})
@@ -138,7 +136,7 @@ list(APPEND KNOWHERE_LINKER_LIBS easyloggingpp)
 add_library(knowhere SHARED ${KNOWHERE_SRCS})
 add_dependencies(knowhere ${KNOWHERE_LINKER_LIBS})
 if(WITH_RAFT)
-  target_link_libraries(knowhere PRIVATE cutlass)
+  # target_link_libraries(knowhere PRIVATE cutlass)
   target_link_libraries(knowhere PRIVATE rmm::rmm)
   target_link_libraries(knowhere PRIVATE raft::raft)
 endif()

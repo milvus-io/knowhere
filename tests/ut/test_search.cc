@@ -9,6 +9,7 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
+#include <cstdio>
 #include "catch2/catch_approx.hpp"
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/generators/catch_generators.hpp"
@@ -102,8 +103,11 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
             make_tuple("GPUIVFFLAT", ivfflat_gen),
             make_tuple("GPUIVFPQ", ivfpq_gen),
             make_tuple("GPUIVFSQ", ivfsq_gen),
+            make_tuple("RAFTIVFFLAT", ivfflat_gen),
+            make_tuple("RAFTIVFPQ", ivfpq_gen),
 #endif
         }));
+        std::cout << "WHWHWHWHWHWHWHWHWHWHW: " << name << "\n";
         auto idx = knowhere::IndexFactory::Instance().Create(name);
         auto cfg_json = gen().dump();
         CAPTURE(name, cfg_json);

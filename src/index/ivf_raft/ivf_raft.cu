@@ -92,6 +92,17 @@ class RaftIvfIndexNode : public IndexNode {
               LOG_KNOWHERE_WARNING_ << "please check metric value: " << ivf_raft_cfg.metric_type;
               return metric.error();
           }
+          if (
+              metric.value() != raft::distance::DistanceType::L2Expanded
+              && metric.value() != raft::distance::DistanceType::L2Unexpanded
+              && metric.value() != raft::distance::DistanceType::InnerProduct
+          ) {
+              LOG_KNOWHERE_WARNING_ << 
+                "selected metric not supported in RAFT IVF indexes: " << 
+                ivf_raft_cfg.metric_type;
+              return Status::invalid_metric_type;
+          }
+
           auto scoped_device = detail::device_setter{
             *ivf_raft_cfg.gpu_ids.begin()
           };
