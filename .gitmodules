@@ -1,8 +1,0 @@
-[submodule "thirdparty/raft"]
-	path = thirdparty/raft
-	url = https://github.com/rapidsai/raft.git
-        branch = branch-23.02
-[submodule "thirdparty/rmm"]
-	path = thirdparty/rmm
-	url = https://github.com/rapidsai/rmm.git
-        branch = branch-23.02
