@@ -22,7 +22,7 @@ namespace knowhere {
 
 class GpuFlatIndexNode : public IndexNode {
  public:
-    GpuFlatIndexNode(const Object& object) : gpu_index_(nullptr) {
+    GpuFlatIndexNode(const Object& object) : index_(nullptr) {
     }
 
     virtual Status
@@ -36,43 +36,33 @@ class GpuFlatIndexNode : public IndexNode {
 
     virtual Status
     Train(const DataSet& dataset, const Config& cfg) override {
-        return Status::success;
-    }
-
-    virtual Status
-    Add(const DataSet& dataset, const Config& cfg) override {
         const GpuFlatConfig& f_cfg = static_cast<const GpuFlatConfig&>(cfg);
         auto metric = Str2FaissMetricType(f_cfg.metric_type);
         if (!metric.has_value()) {
             LOG_KNOWHERE_WARNING_ << "metric type error, " << f_cfg.metric_type;
             return metric.error();
         }
+        index_ = std::make_unique<faiss::IndexFlat>(dataset.GetDim(), metric.value());
+        return Status::success;
+    }
 
+    virtual Status
+    Add(const DataSet& dataset, const Config& cfg) override {
         const void* x = dataset.GetTensor();
         const int64_t n = dataset.GetRows();
-        const int64_t dim = dataset.GetDim();
-        faiss::Index* host_index = nullptr;
         try {
-            host_index = new faiss::IndexFlat(dim, metric.value());
-            host_index->add(n, (const float*)x);
+            index_->add(n, (const float*)x);
             // need not copy index from CPU to GPU for IDMAP
         } catch (const std::exception& e) {
-            if (host_index) {
-                delete host_index;
-            }
             LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
             return Status::faiss_inner_error;
         }
-        if (this->gpu_index_) {
-            delete this->gpu_index_;
-        }
-        this->gpu_index_ = host_index;
         return Status::success;
     }
 
     virtual expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
-        if (!gpu_index_) {
+        if (!index_) {
             LOG_KNOWHERE_WARNING_ << "index not empty, deleted old index.";
             return unexpected(Status::empty_index);
         }
@@ -88,7 +78,7 @@ class GpuFlatIndexNode : public IndexNode {
             dis = new (std::nothrow) float[len];
 
             ResScope rs(res_, false);
-            gpu_index_->search(nq, (const float*)x, f_cfg.k, dis, ids, bitset);
+            index_->search(nq, (const float*)x, f_cfg.k, dis, ids, bitset);
         } catch (const std::exception& e) {
             std::unique_ptr<int64_t[]> auto_delete_ids(ids);
             std::unique_ptr<float[]> auto_delete_dis(dis);
@@ -114,7 +104,7 @@ class GpuFlatIndexNode : public IndexNode {
             float* xq = new (std::nothrow) float[nq * dim];
             for (int64_t i = 0; i < nq; i++) {
                 int64_t id = in_ids[i];
-                gpu_index_->reconstruct(id, xq + i * dim);
+                index_->reconstruct(id, xq + i * dim);
             }
             return GenResultDataSet(xq);
         } catch (const std::exception& e) {
@@ -130,18 +120,15 @@ class GpuFlatIndexNode : public IndexNode {
 
     virtual Status
     Serialize(BinarySet& binset) const override {
-        if (!gpu_index_) {
+        if (!index_) {
             LOG_KNOWHERE_WARNING_ << "serilalization on empty index.";
             return Status::empty_index;
         }
         try {
             MemoryIOWriter writer;
-            // Serialize() is called after Add(), at this time gpu_index_ is CPU index actually
-            faiss::Index* host_index = gpu_index_;
-
-            faiss::write_index(host_index, &writer);
+            // Serialize() is called after Add(), at this time index_ is CPU index actually
+            faiss::write_index(index_.get(), &writer);
             std::shared_ptr<uint8_t[]> data(writer.data_);
-
             binset.Append("FLAT", data, writer.rp);
         } catch (const std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
@@ -161,7 +148,8 @@ class GpuFlatIndexNode : public IndexNode {
 
             auto gpu_res = GPUResMgr::GetInstance().GetRes();
             ResScope rs(gpu_res, true);
-            gpu_index_ = faiss::gpu::index_cpu_to_gpu(gpu_res->faiss_res_.get(), gpu_res->gpu_id_, index.get());
+            auto gpu_index = faiss::gpu::index_cpu_to_gpu(gpu_res->faiss_res_.get(), gpu_res->gpu_id_, index.get());
+            index_.reset(gpu_index);
             res_ = gpu_res;
         } catch (const std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
@@ -178,17 +166,17 @@ class GpuFlatIndexNode : public IndexNode {
 
     virtual int64_t
     Dim() const override {
-        return gpu_index_->d;
+        return index_->d;
     }
 
     virtual int64_t
     Size() const override {
-        return gpu_index_->ntotal * gpu_index_->d * sizeof(float);
+        return index_->ntotal * index_->d * sizeof(float);
     }
 
     virtual int64_t
     Count() const override {
-        return gpu_index_->ntotal;
+        return index_->ntotal;
     }
 
     virtual std::string
@@ -196,15 +184,9 @@ class GpuFlatIndexNode : public IndexNode {
         return knowhere::IndexEnum::INDEX_FAISS_GPU_IDMAP;
     }
 
-    virtual ~GpuFlatIndexNode() {
-        if (gpu_index_) {
-            delete gpu_index_;
-        }
-    }
-
  private:
     mutable ResWPtr res_;
-    faiss::Index* gpu_index_;
+    std::unique_ptr<faiss::Index> index_;
 };
 
 KNOWHERE_REGISTER_GLOBAL(GPU_FLAT, [](const Object& object) { return Index<GpuFlatIndexNode>::Create(object); });

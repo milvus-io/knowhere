@@ -80,7 +80,7 @@ class GpuIvfIndexNode : public IndexNode {
             return metric.error();
         }
 
-        faiss::Index* gpu_index = nullptr;
+        std::unique_ptr<faiss::Index> index;
         try {
             auto gpu_res = GPUResMgr::GetInstance().GetRes();
             ResScope rs(gpu_res, true);
@@ -88,33 +88,30 @@ class GpuIvfIndexNode : public IndexNode {
             if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
                 faiss::gpu::GpuIndexIVFFlatConfig f_cfg;
                 f_cfg.device = static_cast<int32_t>(gpu_res->gpu_id_);
-                gpu_index = new faiss::gpu::GpuIndexIVFFlat(gpu_res->faiss_res_.get(), dim, ivf_gpu_cfg.nlist,
-                                                            metric.value(), f_cfg);
+                index = std::make_unique<faiss::gpu::GpuIndexIVFFlat>(gpu_res->faiss_res_.get(), dim, ivf_gpu_cfg.nlist,
+                                                                      metric.value(), f_cfg);
             }
             if constexpr (std::is_same<T, faiss::IndexIVFPQ>::value) {
                 faiss::gpu::GpuIndexIVFPQConfig f_cfg;
                 f_cfg.device = static_cast<int32_t>(gpu_res->gpu_id_);
-                gpu_index = new faiss::gpu::GpuIndexIVFPQ(gpu_res->faiss_res_.get(), dim, ivf_gpu_cfg.nlist,
-                                                          ivf_gpu_cfg.m, ivf_gpu_cfg.nbits, metric.value(), f_cfg);
+                index = std::make_unique<faiss::gpu::GpuIndexIVFPQ>(gpu_res->faiss_res_.get(), dim, ivf_gpu_cfg.nlist,
+                                                                    ivf_gpu_cfg.m, ivf_gpu_cfg.nbits, metric.value(),
+                                                                    f_cfg);
             }
             if constexpr (std::is_same<T, faiss::IndexIVFScalarQuantizer>::value) {
                 faiss::gpu::GpuIndexIVFScalarQuantizerConfig f_cfg;
                 f_cfg.device = static_cast<int32_t>(gpu_res->gpu_id_);
-                gpu_index = new faiss::gpu::GpuIndexIVFScalarQuantizer(gpu_res->faiss_res_.get(), dim,
-                                                                       ivf_gpu_cfg.nlist, faiss::QuantizerType::QT_8bit,
-                                                                       metric.value(), true, f_cfg);
+                index = std::make_unique<faiss::gpu::GpuIndexIVFScalarQuantizer>(
+                    gpu_res->faiss_res_.get(), dim, ivf_gpu_cfg.nlist, faiss::QuantizerType::QT_8bit, metric.value(),
+                    true, f_cfg);
             }
-
-            gpu_index->train(rows, reinterpret_cast<const float*>(tensor));
+            index->train(rows, reinterpret_cast<const float*>(tensor));
             res_ = gpu_res;
         } catch (std::exception& e) {
-            if (gpu_index) {
-                delete gpu_index;
-            }
             LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
             return Status::faiss_inner_error;
         }
-        this->index_ = gpu_index;
+        index_ = std::move(index);
         return Status::success;
     }
 
@@ -151,7 +148,7 @@ class GpuIvfIndexNode : public IndexNode {
         int64_t* ids = new (std::nothrow) int64_t[rows * k];
         try {
             ResScope rs(res_, false);
-            auto gpu_index = dynamic_cast<faiss::gpu::GpuIndexIVF*>(index_);
+            auto gpu_index = dynamic_cast<faiss::gpu::GpuIndexIVF*>(index_.get());
             for (int i = 0; i < rows; i += block_size) {
                 int64_t search_size = (rows - i > block_size) ? block_size : (rows - i);
                 gpu_index->search_thread_safe(search_size, reinterpret_cast<const float*>(tensor) + i * dim, k,
@@ -184,17 +181,17 @@ class GpuIvfIndexNode : public IndexNode {
 
     virtual Status
     Serialize(BinarySet& binset) const override {
-        if (!this->index_) {
+        if (!index_) {
             return Status::empty_index;
         }
-        if (!this->index_->is_trained) {
+        if (!index_->is_trained) {
             return Status::index_not_trained;
         }
 
         try {
             MemoryIOWriter writer;
             {
-                faiss::Index* host_index = faiss::gpu::index_gpu_to_cpu(index_);
+                faiss::Index* host_index = faiss::gpu::index_gpu_to_cpu(index_.get());
                 faiss::write_index(host_index, &writer);
                 delete host_index;
             }
@@ -219,7 +216,8 @@ class GpuIvfIndexNode : public IndexNode {
             std::unique_ptr<faiss::Index> index(faiss::read_index(&reader));
             auto gpu_res = GPUResMgr::GetInstance().GetRes();
             ResScope rs(gpu_res, true);
-            index_ = faiss::gpu::index_cpu_to_gpu(gpu_res->faiss_res_.get(), gpu_res->gpu_id_, index.get());
+            auto gpu_index = faiss::gpu::index_cpu_to_gpu(gpu_res->faiss_res_.get(), gpu_res->gpu_id_, index.get());
+            index_.reset(gpu_index);
             res_ = gpu_res;
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
@@ -267,15 +265,9 @@ class GpuIvfIndexNode : public IndexNode {
         }
     }
 
-    virtual ~GpuIvfIndexNode() {
-        if (index_) {
-            delete index_;
-        }
-    }
-
  private:
     mutable ResWPtr res_;
-    faiss::Index* index_;
+    std::unique_ptr<faiss::Index> index_;
 };
 
 KNOWHERE_REGISTER_GLOBAL(GPU_IVF_FLAT, [](const Object& object) {
