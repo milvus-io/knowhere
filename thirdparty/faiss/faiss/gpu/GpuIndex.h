@@ -77,6 +77,15 @@ class GpuIndex : public faiss::Index {
             Index::idx_t* labels,
             const BitsetView bitset = nullptr) const override;
 
+    void search_thread_safe(
+            Index::idx_t n,
+            const float* x,
+            Index::idx_t k,
+            int nprobe,
+            float* distances,
+            Index::idx_t* labels,
+            const BitsetView bitset = nullptr) const;
+
     /// Overridden to force GPU indices to provide their own GPU-friendly
     /// implementation
     void compute_residual(const float* x, float* residual, Index::idx_t key)
@@ -115,6 +124,15 @@ class GpuIndex : public faiss::Index {
             Index::idx_t* labels,
             const BitsetView bitset = nullptr) const = 0;
 
+    virtual void searchThreadSafeImpl_(
+            int n,
+            const float* x,
+            int k,
+            int nprobe,
+            float* distances,
+            Index::idx_t* labels,
+            const BitsetView bitset = nullptr) const = 0;
+
    private:
     /// Handles paged adds if the add set is too large, passes to
     /// addImpl_ to actually perform the add for the current page
@@ -132,12 +150,30 @@ class GpuIndex : public faiss::Index {
             Index::idx_t* outIndicesData,
             const BitsetView bitset = nullptr) const;
 
+    void searchThreadSafeNonPaged_(
+            int n,
+            const float* x,
+            int k,
+            int nprobe,
+            float* outDistancesData,
+            Index::idx_t* outIndicesData,
+            const BitsetView bitset = nullptr) const;
+
     /// Calls searchImpl_ for a single page of GPU-resident data,
     /// handling paging of the data and copies from the CPU
     void searchFromCpuPaged_(
             int n,
             const float* x,
             int k,
+            float* outDistancesData,
+            Index::idx_t* outIndicesData,
+            const BitsetView bitset = nullptr) const;
+
+    void searchThreadSafeFromCpuPaged_(
+            int n,
+            const float* x,
+            int k,
+            int nprobe,
             float* outDistancesData,
             Index::idx_t* outIndicesData,
             const BitsetView bitset = nullptr) const;

@@ -29,6 +29,7 @@ knowhere_option(WITH_RAFT "Build with RAFT indexes" OFF)
 knowhere_option(WITH_BENCHMARK "Build with benchmark" OFF)
 knowhere_option(WITH_COVERAGE "Build with coverage" OFF)
 knowhere_option(WITH_CCACHE "Build with ccache" ON)
+knowhere_option(WITH_PROFILER "Build with profiler" OFF)
 
 if(WITH_RAFT AND NOT USE_CUDA)
   message(WARNING "WITH_RAFT requires USE_CUDA. Setting USE_CUDA to ON.")
@@ -53,7 +54,8 @@ if(WITH_CCACHE)
 endif()
 
 if(USE_CUDA)
-  set(CMAKE_CUDA_ARCHITECTURES 75) #TODO(wphicks): restore this
+  add_definitions(-DUSE_CUDA)
+  set(CMAKE_CUDA_ARCHITECTURES 80;75;70;61)
   enable_language(CUDA)
   find_package(CUDAToolkit REQUIRED)
 endif()
@@ -117,8 +119,8 @@ else()
 endif()
 
 if(NOT USE_CUDA)
-  knowhere_file_glob(GLOB_RECURSE KNOWHERE_GPU_SRCS src/index/ivf_gpu/*.cc
-                     src/index/flat_gpu/*.cc)
+  knowhere_file_glob(GLOB_RECURSE KNOWHERE_GPU_SRCS src/index/flat_gpu/*.cc
+                     src/index/ivf_gpu/*.cc)
   list(REMOVE_ITEM KNOWHERE_SRCS ${KNOWHERE_GPU_SRCS})
 endif()
 

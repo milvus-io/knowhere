@@ -42,7 +42,6 @@
 #include <faiss/IndexPQFastScan.h>
 #include <faiss/IndexPreTransform.h>
 #include <faiss/IndexRefine.h>
-#include <faiss/IndexSQHybrid.h>
 #include <faiss/IndexScalarQuantizer.h>
 #include <faiss/MetaIndexes.h>
 #include <faiss/VectorTransform.h>
@@ -142,14 +141,6 @@ std::map<std::string, QuantizerType> sq_types = {
         {"SQfp16", QuantizerType::QT_fp16},
 };
 const std::string sq_pattern = "(SQ4|SQ8|SQ6|SQfp16)";
-
-std::map<std::string, QuantizerType> sqh_types = {
-        {"SQ8Hybrid", QuantizerType::QT_8bit},
-        {"SQ4Hybrid", QuantizerType::QT_4bit},
-        {"SQ6Hybrid", QuantizerType::QT_6bit},
-        {"SQfp16Hybrid", QuantizerType::QT_fp16},
-};
-const std::string sqh_pattern = "(SQ4Hybrid|SQ8Hybrid|SQ6Hybrid|SQfp16Hybrid)";
 
 std::map<std::string, AdditiveQuantizer::Search_type_t> aq_search_type = {
         {"_Nfloat", AdditiveQuantizer::ST_norm_float},
@@ -313,21 +304,6 @@ IndexIVF* parse_IndexIVF(
     if (match(sq_pattern)) {
         return new IndexIVFScalarQuantizer(
                 get_q(), d, nlist, sq_types[sm[1].str()], mt);
-    }
-    if (match(sqh_pattern)) {
-        // FAISS_THROW_IF_NOT_MSG(coarse_quantizer, "SQ Hybrid only with an IVF");
-        // FAISS_THROW_IF_NOT(!use_2layer);
-        // IndexIVFSQHybrid* index_ivf = new IndexIVFSQHybrid(
-        //         coarse_quantizer, d, ncentroids, qt, metric);
-        // index_ivf->quantizer_trains_alone = get_trains_alone(coarse_quantizer);
-        // del_coarse_quantizer.release();
-        // index_ivf->own_fields = true;
-        // index_1 = index_ivf;
-        IndexIVFSQHybrid* index_ivf = new IndexIVFSQHybrid(
-                get_q(), d, nlist, sqh_types[sm[1].str()], mt);
-        index_ivf->quantizer_trains_alone = get_trains_alone(get_q());
-        index_ivf->own_fields = true;
-        return index_ivf;
     }
     if (match("PQ([0-9]+)(x[0-9]+)?(np)?")) {
         int M = mres_to_int(sm[1]), nbit = mres_to_int(sm[2], 8, 1);

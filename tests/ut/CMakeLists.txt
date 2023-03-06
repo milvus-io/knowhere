@@ -26,9 +26,6 @@ set_target_properties(knowhere_tests PROPERTIES
   CXX_STANDARD 17
 )
 
-if(USE_CUDA)
-  add_definitions(-DUSE_CUDA)
-endif()
 if(WITH_DISKANN)
     target_link_libraries(knowhere_tests PRIVATE Catch2::Catch2WithMain knowhere stdc++fs)
 else()

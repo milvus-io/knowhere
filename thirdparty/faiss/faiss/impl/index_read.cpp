@@ -43,10 +43,8 @@
 #include <faiss/IndexPQ.h>
 #include <faiss/IndexPQFastScan.h>
 #include <faiss/IndexPreTransform.h>
-#include <faiss/IndexRHNSW.h>
 #include <faiss/IndexRefine.h>
 #include <faiss/IndexScalarQuantizer.h>
-#include <faiss/IndexSQHybrid.h>
 #include <faiss/MetaIndexes.h>
 #include <faiss/VectorTransform.h>
 
@@ -434,33 +432,6 @@ static void read_HNSW(HNSW* hnsw, IOReader* f) {
     READ1(hnsw->upper_beam);
 }
 
-static void read_RHNSW(RHNSW *rhnsw, IOReader *f) {
-    READ1(rhnsw->entry_point);
-    READ1(rhnsw->max_level);
-    READ1(rhnsw->M);
-    READ1(rhnsw->level0_link_size);
-    READ1(rhnsw->link_size);
-    READ1(rhnsw->level_constant);
-    READ1(rhnsw->efConstruction);
-    READ1(rhnsw->efSearch);
-
-    READVECTOR(rhnsw->levels);
-    rhnsw->level_stats = std::vector<int>(rhnsw->max_level + 1, 0);
-    auto ntotal = rhnsw->levels.size();
-    rhnsw->level0_links = (char*)malloc(ntotal * rhnsw->level0_link_size);
-    READANDCHECK( rhnsw->level0_links, ntotal * rhnsw->level0_link_size);
-    rhnsw->linkLists = (char**)malloc(ntotal * sizeof(void*));
-    for (auto i = 0; i < ntotal; ++i) {
-        if (rhnsw->levels[i]) {
-            rhnsw->linkLists[i] = (char*)malloc(rhnsw->link_size * rhnsw->levels[i]);
-            READANDCHECK( rhnsw->linkLists[i], rhnsw->link_size * rhnsw->levels[i]);
-            rhnsw->level_stats[rhnsw->levels[i]]++;
-        } else {
-            rhnsw->level_stats[0]++;
-        }
-    }
-}
-
 static void read_NSG(NSG* nsg, IOReader* f) {
     READ1(nsg->ntotal);
     READ1(nsg->R);
@@ -772,14 +743,6 @@ Index* read_index(IOReader* f, int io_flags) {
         }
         read_InvertedLists(ivsc, f, io_flags);
         idx = ivsc;
-    } else if (h == fourcc("ISqH")) {
-        IndexIVFSQHybrid *ivfsqhbyrid = new IndexIVFSQHybrid();
-        read_ivf_header(ivfsqhbyrid, f);
-        read_ScalarQuantizer(&ivfsqhbyrid->sq, f);
-        READ1 (ivfsqhbyrid->code_size);
-        READ1 (ivfsqhbyrid->by_residual);
-        read_InvertedLists(ivfsqhbyrid, f, io_flags);
-        idx = ivfsqhbyrid;
     } else if (h == fourcc("IwLS") || h == fourcc("IwRQ")) {
         bool is_LSQ = h == fourcc("IwLS");
         IndexIVFAdditiveQuantizer* iva;
@@ -896,17 +859,6 @@ Index* read_index(IOReader* f, int io_flags) {
             dynamic_cast<IndexPQ*>(idxhnsw->storage)->pq.compute_sdc_table();
         }
         idx = idxhnsw;
-    } else if(h == fourcc("IRHf") || h == fourcc("IRHp") ||
-              h == fourcc("IRHs") || h == fourcc("IRH2")) {
-        IndexRHNSW *idxrhnsw = nullptr;
-        if (h == fourcc("IRHf")) idxrhnsw = new IndexRHNSWFlat ();
-        if (h == fourcc("IRHp")) idxrhnsw = new IndexRHNSWPQ ();
-        if (h == fourcc("IRHs")) idxrhnsw = new IndexRHNSWSQ ();
-        if (h == fourcc("IRH2")) idxrhnsw = new IndexRHNSW2Level ();
-        read_index_header (idxrhnsw, f);
-        read_RHNSW (&idxrhnsw->hnsw, f);
-        idxrhnsw->own_fields = true;
-        idx = idxrhnsw;
     } else if (h == fourcc("INSf")) {
         IndexNSG* idxnsg = new IndexNSGFlat();
         read_index_header(idxnsg, f);
@@ -985,14 +937,6 @@ Index *read_index_nm(IOReader *f, int io_flags) {
         READ1(ivsc->by_residual);
         read_InvertedLists_nm (ivsc, f, io_flags);
         idx = ivsc;
-    } else if (h == fourcc("ISqH")) {
-        IndexIVFSQHybrid *ivfsqhbyrid = new IndexIVFSQHybrid();
-        read_ivf_header(ivfsqhbyrid, f);
-        read_ScalarQuantizer(&ivfsqhbyrid->sq, f);
-        READ1(ivfsqhbyrid->code_size);
-        READ1(ivfsqhbyrid->by_residual);
-        read_InvertedLists_nm(ivfsqhbyrid, f, io_flags);
-        idx = ivfsqhbyrid;
     } else {
         FAISS_THROW_FMT("Index type 0x%08x not supported\n", h);
         idx = nullptr;

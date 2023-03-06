@@ -357,5 +357,57 @@ void GpuIndexIVFFlat::searchImpl_(
     }
 }
 
+void GpuIndexIVFFlat::searchThreadSafeImpl_(
+        int n,
+        const float* x,
+        int k,
+        int nprobe,
+        float* distances,
+        Index::idx_t* labels,
+        const BitsetView bitset) const {
+    // Device is already set in GpuIndex::search
+    FAISS_ASSERT(index_);
+    FAISS_ASSERT(n > 0);
+    FAISS_THROW_IF_NOT(nprobe > 0 && nprobe <= nlist);
+
+    auto stream = resources_->getDefaultStream(config_.device);
+
+    // Data is already resident on the GPU
+    Tensor<float, 2, true> queries(const_cast<float*>(x), {n, (int)this->d});
+    Tensor<float, 2, true> outDistances(distances, {n, k});
+    Tensor<Index::idx_t, 2, true> outLabels(
+            const_cast<Index::idx_t*>(labels), {n, k});
+
+    if (bitset.empty()) {
+        auto bitsetDevice = toDeviceTemporary<uint8_t, 1>(
+                resources_.get(),
+                config_.device,
+                nullptr,
+                stream,
+                {0});
+        index_->query(
+                queries,
+                bitsetDevice,
+                nprobe,
+                k,
+                outDistances,
+                outLabels);
+    } else {
+        auto bitsetDevice = toDeviceTemporary<uint8_t, 1>(
+                resources_.get(),
+                config_.device,
+                const_cast<uint8_t*>(bitset.data()),
+                stream,
+                {(int)bitset.byte_size()});
+        index_->query(
+                queries,
+                bitsetDevice,
+                nprobe,
+                k,
+                outDistances,
+                outLabels);
+    }
+}
+
 } // namespace gpu
 } // namespace faiss
