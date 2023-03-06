@@ -85,10 +85,6 @@ if(WITH_RAFT)
 
   rapids_cpm_init()
   set(RAPIDS_VERSION 23.02)
-  include(cmake/libs/libcutlass.cmake)
-  # TODO(wphicks): The following should not be necessary
-  include_directories("${CMAKE_BINARY_DIR}/_deps/nvidiacutlass-src/include")
-  include(cmake/libs/librmm.cmake)
   include(cmake/libs/libraft.cmake)
 
   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr")
