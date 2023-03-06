@@ -19,7 +19,7 @@
 #include "ivf_raft.cuh"
 
 namespace knowhere {
-KNOWHERE_REGISTER_GLOBAL(RAFTIVFPQ, [](const Object& object) {
+KNOWHERE_REGISTER_GLOBAL(RAFT_IVF_PQ, [](const Object& object) {
     return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<RaftIvfIndexNode<detail::raft_ivf_pq_index>>(object));
 });
 }  // namespace knowhere

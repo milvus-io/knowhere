@@ -369,10 +369,10 @@ template <typename T>
             virtual std::string
                 Type() const override {
                     if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
-                        return "RAFTIVFFLAT";
+                        return "RAFT_IVF_FLAT";
                     }
                     if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
-                        return "RAFTIVFPQ";
+                        return "RAFT_IVF_PQ";
                     }
                 }
 

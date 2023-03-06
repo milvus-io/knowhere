@@ -93,12 +93,8 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFPQ, ivfpq_gen),
             make_tuple(knowhere::IndexEnum::INDEX_HNSW, hnsw_gen),
 #ifdef USE_CUDA
-            make_tuple("GPUFLAT", gpu_flat_gen),
-            make_tuple("GPUIVFFLAT", ivfflat_gen),
-            make_tuple("GPUIVFPQ", ivfpq_gen),
-            make_tuple("GPUIVFSQ", ivfsq_gen),
-            make_tuple("RAFTIVFFLAT", ivfflat_gen),
-            make_tuple("RAFTIVFPQ", ivfpq_gen),
+            make_tuple("RAFT_IVF_FLAT", ivfflat_gen),
+            make_tuple("RAFT_IVF_PQ", ivfpq_gen),
 #endif
         }));
         auto idx = knowhere::IndexFactory::Instance().Create(name);
