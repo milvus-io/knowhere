@@ -48,7 +48,7 @@ endif()
 
 if(USE_CUDA)
   add_definitions(-DUSE_CUDA)
-  set(CMAKE_CUDA_ARCHITECTURES 75;70;61;60)
+  set(CMAKE_CUDA_ARCHITECTURES 80;75;70;61)
   enable_language(CUDA)
   find_package(CUDAToolkit REQUIRED)
 endif()
