@@ -69,7 +69,7 @@ class GPUResMgr {
         gpu_params_.tmp_mem_sz_ = gpu_params.tmp_mem_sz_;
         gpu_params_.pin_mem_sz_ = gpu_params.pin_mem_sz_;
 
-        LOG_KNOWHERE_DEBUG_ << "InitDevice gpu_id " << gpu_id_ << "resource count " << gpu_params_.res_num_
+        LOG_KNOWHERE_DEBUG_ << "InitDevice gpu_id " << gpu_id_ << ", resource count " << gpu_params_.res_num_
                             << ", tmp_mem_sz " << gpu_params_.tmp_mem_sz_ / MB << "MB, pin_mem_sz "
                             << gpu_params_.pin_mem_sz_ / MB << "MB";
     }
@@ -79,10 +79,14 @@ class GPUResMgr {
         if (!init_) {
             for (int64_t i = 0; i < gpu_params_.res_num_; ++i) {
                 auto gpu_res = new faiss::gpu::StandardGpuResources();
+                auto res = std::make_shared<Resource>(gpu_id_, gpu_res);
+
+                cudaStream_t s;
+                CUDA_VERIFY(cudaStreamCreate(&s));
+                gpu_res->setDefaultStream(gpu_id_, s);
                 gpu_res->setTempMemory(gpu_params_.tmp_mem_sz_);
                 // need not set pinned memory by now
 
-                auto res = std::make_shared<Resource>(gpu_id_, gpu_res);
                 res_bq_.Put(res);
             }
             LOG_KNOWHERE_DEBUG_ << "Init gpu_id " << gpu_id_ << ", resource count " << res_bq_.Size() << ", tmp_mem_sz "
