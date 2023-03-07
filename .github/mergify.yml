@@ -49,33 +49,40 @@ pull_request_rules:
   - name: Dismiss block label if related issue be added into PR
     conditions:
       - or:
-        - and:
-          - or:
-            - base=main
-            - base=support_diskann
-            - base=1.x
-          - or:
-            - body~=\#[0-9]{1,6}(\s+|$)
-            - body~=https://github.com/milvus-io/knowhere/issues/[0-9]{1,6}(\s+|$)
-        - and:
-          - base=main
-          - label=kind/improvement
+        - base=main
+        - base=support_diskann
+        - base=1.x
+      - or:
+        - or:
+          - body~=\#[0-9]{1,6}(\s+|$)
+          - body~=https://github.com/milvus-io/knowhere/issues/[0-9]{1,6}(\s+|$)
+        - label=kind/improvement
     actions:
       label:
         remove:
           - do-not-merge/missing-related-issue
 
-  - name: Test passed for code changed
+  - name: Test passed for code changed for main
     conditions:
-      - or:
-        - base=main
-        - base=support_diskann
-        - base=1.x
+      - base=main
       - "status-success=ut on ubuntu-20.04"
       - 'status-success=pre-commit'
       - 'status-success=analyzer'
       - 'status-success=python3 wheel'
       - "status-success=e2e"
+    actions:
+      label:
+        add:
+          - ci-passed
+
+  - name: Test passed for code changed for 1.x
+    conditions:
+      - base=1.x
+      - "status-success=Unit Test on ubuntu-20.04"
+      - 'status-success=Unit Test on macos-11'
+      - 'status-success=Unit Test on centos7'
+      - 'status-success=Python3 SWIG compile'
+      # - "status-success=e2e"
     actions:
       label:
         add:
@@ -88,25 +95,35 @@ pull_request_rules:
         - base=support_diskann
         - base=1.x
       - title~=\[skip e2e\]
-      - label=kind/improvement
       - -files~=^(?=.*((\.(h|cpp)|CMakeLists.txt))).*$
     actions:
       label:
         add:
           - ci-passed
 
-  - name: Remove ci-passed label when ut failed
+  - name: Remove ci-passed label when ut failed for main
     conditions:
-      - or:
-        - base=main
-        - base=support_diskann
-        - base=1.x
+      - base=main
       - or:
         - "status-success!=ut on ubuntu-20.04"
         - "status-success!=pre-commit"
         - "status-success!=analyzer"
         - "status-success!=python3 wheel"
         - "status-success!=e2e"
+      - files~=^(?=.*((\.(h|cpp)|CMakeLists.txt))).*$
+    actions:
+      label:
+        remove:
+          - ci-passed
+
+  - name: Remove ci-passed label when ut failed for 1.x
+    conditions:
+      - base=1.x
+      - or:
+        - "status-success!=Unit Test on ubuntu-20.04"
+        - "status-success!=Unit Test on macos-11"
+        - "status-success!=Unit Test on centos7"
+        - "status-success!=Python3 SWIG compile"
       - files~=^(?=.*((\.(h|cpp)|CMakeLists.txt))).*$
     actions:
       label:
