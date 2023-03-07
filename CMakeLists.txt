@@ -76,6 +76,7 @@ include_directories(thirdparty)
 
 find_package(OpenMP REQUIRED)
 if(WITH_RAFT)
+  add_definitions(-DKNOWHERE_WITH_RAFT)
   include(cmake/libs/fetch_rapids.cmake)
   include(rapids-cmake)
   include(rapids-cpm)

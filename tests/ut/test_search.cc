@@ -92,7 +92,7 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFSQ8, ivfsq_gen),
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFPQ, ivfpq_gen),
             make_tuple(knowhere::IndexEnum::INDEX_HNSW, hnsw_gen),
-#ifdef USE_CUDA
+#ifdef KNOWHERE_WITH_RAFT
             make_tuple("RAFT_IVF_FLAT", ivfflat_gen),
             make_tuple("RAFT_IVF_PQ", ivfpq_gen),
 #endif
