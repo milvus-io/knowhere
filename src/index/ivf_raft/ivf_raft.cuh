@@ -57,6 +57,72 @@ struct device_setter {
     int prev_device_;
 };
 
+namespace codebook {
+  auto static constexpr const PER_SUBSPACE = "PER_SUBSPACE";
+  auto static constexpr const PER_CLUSTER = "PER_CLUSTER";
+}
+
+inline expected<raft::neighbors::ivf_pq::codebook_gen, Status>
+str_to_codebook_gen(std::string const& str) {
+    static const std::unordered_map<std::string,
+                 raft::neighbors::ivf_pq::codebook_gen> name_map = {
+        {codebook::PER_SUBSPACE, raft::neighbors::ivf_pq::codebook_gen::PER_SUBSPACE},
+        {codebook::PER_CLUSTER,
+          raft::neighbors::ivf_pq::codebook_gen::PER_CLUSTER},
+    };
+
+    auto it = name_map.find(str);
+    if (it == name_map.end())
+        return unexpected(Status::invalid_args);
+    return it->second;
+}
+
+namespace cuda_type {
+  auto static constexpr const CUDA_R_16F = "CUDA_R_16F";
+  auto static constexpr const CUDA_C_16F = "CUDA_C_16F";
+  auto static constexpr const CUDA_R_16BF = "CUDA_R_16BF";
+  auto static constexpr const CUDA_C_16BF = "CUDA_C_16BF";
+  auto static constexpr const CUDA_R_32F = "CUDA_R_32F";
+  auto static constexpr const CUDA_C_32F = "CUDA_C_32F";
+  auto static constexpr const CUDA_R_64F = "CUDA_R_64F";
+  auto static constexpr const CUDA_C_64F = "CUDA_C_64F";
+  auto static constexpr const CUDA_R_8I = "CUDA_R_8I";
+  auto static constexpr const CUDA_C_8I = "CUDA_C_8I";
+  auto static constexpr const CUDA_R_8U = "CUDA_R_8U";
+  auto static constexpr const CUDA_C_8U = "CUDA_C_8U";
+  auto static constexpr const CUDA_R_32I = "CUDA_R_32I";
+  auto static constexpr const CUDA_C_32I = "CUDA_C_32I";
+  auto static constexpr const CUDA_R_8F_E4M3 = "CUDA_R_8F_E4M3";
+  auto static constexpr const CUDA_R_8F_E5M2 = "CUDA_R_8F_E5M2";
+}
+
+inline expected<cudaDataType_t, Status>
+str_to_cuda_dtype(std::string const& str) {
+    static const std::unordered_map<std::string, cudaDataType_t> name_map = {
+        {cuda_type::CUDA_R_16F, CUDA_R_16F},
+        {cuda_type::CUDA_C_16F, CUDA_C_16F},
+        {cuda_type::CUDA_R_16BF, CUDA_R_16BF},
+        {cuda_type::CUDA_C_16BF, CUDA_C_16BF},
+        {cuda_type::CUDA_R_32F, CUDA_R_32F},
+        {cuda_type::CUDA_C_32F, CUDA_C_32F},
+        {cuda_type::CUDA_R_64F, CUDA_R_64F},
+        {cuda_type::CUDA_C_64F, CUDA_C_64F},
+        {cuda_type::CUDA_R_8I, CUDA_R_8I},
+        {cuda_type::CUDA_C_8I, CUDA_C_8I},
+        {cuda_type::CUDA_R_8U, CUDA_R_8U},
+        {cuda_type::CUDA_C_8U, CUDA_C_8U},
+        {cuda_type::CUDA_R_32I, CUDA_R_32I},
+        {cuda_type::CUDA_C_32I, CUDA_C_32I},
+        {cuda_type::CUDA_R_8F_E4M3, CUDA_R_8F_E4M3},
+        {cuda_type::CUDA_R_8F_E5M2, CUDA_R_8F_E5M2},
+    };
+
+    auto it = name_map.find(str);
+    if (it == name_map.end())
+        return unexpected(Status::invalid_args);
+    return it->second;
+}
+
 }
 
 template <typename T>
@@ -132,6 +198,12 @@ template <typename T>
                                 auto build_params = raft::neighbors::ivf_flat::index_params{};
                                 build_params.metric = metric.value();
                                 build_params.n_lists = ivf_raft_cfg.nlist;
+                                build_params.kmeans_n_iters =
+                                  ivf_raft_cfg.kmeans_n_iters;
+                                build_params.kmeans_trainset_fraction =
+                                  ivf_raft_cfg.kmeans_trainset_fraction;
+                                build_params.adaptive_centers =
+                                  ivf_raft_cfg.adaptive_centers;
                                 gpu_index_ = raft::neighbors::ivf_flat::build<
                                     float, std::int64_t
                                     >(
@@ -146,6 +218,21 @@ template <typename T>
                                 build_params.metric = metric.value();
                                 build_params.n_lists = ivf_raft_cfg.nlist;
                                 build_params.pq_bits = ivf_raft_cfg.nbits;
+                                build_params.kmeans_n_iters =
+                                    ivf_raft_cfg.kmeans_n_iters;
+                                build_params.kmeans_trainset_fraction =
+                                    ivf_raft_cfg.kmeans_trainset_fraction;
+                                build_params.pq_dim = ivf_raft_cfg.pq_dim;
+                                auto codebook_kind =
+                                  detail::str_to_codebook_gen(ivf_raft_cfg.codebook_kind);
+                                if (!codebook_kind.has_value()) {
+                                    LOG_KNOWHERE_WARNING_ << "please check codebook kind: " << ivf_raft_cfg.codebook_kind;
+                                    return codebook_kind.error();
+                                }
+                                build_params.codebook_kind =
+                                  codebook_kind.value();
+                                build_params.force_random_rotation =
+                                  ivf_raft_cfg.force_random_rotation;
                                 gpu_index_ = raft::neighbors::ivf_pq::build<
                                     float, std::int64_t
                                     >(
@@ -273,6 +360,41 @@ template <typename T>
                         } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
                             auto search_params = raft::neighbors::ivf_pq::search_params{};
                             search_params.n_probes = ivf_raft_cfg.nprobe;
+                            auto lut_dtype =
+                              detail::str_to_cuda_dtype(ivf_raft_cfg.lut_dtype);
+                            if (!lut_dtype.has_value()) {
+                                LOG_KNOWHERE_WARNING_ << "please check lookup dtype: " << ivf_raft_cfg.lut_dtype;
+                                return unexpected(lut_dtype.error());
+                            }
+                            if (lut_dtype.value() != CUDA_R_32F &&
+                                lut_dtype.value() != CUDA_R_16F &&
+                                lut_dtype.value() != CUDA_R_8U) {
+                                LOG_KNOWHERE_WARNING_ << 
+                                    "selected lookup dtype not supported: " << 
+                                    ivf_raft_cfg.lut_dtype;
+                                return unexpected(Status::invalid_args);
+
+                            }
+                            search_params.lut_dtype = lut_dtype.value();
+                            auto internal_distance_dtype =
+                              detail::str_to_cuda_dtype(ivf_raft_cfg.internal_distance_dtype);
+                            if (!internal_distance_dtype.has_value()) {
+                                LOG_KNOWHERE_WARNING_ << "please check internal distance dtype: " <<
+                                  ivf_raft_cfg.internal_distance_dtype;
+                                return unexpected(internal_distance_dtype.error());
+                            }
+                            if (internal_distance_dtype.value() != CUDA_R_32F &&
+                                internal_distance_dtype.value() != CUDA_R_16F) {
+                                LOG_KNOWHERE_WARNING_ << 
+                                    "selected internal distance dtype not supported: " << 
+                                    ivf_raft_cfg.internal_distance_dtype;
+                                return unexpected(Status::invalid_args);
+
+                            }
+                            search_params.internal_distance_dtype =
+                              internal_distance_dtype.value();
+                            search_params.preferred_shmem_carveout =
+                              search_params.preferred_shmem_carveout;
                             raft::neighbors::ivf_pq::search<float, std::int64_t>(
                                     *res_,
                                     search_params,
