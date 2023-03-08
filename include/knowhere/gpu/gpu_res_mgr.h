@@ -64,6 +64,9 @@ class GPUResMgr {
 
     void
     InitDevice(const int64_t gpu_id, const GPUParams& gpu_params) {
+        // check gpu device validation
+        faiss::gpu::setCurrentDevice(gpu_id);
+
         gpu_id_ = gpu_id;
         gpu_params_.res_num_ = gpu_params.res_num_;
         gpu_params_.tmp_mem_sz_ = gpu_params.tmp_mem_sz_;
