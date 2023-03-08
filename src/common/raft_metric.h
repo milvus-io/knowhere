@@ -21,9 +21,9 @@
 #include <string>
 #include <unordered_map>
 
-#include "raft/distance/distance_types.hpp"
 #include "knowhere/comp/index_param.h"
 #include "knowhere/expected.h"
+#include "raft/distance/distance_types.hpp"
 
 namespace knowhere {
 

@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "ivf_raft.cuh"
 #include "knowhere/factory.h"
 #include "knowhere/index_node_thread_pool_wrapper.h"
-#include "ivf_raft.cuh"
 
 namespace knowhere {
 KNOWHERE_REGISTER_GLOBAL(RAFT_IVF_FLAT, [](const Object& object) {
-    return Index<IndexNodeThreadPoolWrapper>::Create(std::make_unique<RaftIvfIndexNode<detail::raft_ivf_flat_index>>(object));
+    return Index<IndexNodeThreadPoolWrapper>::Create(
+        std::make_unique<RaftIvfIndexNode<detail::raft_ivf_flat_index>>(object));
 });
 }  // namespace knowhere

@@ -13,11 +13,11 @@
 
 #include <faiss/gpu/StandardGpuResources.h>
 #ifdef KNOWHERE_WITH_RAFT
-#include <vector>
 #include <rmm/cuda_device.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+#include <vector>
 #endif
 
 #include <memory>
@@ -83,11 +83,12 @@ class GPUResMgr {
         if (gpu_id >= std::numeric_limits<int>::min() && gpu_id <= std::numeric_limits<int>::max()) {
             auto rmm_id = rmm::cuda_device_id{int(gpu_id)};
             rmm_memory_resources_.push_back(
-                std::make_unique<rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>>(rmm::mr::get_per_device_resource(rmm_id))
-            );
+                std::make_unique<rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>>(
+                    rmm::mr::get_per_device_resource(rmm_id)));
             rmm::mr::set_per_device_resource(rmm_id, rmm_memory_resources_.back().get());
         } else {
-            LOG_KNOWHERE_WARNING_ << "Could not init pool memory resource on GPU " << gpu_id_ << ". ID is outside expected range.";
+            LOG_KNOWHERE_WARNING_ << "Could not init pool memory resource on GPU " << gpu_id_
+                                  << ". ID is outside expected range.";
         }
 #endif
     }
