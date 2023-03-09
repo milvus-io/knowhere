@@ -55,7 +55,7 @@ pipeline {
         stage("swig-build"){
             steps {
                 script{
-                    sh "mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_DISKANN=ON -DUSE_CUDA=ON && make -j8"
+                    // sh "mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_DISKANN=ON -DUSE_CUDA=ON && make -j8"
                     sh "cd python && python3 setup.py bdist_wheel"
                     // if ("${knowhere_wheel}"==''){
                     //     dir ("knowhereWheel"){
