@@ -35,59 +35,9 @@ pipeline {
                         sh "cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_DISKANN=ON -DWITH_UT=ON -DWITH_ASAN=ON -DUSE_CUDA=ON \
                               && make -j8 \
                               && ./tests/ut/knowhere_tests"
-                        // sh "cd build/ && cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_UT=ON -DWITH_DISKANN=ON -DUSE_CUDA=ON -G Ninja"
-                        // sh "pwd"
-                        // sh "ls -la"
-                        // sh "cd build/ && ninja -v"
-                        // sh "cd .."
-                        // sh "cd python  && VERSION=${version} python3 setup.py bdist_wheel"
-                        // dir('python/dist'){
-                        // knowhere_wheel=sh(returnStdout: true, script: 'ls | grep .whl').trim()
-                        // archiveArtifacts artifacts: "${knowhere_wheel}", followSymlinks: false
-                        // }
-                        // // stash knowhere info for rebuild E2E Test only
-                        // sh "echo ${knowhere_wheel} > knowhere.txt"
-                        // stash includes: 'knowhere.txt', name: 'knowhereWheel'
                     }
                 }
             }
         }
-        stage("swig-build"){
-            steps {
-                script{
-                    // sh "mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_DISKANN=ON -DUSE_CUDA=ON && make -j8"
-                    sh "cd python && python3 setup.py bdist_wheel"
-                    // if ("${knowhere_wheel}"==''){
-                    //     dir ("knowhereWheel"){
-                    //         try{
-                    //             unstash 'knowhereWheel'
-                    //             knowhere_wheel=sh(returnStdout: true, script: 'cat knowhere.txt | tr -d \'\n\r\'')
-                    //         }catch(e){
-                    //             error "No knowhereWheel info remained ,please rerun build to build new package."
-                    //         }
-                    //     }
-                    // }
-                    // checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [],
-                    // checkout([$class: 'GitSCM', branches: [[name: '*/feature-2.0']], extensions: [],
-                    // userRemoteConfigs: [[credentialsId: 'milvus-ci', url: 'https://github.com/milvus-io/knowhere-test.git']]])
-                    // dir('tests'){
-                    //   unarchive mapping: ["${knowhere_wheel}": "${knowhere_wheel}"]
-                    //   sh "ls -lah"
-                    //   sh "nvidia-smi"
-                    //   sh "pip3 install ${knowhere_wheel} \
-                    //       && pip3 install -r requirements.txt --timeout 30 --retries 6  && pytest -v -m 'L0 and cpu'"
-                    // }
-                }
-            }
-            post{
-                always {
-                    script{
-                        sh 'cp /tmp/knowhere_ci.log knowhere_ci.log'
-                        archiveArtifacts artifacts: 'knowhere_ci.log', followSymlinks: false
-                    }
-                }
-            }
-        }
-
     }
 }

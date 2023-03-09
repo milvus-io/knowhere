@@ -30,23 +30,3 @@ spec:
         value: protect_shadow_gap=0
     tty: true
     args: ["cat"]
-  - name: main
-    image: milvusdb/knowhere-gpu-e2e:amd64-ubuntu20.04-20221011-1249a57
-    tty: true
-    args: ["cat"]
-    resources:
-      requests:
-        nvidia.com/gpu: 1
-        memory: "30Gi"
-        cpu: "8"
-      limits:
-        nvidia.com/gpu: 1
-        memory: "30Gi"
-        cpu: "8"
-    volumeMounts:
-      - mountPath: /home/data
-        name: db-data
-  volumes:
-    - name: db-data
-      persistentVolumeClaim:
-        claimName: db-data
