@@ -29,16 +29,14 @@ pipeline {
                         sh "nvidia-smi"
                         sh "apt-get install dirmngr -y"
                         sh "apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 42D5A192B819C5DA"
-                        sh "apt-get install build-essential libopenblas-dev ninja-build git -y"
+                        sh "apt-get install build-essential libopenblas-dev ninja-build libaio-dev git -y"
                         sh "git config --global --add safe.directory '*'"
                         sh "git submodule update --recursive --init"
+                        sh "pip3 install conan==1.58.0"
+                        sh "rm -rf /usr/local/lib/cmake/"
                         sh "mkdir build"
-                        sh "cd build/ && cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_CUDA=ON -DWITH_UT=ON -DWITH_RAFT=ON"
-                        sh "pwd"
-                        sh "ls -la"
-                        sh "cd build/ && make -j"
-                        sh "cd .."
-                        sh "cd python  && VERSION=${version} python3 setup.py bdist_wheel"
+                        sh "cd build/ && conan install .. --build=missing -o with_ut=True -o with_diskann=True -o with_raft=True -s compiler.libcxx=libstdc++11 && conan build .."
+                        sh "cd python && VERSION=${version} python3 setup.py bdist_wheel"
                         dir('python/dist'){
                         knowhere_wheel=sh(returnStdout: true, script: 'ls | grep .whl').trim()
                         archiveArtifacts artifacts: "${knowhere_wheel}", followSymlinks: false
@@ -68,12 +66,11 @@ pipeline {
                     userRemoteConfigs: [[credentialsId: 'milvus-ci', url: 'https://github.com/milvus-io/knowhere-test.git']]])
                     dir('tests'){
                       unarchive mapping: ["${knowhere_wheel}": "${knowhere_wheel}"]
-                      sh "ls -lah"
                       sh "apt-get update || true"
                       sh "apt-get install dirmngr -y"
                       sh "apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 42D5A192B819C5DA"
                       sh "apt install python3-pip -y"
-                      sh "apt install libopenblas-dev -y"
+                      sh "apt install libopenblas-dev libaio-dev -y"
                       sh "nvidia-smi"
                       sh "pip3 install ${knowhere_wheel} \
                           && pip3 install -r requirements.txt --timeout 30 --retries 6  && pytest -v -m 'L0 and gpu'"

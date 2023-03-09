@@ -38,6 +38,7 @@ if [[ "${MACHINE}" == "Linux" ]]; then
         if [ "$release_num" == "20.04" ];then
             sudo apt install -y python3-setuptools swig
         fi
+        pip3 install conan==1.58.0
         # Pre-installation of openblas can save about 15 minutes of openblas building time.
         # But the apt-installed openblas version is 0.2.20, while the latest openblas version is 0.3.19.
         # So we only pre-install openblas in Unittest, and compile openblas-0.3.19 when release.
@@ -59,11 +60,13 @@ if [[ "${MACHINE}" == "Linux" ]]; then
         wget -c https://github.com/Kitware/CMake/releases/download/v3.22.2/cmake-3.22.2-linux-x86_64.tar.gz && \
         tar -zxvf cmake-3.22.2-linux-x86_64.tar.gz && \
         sudo ln -sf $(pwd)/cmake-3.22.2-linux-x86_64/bin/cmake /usr/bin/cmake
+        pip3 install conan==1.58.0
     fi
 fi
 
 if [[ "${MACHINE}" == "Mac"  ]]; then
     brew install libomp llvm ninja openblas
+    pip3 install conan==1.58.0
 fi
 
 if [[ "${MACHINE}" == "MinGw"  ]]; then

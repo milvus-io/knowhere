@@ -26,15 +26,13 @@ pipeline {
                         def gitShortCommit = sh(returnStdout: true, script: "echo ${env.GIT_COMMIT} | cut -b 1-7 ").trim()
                         version="${env.CHANGE_ID}.${date}.${gitShortCommit}"
                         sh "apt-get update || true"
-                        sh "apt-get install dirmngr -y"
-                        sh "apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 42D5A192B819C5DA"
-                        sh "apt-get install build-essential libopenblas-dev ninja-build git -y"
-                        sh "git config --global --add safe.directory '*'"
-                        sh "git submodule update --recursive --init"
+                        sh "apt-get install libaio-dev -y"
+                        sh "pip3 install conan==1.58.0"
+                        sh "rm -rf /usr/local/lib/cmake/"
                         sh "mkdir build"
-                        sh "cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_UT=ON -DUSE_CUDA=ON -DWITH_ASAN=ON -DWITH_RAFT=ON \
-                              && make -j8 \
-                              && ./tests/ut/knowhere_tests"
+                        sh "cd build/ && conan install .. --build=missing -s build_type=Debug -o with_ut=True -o with_cuda=True -o with_asan=True -o with_raft=True \
+                              && conan build .. \
+                              && ./Debug/tests/ut/knowhere_tests"
                     }
                 }
             }
