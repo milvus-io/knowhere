@@ -74,29 +74,32 @@ class FlatIndexNode : public IndexNode {
 
         DataSetPtr results = std::make_shared<DataSet>();
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
+        auto k = f_cfg.k;
         auto nq = dataset.GetRows();
         auto x = dataset.GetTensor();
-        auto len = f_cfg.k * nq;
+        auto dim = dataset.GetDim();
+
+        auto len = k * nq;
         int64_t* ids = nullptr;
-        float* dis = nullptr;
+        float* distances = nullptr;
         try {
             ids = new (std::nothrow) int64_t[len];
-            dis = new (std::nothrow) float[len];
+            distances = new (std::nothrow) float[len];
             std::vector<std::future<void>> futs;
             futs.reserve(nq);
             for (int i = 0; i < nq; ++i) {
                 futs.push_back(pool_->push([&, index = i] {
                     ThreadPool::ScopedOmpSetter setter(1);
-                    auto cur_ids = ids + f_cfg.k * index;
-                    auto cur_dis = dis + f_cfg.k * index;
+                    auto cur_ids = ids + k * index;
+                    auto cur_dis = distances + k * index;
                     if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
-                        index_->search(1, (const float*)x + index * Dim(), f_cfg.k, cur_dis, cur_ids, bitset);
+                        index_->search(1, (const float*)x + index * dim, k, cur_dis, cur_ids, bitset);
                     }
                     if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
                         auto cur_i_dis = reinterpret_cast<int32_t*>(cur_dis);
-                        index_->search(1, (const uint8_t*)x + index * Dim(), f_cfg.k, cur_i_dis, cur_ids, bitset);
+                        index_->search(1, (const uint8_t*)x + index * dim / 8, k, cur_i_dis, cur_ids, bitset);
                         if (index_->metric_type == faiss::METRIC_Hamming) {
-                            for (int64_t j = 0; j < f_cfg.k; j++) {
+                            for (int64_t j = 0; j < k; j++) {
                                 cur_dis[j] = static_cast<float>(cur_i_dis[j]);
                             }
                         }
@@ -108,12 +111,12 @@ class FlatIndexNode : public IndexNode {
             }
         } catch (const std::exception& e) {
             std::unique_ptr<int64_t[]> auto_delete_ids(ids);
-            std::unique_ptr<float[]> auto_delete_dis(dis);
+            std::unique_ptr<float[]> auto_delete_dis(distances);
             LOG_KNOWHERE_WARNING_ << "error inner faiss, " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
 
-        return GenResultDataSet(nq, f_cfg.k, ids, dis);
+        return GenResultDataSet(nq, k, ids, distances);
     }
 
     expected<DataSetPtr, Status>
@@ -126,6 +129,7 @@ class FlatIndexNode : public IndexNode {
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
         auto nq = dataset.GetRows();
         auto xq = dataset.GetTensor();
+        auto dim = dataset.GetDim();
 
         int64_t* ids = nullptr;
         float* distances = nullptr;
@@ -145,10 +149,10 @@ class FlatIndexNode : public IndexNode {
                     ThreadPool::ScopedOmpSetter setter(1);
                     faiss::RangeSearchResult res(1);
                     if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
-                        index_->range_search(1, (const float*)xq + index * Dim(), radius, &res, bitset);
+                        index_->range_search(1, (const float*)xq + index * dim, radius, &res, bitset);
                     }
                     if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
-                        index_->range_search(1, (const uint8_t*)xq + index * Dim(), radius, &res, bitset);
+                        index_->range_search(1, (const uint8_t*)xq + index * dim / 8, radius, &res, bitset);
                     }
                     auto elem_cnt = res.lims[1];
                     result_dist_array[index].resize(elem_cnt);

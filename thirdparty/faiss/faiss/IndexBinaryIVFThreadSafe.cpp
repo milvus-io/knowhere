@@ -51,7 +51,7 @@ void IndexBinaryIVF::search_thread_safe(
     t0 = getmillisecs();
     invlists->prefetch_lists(idx.get(), n * nprobe);
 
-    search_preassigned(
+    search_preassigned_thread_safe(
             n,
             x,
             k,
@@ -61,32 +61,9 @@ void IndexBinaryIVF::search_thread_safe(
             labels,
             false,
             nullptr,
+            nprobe,
             bitset);
     indexIVF_stats.search_time += getmillisecs() - t0;
-}
-
-void IndexBinaryIVF::reconstruct(idx_t key, uint8_t* recons) const {
-    idx_t lo = direct_map.get(key);
-    reconstruct_from_offset(lo_listno(lo), lo_offset(lo), recons);
-}
-
-void IndexBinaryIVF::reconstruct_n(idx_t i0, idx_t ni, uint8_t* recons) const {
-    FAISS_THROW_IF_NOT(ni == 0 || (i0 >= 0 && i0 + ni <= ntotal));
-
-    for (idx_t list_no = 0; list_no < nlist; list_no++) {
-        size_t list_size = invlists->list_size(list_no);
-        const Index::idx_t* idlist = invlists->get_ids(list_no);
-
-        for (idx_t offset = 0; offset < list_size; offset++) {
-            idx_t id = idlist[offset];
-            if (!(id >= i0 && id < i0 + ni)) {
-                continue;
-            }
-
-            uint8_t* reconstructed = recons + (id - i0) * d;
-            reconstruct_from_offset(list_no, offset, reconstructed);
-        }
-    }
 }
 
 void IndexBinaryIVF::search_and_reconstruct_thread_safe(
@@ -138,104 +115,6 @@ void IndexBinaryIVF::search_and_reconstruct_thread_safe(
             }
         }
     }
-}
-
-void IndexBinaryIVF::reconstruct_from_offset(
-        idx_t list_no,
-        idx_t offset,
-        uint8_t* recons) const {
-    memcpy(recons, invlists->get_single_code(list_no, offset), code_size);
-}
-
-void IndexBinaryIVF::reset() {
-    direct_map.clear();
-    invlists->reset();
-    ntotal = 0;
-}
-
-size_t IndexBinaryIVF::remove_ids(const IDSelector& sel) {
-    size_t nremove = direct_map.remove_ids(sel, invlists);
-    ntotal -= nremove;
-    return nremove;
-}
-
-void IndexBinaryIVF::train(idx_t n, const uint8_t* x) {
-    if (verbose) {
-        printf("Training quantizer\n");
-    }
-
-    if (quantizer->is_trained && (quantizer->ntotal == nlist)) {
-        if (verbose) {
-            printf("IVF quantizer does not need training.\n");
-        }
-    } else {
-        if (verbose) {
-            printf("Training quantizer on %" PRId64 " vectors in %dD\n", n, d);
-        }
-
-        Clustering clus(d, nlist, cp);
-        quantizer->reset();
-
-        IndexFlat index_tmp;
-        if (metric_type == METRIC_Jaccard || metric_type == METRIC_Tanimoto) {
-            index_tmp = IndexFlat(d, METRIC_Jaccard);
-        } else if (
-                metric_type == METRIC_Substructure ||
-                metric_type == METRIC_Superstructure) {
-            // unsupported
-            FAISS_THROW_MSG(
-                    "IVF not to support Substructure and Superstructure.");
-        } else {
-            index_tmp = IndexFlat(d, METRIC_L2);
-        }
-
-        if (clustering_index && verbose) {
-            printf("using clustering_index of dimension %d to do the clustering\n",
-                   clustering_index->d);
-        }
-
-        // LSH codec that is able to convert the binary vectors to floats.
-        IndexLSH codec(d, d, false, false);
-
-        clus.train_encoded(
-                n, x, &codec, clustering_index ? *clustering_index : index_tmp);
-
-        // convert clusters to binary
-        std::unique_ptr<uint8_t[]> x_b(new uint8_t[clus.k * code_size]);
-        real_to_binary(d * clus.k, clus.centroids.data(), x_b.get());
-
-        quantizer->add(clus.k, x_b.get());
-        quantizer->is_trained = true;
-    }
-
-    is_trained = true;
-}
-
-void IndexBinaryIVF::merge_from(IndexBinaryIVF& other, idx_t add_id) {
-    // minimal sanity checks
-    FAISS_THROW_IF_NOT(other.d == d);
-    FAISS_THROW_IF_NOT(other.nlist == nlist);
-    FAISS_THROW_IF_NOT(other.code_size == code_size);
-    FAISS_THROW_IF_NOT_MSG(
-            direct_map.no() && other.direct_map.no(),
-            "direct map copy not implemented");
-    FAISS_THROW_IF_NOT_MSG(
-            typeid(*this) == typeid(other),
-            "can only merge indexes of the same type");
-
-    invlists->merge_from(other.invlists, add_id);
-
-    ntotal += other.ntotal;
-    other.ntotal = 0;
-}
-
-void IndexBinaryIVF::replace_invlists(InvertedLists* il, bool own) {
-    FAISS_THROW_IF_NOT(il->nlist == nlist && il->code_size == code_size);
-    if (own_invlists) {
-        delete invlists;
-    }
-    invlists = il;
-    own_invlists = own;
 }
 
 namespace {
@@ -761,31 +640,6 @@ void search_knn_hamming_count_1(
 
 } // namespace
 
-BinaryInvertedListScanner* IndexBinaryIVF::get_InvertedListScanner(
-        bool store_pairs) const {
-    switch (metric_type) {
-        case METRIC_Hamming:
-            if (store_pairs) {
-                return select_IVFBinaryScannerL2<true>(code_size);
-            } else {
-                return select_IVFBinaryScannerL2<false>(code_size);
-            }
-        case METRIC_Jaccard:
-        case METRIC_Tanimoto:
-            if (store_pairs) {
-                return select_IVFBinaryScannerJaccard<true>(code_size);
-            } else {
-                return select_IVFBinaryScannerJaccard<false>(code_size);
-            }
-        case METRIC_Substructure:
-        case METRIC_Superstructure:
-            // unsupported
-            return nullptr;
-        default:
-            return nullptr;
-    }
-}
-
 void IndexBinaryIVF::search_preassigned_thread_safe(
         idx_t n,
         const uint8_t* x,
@@ -898,8 +752,8 @@ void IndexBinaryIVF::range_search_thread_safe(
         radius = Tanimoto_2_Jaccard(radius);
     }
 
-    range_search_preassigned(
-            n, x, radius, idx.get(), coarse_dis.get(), res, bitset);
+    range_search_preassigned_thread_safe(
+            n, x, radius, idx.get(), coarse_dis.get(), res, nprobe, bitset);
 
     if (metric_type == METRIC_Tanimoto) {
         for (auto i = 0; i < res->lims[n]; i++) {
@@ -975,16 +829,6 @@ void IndexBinaryIVF::range_search_preassigned_thread_safe(
     indexIVF_stats.nq += n;
     indexIVF_stats.nlist += nlistv;
     indexIVF_stats.ndis += ndis;
-}
-
-IndexBinaryIVF::~IndexBinaryIVF() {
-    if (own_invlists) {
-        delete invlists;
-    }
-
-    if (own_fields) {
-        delete quantizer;
-    }
 }
 
 } // namespace faiss

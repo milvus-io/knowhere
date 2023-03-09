@@ -315,15 +315,22 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
         LOG_KNOWHERE_WARNING_ << "index not trained";
         return unexpected(Status::index_not_trained);
     }
+
+    auto dim = dataset.GetDim();
     auto rows = dataset.GetRows();
     auto data = dataset.GetTensor();
+
     const IvfConfig& ivf_cfg = static_cast<const IvfConfig&>(cfg);
+    auto k = ivf_cfg.k;
+    auto nprobe = ivf_cfg.nprobe;
+
     int parallel_mode = 0;
-    if (ivf_cfg.nprobe > 1 && rows <= 4) {
+    if (nprobe > 1 && rows <= 4) {
         parallel_mode = 1;
     }
-    int64_t* ids(new (std::nothrow) int64_t[rows * ivf_cfg.k]);
-    float* dis(new (std::nothrow) float[rows * ivf_cfg.k]);
+    int64_t* ids(new (std::nothrow) int64_t[rows * k]);
+    float* distances(new (std::nothrow) float[rows * k]);
+    int32_t* i_distances = reinterpret_cast<int32_t*>(distances);
     try {
         size_t max_codes = 0;
         std::vector<std::future<void>> futs;
@@ -331,14 +338,22 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
         for (int i = 0; i < rows; ++i) {
             futs.push_back(pool_->push([&, index = i] {
                 ThreadPool::ScopedOmpSetter setter(1);
-                auto cur_data = (const float*)data + index * Dim();
-                auto cur_dis = dis + ivf_cfg.k * index;
-                auto cur_ids = ids + ivf_cfg.k * index;
-                if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
-                    index_->search_without_codes_thread_safe(1, cur_data, ivf_cfg.k, cur_dis, cur_ids, ivf_cfg.nprobe,
+                auto offset = k * index;
+                if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value) {
+                    auto cur_data = (const uint8_t*)data + index * dim / 8;
+                    index_->search_thread_safe(1, cur_data, k, i_distances + offset, ids + offset, nprobe, bitset);
+                    if (index_->metric_type == faiss::METRIC_Hamming) {
+                        for (int64_t i = 0; i < k; i++) {
+                            distances[i + offset] = static_cast<float>(i_distances[i + offset]);
+                        }
+                    }
+                } else if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
+                    auto cur_data = (const float*)data + index * dim;
+                    index_->search_without_codes_thread_safe(1, cur_data, k, distances + offset, ids + offset, nprobe,
                                                              parallel_mode, max_codes, bitset);
                 } else {
-                    index_->search_thread_safe(1, cur_data, ivf_cfg.k, cur_dis, cur_ids, ivf_cfg.nprobe, parallel_mode,
+                    auto cur_data = (const float*)data + index * dim;
+                    index_->search_thread_safe(1, cur_data, k, distances + offset, ids + offset, nprobe, parallel_mode,
                                                max_codes, bitset);
                 }
             }));
@@ -348,12 +363,12 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
         }
     } catch (const std::exception& e) {
         delete[] ids;
-        delete[] dis;
+        delete[] distances;
         LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return unexpected(Status::faiss_inner_error);
     }
 
-    auto res = GenResultDataSet(rows, ivf_cfg.k, ids, dis);
+    auto res = GenResultDataSet(rows, ivf_cfg.k, ids, distances);
     res->SetIsOwner(true);
     return res;
 }
@@ -372,16 +387,19 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
 
     auto nq = dataset.GetRows();
     auto xq = dataset.GetTensor();
+    auto dim = dataset.GetDim();
+
     const IvfConfig& ivf_cfg = static_cast<const IvfConfig&>(cfg);
+    auto nprobe = ivf_cfg.nprobe;
 
     int parallel_mode = 0;
-    if (ivf_cfg.nprobe > 1 && nq <= 4) {
+    if (nprobe > 1 && nq <= 4) {
         parallel_mode = 1;
     }
 
     float radius = ivf_cfg.radius;
-    bool is_ip = (index_->metric_type == faiss::METRIC_INNER_PRODUCT);
     float range_filter = ivf_cfg.range_filter;
+    bool is_ip = (index_->metric_type == faiss::METRIC_INNER_PRODUCT);
 
     int64_t* ids = nullptr;
     float* distances = nullptr;
@@ -399,14 +417,18 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
         for (int i = 0; i < nq; ++i) {
             futs.push_back(pool_->push([&, index = i] {
                 ThreadPool::ScopedOmpSetter setter(1);
-                auto cur_data = (const float*)xq + index * Dim();
                 faiss::RangeSearchResult res(1);
-                if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
-                    index_->range_search_without_codes_thread_safe(1, cur_data, radius, &res, ivf_cfg.nprobe,
-                                                                   parallel_mode, max_codes, bitset);
+                if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value) {
+                    auto cur_data = (const uint8_t*)xq + index * dim / 8;
+                    index_->range_search_thread_safe(1, cur_data, radius, &res, nprobe, bitset);
+                } else if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
+                    auto cur_data = (const float*)xq + index * dim;
+                    index_->range_search_without_codes_thread_safe(1, cur_data, radius, &res, nprobe, parallel_mode,
+                                                                   max_codes, bitset);
                 } else {
-                    index_->range_search_thread_safe(1, cur_data, radius, &res, ivf_cfg.nprobe, parallel_mode,
-                                                     max_codes, bitset);
+                    auto cur_data = (const float*)xq + index * dim;
+                    index_->range_search_thread_safe(1, cur_data, radius, &res, nprobe, parallel_mode, max_codes,
+                                                     bitset);
                 }
                 auto elem_cnt = res.lims[1];
                 result_dist_array[index].resize(elem_cnt);
@@ -416,7 +438,7 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
                     result_dist_array[index][j] = res.distances[j];
                     result_id_array[index][j] = res.labels[j];
                 }
-                if (ivf_cfg.range_filter != defaultRangeFilter) {
+                if (range_filter != defaultRangeFilter) {
                     FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, radius,
                                                     range_filter);
                 }
@@ -426,83 +448,6 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
             fut.get();
         }
         GetRangeSearchResult(result_dist_array, result_id_array, is_ip, nq, radius, range_filter, distances, ids, lims);
-    } catch (const std::exception& e) {
-        LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
-        return unexpected(Status::faiss_inner_error);
-    }
-
-    return GenResultDataSet(nq, ids, distances, lims);
-}
-
-template <>
-expected<DataSetPtr, Status>
-IvfIndexNode<faiss::IndexBinaryIVF>::Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
-    if (!this->index_) {
-        LOG_KNOWHERE_WARNING_ << "search on empty index";
-        return unexpected(Status::empty_index);
-    }
-    if (!this->index_->is_trained) {
-        LOG_KNOWHERE_WARNING_ << "index not trained";
-        return unexpected(Status::index_not_trained);
-    }
-    auto rows = dataset.GetRows();
-    auto data = dataset.GetTensor();
-    auto ivf_bin_cfg = static_cast<const IvfBinConfig&>(cfg);
-
-    int64_t* ids(new (std::nothrow) int64_t[rows * ivf_bin_cfg.k]);
-    float* dis(new (std::nothrow) float[rows * ivf_bin_cfg.k]);
-    auto i_dis = reinterpret_cast<int32_t*>(dis);
-    try {
-        index_->nprobe = ivf_bin_cfg.nprobe;
-        index_->search(rows, (const uint8_t*)data, ivf_bin_cfg.k, i_dis, ids, bitset);
-    } catch (const std::exception& e) {
-        delete[] ids;
-        delete[] dis;
-        LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
-        return unexpected(Status::faiss_inner_error);
-    }
-
-    if (index_->metric_type == faiss::METRIC_Hamming) {
-        int64_t num = rows * ivf_bin_cfg.k;
-        for (int64_t i = 0; i < num; i++) {
-            dis[i] = static_cast<float>(i_dis[i]);
-        }
-    }
-    return GenResultDataSet(rows, ivf_bin_cfg.k, ids, dis);
-}
-
-template <>
-expected<DataSetPtr, Status>
-IvfIndexNode<faiss::IndexBinaryIVF>::RangeSearch(const DataSet& dataset, const Config& cfg,
-                                                 const BitsetView& bitset) const {
-    if (!this->index_) {
-        LOG_KNOWHERE_WARNING_ << "range search on empty index.";
-        return unexpected(Status::empty_index);
-    }
-    if (!this->index_->is_trained) {
-        LOG_KNOWHERE_WARNING_ << "index not trained.";
-        return unexpected(Status::index_not_trained);
-    }
-
-    auto nq = dataset.GetRows();
-    auto xq = dataset.GetTensor();
-    auto ivf_bin_cfg = static_cast<const IvfBinConfig&>(cfg);
-
-    float radius = ivf_bin_cfg.radius;
-
-    int64_t* ids = nullptr;
-    float* distances = nullptr;
-    size_t* lims = nullptr;
-
-    try {
-        index_->nprobe = ivf_bin_cfg.nprobe;
-        faiss::RangeSearchResult res(nq);
-        index_->range_search(nq, (const uint8_t*)xq, radius, &res, bitset);
-        if (ivf_bin_cfg.range_filter != defaultRangeFilter) {
-            GetRangeSearchResult(res, false, nq, radius, ivf_bin_cfg.range_filter, distances, ids, lims, bitset);
-        } else {
-            GetRangeSearchResult(res, false, nq, radius, distances, ids, lims);
-        }
     } catch (const std::exception& e) {
         LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
         return unexpected(Status::faiss_inner_error);
