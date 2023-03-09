@@ -27,7 +27,7 @@ spec:
     image: milvusdb/knowhere-gpu-build:amd64-ubuntu20.04-20221011-1249a57
     env:
       - name: ASAN_OPTIONS
-        values: protect_shadow_gap=0
+        value: protect_shadow_gap=0
     tty: true
     args: ["cat"]
   - name: main
