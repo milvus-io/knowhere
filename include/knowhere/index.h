@@ -32,6 +32,24 @@ class Index {
         return Index(new (std::nothrow) T1(std::forward<Args>(args)...));
     }
 
+    Index(const Index<T1>& idx) {
+        if (idx.node == nullptr) {
+            node = nullptr;
+            return;
+        }
+        idx.node->IncRef();
+        node = idx.node;
+    }
+
+    Index(Index<T1>&& idx) {
+        if (idx.node == nullptr) {
+            node = nullptr;
+            return;
+        }
+        node = idx.node;
+        idx.node = nullptr;
+    }
+
     template <typename T2>
     Index(const Index<T2>& idx) {
         static_assert(std::is_base_of<T1, T2>::value);
@@ -39,7 +57,6 @@ class Index {
             node = nullptr;
             return;
         }
-
         idx.node->IncRef();
         node = idx.node;
     }
