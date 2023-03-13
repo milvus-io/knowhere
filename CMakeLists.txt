@@ -42,15 +42,15 @@ if(KNOWHERE_VERSION)
 endif()
 
 if(WITH_CCACHE)
-    find_program(CCACHE_FOUND ccache)
-    if(CCACHE_FOUND)
-        message(STATUS "Using ccache: ${CCACHE_FOUND}")
-        set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${CCACHE_FOUND})
-        set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ${CCACHE_FOUND})
-        # let ccache preserve C++ comments, because some of them may be
-        # meaningful to the compiler
-        set(ENV{CCACHE_COMMENTS} "1")
-    endif()
+  find_program(CCACHE_FOUND ccache)
+  if(CCACHE_FOUND)
+    message(STATUS "Using ccache: ${CCACHE_FOUND}")
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${CCACHE_FOUND})
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ${CCACHE_FOUND})
+    # let ccache preserve C++ comments, because some of them may be meaningful
+    # to the compiler
+    set(ENV{CCACHE_COMMENTS} "1")
+  endif()
 endif()
 
 if(USE_CUDA)
@@ -76,21 +76,7 @@ include_directories(thirdparty)
 
 find_package(OpenMP REQUIRED)
 if(WITH_RAFT)
-  add_definitions(-DKNOWHERE_WITH_RAFT)
-  include(cmake/libs/fetch_rapids.cmake)
-  include(rapids-cmake)
-  include(rapids-cpm)
-  include(rapids-cuda)
-  include(rapids-export)
-  include(rapids-find)
-
-  rapids_cpm_init()
-  set(RAPIDS_VERSION 23.02)
   include(cmake/libs/libraft.cmake)
-
-  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr")
-  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 -std=c++17")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++17")
 endif()
 
 if(OPENMP_FOUND)
@@ -122,7 +108,8 @@ if(NOT USE_CUDA)
 endif()
 
 if(NOT WITH_RAFT)
-  knowhere_file_glob(GLOB_RECURSE KNOWHERE_RAFT_SRCS src/index/index_raft/*.cc src/index/index_raft/*.cu)
+  knowhere_file_glob(GLOB_RECURSE KNOWHERE_RAFT_SRCS src/index/ivf_raft/*.cc
+                     src/index/ivf_raft/*.cu)
   list(REMOVE_ITEM KNOWHERE_SRCS ${KNOWHERE_RAFT_SRCS})
 endif()
 
