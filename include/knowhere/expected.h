@@ -38,6 +38,7 @@ enum class Status {
     diskann_file_error = 15,
     invalid_value_in_json = 16,
     arithmetic_overflow = 17,
+    raft_inner_error = 18,
 };
 
 template <typename E>

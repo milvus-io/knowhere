@@ -12,22 +12,29 @@
 # License for the specific language governing permissions and limitations under
 # the License
 
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.23.1 FATAL_ERROR)
 project(knowhere CXX C)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/")
 include(GNUInstallDirs)
+include(ExternalProject)
 include(cmake/utils/utils.cmake)
 
 knowhere_option(USE_CUDA "Build with CUDA" OFF)
 knowhere_option(WITH_UT "Build with UT test" OFF)
 knowhere_option(WITH_ASAN "Build with ASAN" OFF)
 knowhere_option(WITH_DISKANN "Build with diskann index" OFF)
+knowhere_option(WITH_RAFT "Build with RAFT indexes" OFF)
 knowhere_option(WITH_BENCHMARK "Build with benchmark" OFF)
 knowhere_option(WITH_COVERAGE "Build with coverage" OFF)
 knowhere_option(WITH_CCACHE "Build with ccache" ON)
 knowhere_option(WITH_PROFILER "Build with profiler" OFF)
+
+if(WITH_RAFT AND NOT USE_CUDA)
+  message(WARNING "WITH_RAFT requires USE_CUDA. Setting USE_CUDA to ON.")
+  set(USE_CUDA ON)
+endif()
 
 if(KNOWHERE_VERSION)
   message(STATUS "Building KNOWHERE version: ${KNOWHERE_VERSION}")
@@ -68,6 +75,23 @@ include_directories(thirdparty/bitset)
 include_directories(thirdparty)
 
 find_package(OpenMP REQUIRED)
+if(WITH_RAFT)
+  add_definitions(-DKNOWHERE_WITH_RAFT)
+  include(cmake/libs/fetch_rapids.cmake)
+  include(rapids-cmake)
+  include(rapids-cpm)
+  include(rapids-cuda)
+  include(rapids-export)
+  include(rapids-find)
+
+  rapids_cpm_init()
+  set(RAPIDS_VERSION 23.02)
+  include(cmake/libs/libraft.cmake)
+
+  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr")
+  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 -std=c++17")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++17")
+endif()
 
 if(OPENMP_FOUND)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -80,7 +104,7 @@ if(WITH_COVERAGE)
 endif()
 
 knowhere_file_glob(GLOB_RECURSE KNOWHERE_SRCS src/common/*.cc src/index/*.cc
-                   src/io/*.cc)
+                   src/io/*.cc src/index/*.cu)
 
 set(KNOWHERE_LINKER_LIBS "")
 
@@ -97,6 +121,11 @@ if(NOT USE_CUDA)
   list(REMOVE_ITEM KNOWHERE_SRCS ${KNOWHERE_GPU_SRCS})
 endif()
 
+if(NOT WITH_RAFT)
+  knowhere_file_glob(GLOB_RECURSE KNOWHERE_RAFT_SRCS src/index/index_raft/*.cc src/index/index_raft/*.cu)
+  list(REMOVE_ITEM KNOWHERE_SRCS ${KNOWHERE_RAFT_SRCS})
+endif()
+
 include_directories(src)
 include_directories(include)
 
@@ -105,6 +134,9 @@ list(APPEND KNOWHERE_LINKER_LIBS easyloggingpp)
 
 add_library(knowhere SHARED ${KNOWHERE_SRCS})
 add_dependencies(knowhere ${KNOWHERE_LINKER_LIBS})
+if(WITH_RAFT)
+  list(APPEND KNOWHERE_LINKER_LIBS raft::raft raft::distance raft::nn)
+endif()
 target_link_libraries(knowhere PUBLIC ${KNOWHERE_LINKER_LIBS})
 target_include_directories(
   knowhere PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
