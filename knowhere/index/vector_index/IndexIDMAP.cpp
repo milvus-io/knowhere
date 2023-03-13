@@ -219,7 +219,16 @@ IDMAP::QueryImpl(int64_t n,
                  int64_t* labels,
                  const Config& config,
                  const faiss::BitsetView bitset) {
-    index_->search(n, data, k, distances, labels, bitset);
+    std::vector<std::future<void>> futs;
+    for (int i = 0; i < n; ++i) {
+        futs.push_back(pool_->push([&, index = i] {
+            ThreadPool::ScopedOmpSetter setter(1);
+            index_->search(1, data + index * Dim(), k, distances + index * k, labels + index * k, bitset);
+        }));
+    }
+    for (auto& fut : futs) {
+        fut.get();
+    }
 }
 
 void
@@ -233,16 +242,39 @@ IDMAP::QueryByRangeImpl(int64_t n,
     auto idmap_index = dynamic_cast<faiss::IndexFlat*>(index_.get());
     float radius = GetMetaRadius(config);
     bool is_ip = (idmap_index->metric_type == faiss::METRIC_INNER_PRODUCT);
+    bool range_filter_exist = CheckKeyInConfig(config, meta::RANGE_FILTER);
+    float range_filter = range_filter_exist ? GetMetaRangeFilter(config) : (1.0 / 0.0);
 
-    faiss::RangeSearchResult res(n);
-    idmap_index->range_search(n, reinterpret_cast<const float*>(data), radius, &res, bitset);
-
-    if (CheckKeyInConfig(config, meta::RANGE_FILTER)) {
-        float range_filter = GetMetaRangeFilter(config);
-        GetRangeSearchResult(res, is_ip, n, radius, range_filter, distances, labels, lims, bitset);
-    } else {
-        GetRangeSearchResult(res, is_ip, n, radius, distances, labels, lims);
+    std::vector<std::vector<int64_t>> result_id_array(n);
+    std::vector<std::vector<float>> result_dist_array(n);
+    std::vector<size_t> result_size(n);
+    std::vector<size_t> result_lims(n + 1);
+    std::vector<std::future<void>> futs;
+    futs.reserve(n);
+    for (int i = 0; i < n; ++i) {
+        futs.push_back(pool_->push([&, index = i] {
+            ThreadPool::ScopedOmpSetter setter(1);
+            faiss::RangeSearchResult ret(1);
+            idmap_index->range_search(1, data + index * Dim(), radius, &ret, bitset);
+            auto elem_cnt = ret.lims[1];
+            result_dist_array[index].resize(elem_cnt);
+            result_id_array[index].resize(elem_cnt);
+            result_size[index] = elem_cnt;
+            for (size_t j = 0; j < elem_cnt; j++) {
+                result_dist_array[index][j] = ret.distances[j];
+                result_id_array[index][j] = ret.labels[j];
+            }
+            if (range_filter_exist) {
+                FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, radius,
+                                                range_filter);
+            }
+        }));
     }
+    for (auto& fut : futs) {
+        fut.get();
+    }
+
+    GetRangeSearchResult(result_dist_array, result_id_array, is_ip, n, radius, range_filter, distances, labels, lims);
 }
 
 }  // namespace knowhere

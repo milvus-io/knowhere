@@ -319,7 +319,17 @@ IVF::QueryImpl(int64_t n,
     }
     size_t max_codes = 0;
     auto ivf_stats = std::dynamic_pointer_cast<IVFStatistics>(stats);
-    ivf_index->search_thread_safe(n, xq, k, distances, labels, params->nprobe, parallel_mode, max_codes, bitset);
+    std::vector<std::future<void>> futs;
+    for (int i = 0; i < n; ++i) {
+        futs.push_back(pool_->push([&, index = i] {
+            ThreadPool::ScopedOmpSetter setter(1);
+            ivf_index->search_thread_safe(1, xq + index * Dim(), k, distances + index * k, labels + index * k,
+                                          params->nprobe, parallel_mode, max_codes, bitset);
+        }));
+    }
+    for (auto& fut : futs) {
+        fut.get();
+    }
 #if 0
     stdclock::time_point after = stdclock::now();
     double search_cost = (std::chrono::duration<double, std::micro>(after - before)).count();
@@ -367,16 +377,40 @@ IVF::QueryByRangeImpl(int64_t n,
 
     float radius = GetMetaRadius(config);
     bool is_ip = (ivf_index->metric_type == faiss::METRIC_INNER_PRODUCT);
+    bool range_filter_exist = CheckKeyInConfig(config, meta::RANGE_FILTER);
+    float range_filter = range_filter_exist ? GetMetaRangeFilter(config) : (1.0 / 0.0);
 
-    faiss::RangeSearchResult res(n);
-    ivf_index->range_search_thread_safe(n, xq, radius, &res, params->nprobe, parallel_mode, max_codes, bitset);
-
-    if (CheckKeyInConfig(config, meta::RANGE_FILTER)) {
-        float range_filter = GetMetaRangeFilter(config);
-        GetRangeSearchResult(res, is_ip, n, radius, range_filter, distances, labels, lims, bitset);
-    } else {
-        GetRangeSearchResult(res, is_ip, n, radius, distances, labels, lims);
+    std::vector<std::vector<int64_t>> result_id_array(n);
+    std::vector<std::vector<float>> result_dist_array(n);
+    std::vector<size_t> result_size(n);
+    std::vector<size_t> result_lims(n + 1);
+    std::vector<std::future<void>> futs;
+    futs.reserve(n);
+    for (int i = 0; i < n; ++i) {
+        futs.push_back(pool_->push([&, index = i] {
+            ThreadPool::ScopedOmpSetter setter(1);
+            faiss::RangeSearchResult ret(1);
+            ivf_index->range_search_thread_safe(1, xq + index * Dim(), radius, &ret, params->nprobe, parallel_mode,
+                                                max_codes, bitset);
+            auto elem_cnt = ret.lims[1];
+            result_dist_array[index].resize(elem_cnt);
+            result_id_array[index].resize(elem_cnt);
+            result_size[index] = elem_cnt;
+            for (size_t j = 0; j < elem_cnt; j++) {
+                result_dist_array[index][j] = ret.distances[j];
+                result_id_array[index][j] = ret.labels[j];
+            }
+            if (range_filter_exist) {
+                FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, radius,
+                                                range_filter);
+            }
+        }));
     }
+    for (auto& fut : futs) {
+        fut.get();
+    }
+
+    GetRangeSearchResult(result_dist_array, result_id_array, is_ip, n, radius, range_filter, distances, labels, lims);
 }
 
 void

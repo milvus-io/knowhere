@@ -58,6 +58,17 @@ class ThreadPool {
     static std::shared_ptr<ThreadPool>
     GetGlobalThreadPool();
 
+    class ScopedOmpSetter {
+        int omp_before;
+     public:
+        explicit ScopedOmpSetter(int num_threads = 1) : omp_before(omp_get_num_threads()) {
+            omp_set_num_threads(num_threads);
+        }
+        ~ScopedOmpSetter() {
+            omp_set_num_threads(omp_before);
+        }
+    };
+
  private:
     std::unique_ptr<ctpl::thread_pool> pool_;
 };

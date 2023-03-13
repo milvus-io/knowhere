@@ -47,13 +47,13 @@ VecIndexFactory::CreateVecIndex(const IndexType& type, const IndexMode mode) {
             } else if (type == IndexEnum::INDEX_FAISS_BIN_IVFFLAT) {
                 return std::make_shared<VecIndexThreadPoolWrapper>(std::make_unique<BinaryIVF>());
             } else if (type == IndexEnum::INDEX_FAISS_IDMAP) {
-                return std::make_shared<VecIndexThreadPoolWrapper>(std::make_unique<IDMAP>());
+                return std::make_shared<knowhere::IDMAP>();
             } else if (type == IndexEnum::INDEX_FAISS_IVFFLAT) {
-                return std::make_shared<VecIndexThreadPoolWrapper>(std::make_unique<IVF_NM>());
+                return std::make_shared<knowhere::IVF_NM>();
             } else if (type == IndexEnum::INDEX_FAISS_IVFPQ) {
-                return std::make_shared<VecIndexThreadPoolWrapper>(std::make_unique<IVFPQ>());
+                return std::make_shared<knowhere::IVFPQ>();
             } else if (type == IndexEnum::INDEX_FAISS_IVFSQ8) {
-                return std::make_shared<VecIndexThreadPoolWrapper>(std::make_unique<IVFSQ>());
+                return std::make_shared<knowhere::IVFSQ>();
             } else if (type == IndexEnum::INDEX_ANNOY) {
                 return std::make_shared<knowhere::IndexAnnoy>();
             } else if (type == IndexEnum::INDEX_HNSW) {
