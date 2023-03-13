@@ -19,6 +19,7 @@
 #include "knowhere/binaryset.h"
 #include "knowhere/config.h"
 #include "knowhere/factory.h"
+#include "knowhere/index.h"
 
 class Benchmark_knowhere : public Benchmark_hdf5 {
  public:
@@ -83,7 +84,7 @@ class Benchmark_knowhere : public Benchmark_hdf5 {
         return ann_test_name_ + "_" + index_type_ + params_str + ".index";
     }
 
-    void
+    knowhere::Index<knowhere::IndexNode>
     create_index(const std::string& index_file_name, const knowhere::Json& conf) {
         printf("[%.3f s] Creating index \"%s\"\n", get_time_diff(), index_type_.c_str());
         index_ = knowhere::IndexFactory::Instance().Create(index_type_);
@@ -99,6 +100,7 @@ class Benchmark_knowhere : public Benchmark_hdf5 {
             printf("[%.3f s] Writing index file: %s\n", get_time_diff(), index_file_name.c_str());
             write_index(index_file_name, conf);
         }
+        return index_;
     }
 
  protected:
@@ -107,4 +109,5 @@ class Benchmark_knowhere : public Benchmark_hdf5 {
     knowhere::BinarySet binary_set_;
     knowhere::Json cfg_;
     knowhere::Index<knowhere::IndexNode> index_;
+    std::vector<knowhere::Index<knowhere::IndexNode>> indices_;  // for qps
 };
