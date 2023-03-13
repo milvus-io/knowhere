@@ -19,7 +19,7 @@
 #include "knowhere/dataset.h"
 
 const int32_t GPU_DEVICE_ID = 0;
-const int32_t CLIENT_NUM = 4;
+const int32_t CLIENT_NUM = 1;
 
 class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing::Test {
  public:
@@ -29,18 +29,17 @@ class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing
         auto nlist = conf[knowhere::indexparam::NLIST].get<int32_t>();
 
         auto find_smallest_nprobe = [&](float expected_recall) -> int32_t {
-            int32_t golden_nq = 10000, golden_topk = 100;
             int32_t nprobe = 1;
             float recall;
             while (nprobe <= NLIST_) {
                 conf[knowhere::indexparam::NPROBE] = nprobe;
-                conf[knowhere::meta::TOPK] = golden_topk;
-                auto ds_ptr = knowhere::GenDataSet(golden_nq, dim_, xq_);
+                conf[knowhere::meta::TOPK] = gt_k_;
+                auto ds_ptr = knowhere::GenDataSet(nq_, dim_, xq_);
 
                 auto result = index_.Search(*ds_ptr, conf, nullptr);
-                recall = CalcRecall(result.value()->GetIds(), golden_nq, golden_topk);
+                recall = CalcRecall(result.value()->GetIds(), nq_, gt_k_);
                 printf("\n[%0.3f s] iterate IVF param for recall %.4f: nlist=%d, nprobe=%d, k=%d, R@=%.4f\n",
-                       get_time_diff(), expected_recall, nlist, nprobe, golden_topk, recall);
+                       get_time_diff(), expected_recall, nlist, nprobe, gt_k_, recall);
                 if (recall >= expected_recall) {
                     break;
                 }
@@ -72,16 +71,15 @@ class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing
         auto efConstruction = conf[knowhere::indexparam::EFCONSTRUCTION].get<int32_t>();
 
         auto find_smallest_ef = [&](float expected_recall) -> int32_t {
-            int32_t golden_nq = 10000, golden_topk = 100;
             int32_t ef = 128, ef_max = 512;
             float recall;
             while (ef <= ef_max) {
                 conf[knowhere::indexparam::EF] = ef;
-                conf[knowhere::meta::TOPK] = golden_topk;
-                auto ds_ptr = knowhere::GenDataSet(golden_nq, dim_, xq_);
+                conf[knowhere::meta::TOPK] = gt_k_;
+                auto ds_ptr = knowhere::GenDataSet(nq_, dim_, xq_);
 
                 auto result = index_.Search(*ds_ptr, conf, nullptr);
-                recall = CalcRecall(result.value()->GetIds(), golden_nq, golden_topk);
+                recall = CalcRecall(result.value()->GetIds(), nq_, gt_k_);
                 printf("\n[%0.3f s] iterate HNSW param for expected recall %.4f: ef=%d, R@=%.4f\n", get_time_diff(),
                        expected_recall, ef, recall);
                 if (recall >= expected_recall) {
