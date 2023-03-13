@@ -18,14 +18,13 @@ endif()
 set(CMAKE_CXX_FLAGS "-Wall -fPIC ${CMAKE_CXX_FLAGS}")
 
 if(USE_CUDA)
-    set(CMAKE_CUDA_FLAGS "-Xcompiler=-w -Xcompiler=-fPIC ${CMAKE_CUDA_FLAGS}")
+  set(CMAKE_CUDA_FLAGS "-Xcompiler=-w -Xcompiler=-fPIC ${CMAKE_CUDA_FLAGS}")
 endif()
 
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-
 if(USE_CUDA)
-    set(CMAKE_CUDA_FLAGS_DEBUG "-O0 -g")
-    set(CMAKE_CUDA_FLAGS_RELEASE "-O3")
+  set(CMAKE_CUDA_FLAGS_DEBUG "-O0 -g")
+  set(CMAKE_CUDA_FLAGS_RELEASE "-O3")
 endif()
