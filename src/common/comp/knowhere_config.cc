@@ -29,7 +29,11 @@ KnowhereConfig::ShowVersion() {
 #define XSTR(x) STR(x)
 #define STR(x) #x
 #ifdef KNOWHERE_VERSION
+#ifdef USE_CUDA
+    LOG_KNOWHERE_INFO_ << "Knowhere Version: " << XSTR(KNOWHERE_VERSION) << "-gpu";
+#else
     LOG_KNOWHERE_INFO_ << "Knowhere Version: " << XSTR(KNOWHERE_VERSION);
+#endif
 #else
     LOG_KNOWHERE_INFO_ << "Knowhere Version: unknown";
 #endif
