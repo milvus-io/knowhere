@@ -109,5 +109,4 @@ class Benchmark_knowhere : public Benchmark_hdf5 {
     knowhere::BinarySet binary_set_;
     knowhere::Json cfg_;
     knowhere::Index<knowhere::IndexNode> index_;
-    std::vector<knowhere::Index<knowhere::IndexNode>> indices_;  // for qps
 };

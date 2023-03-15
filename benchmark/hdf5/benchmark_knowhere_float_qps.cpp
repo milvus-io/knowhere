@@ -19,7 +19,6 @@
 #include "knowhere/dataset.h"
 
 const int32_t GPU_DEVICE_ID = 0;
-const int32_t CLIENT_NUM = 1;
 
 class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing::Test {
  public:
@@ -29,23 +28,30 @@ class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing
         auto nlist = conf[knowhere::indexparam::NLIST].get<int32_t>();
 
         auto find_smallest_nprobe = [&](float expected_recall) -> int32_t {
-            int32_t nprobe = 1;
+            conf[knowhere::meta::TOPK] = gt_k_;
+            auto ds_ptr = knowhere::GenDataSet(nq_, dim_, xq_);
+
+            int32_t left = 1, right = NLIST_, nprobe;
             float recall;
-            while (nprobe <= NLIST_) {
+            while (right - left > 1) {
+                nprobe = (left + right) / 2;
                 conf[knowhere::indexparam::NPROBE] = nprobe;
-                conf[knowhere::meta::TOPK] = gt_k_;
-                auto ds_ptr = knowhere::GenDataSet(nq_, dim_, xq_);
 
                 auto result = index_.Search(*ds_ptr, conf, nullptr);
                 recall = CalcRecall(result.value()->GetIds(), nq_, gt_k_);
-                printf("\n[%0.3f s] iterate IVF param for recall %.4f: nlist=%d, nprobe=%d, k=%d, R@=%.4f\n",
+                printf("[%0.3f s] iterate IVF param for recall %.4f: nlist=%d, nprobe=%d, k=%d, R@=%.4f\n",
                        get_time_diff(), expected_recall, nlist, nprobe, gt_k_, recall);
-                if (recall >= expected_recall) {
-                    break;
+                std::fflush(stdout);
+                if (std::abs(recall - expected_recall) <= 0.001) {
+                    return nprobe;
                 }
-                nprobe *= 2;
+                if (recall < expected_recall) {
+                    left = nprobe;
+                } else {
+                    right = nprobe;
+                }
             }
-            return std::min(nprobe, NLIST_);
+            return right;
         };
 
         for (auto expected_recall : EXPECTED_RECALLs_) {
@@ -56,9 +62,14 @@ class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing
             printf("\n[%0.3f s] %s | %s | nlist=%d, nprobe=%d, k=%d, R@=%.4f\n", get_time_diff(),
                    ann_test_name_.c_str(), index_type_.c_str(), nlist, nprobe, topk_, expected_recall);
             printf("================================================================================\n");
-            CALC_TIME_SPAN(task(conf, CLIENT_NUM, nq_));
-            printf("  client_num = %d, elapse = %6.3fs, QPS = %.3f\n", CLIENT_NUM, t_diff, nq_ * CLIENT_NUM / t_diff);
-            std::fflush(stdout);
+            for (auto thread_num : THREAD_NUMs_) {
+                for (int32_t batch_nq = 1; batch_nq <= nq_; batch_nq *= 10) {
+                    CALC_TIME_SPAN(task(conf, thread_num, batch_nq, nq_));
+                    printf("  thread_num = %2d, nq = %5d, elapse = %6.3fs, QPS = %.3f\n", thread_num, batch_nq, t_diff,
+                           nq_ * thread_num / t_diff);
+                    std::fflush(stdout);
+                }
+            }
             printf("================================================================================\n");
             printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
         }
@@ -71,23 +82,30 @@ class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing
         auto efConstruction = conf[knowhere::indexparam::EFCONSTRUCTION].get<int32_t>();
 
         auto find_smallest_ef = [&](float expected_recall) -> int32_t {
-            int32_t ef = 128, ef_max = 512;
+            conf[knowhere::meta::TOPK] = gt_k_;
+            auto ds_ptr = knowhere::GenDataSet(nq_, dim_, xq_);
+
+            int32_t left = gt_k_, right = 512, ef;
             float recall;
-            while (ef <= ef_max) {
+            while (right - left > 1) {
+                ef = (left + right) / 2;
                 conf[knowhere::indexparam::EF] = ef;
-                conf[knowhere::meta::TOPK] = gt_k_;
-                auto ds_ptr = knowhere::GenDataSet(nq_, dim_, xq_);
 
                 auto result = index_.Search(*ds_ptr, conf, nullptr);
                 recall = CalcRecall(result.value()->GetIds(), nq_, gt_k_);
-                printf("\n[%0.3f s] iterate HNSW param for expected recall %.4f: ef=%d, R@=%.4f\n", get_time_diff(),
+                printf("[%0.3f s] iterate HNSW param for expected recall %.4f: ef=%d, R@=%.4f\n", get_time_diff(),
                        expected_recall, ef, recall);
-                if (recall >= expected_recall) {
-                    break;
+                std::fflush(stdout);
+                if (std::abs(recall - expected_recall) <= 0.001) {
+                    return ef;
                 }
-                ef *= 2;
+                if (recall < expected_recall) {
+                    left = ef;
+                } else {
+                    right = ef;
+                }
             }
-            return std::min(ef, ef_max);
+            return right;
         };
 
         for (auto expected_recall : EXPECTED_RECALLs_) {
@@ -98,9 +116,14 @@ class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing
             printf("\n[%0.3f s] %s | %s | M=%d | efConstruction=%d, ef=%d, k=%d, R@=%.4f\n", get_time_diff(),
                    ann_test_name_.c_str(), index_type_.c_str(), M, efConstruction, ef, topk_, expected_recall);
             printf("================================================================================\n");
-            CALC_TIME_SPAN(task(conf, CLIENT_NUM, nq_));
-            printf("  client_num = %d, elapse = %6.3fs, QPS = %.3f\n", CLIENT_NUM, t_diff, nq_ * CLIENT_NUM / t_diff);
-            std::fflush(stdout);
+            for (auto thread_num : THREAD_NUMs_) {
+                for (int32_t batch_nq = 1; batch_nq <= nq_; batch_nq *= 10) {
+                    CALC_TIME_SPAN(task(conf, thread_num, batch_nq, nq_));
+                    printf("  thread_num = %2d, nq = %5d, elapse = %6.3fs, QPS = %.3f\n", thread_num, batch_nq, t_diff,
+                           nq_ * thread_num / t_diff);
+                    std::fflush(stdout);
+                }
+            }
             printf("================================================================================\n");
             printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
         }
@@ -108,17 +131,18 @@ class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing
 
  private:
     void
-    task(const knowhere::Json& conf, int32_t worker_num, int32_t nq) {
-        auto worker = [&](int32_t client_no, int32_t nq) {
-            for (int32_t i = 0; i < nq; i++) {
-                knowhere::DataSetPtr ds_ptr = knowhere::GenDataSet(1, dim_, (const float*)xq_ + i * dim_);
-                indices_[client_no].Search(*ds_ptr, conf, nullptr);
+    task(const knowhere::Json& conf, int32_t worker_num, int32_t nq_per_search, int32_t nq_total) {
+        auto worker = [&]() {
+            for (int32_t i = 0; i < nq_total; i += nq_per_search) {
+                int32_t curr_nq = std::min(nq_per_search, nq_total - i);
+                knowhere::DataSetPtr ds_ptr = knowhere::GenDataSet(curr_nq, dim_, (const float*)xq_ + i * dim_);
+                index_.Search(*ds_ptr, conf, nullptr);
             }
         };
 
         std::vector<std::thread> thread_vector(worker_num);
         for (int32_t i = 0; i < worker_num; i++) {
-            thread_vector[i] = std::thread(worker, i, nq);
+            thread_vector[i] = std::thread(worker);
         }
         for (int32_t i = 0; i < worker_num; i++) {
             thread_vector[i].join();
@@ -138,7 +162,7 @@ class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing
         cfg_[knowhere::meta::METRIC_TYPE] = metric_type_;
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AUTO);
 #ifdef USE_CUDA
-        knowhere::KnowhereConfig::InitGPUResource(GPU_DEVICE_ID, CLIENT_NUM);
+        knowhere::KnowhereConfig::InitGPUResource(GPU_DEVICE_ID, 2);
         cfg_[knowhere::meta::DEVICE_ID] = GPU_DEVICE_ID;
 #endif
     }
@@ -154,9 +178,14 @@ class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing
  protected:
     const int32_t topk_ = 10;
     const std::vector<float> EXPECTED_RECALLs_ = {0.9, 0.95};
+    const std::vector<int32_t> THREAD_NUMs_ = {1, 2, 4, 8, 16, 32};
 
     // IVF index params
     const int32_t NLIST_ = 1024;
+
+    // IVFPQ index params
+    const std::vector<int32_t> Ms_ = {8, 16, 32};
+    const int32_t NBITS_ = 8;
 
     // HNSW index params
     const int32_t M_ = 16;
@@ -181,10 +210,8 @@ TEST_F(Benchmark_knowhere_float_qps, TEST_IVF_FLAT_NM) {
     bin->size = dim_ * nb_ * sizeof(float);
     binary_set_.Append("RAW_DATA", bin);
 
-    for (int i = 0; i < CLIENT_NUM; i++) {
-        indices_.emplace_back(create_index(index_file_name, conf));
-        indices_.back().Deserialize(binary_set_);
-    }
+    create_index(index_file_name, conf);
+    index_.Deserialize(binary_set_);
     binary_set_.clear();
     test_ivf(conf);
 }
@@ -200,13 +227,31 @@ TEST_F(Benchmark_knowhere_float_qps, TEST_IVF_SQ8) {
     conf[knowhere::indexparam::NLIST] = NLIST_;
 
     std::string index_file_name = get_index_name({NLIST_});
-
-    for (int i = 0; i < CLIENT_NUM; i++) {
-        indices_.emplace_back(create_index(index_file_name, conf));
-        indices_.back().Deserialize(binary_set_);
-    }
+    create_index(index_file_name, conf);
+    index_.Deserialize(binary_set_);
     binary_set_.clear();
     test_ivf(conf);
+}
+
+TEST_F(Benchmark_knowhere_float_qps, TEST_IVF_PQ) {
+#ifdef USE_CUDA
+    index_type_ = knowhere::IndexEnum::INDEX_FAISS_GPU_IVFPQ;
+#else
+    index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFPQ;
+#endif
+
+    knowhere::Json conf = cfg_;
+    conf[knowhere::indexparam::NBITS] = NBITS_;
+    for (auto m : Ms_) {
+        conf[knowhere::indexparam::M] = m;
+        conf[knowhere::indexparam::NLIST] = NLIST_;
+
+        std::string index_file_name = get_index_name({NLIST_, m});
+        create_index(index_file_name, conf);
+        index_.Deserialize(binary_set_);
+        binary_set_.clear();
+        test_ivf(conf);
+    }
 }
 
 TEST_F(Benchmark_knowhere_float_qps, TEST_HNSW) {
@@ -217,11 +262,8 @@ TEST_F(Benchmark_knowhere_float_qps, TEST_HNSW) {
     conf[knowhere::indexparam::EFCONSTRUCTION] = EFCON_;
 
     std::string index_file_name = get_index_name({M_, EFCON_});
-
-    for (int i = 0; i < CLIENT_NUM; i++) {
-        indices_.emplace_back(create_index(index_file_name, conf));
-        indices_.back().Deserialize(binary_set_);
-    }
+    create_index(index_file_name, conf);
+    index_.Deserialize(binary_set_);
     binary_set_.clear();
     test_hnsw(conf);
 }
