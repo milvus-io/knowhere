@@ -106,6 +106,9 @@ namespace diskann {
     }
 #endif
 
+    if (medoids != nullptr) {
+      delete[] medoids;
+    }
     if (centroid_data != nullptr)
       aligned_free(centroid_data);
     // delete backing bufs for nhood and coord cache
