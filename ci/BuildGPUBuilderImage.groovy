@@ -106,6 +106,7 @@ spec:
                     // dir ('milvus') {
                     script {
                         sh 'ls -lah'
+                        sh 'chmod +x set_docker_mirror.sh'
                         sh './ci/docker/set_docker_mirror.sh'
                         def date = sh(returnStdout: true, script: 'date +%Y%m%d').trim()
                         def gitShortCommit = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()   
