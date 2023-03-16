@@ -994,6 +994,8 @@ namespace diskann {
     // train_size
     gen_random_slice<T>(data_file_to_use.c_str(), p_val, train_data, train_size,
                         train_dim);
+    LOG(INFO) << "Loaded train data from raw data file.#train_size: "
+          << train_size << ", #train_dim: " << train_dim;
 
     if (use_disk_pq) {
       if (disk_pq_dims > dim)
@@ -1013,7 +1015,6 @@ namespace diskann {
             data_file_to_use.c_str(), 256, (uint32_t) disk_pq_dims,
             disk_pq_pivots_path, disk_pq_compressed_vectors_path);
     }
-    LOG(DEBUG) << "Training data loaded of size " << train_size;
 
     // don't translate data to make zero mean for PQ compression. We must not
     // translate for inner product search.
@@ -1022,10 +1023,11 @@ namespace diskann {
       make_zero_mean = false;
 
     auto pq_s = std::chrono::high_resolution_clock::now();
+    LOG(INFO) << "Training pivots of PQ chunks.";
     generate_pq_pivots(train_data, train_size, (uint32_t) dim, 256,
                        (uint32_t) num_pq_chunks, NUM_KMEANS_REPS,
                        pq_pivots_path, make_zero_mean);
-
+    LOG(INFO) << "Processing PQ data from pivots.";
     generate_pq_data_from_pivots<T>(data_file_to_use.c_str(), 256,
                                     (uint32_t) num_pq_chunks, pq_pivots_path,
                                     pq_compressed_vectors_path);
@@ -1078,7 +1080,7 @@ namespace diskann {
 
     auto                          e = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> diff = e - s;
-    LOG(INFO) << "Indexing time: " << diff.count();
+    LOG(INFO) << "Indexing time: " << diff.count() << "s";
 
     return 0;
   }

@@ -256,7 +256,7 @@ IndexDiskANN<T>::Prepare(const Config& config) {
     }
 
     // load PQ file
-    LOG_KNOWHERE_DEBUG_ << "Loading PQ from disk.";
+    LOG_KNOWHERE_INFO_ << "Loading index from disk.";
     std::shared_ptr<AlignedFileReader> reader = nullptr;
 #ifdef _WINDOWS
     reader.reset(new WindowsAlignedFileReader());
@@ -291,8 +291,7 @@ IndexDiskANN<T>::Prepare(const Config& config) {
     }
     if (num_nodes_to_cache > 0) {
         std::vector<uint32_t> node_list;
-        LOG_KNOWHERE_DEBUG_ << "Caching " << num_nodes_to_cache << " sample nodes around medoid(s).";
-
+        LOG_KNOWHERE_INFO_ << "Caching " << num_nodes_to_cache << " sample nodes around medoid(s).";
         if (prep_conf.use_bfs_cache) {
             auto gen_cache_successful = TryDiskANNCall<bool>([&]() -> bool {
                 pq_flash_index_->cache_bfs_levels(num_nodes_to_cache, node_list);

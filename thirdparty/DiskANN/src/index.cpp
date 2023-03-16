@@ -1771,6 +1771,7 @@ namespace diskann {
     }
 
     generate_frozen_point();
+    LOG(INFO) << "Generate graph:";
     link(parameters);  // Primary func for creating nsg graph
 
     if (_support_eager_delete) {

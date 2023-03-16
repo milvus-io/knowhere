@@ -284,6 +284,7 @@ namespace diskann {
       _u64 num_nodes_to_cache, uint32_t nthreads,
       std::vector<uint32_t> &node_list) {
 #endif
+    auto s = std::chrono::high_resolution_clock::now();
     this->count_visited_nodes = true;
     this->node_visit_counter.clear();
     this->node_visit_counter.resize(this->num_points);
@@ -335,11 +336,15 @@ namespace diskann {
     this->count_visited_nodes = false;
 
     diskann::aligned_free(samples);
+    auto e = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = e - s;
+    LOG(INFO) << "Using sample queries to generate cache, cost: " << diff.count() << "s";
   }
 
   template<typename T>
   void PQFlashIndex<T>::cache_bfs_levels(_u64 num_nodes_to_cache,
                                          std::vector<uint32_t> &node_list) {
+    auto s = std::chrono::high_resolution_clock::now();
     std::random_device rng;
     std::mt19937       urng(rng());
 
@@ -461,8 +466,11 @@ namespace diskann {
     // return thread data
     this->thread_data.push(this_thread_data);
     this->thread_data.push_notify_all();
-
-    LOG(INFO) << "done";
+  
+    LOG(DEBUG) << "done";
+    auto e = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = e - s;
+    LOG(INFO) << "Using bfs to generate cache, cost: " << diff.count() << "s";
   }
 
   template<typename T>
