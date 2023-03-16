@@ -703,7 +703,8 @@ namespace diskann {
     std::memset(out_block_data.get(), 0, sizeof(float) * block_size * out_dims);
     _u64 num_blocks = DIV_ROUND_UP(npts, block_size);
 
-    std::vector<float> norms(npts, 0);
+    std::vector<double> norms(npts, 0);
+    double max_norm_dw = 0.0;
 
     for (_u64 b = 0; b < num_blocks; b++) {
       _u64 start_id = b * block_size;
@@ -714,14 +715,14 @@ namespace diskann {
       for (_u64 p = 0; p < block_pts; p++) {
         for (_u64 j = 0; j < in_dims; j++) {
           norms[start_id + p] +=
-              in_block_data[p * in_dims + j] * in_block_data[p * in_dims + j];
+              (double)in_block_data[p * in_dims + j] * (double)in_block_data[p * in_dims + j];
         }
-        max_norm =
-            max_norm > norms[start_id + p] ? max_norm : norms[start_id + p];
+        max_norm_dw =
+            max_norm_dw > norms[start_id + p] ? max_norm_dw : norms[start_id + p];
       }
     }
 
-    max_norm = std::sqrt(max_norm);
+    max_norm = (float)std::sqrt(max_norm_dw);
 
     in_reader.seekg(2 * sizeof(_u32), std::ios::beg);
     for (_u64 b = 0; b < num_blocks; b++) {
@@ -735,9 +736,9 @@ namespace diskann {
           out_block_data[p * out_dims + j] =
               in_block_data[p * in_dims + j] / max_norm;
         }
-        float res = 1 - (norms[start_id + p] / (max_norm * max_norm));
+        double res = 1 - (norms[start_id + p] / ((double)max_norm * (double)max_norm));
         res = res <= 0 ? 0 : std::sqrt(res);
-        out_block_data[p * out_dims + out_dims - 1] = res;
+        out_block_data[p * out_dims + out_dims - 1] = (float)res;
       }
       out_writer.write((char*) out_block_data.get(),
                        block_pts * out_dims * sizeof(float));
