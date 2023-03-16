@@ -20,7 +20,7 @@ spec:
   containers:
   - name: kaniko
     imagePullPolicy: IfNotPresent
-    image: harbor-us-vdc.zilliz.cc/devops/kaniko-executor:v1.8.0-debug
+    image: harbor.milvus.io/devops/kaniko-executor:v1.8.0-debug
     command:
     - /busybox/cat
     tty: true
