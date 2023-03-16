@@ -12,15 +12,14 @@
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
-include_directories(/usr/local/hdf5/include)
-link_directories(/usr/local/hdf5/lib)
-
+find_package(HDF5 REQUIRED)
+include_directories(${HDF5_INCLUDE_DIRS})
 set(unittest_libs
         gtest gmock gtest_main gmock_main)
 
 set(depend_libs
         knowhere
-        hdf5
+        ${HDF5_LIBRARIES}
         ${OpenBLAS_LIBRARIES}
         ${LAPACK_LIBRARIES}
         )

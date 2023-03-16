@@ -23,4 +23,10 @@ KNOWHERE_REGISTER_GLOBAL(RAFT_IVF_FLAT, [](const Object& object) {
     return Index<IndexNodeThreadPoolWrapper>::Create(
         std::make_unique<RaftIvfIndexNode<detail::raft_ivf_flat_index>>(object));
 });
+
+KNOWHERE_REGISTER_GLOBAL(RAFT_IVF_PQ, [](const Object& object) {
+    return Index<IndexNodeThreadPoolWrapper>::Create(
+        std::make_unique<RaftIvfIndexNode<detail::raft_ivf_pq_index>>(object));
+});
+
 }  // namespace knowhere

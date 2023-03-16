@@ -82,18 +82,6 @@ class GPUResMgr {
         LOG_KNOWHERE_DEBUG_ << "InitDevice gpu_id " << gpu_id_ << ", resource count " << gpu_params_.res_num_
                             << ", tmp_mem_sz " << gpu_params_.tmp_mem_sz_ / MB << "MB, pin_mem_sz "
                             << gpu_params_.pin_mem_sz_ / MB << "MB";
-#ifdef KNOWHERE_WITH_RAFT
-        if (gpu_id >= std::numeric_limits<int>::min() && gpu_id <= std::numeric_limits<int>::max()) {
-            auto rmm_id = rmm::cuda_device_id{int(gpu_id)};
-            rmm_memory_resources_.push_back(
-                std::make_unique<rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>>(
-                    rmm::mr::get_per_device_resource(rmm_id)));
-            rmm::mr::set_per_device_resource(rmm_id, rmm_memory_resources_.back().get());
-        } else {
-            LOG_KNOWHERE_WARNING_ << "Could not init pool memory resource on GPU " << gpu_id_
-                                  << ". ID is outside expected range.";
-        }
-#endif
     }
 
     void
@@ -125,11 +113,6 @@ class GPUResMgr {
             res_bq_.Take();
         }
         init_ = false;
-#ifdef KNOWHERE_WITH_RAFT
-        for (auto&& rmm_res : rmm_memory_resources_) {
-            rmm_res.release();
-        }
-#endif
     }
 
     ResPtr
@@ -156,9 +139,6 @@ class GPUResMgr {
     int64_t gpu_id_ = 0;
     GPUParams gpu_params_;
     ResBQ res_bq_;
-#ifdef KNOWHERE_WITH_RAFT
-    std::vector<std::unique_ptr<rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>>> rmm_memory_resources_;
-#endif
 };
 
 class ResScope {

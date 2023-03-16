@@ -38,6 +38,8 @@ constexpr const char* INDEX_ANNOY = "ANNOY";
 constexpr const char* INDEX_HNSW = "HNSW";
 
 constexpr const char* INDEX_DISKANN = "DISKANN";
+constexpr const char* INDEX_RAFT_IVFFLAT = "RAFT_IVF_FLAT";
+constexpr const char* INDEX_RAFT_IVFPQ = "RAFT_IVF_PQ";
 
 }  // namespace IndexEnum
 
