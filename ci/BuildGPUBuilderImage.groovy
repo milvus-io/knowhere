@@ -23,8 +23,7 @@ pipeline {
                         script {
                             sh 'ls -lah'
                             def date = sh(returnStdout: true, script: 'date +%Y%m%d').trim()
-                            def gitShortCommit = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
-                            def new_image="milvusdb/knowhere-gpu-build:amd64-${os}-${date}-${gitShortCommit}"
+                            def new_image="milvusdb/knowhere-gpu-build:amd64-${os}-${date}"
                             sh """
                             executor \
                             --registry-mirror="docker-nexus-ci.zilliz.cc"\
