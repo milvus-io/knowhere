@@ -19,20 +19,20 @@ pipeline {
         stage ('Build'){
             steps {
                 container('kaniko') {
-                    dir ('knowhere') {
-                        script {
-                            sh 'ls -lah'
-                            def date = sh(returnStdout: true, script: 'date +%Y%m%d').trim()
-                            def new_image="milvusdb/knowhere-gpu-build:amd64-${os}-${date}"
-                            sh """
-                            executor \
-                            --registry-mirror="docker-nexus-ci.zilliz.cc"\
-                            --insecure-registry="docker-nexus-ci.zilliz.cc" \
-                            --dockerfile "ci/docker/builder/gpu/${os}/Dockerfile" \
-                            --destination=${new_image} \
-                            """
-                        }
-                    }
+                    script {
+                        sh 'ls -lah'
+                        def date = sh(returnStdout: true, script: 'date +%Y%m%d').trim()
+                        def new_image="milvusdb/knowhere-gpu-build:amd64-${os}-${date}"
+                        sh """
+                        executor \
+                        --cache=true \
+                        --context="`pwd`" \
+                        --registry-mirror="docker-nexus-ci.zilliz.cc"\
+                        --insecure-registry="docker-nexus-ci.zilliz.cc" \
+                        --dockerfile "ci/docker/builder/gpu/${os}/Dockerfile" \
+                        --destination=${new_image} \
+                        """
+                    }  
                 }
 
             }
