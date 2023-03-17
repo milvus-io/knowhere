@@ -15,6 +15,7 @@
 
 #include "index/vector_index/helpers/IndexParameter.h"
 #include "index/vector_index/helpers/Slice.h"
+#include "common/Log.h"
 
 namespace knowhere {
 
@@ -39,17 +40,21 @@ Slice(const std::string& prefix,
     }
 
     int slice_num = 0;
+    int64_t total_len_after_slice = 0; // use int64_t as `ri` below
     for (int64_t i = 0; i < data_src->size; ++slice_num) {
         int64_t ri = std::min(i + slice_len, data_src->size);
         auto size = static_cast<size_t>(ri - i);
         auto slice_i = std::shared_ptr<uint8_t[]>(new uint8_t[size]);
         memcpy(slice_i.get(), data_src->data.get() + i, size);
         binarySet.Append(prefix + "_" + std::to_string(slice_num), slice_i, ri - i);
+        total_len_after_slice += (ri - i);
         i = ri;
     }
     ret[NAME] = prefix;
     ret[SLICE_NUM] = slice_num;
     ret[TOTAL_LEN] = data_src->size;
+    LOG_KNOWHERE_INFO_ << "Slice total_len: " << ret[TOTAL_LEN];
+    LOG_KNOWHERE_INFO_ << "Total length after sliced: " << total_len_after_slice;
 }
 
 void
