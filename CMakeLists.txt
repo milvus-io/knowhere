@@ -246,6 +246,8 @@ if ( BUILD_COVERAGE STREQUAL "ON" )
                            )
 endif ()
 
+append_flags(CMAKE_CXX_FLAGS FLAGS "-fexceptions" "-fnon-call-exceptions")
+
 add_subdirectory( knowhere/utils )
 add_subdirectory( thirdparty )
 add_subdirectory( knowhere )

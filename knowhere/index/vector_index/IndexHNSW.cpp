@@ -25,6 +25,16 @@
 #include "index/vector_index/adapter/VectorAdapter.h"
 #include "index/vector_index/helpers/FaissIO.h"
 
+// hotfix for in01-68af364896ff566
+#include "segvcatch/segvcatch.h"
+
+namespace {
+
+const size_t kBuildRetryCnt = 3;
+const size_t kBuildTryQueryEf = 10;
+const size_t kBuildTryQueryTopk = 1;
+}
+
 namespace knowhere {
 
 BinarySet
@@ -37,6 +47,7 @@ IndexHNSW::Serialize(const Config& config) {
         MemoryIOWriter writer;
         index_->saveIndex(writer);
         std::shared_ptr<uint8_t[]> data(writer.data_);
+        LOG_KNOWHERE_INFO_ << "After saving index, size: " << writer.rp;
 
         BinarySet res_set;
         res_set.Append("HNSW", data, writer.rp);
@@ -96,11 +107,40 @@ IndexHNSW::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) {
 
     GET_TENSOR_DATA(dataset_ptr)
     utils::SetBuildOmpThread(config);
-    index_->addPoint(p_data, 0);
 
+    std::vector<float> dummy_query(Dim(), 0);
+    feder::hnsw::FederResultUniq feder_result = nullptr;
+    hnswlib::SearchParam search_param{10};
+    auto dummy_stat = hnswlib::StatisticsInfo();
+    struct sigaction default_sa;
+    memset(&default_sa, 0, sizeof(default_sa));
+
+    for (size_t build_try_cnt = 1; build_try_cnt <= kBuildRetryCnt; ++build_try_cnt) {
+        index_->addPoint(p_data, 0);
 #pragma omp parallel for
-    for (int i = 1; i < rows; ++i) {
-        index_->addPoint((reinterpret_cast<const float*>(p_data) + Dim() * i), i);
+        for (int i = 1; i < rows; ++i) {
+            index_->addPoint((reinterpret_cast<const float*>(p_data) + Dim() * i), i);
+        }
+
+        // sanity check, if failed, log and rebuild
+        segvcatch::init_segv();
+        try {
+            (void)index_->searchKnn(dummy_query.data(), kBuildTryQueryTopk, nullptr, dummy_stat, &search_param,
+                                    feder_result);
+            if (0 != sigaction(SIGSEGV, &default_sa, NULL)) {
+                LOG_KNOWHERE_ERROR_ << "Failed to restore SEGV signal";
+            }
+            break;
+        } catch (std::exception& e) {
+            index_->resetIndex();
+            LOG_KNOWHERE_ERROR_ << "Failed to search after build " << e.what() << " Retry " << build_try_cnt;
+            if (build_try_cnt >= kBuildRetryCnt) {
+                KNOWHERE_THROW_MSG("After " + std::to_string(kBuildRetryCnt) + " times build, search still fails.");
+            }
+            if (0 != sigaction(SIGSEGV, &default_sa, NULL)) {
+                LOG_KNOWHERE_ERROR_ << "Failed to restore SEGV signal";
+            }
+        }
     }
 }
 

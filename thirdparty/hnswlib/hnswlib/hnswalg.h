@@ -633,6 +633,34 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     }
 
     void
+    resetIndex() {
+        free(data_level0_memory_);
+        for (tableint i = 0; i < cur_element_count; i++) {
+            if (element_levels_[i] > 0)
+                free(linkLists_[i]);
+        }
+        free(linkLists_);
+        delete visited_list_pool_;
+
+        // re-alloc
+        std::vector<int>(max_elements_).swap(element_levels_);
+        std::vector<std::mutex>(max_elements_).swap(link_list_locks_);
+        data_level0_memory_ = (char*)malloc(max_elements_ * size_data_per_element_);
+        if (data_level0_memory_ == nullptr)
+            throw std::runtime_error("Not enough memory");
+        linkLists_ = (char**)malloc(sizeof(void*) * max_elements_);
+        if (linkLists_ == nullptr)
+            throw std::runtime_error("Not enough memory: HierarchicalNSW failed to allocate linklists");
+        visited_list_pool_ = new VisitedListPool(1, max_elements_);
+
+        cur_element_count = 0;
+        enterpoint_node_ = -1;
+        maxlevel_ = -1;
+        offsetLevel0_ = 0;
+        std::vector<int>(level_stats_.size()).swap(level_stats_);
+    }
+
+    void
     saveIndex(const std::string& location) {
         std::ofstream output(location, std::ios::binary);
         std::streampos position;

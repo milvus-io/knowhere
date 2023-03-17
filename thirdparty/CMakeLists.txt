@@ -194,6 +194,10 @@ if ( KNOWHERE_WITH_DISKANN AND NOT TARGET diskann_ep )
     link_directories( SYSTEM  "${DISKANN_PREFIX}/${CMAKE_INSTALL_LIBDIR}/" )
 endif()
 
+# ****************************** Thirdparty segvcatch ***************************************
+add_subdirectory(segvcatch)
+# *********************************************************************
+
 install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/annoy/"
         DESTINATION "include/annoy"
         FILES_MATCHING
@@ -218,6 +222,11 @@ install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/easyloggingpp/"
         PATTERN "*.h" 
 )
 
+install(DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/segvcatch/"
+        DESTINATION "include/segvcatch"
+        FILES_MATCHING 
+        PATTERN "*.h" 
+)
 
 if ( KNOWHERE_WITH_DISKANN AND TARGET diskann)
     install( DIRECTORY "${KNOWHERE_SOURCE_DIR}/thirdparty/DiskANN/"
