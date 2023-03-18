@@ -87,21 +87,25 @@ class GPUResMgr {
     void
     Init() {
         if (!init_) {
-            for (int64_t i = 0; i < gpu_params_.res_num_; ++i) {
-                auto gpu_res = new faiss::gpu::StandardGpuResources();
-                auto res = std::make_shared<Resource>(gpu_id_, gpu_res);
+            // double-check for thread safe
+            std::lock_guard<std::mutex> lock(init_mutex_);
+            if (!init_) {
+                for (int64_t i = 0; i < gpu_params_.res_num_; ++i) {
+                    auto gpu_res = new faiss::gpu::StandardGpuResources();
+                    auto res = std::make_shared<Resource>(gpu_id_, gpu_res);
 
-                cudaStream_t s;
-                CUDA_VERIFY(cudaStreamCreate(&s));
-                gpu_res->setDefaultStream(gpu_id_, s);
-                gpu_res->setTempMemory(gpu_params_.tmp_mem_sz_);
-                // need not set pinned memory by now
+                    cudaStream_t s;
+                    CUDA_VERIFY(cudaStreamCreate(&s));
+                    gpu_res->setDefaultStream(gpu_id_, s);
+                    gpu_res->setTempMemory(gpu_params_.tmp_mem_sz_);
+                    // need not set pinned memory by now
 
-                res_bq_.Put(res);
+                    res_bq_.Put(res);
+                }
+                LOG_KNOWHERE_DEBUG_ << "Init gpu_id " << gpu_id_ << ", resource count " << res_bq_.Size()
+                                    << ", tmp_mem_sz " << gpu_params_.tmp_mem_sz_ / MB << "MB";
+                init_ = true;
             }
-            LOG_KNOWHERE_DEBUG_ << "Init gpu_id " << gpu_id_ << ", resource count " << res_bq_.Size() << ", tmp_mem_sz "
-                                << gpu_params_.tmp_mem_sz_ / MB << "MB";
-            init_ = true;
         }
     }
 
@@ -117,25 +121,22 @@ class GPUResMgr {
 
     ResPtr
     GetRes() {
-        if (init_) {
-            auto res = res_bq_.Take();
-            return res;
-        } else {
-            KNOWHERE_THROW_MSG("GPUResMgr not initialized");
-        }
+        // Generally Init() should be called separately,
+        // here is for supporting python test
+        Init();
+        auto res = res_bq_.Take();
+        return res;
     }
 
     void
     PutRes(const ResPtr& res) {
-        if (init_) {
-            res_bq_.Put(res);
-        } else {
-            KNOWHERE_THROW_MSG("GPUResMgr not initialized");
-        }
+        res_bq_.Put(res);
     }
 
  protected:
     bool init_ = false;
+    std::mutex init_mutex_;
+
     int64_t gpu_id_ = 0;
     GPUParams gpu_params_;
     ResBQ res_bq_;

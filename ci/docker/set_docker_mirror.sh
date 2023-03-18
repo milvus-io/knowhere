@@ -34,7 +34,7 @@ restart_docker () {
     echo "set-mirror.sh] service docker start"
     docker ps -aq | xargs -r docker rm -f || true
     service docker stop || true
-    service docker start 
+    service docker start
     while true; do
     # docker ps -q should only work if the daemon is ready
     docker info > /dev/null 2>&1 && break
@@ -53,10 +53,9 @@ restart_docker () {
 
 set_mirror(){
     set_daemon_json_file
-    restart_docker 
+    restart_docker
     echo "Success."
     exit 0
-    
 }
 
 set_mirror
