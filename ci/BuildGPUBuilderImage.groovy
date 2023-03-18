@@ -60,7 +60,7 @@ spec:
       name: cgroup
     - mountPath: /mnt/disk/.docker
       name: build-cache
-      subPath: docker-volume   
+      subPath: docker-volume
   volumes:
   - emptyDir: {}
     name: docker-graph
@@ -90,12 +90,12 @@ spec:
         CI_DOCKER_CREDENTIAL_ID = "dockerhub"
     }
 
-    parameters{  
+    parameters{
         string(
             description: 'os(ubuntu20.04,centos7,ubuntu18.04)',
             name: 'os',
             defaultValue: 'ubuntu20.04'
-        )  
+        )
     }
      stages {
         stage ('Build'){
@@ -109,7 +109,7 @@ spec:
                         sh 'chmod +x ci/docker/set_docker_mirror.sh'
                         sh './ci/docker/set_docker_mirror.sh'
                         def date = sh(returnStdout: true, script: 'date +%Y%m%d').trim()
-                        def gitShortCommit = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()   
+                        def gitShortCommit = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                         def image="milvusdb/knowhere-gpu-build:amd64-${os}-${date}-${gitShortCommit}"
                         sh "docker build -t ${image} -f ci/docker/builder/gpu/${params.os}/Dockerfile ."
                         withCredentials([usernamePassword(credentialsId: "${env.CI_DOCKER_CREDENTIAL_ID}", usernameVariable: 'CI_REGISTRY_USERNAME', passwordVariable: 'CI_REGISTRY_PASSWORD')]){
@@ -119,9 +119,7 @@ spec:
                     }
                     // }
                 }
-                
             }
         }
     }
-
 }

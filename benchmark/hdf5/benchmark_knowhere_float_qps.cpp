@@ -65,7 +65,7 @@ class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing
             for (auto thread_num : THREAD_NUMs_) {
                 for (int32_t batch_nq = 1; batch_nq <= nq_; batch_nq *= 10) {
                     CALC_TIME_SPAN(task(conf, thread_num, batch_nq, nq_));
-                    printf("  thread_num = %2d, nq = %5d, elapse = %6.3fs, QPS = %.3f\n", thread_num, batch_nq, t_diff,
+                    printf("  thread_num = %2d, nq = %5d, elapse = %6.3fs, VPS = %.3f\n", thread_num, batch_nq, t_diff,
                            nq_ * thread_num / t_diff);
                     std::fflush(stdout);
                 }
@@ -119,7 +119,7 @@ class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing
             for (auto thread_num : THREAD_NUMs_) {
                 for (int32_t batch_nq = 1; batch_nq <= nq_; batch_nq *= 10) {
                     CALC_TIME_SPAN(task(conf, thread_num, batch_nq, nq_));
-                    printf("  thread_num = %2d, nq = %5d, elapse = %6.3fs, QPS = %.3f\n", thread_num, batch_nq, t_diff,
+                    printf("  thread_num = %2d, nq = %5d, elapse = %6.3fs, VPS = %.3f\n", thread_num, batch_nq, t_diff,
                            nq_ * thread_num / t_diff);
                     std::fflush(stdout);
                 }
