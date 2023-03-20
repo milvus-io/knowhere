@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.8.0-devel-ubuntu20.04
+FROM nvidia/cuda:11.6.0-devel-ubuntu20.04
 
 ENV CMAKE_VERSION="v3.23"
 ENV CMAKE_TAR="cmake-3.23.1-linux-x86_64.tar.gz"
