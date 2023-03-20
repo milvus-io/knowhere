@@ -32,10 +32,10 @@ pipeline {
                         sh "git config --global --add safe.directory '*'"
                         sh "git submodule update --recursive --init"
                         sh "mkdir build"
-                        sh "cd build/ && cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_UT=ON -DWITH_DISKANN=ON -DUSE_CUDA=ON -G Ninja"
+                        sh "cd build/ && cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_CUDA=ON -DWITH_UT=ON -DWITH_RAFT=ON"
                         sh "pwd"
                         sh "ls -la"
-                        sh "cd build/ && ninja -v"
+                        sh "cd build/ && make -j"
                         sh "cd .."
                         sh "cd python  && VERSION=${version} python3 setup.py bdist_wheel"
                         dir('python/dist'){
@@ -70,7 +70,7 @@ pipeline {
                       sh "ls -lah"
                       sh "nvidia-smi"
                       sh "pip3 install ${knowhere_wheel} \
-                          && pip3 install -r requirements.txt --timeout 30 --retries 6  && pytest -v -m 'L0 and cpu'"
+                          && pip3 install -r requirements.txt --timeout 30 --retries 6  && pytest -v -m 'L0 and gpu'"
                     }
                 }
             }
