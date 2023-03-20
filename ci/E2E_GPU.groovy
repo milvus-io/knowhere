@@ -26,6 +26,7 @@ pipeline {
                         def gitShortCommit = sh(returnStdout: true, script: "echo ${env.GIT_COMMIT} | cut -b 1-7 ").trim()
                         version="${env.CHANGE_ID}.${date}.${gitShortCommit}"
                         sh "apt-get update || true"
+                        sh "nvidia-smi"
                         sh "apt-get install dirmngr -y"
                         sh "apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 42D5A192B819C5DA"
                         sh "apt-get install build-essential libopenblas-dev ninja-build git -y"
@@ -68,8 +69,11 @@ pipeline {
                     dir('tests'){
                       unarchive mapping: ["${knowhere_wheel}": "${knowhere_wheel}"]
                       sh "ls -lah"
-                      sh "apt update"
-                      sh "apt install python3-pip"
+                      sh "apt-get update || true"
+                      sh "apt-get install dirmngr -y"
+                      sh "apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 42D5A192B819C5DA"
+                      sh "apt install python3-pip -y"
+                      sh "apt install libopenblas-dev -y"
                       sh "nvidia-smi"
                       sh "pip3 install ${knowhere_wheel} \
                           && pip3 install -r requirements.txt --timeout 30 --retries 6  && pytest -v -m 'L0 and gpu'"
