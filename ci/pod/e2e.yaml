@@ -28,7 +28,7 @@ spec:
     tty: true
     args: ["cat"]
   - name: main
-    image: milvusdb/knowhere-gpu-e2e:amd64-ubuntu20.04-20221011-1249a57
+    image: nvidia/cuda:11.8.0-runtime-ubuntu20.04
     tty: true
     args: ["cat"]
     resources:
