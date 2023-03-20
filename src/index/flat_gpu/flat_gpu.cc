@@ -159,6 +159,11 @@ class GpuFlatIndexNode : public IndexNode {
         return Status::success;
     }
 
+    Status
+    DeserializeFromFile(const std::string& filename, const LoadConfig& config) override {
+        return Status::not_implemented;
+    }
+
     virtual std::unique_ptr<BaseConfig>
     CreateConfig() const override {
         return std::make_unique<GpuFlatConfig>();

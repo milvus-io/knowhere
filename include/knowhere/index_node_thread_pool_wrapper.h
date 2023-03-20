@@ -72,6 +72,11 @@ class IndexNodeThreadPoolWrapper : public IndexNode {
         return index_node_->Deserialize(binset);
     }
 
+    Status
+    DeserializeFromFile(const std::string& filename, const LoadConfig& config) {
+        return index_node_->DeserializeFromFile(filename, config);
+    }
+
     std::unique_ptr<BaseConfig>
     CreateConfig() const {
         return index_node_->CreateConfig();

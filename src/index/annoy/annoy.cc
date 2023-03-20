@@ -13,6 +13,7 @@
 #include "index/annoy/annoy_config.h"
 #include "kissrandom.h"
 #include "knowhere/comp/thread_pool.h"
+#include "knowhere/expected.h"
 #include "knowhere/factory.h"
 namespace knowhere {
 
@@ -216,6 +217,11 @@ class AnnoyIndexNode : public IndexNode {
         }
 
         return Status::success;
+    }
+
+    Status
+    DeserializeFromFile(const std::string& filename, const LoadConfig& config) override {
+        return Status::not_implemented;
     }
 
     std::unique_ptr<BaseConfig>
