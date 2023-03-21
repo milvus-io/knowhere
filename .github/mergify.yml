@@ -88,7 +88,7 @@ pull_request_rules:
         add:
           - ci-passed
 
-- name: Test passed for non c++ or go code changed for main
+  - name: Test passed for non c++ or go code changed for main
     conditions:
       - base=main
       - -files~=^(?=.*((\.(h|cpp)|CMakeLists.txt))).*$
