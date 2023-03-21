@@ -88,6 +88,18 @@ pull_request_rules:
         add:
           - ci-passed
 
+- name: Test passed for non c++ or go code changed for main
+    conditions:
+      - base=main
+      - -files~=^(?=.*((\.(h|cpp)|CMakeLists.txt))).*$
+      - 'status-success=pre-commit'
+      - 'status-success=analyzer'
+      - "status-success=e2e"
+    actions:
+      label:
+        add:
+          - ci-passed
+
   - name: Test passed for title skip e2e
     conditions:
       - or:
