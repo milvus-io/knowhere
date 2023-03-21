@@ -134,7 +134,7 @@ if(WITH_UT)
 endif()
 
 if(WITH_BENCHMARK)
-  add_subdirectory(thirdparty/gtest)
+  include(cmake/libs/libgtest.cmake)
   add_subdirectory(benchmark)
 endif()
 

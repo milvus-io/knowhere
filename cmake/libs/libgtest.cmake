@@ -22,6 +22,7 @@ message( STATUS "Building gtest-${GTEST_VERSION} from source" )
 
 set( CMAKE_POLICY_DEFAULT_CMP0022 NEW ) # for googletest only
 
+Include(FetchContent)
 FetchContent_Declare(
         googletest
         URL             ${GTEST_SOURCE_URL}
@@ -41,26 +42,6 @@ if ( NOT googletest_POPULATED )
                       ${googletest_BINARY_DIR}
                       EXCLUDE_FROM_ALL )
 endif()
-# include(GoogleTest)
-
-# ****************************************************************
-# Create ALIAS Target
-# ****************************************************************
-# if (NOT TARGET GTest:gtest)
-#     add_library( GTest::gtest ALIAS gtest )
-# endif()
-# if (NOT TARGET GTest:main)
-#     add_library( GTest::main ALIAS gtest_main )
-# endif()
-# if (NOT TARGET GMock:gmock)
-#     target_link_libraries( gmock INTERFACE GTest::gtest )
-#     add_library( GMock::gmock ALIAS gmock )
-# endif()
-# if (NOT TARGET GMock:main)
-#     target_link_libraries( gmock_main INTERFACE GTest::gtest )
-#     add_library( GMock::main ALIAS gmock_main )
-# endif()
-
 
 get_property( var DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/googletest-src" PROPERTY COMPILE_OPTIONS )
 message( STATUS "gtest compile options: ${var}" )
