@@ -4,7 +4,7 @@ pipeline {
     agent {
         kubernetes {
             inheritFrom 'default'
-            yamlFile 'ci/pod/e2e.yaml'
+            yamlFile 'ci/pod/e2e-gpu.yaml'
             defaultContainer 'main'
         }
     }
