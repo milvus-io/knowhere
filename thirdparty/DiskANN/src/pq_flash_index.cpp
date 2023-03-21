@@ -689,10 +689,17 @@ namespace diskann {
       READ_U64(index_metadata, this->ndims_reorder_vecs);
       READ_U64(index_metadata, this->nvecs_per_sector);
     }
-    LOG(INFO) << "Disk-Index File Meta-data: " << "# nodes per sector: " 
-              << nnodes_per_sector << ", max node len (bytes): " 
-              << max_node_len << ", max node degree: "
-              << max_degree;
+    if (long_node) {
+      LOG(INFO) << "Disk-Index File Meta-data: " << "# sectors per node: " 
+                << nsectors_per_node << ", max node len (bytes): " 
+                << max_node_len << ", max node degree: "
+                << max_degree;
+    } else {
+      LOG(INFO) << "Disk-Index File Meta-data: " << "# nodes per sector: " 
+                << nnodes_per_sector << ", max node len (bytes): " 
+                << max_node_len << ", max node degree: "
+                << max_degree;
+    }
 
 #ifdef EXEC_ENV_OLS
     delete[] bytes;
@@ -819,7 +826,7 @@ namespace diskann {
 
     // copy query to thread specific aligned and allocated memory (for distance
     // calculations we need aligned data)
-    float        query_norm = 0;
+    double        query_norm = 0;
     const T *    query = data.scratch.aligned_query_T;
     const float *query_float = data.scratch.aligned_query_float;
 
@@ -828,10 +835,11 @@ namespace diskann {
       // query_dim need to be specially treated when using IP
       q_dim--;
     }
+
     for (uint32_t i = 0; i < q_dim; i++) {
       data.scratch.aligned_query_float[i] = query1[i];
       data.scratch.aligned_query_T[i] = query1[i];
-      query_norm += query1[i] * query1[i];
+      query_norm += (double)query1[i] * (double)query1[i];
     }
 
     // if inner product, we laso normalize the query and set the last coordinate
@@ -847,8 +855,8 @@ namespace diskann {
       data.scratch.aligned_query_T[this->data_dim - 1] = 0;
       data.scratch.aligned_query_float[this->data_dim - 1] = 0;
       for (uint32_t i = 0; i < this->data_dim - 1; i++) {
-        data.scratch.aligned_query_T[i] /= query_norm;
-        data.scratch.aligned_query_float[i] /= query_norm;
+        data.scratch.aligned_query_T[i] /= (float)query_norm;
+        data.scratch.aligned_query_float[i] /= (float)query_norm;
       }
     }
 

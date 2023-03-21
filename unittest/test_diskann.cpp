@@ -100,6 +100,19 @@ GenData(size_t num) {
     return data_p;
 }
 
+float*
+GenLargeData(size_t num) {
+    float max = std::numeric_limits<float>::max();
+    auto data_p = GenData(num);
+    for (auto i = 0; i < num; i++) {
+        data_p[i] = distribution(generator) * max;
+        if (!std::isnormal(data_p[i])) {
+            data_p[i] = 1.0;
+        }
+    }
+    return data_p;
+}
+
 struct DisPairLess {
     bool
     operator()(const IdDisPair& p1, const IdDisPair& p2) {
@@ -939,4 +952,46 @@ TEST_P(DiskANNTest, trace_visit) {
     knowhere::Config j2 = nlohmann::json::parse(json_id_set);
     ASSERT_NO_THROW(nlohmann::from_json(j2, id_set));
     //std::cout << j2.dump(4) << std::endl;
+}
+
+TEST_P(DiskANNTest, data_overflow_test) {
+    std::string test_dir = kDir + "/data_overflow_test";
+    std::string test_data_path = test_dir + "/large_data";
+    std::string test_index_dir = test_dir + "/large_data_index";
+
+    fs::remove_all(test_dir);
+    fs::remove(test_dir);
+
+    ASSERT_TRUE(fs::create_directory(test_dir));
+    ASSERT_TRUE(fs::create_directory(test_index_dir));
+
+    const uint32_t rows = 1000;
+    auto large_data = GenLargeData(rows * dim_);
+
+    WriteRawDataToDisk(test_data_path, large_data, rows, dim_);
+
+    auto test_diskann = std::make_unique<knowhere::IndexDiskANN<float>>(test_index_dir + "/diskann", metric_,
+                                                                        std::make_unique<knowhere::LocalFileManager>());
+
+    knowhere::Config cfg;
+    knowhere::DiskANNBuildConfig build_large_data_conf = build_conf;
+    build_large_data_conf.data_path = test_data_path;
+    build_large_data_conf.pq_code_budget_gb = rows * dim_ * sizeof(float) * 0.125 / (1024 * 1024 * 1024);
+    knowhere::DiskANNBuildConfig::Set(cfg, build_large_data_conf);
+    test_diskann->BuildAll(nullptr, cfg);
+
+    cfg.clear();
+    knowhere::DiskANNPrepareConfig::Set(cfg, prep_conf);
+    EXPECT_TRUE(test_diskann->Prepare(cfg));
+
+    cfg.clear();
+    knowhere::DiskANNQueryConfig::Set(cfg, query_conf);
+    knowhere::DatasetPtr large_data_query = knowhere::GenDataset(rows, dim_, (void*)(large_data));
+    test_diskann->Query(large_data_query, cfg, nullptr);
+
+    if (large_data != nullptr) {
+        delete[] large_data;
+    }
+    fs::remove_all(test_dir);
+    fs::remove(test_dir);
 }

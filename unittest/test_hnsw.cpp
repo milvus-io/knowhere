@@ -326,3 +326,21 @@ TEST_P(HNSWTest, HNSW_range_trace_visit) {
 
     CheckFederResult(result, nb);
 }
+
+TEST_P(HNSWTest, hnsw_data_overflow) {
+    auto data_p = (float*)knowhere::GetDatasetTensor(base_dataset);
+    auto dim = knowhere::GetDatasetDim(base_dataset);
+    auto rows = knowhere::GetDatasetRows(base_dataset);
+    for (auto i = 0; i < dim * rows; i++) {
+        data_p[i] = std::numeric_limits<float>::max() * data_p[i];
+        if (!std::isnormal(data_p[i])) {
+            data_p[i] = 1.0;
+        }
+    }
+   
+    index_->BuildAll(base_dataset, conf_);
+    ASSERT_EQ(index_->Count(), nb);
+    ASSERT_EQ(index_->Dim(), dim);
+
+    auto result = index_->Query(base_dataset, conf_, nullptr);
+}

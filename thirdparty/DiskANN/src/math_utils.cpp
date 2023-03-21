@@ -527,21 +527,36 @@ namespace kmeans {
       for (size_t i = 0; i < num_points; i++) {
         sum = sum + dist[i];
       }
+      if (std::isinf(sum)) {
+        sum = std::numeric_limits<double>::max();
+      }
+
       if (sum == 0)
         sum_flag = true;
 
       dart_val *= sum;
 
       double prefix_sum = 0;
+      size_t old_tmp_pivot = tmp_pivot;
       for (size_t i = 0; i < (num_points); i++) {
         tmp_pivot = i;
-        if (dart_val >= prefix_sum && dart_val < prefix_sum + dist[i]) {
+        if (dart_val >= prefix_sum && dart_val - prefix_sum < static_cast<double>(dist[i])) {
           break;
         }
 
         prefix_sum += dist[i];
+        if (std::isinf(prefix_sum)) {
+          prefix_sum = std::numeric_limits<double>::max();
+        }
       }
-
+      if (tmp_pivot == old_tmp_pivot && (sum_flag == false)) {
+        for (size_t i = 0; i < (num_points); i++) {
+          if (std::find(picked.begin(), picked.end(), i) == picked.end()) {
+            tmp_pivot = i;
+            break;
+          }
+        }
+      }
       if (std::find(picked.begin(), picked.end(), tmp_pivot) != picked.end() &&
           (sum_flag == false))
         continue;
