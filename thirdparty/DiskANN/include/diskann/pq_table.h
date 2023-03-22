@@ -88,7 +88,7 @@ namespace diskann {
         throw diskann::ANNException("Error loading chunk offsets file", -1,
                                     __FUNCSIG__, __FILE__, __LINE__);
       }
-      LOG(DEBUG) << "PQ data has " << numr - 1 << " bytes per point.";
+      LOG_KNOWHERE_DEBUG_ << "PQ data has " << numr - 1 << " bytes per point.";
       this->n_chunks = numr - 1;
 
 #ifdef EXEC_ENV_OLS

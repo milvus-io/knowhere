@@ -11,6 +11,7 @@
 
 #include "range_util.h"
 
+#include <algorithm>
 #include <cinttypes>
 
 #include "knowhere/log.h"

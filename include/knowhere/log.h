@@ -12,10 +12,10 @@
 #ifndef KNOWHERE_LOG_H
 #define KNOWHERE_LOG_H
 
-#ifndef ELPP_THREAD_SAFE
-#define ELPP_THREAD_SAFE
-#endif
-#include "easylogging++.h"
+#include <cstdarg>
+#include <memory>
+
+#include "glog/logging.h"
 #define KNOWHERE_MODULE_NAME "KNOWHERE"
 #define KNOWHERE_MODULE_CLASS_FUNCTION                                                                \
     knowhere::LogOut("[%s][%s::%s][%s] ", KNOWHERE_MODULE_NAME, (typeid(*this).name()), __FUNCTION__, \
@@ -23,8 +23,8 @@
 #define KNOWHERE_MODULE_FUNCTION \
     knowhere::LogOut("[%s][%s][%s] ", KNOWHERE_MODULE_NAME, __FUNCTION__, knowhere::GetThreadName().c_str())
 
-#define LOG_KNOWHERE_TRACE_ LOG(TRACE) << KNOWHERE_MODULE_FUNCTION
-#define LOG_KNOWHERE_DEBUG_ LOG(DEBUG) << KNOWHERE_MODULE_FUNCTION
+#define LOG_KNOWHERE_TRACE_ DLOG(INFO) << KNOWHERE_MODULE_FUNCTION
+#define LOG_KNOWHERE_DEBUG_ DLOG(INFO) << KNOWHERE_MODULE_FUNCTION
 #define LOG_KNOWHERE_INFO_ LOG(INFO) << KNOWHERE_MODULE_FUNCTION
 #define LOG_KNOWHERE_WARNING_ LOG(WARNING) << KNOWHERE_MODULE_FUNCTION
 #define LOG_KNOWHERE_ERROR_ LOG(ERROR) << KNOWHERE_MODULE_FUNCTION

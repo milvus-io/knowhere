@@ -41,6 +41,7 @@ class KnowhereConan(ConanFile):
         "with_diskann": False,
         "with_profiler": False,
         "with_ut": False,
+        "glog:with_gflags": False,
     }
 
     exports_sources = (

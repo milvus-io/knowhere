@@ -34,12 +34,12 @@ namespace diskann {
     writr.write((char*) &ndims_s32, sizeof(_s32));
 
     _u64 npts = (_u64) npts_s32, ndims = (_u64) ndims_s32;
-    LOG(DEBUG) << "Normalizing FLOAT vectors in file: " << inFileName
-               << "Dataset: #pts = " << npts << ", # dims = " << ndims;
+    LOG_KNOWHERE_DEBUG_ << "Normalizing FLOAT vectors in file: " << inFileName
+                        << "Dataset: #pts = " << npts << ", # dims = " << ndims;
 
     _u64 blk_size = 131072;
     _u64 nblks = ROUND_UP(npts, blk_size) / blk_size;
-    LOG(DEBUG) << "# blks: " << nblks;
+    LOG_KNOWHERE_DEBUG_ << "# blks: " << nblks;
 
     float* read_buf = new float[npts * ndims];
     for (_u64 i = 0; i < nblks; i++) {
@@ -48,6 +48,6 @@ namespace diskann {
     }
     delete[] read_buf;
 
-    LOG(DEBUG) << "Wrote normalized points to file: " << outFileName;
+    LOG_KNOWHERE_DEBUG_ << "Wrote normalized points to file: " << outFileName;
   }
 }  // namespace diskann
