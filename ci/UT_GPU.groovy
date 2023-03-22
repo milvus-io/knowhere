@@ -32,7 +32,7 @@ pipeline {
                         sh "git config --global --add safe.directory '*'"
                         sh "git submodule update --recursive --init"
                         sh "mkdir build"
-                        sh "cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_UT=ON -DUSE_CUDA=ON -DWITH_RAFT=ON \
+                        sh "cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_UT=ON -DUSE_CUDA=ON -DWITH_ASAN=ON -DWITH_RAFT=ON \
                               && make -j8 \
                               && ./tests/ut/knowhere_tests"
                     }
