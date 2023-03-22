@@ -21,6 +21,7 @@
 
 #include "common/Exception.h"
 #include "common/Log.h"
+#include "common/Timer.h"
 #include "common/Utils.h"
 #include "hnswlib/hnswlib/hnswalg.h"
 #include "index/vector_index/adapter/VectorAdapter.h"
@@ -63,6 +64,9 @@ IndexHNSW::Load(const BinarySet& index_binary) {
     } catch (std::exception& e) {
         KNOWHERE_THROW_MSG(e.what());
     }
+    LOG_KNOWHERE_INFO_ << "Loaded HNSW index. #points num:" << index_->max_elements_ << " #M:" << index_->M_
+                       << " #max level:" << index_->maxlevel_ << " #ef_construction:" << index_->ef_construction_
+                       << " #dim:" << *(size_t*)(index_->space_->get_dist_func_param());
 }
 
 void
@@ -94,12 +98,17 @@ IndexHNSW::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) {
 
     GET_TENSOR_DATA(dataset_ptr)
     utils::SetBuildOmpThread(config);
+    knowhere::TimeRecorder build_time("Building HNSW cost");
     index_->addPoint(p_data, 0);
 
 #pragma omp parallel for
     for (int i = 1; i < rows; ++i) {
         index_->addPoint((reinterpret_cast<const float*>(p_data) + Dim() * i), i);
     }
+    build_time.RecordSection("");
+    LOG_KNOWHERE_INFO_ << "HNSW built with #points num:" << index_->max_elements_ << " #M:" << index_->M_
+                       << " #max level:" << index_->maxlevel_ << " #ef_construction:" << index_->ef_construction_
+                       << " #dim:" << *(size_t*)(index_->space_->get_dist_func_param());
 }
 
 DatasetPtr
@@ -289,7 +298,7 @@ IndexHNSW::QueryByRangeImpl(int64_t n, const float* xq, float*& distances, int64
 
     float radius = GetMetaRadius(config);
     bool range_filter_exist = CheckKeyInConfig(config, meta::RANGE_FILTER);
-    float range_filter = range_filter_exist ? GetMetaRangeFilter(config) : (1.0/0.0);
+    float range_filter = range_filter_exist ? GetMetaRangeFilter(config) : (1.0 / 0.0);
     bool is_ip = (index_->metric_type_ == 1);  // L2: 0, InnerProduct: 1
 
     std::vector<std::vector<int64_t>> result_id_array(n);
