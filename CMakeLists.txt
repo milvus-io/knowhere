@@ -55,9 +55,15 @@ endif()
 
 if(USE_CUDA)
   add_definitions(-DUSE_CUDA)
-  set(CMAKE_CUDA_ARCHITECTURES 80;75;70;61)
+  if("${CMAKE_CUDA_ARCHITECTURES}" STREQUAL "")
+    set(CMAKE_CUDA_ARCHITECTURES 80;75;70;61)
+  endif()
   enable_language(CUDA)
   find_package(CUDAToolkit REQUIRED)
+  if(${CUDAToolkit_VERSION_MAJOR} GREATER 10)
+    # cuda11 support --threads for compile some large .cu more efficient
+    add_compile_options($<$<COMPILE_LANGUAGE:CUDA>:--threads=4>)
+  endif()
 endif()
 
 add_definitions(-DAUTO_INITIALIZE_EASYLOGGINGPP)
