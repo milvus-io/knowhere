@@ -290,4 +290,14 @@ void
 DiskANNQueryByRangeConfig::Set(Config& config, const DiskANNQueryByRangeConfig& query_conf) {
     config[kDiskANNQueryByRangeConfig] = query_conf;
 }
+
+const DiskANNPrepareConfig kSanityCheckDiskANNPrepareConfig; // use default
+const DiskANNQueryConfig kSanityCheckDiskANNQueryConfig{kSanityCheckMinTopK, kSanityCheckMinTopK};
+
+Config GenSanityCheckDiskANNConfig(const Config& build_config) {
+    Config config = build_config;
+    DiskANNPrepareConfig::Set(config, kSanityCheckDiskANNPrepareConfig);
+    DiskANNQueryConfig::Set(config, kSanityCheckDiskANNQueryConfig);
+    return config;
+}
 }  // namespace knowhere

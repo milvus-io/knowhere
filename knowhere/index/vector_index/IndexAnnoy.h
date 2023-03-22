@@ -38,17 +38,10 @@ class IndexAnnoy : public VecIndex {
     Load(const BinarySet&) override;
 
     void
-    BuildAll(const DatasetPtr&, const Config&) override;
+    Train(const DatasetPtr&, const Config&) override;
 
     void
-    Train(const DatasetPtr&, const Config&) override {
-        KNOWHERE_THROW_MSG("Annoy not support build item dynamically, please invoke BuildAll interface.");
-    }
-
-    void
-    AddWithoutIds(const DatasetPtr&, const Config&) override {
-        KNOWHERE_THROW_MSG("Incremental index is not supported");
-    }
+    AddWithoutIds(const DatasetPtr&, const Config&) override;
 
     DatasetPtr
     GetVectorById(const DatasetPtr&, const Config&) override;
@@ -66,6 +59,7 @@ class IndexAnnoy : public VecIndex {
     Size() override;
 
  private:
+    bool is_build_ = false;
     std::string metric_type_;
     std::shared_ptr<ThreadPool> pool_;
     std::shared_ptr<AnnoyIndexInterface<int64_t, float>> index_ = nullptr;

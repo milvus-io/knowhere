@@ -125,6 +125,10 @@ if (NOT TARGET knowhere)
     target_include_directories(knowhere PUBLIC ${KNOWHERE_SOURCE_DIR}/knowere)
 endif ()
 
+if (KNOWHERE_WITH_DISKANN)
+    target_compile_definitions(knowhere PUBLIC KNOWHERE_WITH_DISKANN)
+endif()
+
 target_link_libraries(knowhere ${depend_libs})
 
 set (KNOWHERE_INCLUDE_DIRS

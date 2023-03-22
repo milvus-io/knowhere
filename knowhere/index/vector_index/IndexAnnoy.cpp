@@ -79,29 +79,45 @@ IndexAnnoy::Load(const BinarySet& index_binary) {
 }
 
 void
-IndexAnnoy::BuildAll(const DatasetPtr& dataset_ptr, const Config& config) {
-    if (index_) {
-        // it is builded all
-        LOG_KNOWHERE_DEBUG_ << "IndexAnnoy::BuildAll: index_ has been built!";
+IndexAnnoy::Train(const DatasetPtr& dataset_ptr, const Config& config) {
+    try {
+        GET_TENSOR_DATA_DIM(dataset_ptr)
+        metric_type_ = GetMetaMetricType(config);
+        if (metric_type_ == metric::L2) {
+            index_ =
+                std::make_shared<AnnoyIndex<int64_t, float, ::Euclidean, ::Kiss64Random, ThreadedBuildPolicy>>(dim);
+        } else if (metric_type_ == metric::IP) {
+            index_ =
+                std::make_shared<AnnoyIndex<int64_t, float, ::DotProduct, ::Kiss64Random, ThreadedBuildPolicy>>(dim);
+        } else {
+            KNOWHERE_THROW_MSG("metric not supported " + metric_type_);
+        }
+    } catch (std::exception& e) {
+        KNOWHERE_THROW_MSG(e.what());
+    }
+    is_build_ = false;
+}
+
+void
+IndexAnnoy::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) {
+    if (!index_) {
+        KNOWHERE_THROW_MSG("index not initialize");
+    }
+
+    // Annoy does not support `add` function, multiple calls will be ignored, same behaviour as before
+    if (is_build_) {
+        LOG_KNOWHERE_DEBUG_ << "IndexAnnoy::AddWithoutIds: index_ has been built! "
+                            << "Annoy not support build item dynamically, please invoke BuildAll interface.";
         return;
     }
 
     GET_TENSOR_DATA_DIM(dataset_ptr)
-
     utils::SetBuildOmpThread(config);
-    metric_type_ = GetMetaMetricType(config);
-    if (metric_type_ == metric::L2) {
-        index_ = std::make_shared<AnnoyIndex<int64_t, float, ::Euclidean, ::Kiss64Random, ThreadedBuildPolicy>>(dim);
-    } else if (metric_type_ == metric::IP) {
-        index_ = std::make_shared<AnnoyIndex<int64_t, float, ::DotProduct, ::Kiss64Random, ThreadedBuildPolicy>>(dim);
-    } else {
-        KNOWHERE_THROW_MSG("metric not supported " + metric_type_);
-    }
-
     for (int i = 0; i < rows; ++i) {
         index_->add_item(i, static_cast<const float*>(p_data) + dim * i);
     }
     index_->build(GetIndexParamNtrees(config));
+    is_build_ = true;
 }
 
 DatasetPtr

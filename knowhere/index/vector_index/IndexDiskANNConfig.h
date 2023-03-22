@@ -121,4 +121,5 @@ struct DiskANNQueryByRangeConfig {
     Set(Config& config, const DiskANNQueryByRangeConfig& query_conf);
 };
 
+Config GenSanityCheckDiskANNConfig(const Config& build_config);
 }  // namespace knowhere

@@ -46,10 +46,8 @@ TEST_P(AnnoyTest, annoy_basic) {
 
     // null faiss index
     {
-        ASSERT_ANY_THROW(index_->Train(base_dataset, conf_));
         ASSERT_ANY_THROW(index_->Query(query_dataset, conf_, nullptr));
         ASSERT_ANY_THROW(index_->Serialize(conf_));
-        ASSERT_ANY_THROW(index_->AddWithoutIds(base_dataset, conf_));
         ASSERT_ANY_THROW(index_->Count());
         ASSERT_ANY_THROW(index_->Dim());
     }
