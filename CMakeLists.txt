@@ -75,9 +75,23 @@ include_directories(thirdparty/bitset)
 include_directories(thirdparty)
 
 find_package(OpenMP REQUIRED)
+
 if(WITH_RAFT)
   include(cmake/libs/libraft.cmake)
 endif()
+
+find_package(nlohmann_json)
+if (NOT nlohmann_json_FOUND)
+  message(STATUS "nlohmann_json not found, fetching from github")
+  Include(FetchContent)
+  FetchContent_Declare(
+    nlohmann_json
+    URL https://github.com/nlohmann/json/archive/refs/tags/v3.11.2.tar.gz
+    URL_HASH MD5=e8d56bc54621037842ee9f0aeae27746
+  )
+  FetchContent_MakeAvailable(nlohmann_json)
+endif()
+set(CMAKE_CXX_STANDARD 17)
 
 if(OPENMP_FOUND)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -118,6 +132,7 @@ include_directories(include)
 
 list(APPEND KNOWHERE_LINKER_LIBS faiss)
 list(APPEND KNOWHERE_LINKER_LIBS easyloggingpp)
+list(APPEND KNOWHERE_LINKER_LIBS nlohmann_json::nlohmann_json)
 
 add_library(knowhere SHARED ${KNOWHERE_SRCS})
 add_dependencies(knowhere ${KNOWHERE_LINKER_LIBS})

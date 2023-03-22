@@ -30,15 +30,23 @@ DEFINE_MACROS = [
     ("SWIGWORDSIZE64", "1"),
 ]
 
+nlohmann_json_include = ""
+with open(os.path.join(KNOWHERE_ROOT, "build/nlohmann_json.pc")) as f:
+    for line in f.readlines():
+        if line.startswith("prefix="):
+            nlohmann_json_include = line.strip().split("=")[1] + "/include"
+            break
+
 INCLUDE_DIRS = [
     get_numpy_include(),
     KNOWHERE_ROOT,
     os.path.join(KNOWHERE_ROOT, "include"),
     os.path.join(KNOWHERE_ROOT, "thirdparty"),
     os.path.join(KNOWHERE_ROOT, "thirdparty/easyloggingpp/src"),
+    nlohmann_json_include,
 ]
 
-LIBRARY_DIRS = [os.path.join(KNOWHERE_ROOT, "build")]
+LIBRARY_DIRS = [os.path.join(KNOWHERE_ROOT, "build/Release")]
 EXTRA_COMPILE_ARGS = ["-fPIC", "-std=gnu++17"]
 EXTRA_LINK_ARGS = [
     "-lknowhere",
@@ -80,7 +88,7 @@ setup(
     data_files=[
         (
             "lib",
-            [os.path.join(KNOWHERE_ROOT, "build/libknowhere.so")],
+            [os.path.join(KNOWHERE_ROOT, "build/Release/libknowhere.so")],
         )
     ],
     ext_modules=[_swigknowhere],

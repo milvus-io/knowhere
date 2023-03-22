@@ -15,13 +15,17 @@ if(NOT WITH_DISKANN)
   list(REMOVE_ITEM KNOWHERE_UT_SRCS ${KNOWHERE_DISKANN_TESTS})
 endif()
 add_executable(knowhere_tests ${KNOWHERE_UT_SRCS})
-Include(FetchContent)
-FetchContent_Declare(
-  Catch2
-  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG v3.1.1 # or a later release
-)
-FetchContent_MakeAvailable(Catch2)
+find_package(Catch2)
+if (NOT Catch2_FOUND)
+  message("Catch2 not found, fetching Catch2 from github")
+  Include(FetchContent)
+  FetchContent_Declare(
+    Catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG v3.1.1 # or a later release
+  )
+  FetchContent_MakeAvailable(Catch2)
+endif()
 set_target_properties(knowhere_tests PROPERTIES
   CXX_STANDARD 17
 )
