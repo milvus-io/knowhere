@@ -199,4 +199,14 @@ GetFaissMetricType(const Config& cfg) {
     return GetFaissMetricType(GetMetaMetricType(cfg));
 }
 
+constexpr int64_t kSanityCheckMinTopK = 1;
+
+inline Config GenSanityCheckConfig(const Config& build_config) {
+    Config config = build_config;
+    SetMetaTopk(config, kSanityCheckMinTopK);
+    SetIndexParamEf(config, kSanityCheckMinTopK);
+    SetIndexParamNprobe(config, kSanityCheckMinTopK);
+    SetIndexParamSearchK(config, kSanityCheckMinTopK);
+    return config;
+}
 }  // namespace knowhere

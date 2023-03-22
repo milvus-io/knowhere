@@ -61,12 +61,19 @@ void
 IVF_NM::Load(const BinarySet& binary_set) {
     LoadImpl(binary_set, index_type_);
 
-    // Construct arranged data from original data
     auto binary = binary_set.GetByName(RAW_DATA);
     auto ivf_index = static_cast<faiss::IndexIVF*>(index_.get());
     auto invlists = ivf_index->invlists;
     auto d = ivf_index->d;
     size_t nb = binary->size / invlists->code_size;
+    ArrangeData(nb, binary->data.get());
+}
+
+void
+IVF_NM::ArrangeData(const size_t n, const uint8_t* data) {
+    auto ivf_index = static_cast<faiss::IndexIVF*>(index_.get());
+    auto invlists = ivf_index->invlists;
+    auto d = ivf_index->d;
     ivf_index->prefix_sum.resize(invlists->nlist + 1);
     size_t curr_index = 0;
 
@@ -78,12 +85,12 @@ IVF_NM::Load(const BinarySet& binary_set) {
 
 #ifndef KNOWHERE_GPU_VERSION
     auto ails = dynamic_cast<faiss::ArrayInvertedLists*>(invlists);
-    ivf_index->arranged_codes.resize(d * nb * sizeof(float));
+    ivf_index->arranged_codes.resize(d * n * sizeof(float));
     for (size_t i = 0; i < invlists->nlist; i++) {
         auto list_size = ails->ids[i].size();
         for (size_t j = 0; j < list_size; j++) {
             memcpy(ivf_index->arranged_codes.data() + d * (curr_index + j) * sizeof(float),
-                   binary->data.get() + d * ails->ids[i][j] * sizeof(float), d * sizeof(float));
+                   data + d * ails->ids[i][j] * sizeof(float), d * sizeof(float));
         }
         ivf_index->prefix_sum[i] = curr_index;
         curr_index += list_size;
@@ -98,7 +105,7 @@ IVF_NM::Load(const BinarySet& binary_set) {
         auto list_size = lengths[i];
         for (size_t j = 0; j < list_size; j++) {
             memcpy(arranged_data + d * (curr_index + j),
-                   binary->data.get() + d * rol_ids[curr_index + j] * sizeof(float),
+                   data + d * rol_ids[curr_index + j] * sizeof(float),
                    d * sizeof(float));
         }
         ivf_index->prefix_sum[i] = curr_index;
@@ -136,6 +143,7 @@ IVF_NM::AddWithoutIds(const DatasetPtr& dataset_ptr, const Config& config) {
 
     GET_TENSOR_DATA(dataset_ptr)
     index_->add_without_codes(rows, reinterpret_cast<const float*>(p_data));
+    ArrangeData(rows, reinterpret_cast<const uint8_t*>(p_data));
 }
 
 DatasetPtr

@@ -104,6 +104,9 @@ class IVF_NM : public VecIndex, public OffsetBaseIndex {
 
     // ro_codes: if GPU, hold a ptr of read only codes so that destruction won't be done twice
     faiss::PageLockMemoryPtr ro_codes_ = nullptr;
+
+ private:
+    void ArrangeData(const size_t n, const uint8_t* data);
 };
 
 using IVFNMPtr = std::shared_ptr<IVF_NM>;

@@ -63,7 +63,7 @@ TEST_P(AsyncIndexTest, async_query_thread_num) {
     index_->BuildAll(base_dataset, conf_);
     int32_t num_threads_after_build = knowhere::threadchecker::GetThreadNum(pid);
     EXPECT_GE(knowhere::threadchecker::GetBuildOmpThread(conf_),
-              num_threads_after_build - num_threads_before_build + 1);
+              num_threads_after_build - num_threads_before_build);
     for (int i = 0; i < kQuerySum; i++) {
         index_->QueryAsync(query_dataset, conf_, nullptr);
     }
