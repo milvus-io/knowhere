@@ -15,7 +15,10 @@
 namespace knowhere {
 
 static const std::unordered_set<std::string> ext_legal_json_keys = {
+    "metric_type",
     "dim",
+    "nlist",
+    "nprobe",
     "level",
     "index_type",
     "index_mode",
