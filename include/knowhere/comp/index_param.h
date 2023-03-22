@@ -43,8 +43,6 @@ constexpr const char* INDEX_RAFT_IVFPQ = "RAFT_IVF_PQ";
 
 }  // namespace IndexEnum
 
-enum class IndexMode { MODE_CPU = 0, MODE_GPU = 1 };
-
 namespace meta {
 constexpr const char* METRIC_TYPE = "metric_type";
 constexpr const char* DIM = "dim";
@@ -59,8 +57,6 @@ constexpr const char* RANGE_FILTER = "range_filter";
 constexpr const char* INPUT_IDS = "input_ids";
 constexpr const char* OUTPUT_TENSOR = "output_tensor";
 constexpr const char* DEVICE_ID = "gpu_id";
-constexpr const char* BUILD_INDEX_OMP_NUM = "build_index_omp_num";
-constexpr const char* QUERY_OMP_NUM = "query_omp_num";
 constexpr const char* TRACE_VISIT = "trace_visit";
 constexpr const char* JSON_INFO = "json_info";
 constexpr const char* JSON_ID_SET = "json_id_set";
