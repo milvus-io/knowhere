@@ -2,12 +2,14 @@
 // Licensed under the MIT license.
 
 #include "diskann/math_utils.h"
+#include "knowhere/comp/thread_pool.h"
 #include <omp.h>
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <ctime>
+#include <future>
 #include <iostream>
 #include <iomanip>
 #include <iterator>
@@ -45,7 +47,7 @@
 // block size for reading/ processing large files and matrices in blocks
 #define BLOCK_SIZE 1000000
 
-//#define SAVE_INFLATED_PQ true
+// #define SAVE_INFLATED_PQ true
 
 template<typename T>
 void gen_random_slice(const std::string base_file,
@@ -151,7 +153,7 @@ template<typename T>
 void gen_random_slice(const T *inputdata, size_t npts, size_t ndims,
                       double p_val, float *&sampled_data, size_t &slice_size) {
   std::vector<std::vector<float>> sampled_vectors;
-  const T *                       cur_vector_T;
+  const T                        *cur_vector_T;
 
   p_val = p_val < 1 ? p_val : 1;
 
@@ -307,42 +309,48 @@ int generate_pq_pivots(const float *passed_train_data, size_t num_train,
 
   full_pivot_data.reset(new float[num_centers * dim]);
 
-#pragma omp parallel for schedule(dynamic)
+  auto thread_pool = knowhere::ThreadPool::GetGlobalThreadPool();
+  std::vector<std::future<void>> futures;
+  futures.reserve(num_pq_chunks);
   for (size_t i = 0; i < num_pq_chunks; i++) {
     size_t cur_chunk_size = chunk_offsets[i + 1] - chunk_offsets[i];
-
     if (cur_chunk_size == 0)
       continue;
-    std::unique_ptr<float[]> cur_pivot_data =
-        std::make_unique<float[]>(num_centers * cur_chunk_size);
-    std::unique_ptr<float[]> cur_data =
-        std::make_unique<float[]>(num_train * cur_chunk_size);
-    std::unique_ptr<uint32_t[]> closest_center =
-        std::make_unique<uint32_t[]>(num_train);
+    futures.push_back(thread_pool->push([&, chunk_size = cur_chunk_size,
+                                         index = i]() {
+      std::unique_ptr<float[]> cur_pivot_data =
+          std::make_unique<float[]>(num_centers * chunk_size);
+      std::unique_ptr<float[]> cur_data =
+          std::make_unique<float[]>(num_train * chunk_size);
+      std::unique_ptr<uint32_t[]> closest_center =
+          std::make_unique<uint32_t[]>(num_train);
 
-    LOG_KNOWHERE_DEBUG_ << "Processing chunk " << i << " with dimensions ["
-                        << chunk_offsets[i] << ", " << chunk_offsets[i + 1]
-                        << ")";
+      LOG_KNOWHERE_DEBUG_ << "Processing chunk " << index
+                          << " with dimensions [" << chunk_offsets[index]
+                          << ", " << chunk_offsets[index + 1] << ")";
 
-#pragma omp parallel for schedule(static, 65536)
-    for (int64_t j = 0; j < (_s64) num_train; j++) {
-      std::memcpy(cur_data.get() + j * cur_chunk_size,
-                  train_data.get() + j * dim + chunk_offsets[i],
-                  cur_chunk_size * sizeof(float));
-    }
+      for (int64_t j = 0; j < (_s64) num_train; j++) {
+        std::memcpy(cur_data.get() + j * chunk_size,
+                    train_data.get() + j * dim + chunk_offsets[index],
+                    chunk_size * sizeof(float));
+      }
 
-    kmeans::kmeanspp_selecting_pivots(cur_data.get(), num_train, cur_chunk_size,
-                                      cur_pivot_data.get(), num_centers);
+      kmeans::kmeanspp_selecting_pivots(cur_data.get(), num_train, chunk_size,
+                                        cur_pivot_data.get(), num_centers);
 
-    kmeans::run_lloyds(cur_data.get(), num_train, cur_chunk_size,
-                       cur_pivot_data.get(), num_centers, max_k_means_reps,
-                       NULL, closest_center.get());
+      kmeans::run_lloyds(cur_data.get(), num_train, chunk_size,
+                         cur_pivot_data.get(), num_centers, max_k_means_reps,
+                         NULL, closest_center.get());
 
-    for (uint64_t j = 0; j < num_centers; j++) {
-      std::memcpy(full_pivot_data.get() + j * dim + chunk_offsets[i],
-                  cur_pivot_data.get() + j * cur_chunk_size,
-                  cur_chunk_size * sizeof(float));
-    }
+      for (uint64_t j = 0; j < num_centers; j++) {
+        std::memcpy(full_pivot_data.get() + j * dim + chunk_offsets[index],
+                    cur_pivot_data.get() + j * chunk_size,
+                    chunk_size * sizeof(float));
+      }
+    }));
+  }
+  for (auto &future : futures) {
+    future.get();
   }
 
   diskann::save_bin<float>(pq_pivots_path.c_str(), full_pivot_data.get(),
@@ -476,13 +484,15 @@ int generate_pq_data_from_pivots(const std::string data_file,
   std::unique_ptr<T[]> block_data_T = std::make_unique<T[]>(block_size * dim);
   std::unique_ptr<float[]> block_data_float =
       std::make_unique<float[]>(block_size * dim);
-  std::vector<float> block_data_tmp(dim);
 
   size_t num_blocks = DIV_ROUND_UP(num_points, block_size);
+  auto   thread_pool = knowhere::ThreadPool::GetGlobalThreadPool();
+  std::vector<std::future<void>> futures;
+  futures.reserve(num_pq_chunks);
 
   for (size_t block = 0; block < num_blocks; block++) {
     size_t start_id = block * block_size;
-    size_t end_id = (std::min) ((block + 1) * block_size, num_points);
+    size_t end_id = (std::min)((block + 1) * block_size, num_points);
     size_t cur_blk_size = end_id - start_id;
 
     base_reader.read((char *) (block_data_T.get()),
@@ -492,58 +502,74 @@ int generate_pq_data_from_pivots(const std::string data_file,
 
     LOG_KNOWHERE_DEBUG_ << "Processing points  [" << start_id << ", " << end_id
                         << ")..";
-
-#pragma omp parallel for firstprivate(block_data_tmp) schedule(static, 8192)
-    for (uint64_t p = 0; p < cur_blk_size; p++) {
-      for (uint64_t d = 0; d < dim; d++) {
-        block_data_float[p * dim + d] -= centroid[d];
-      }
-      for (uint64_t d = 0; d < dim; d++) {
-        block_data_tmp[d] = block_data_float[p * dim + rearrangement[d]];
-      }
-      for (uint64_t d = 0; d < dim; d++) {
-        block_data_float[d] = block_data_tmp[d];
-      }
+    auto num_threads = thread_pool->size();
+    futures.reserve(num_threads);
+    auto batch_size = DIV_ROUND_UP(cur_blk_size, num_threads);
+    for (uint64_t p = 0; p < cur_blk_size; p += batch_size) {
+      futures.push_back(thread_pool->push(
+          [&, batch_beg_id = p,
+           batch_end_id = std::min(p + batch_size, cur_blk_size)]() {
+            std::vector<float> block_data_tmp(dim);
+            for (auto index = batch_beg_id; index < batch_end_id; index++) {
+              for (uint64_t d = 0; d < dim; d++) {
+                block_data_float[index * dim + d] -= centroid[d];
+              }
+              for (uint64_t d = 0; d < dim; d++) {
+                block_data_tmp[d] =
+                    block_data_float[index * dim + rearrangement[d]];
+              }
+              for (uint64_t d = 0; d < dim; d++) {
+                block_data_float[d] = block_data_tmp[d];
+              }
+            }
+          }));
     }
 
-#pragma omp parallel for schedule(dynamic)
+    futures.clear();
+    futures.reserve(num_pq_chunks);
     for (size_t i = 0; i < num_pq_chunks; i++) {
       size_t cur_chunk_size = chunk_offsets[i + 1] - chunk_offsets[i];
       if (cur_chunk_size == 0)
         continue;
+      futures.push_back(thread_pool->push([&, chunk_size = cur_chunk_size,
+                                           chunk_index = i]() {
+        std::unique_ptr<float[]> cur_pivot_data =
+            std::make_unique<float[]>(num_centers * chunk_size);
+        std::unique_ptr<float[]> cur_data =
+            std::make_unique<float[]>(cur_blk_size * chunk_size);
+        std::unique_ptr<uint32_t[]> closest_center =
+            std::make_unique<uint32_t[]>(cur_blk_size);
 
-      std::unique_ptr<float[]> cur_pivot_data =
-          std::make_unique<float[]>(num_centers * cur_chunk_size);
-      std::unique_ptr<float[]> cur_data =
-          std::make_unique<float[]>(cur_blk_size * cur_chunk_size);
-      std::unique_ptr<uint32_t[]> closest_center =
-          std::make_unique<uint32_t[]>(cur_blk_size);
+        for (int64_t j = 0; j < (_s64) cur_blk_size; j++) {
+          for (uint64_t k = 0; k < chunk_size; k++)
+            cur_data[j * chunk_size + k] =
+                block_data_float[j * dim + chunk_offsets[chunk_index] + k];
+        }
 
-      for (int64_t j = 0; j < (_s64) cur_blk_size; j++) {
-        for (uint64_t k = 0; k < cur_chunk_size; k++)
-          cur_data[j * cur_chunk_size + k] =
-              block_data_float[j * dim + chunk_offsets[i] + k];
-      }
+        for (int64_t j = 0; j < (_s64) num_centers; j++) {
+          std::memcpy(
+              cur_pivot_data.get() + j * chunk_size,
+              full_pivot_data.get() + j * dim + chunk_offsets[chunk_index],
+              chunk_size * sizeof(float));
+        }
 
-      for (int64_t j = 0; j < (_s64) num_centers; j++) {
-        std::memcpy(cur_pivot_data.get() + j * cur_chunk_size,
-                    full_pivot_data.get() + j * dim + chunk_offsets[i],
-                    cur_chunk_size * sizeof(float));
-      }
+        math_utils::elkan_L2(cur_data.get(), cur_pivot_data.get(), chunk_size,
+                             cur_blk_size, num_centers, closest_center.get());
 
-      math_utils::elkan_L2(cur_data.get(), cur_pivot_data.get(), cur_chunk_size,
-                           cur_blk_size, num_centers, closest_center.get());
-
-#pragma omp parallel for schedule(static, 8192)
-      for (int64_t j = 0; j < (_s64) cur_blk_size; j++) {
-        block_compressed_base[j * num_pq_chunks + i] = closest_center[j];
+        for (int64_t j = 0; j < (_s64) cur_blk_size; j++) {
+          block_compressed_base[j * num_pq_chunks + chunk_index] =
+              closest_center[j];
 #ifdef SAVE_INFLATED_PQ
-        for (uint64_t k = 0; k < cur_chunk_size; k++)
-          block_inflated_base[j * dim + chunk_offsets[i] + k] =
-              cur_pivot_data[closest_center[j] * cur_chunk_size + k] +
-              centroid[chunk_offsets[i] + k];
+          for (uint64_t k = 0; k < chunk_size; k++)
+            block_inflated_base[j * dim + chunk_offsets[chunk_index] + k] =
+                cur_pivot_data[closest_center[j] * chunk_size + k] +
+                centroid[chunk_offsets[chunk_index] + k];
 #endif
-      }
+        }
+      }));
+    }
+    for (auto &future : futures) {
+      future.get();
     }
 
     if (num_centers > 256) {
@@ -591,14 +617,14 @@ int estimate_cluster_sizes(float *test_data_float, size_t num_test,
   }
 
   size_t block_size = num_test <= BLOCK_SIZE ? num_test : BLOCK_SIZE;
-  _u32 * block_closest_centers = new _u32[block_size * k_base];
+  _u32  *block_closest_centers = new _u32[block_size * k_base];
   float *block_data_float;
 
   size_t num_blocks = DIV_ROUND_UP(num_test, block_size);
 
   for (size_t block = 0; block < num_blocks; block++) {
     size_t start_id = block * block_size;
-    size_t end_id = (std::min) ((block + 1) * block_size, num_test);
+    size_t end_id = (std::min)((block + 1) * block_size, num_test);
     size_t cur_blk_size = end_id - start_id;
 
     block_data_float = test_data_float + start_id * test_dim;
@@ -679,7 +705,7 @@ int shard_data_into_clusters(const std::string data_file, float *pivots,
 
   for (size_t block = 0; block < num_blocks; block++) {
     size_t start_id = block * block_size;
-    size_t end_id = (std::min) ((block + 1) * block_size, num_points);
+    size_t end_id = (std::min)((block + 1) * block_size, num_points);
     size_t cur_blk_size = end_id - start_id;
 
     base_reader.read((char *) block_data_T.get(),
@@ -775,7 +801,7 @@ int shard_data_into_clusters_only_ids(const std::string data_file,
 
   for (size_t block = 0; block < num_blocks; block++) {
     size_t start_id = block * block_size;
-    size_t end_id = (std::min) ((block + 1) * block_size, num_points);
+    size_t end_id = (std::min)((block + 1) * block_size, num_points);
     size_t cur_blk_size = end_id - start_id;
 
     base_reader.read((char *) block_data_T.get(),
@@ -853,7 +879,7 @@ int retrieve_shard_data_from_ids(const std::string data_file,
 
   for (size_t block = 0; block < num_blocks; block++) {
     size_t start_id = block * block_size;
-    size_t end_id = (std::min) ((block + 1) * block_size, num_points);
+    size_t end_id = (std::min)((block + 1) * block_size, num_points);
     size_t cur_blk_size = end_id - start_id;
 
     base_reader.read((char *) block_data_T.get(),

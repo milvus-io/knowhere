@@ -9,6 +9,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <future>
 #include <fstream>
 #include <iostream>
 #include <limits.h>
@@ -44,6 +45,7 @@ typedef int FileHandle;
 #include "ann_exception.h"
 #include "common_includes.h"
 #include "windows_customizations.h"
+#include "knowhere/comp/thread_pool.h"
 
 #ifdef EXEC_ENV_OLS
 #include "content_buf.h"
@@ -114,14 +116,14 @@ typedef uint8_t  _u8;
 typedef int8_t   _s8;
 inline void      open_file_to_write(std::ofstream&     writer,
                                     const std::string& filename) {
-  writer.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-  if (!file_exists(filename))
+       writer.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+       if (!file_exists(filename))
     writer.open(filename, std::ios::binary | std::ios::out);
   else
     writer.open(filename, std::ios::binary | std::ios::in | std::ios::out);
 
   if (writer.fail()) {
-    char buff[1024];
+         char buff[1024];
 #ifdef _WINDOWS
     strerror_s(buff, 1024, errno);
 #else

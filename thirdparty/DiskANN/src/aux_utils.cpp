@@ -619,19 +619,27 @@ namespace diskann {
     uint32_t best_bw = start_bw;
     bool     stop_flag = false;
 
+    auto thread_pool = knowhere::ThreadPool::GetGlobalThreadPool();
+
     while (!stop_flag) {
       std::vector<int64_t> tuning_sample_result_ids_64(tuning_sample_num, 0);
       std::vector<float>   tuning_sample_result_dists(tuning_sample_num, 0);
       diskann::QueryStats *stats = new diskann::QueryStats[tuning_sample_num];
 
+      std::vector<std::future<void>> futures;
+      futures.reserve(tuning_sample_num);
       auto s = std::chrono::high_resolution_clock::now();
-#pragma omp parallel for schedule(dynamic, 1) num_threads(nthreads)
       for (_s64 i = 0; i < (int64_t) tuning_sample_num; i++) {
-        pFlashIndex->cached_beam_search(
-            tuning_sample + (i * tuning_sample_aligned_dim), 1, L,
-            tuning_sample_result_ids_64.data() + (i * 1),
-            tuning_sample_result_dists.data() + (i * 1), cur_bw, false,
-            stats + i);
+        futures.push_back(thread_pool->push([&, index = i]() {
+          pFlashIndex->cached_beam_search(
+              tuning_sample + (index * tuning_sample_aligned_dim), 1, L,
+              tuning_sample_result_ids_64.data() + (index * 1),
+              tuning_sample_result_dists.data() + (index * 1), cur_bw, false,
+              stats + index);
+        }));
+      }
+      for (auto &future : futures) {
+        future.get();
       }
       auto e = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double> diff = e - s;
@@ -966,18 +974,12 @@ namespace diskann {
       LOG(ERROR) << "Not building index. Please provide more RAM budget";
       return -1;
     }
-    _u32 num_threads = config.num_threads;
-
-    if (num_threads != 0) {
-      omp_set_num_threads(num_threads);
-    }
 
     LOG_KNOWHERE_INFO_ << "Starting index build: R=" << R << " L=" << L
                        << " Query RAM budget: "
                        << pq_code_size_limit / (1024 * 1024 * 1024) << "(GiB)"
                        << " Indexing ram budget: " << indexing_ram_budget
-                       << "(GiB)"
-                       << " T: " << num_threads;
+                       << "(GiB)";
 
     auto s = std::chrono::high_resolution_clock::now();
 

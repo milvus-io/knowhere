@@ -6,17 +6,25 @@ namespace diskann {
                      float* read_buf, _u64 npts, _u64 ndims) {
     readr.read((char*) read_buf, npts * ndims * sizeof(float));
     _u32 ndims_u32 = (_u32) ndims;
-#pragma omp parallel for
+    auto thread_pool = knowhere::ThreadPool::GetGlobalThreadPool();
+    std::vector<std::future<void>> futures;
+    futures.reserve(npts);
     for (_s64 i = 0; i < (_s64) npts; i++) {
-      float norm_pt = std::numeric_limits<float>::epsilon();
-      for (_u32 dim = 0; dim < ndims_u32; dim++) {
-        norm_pt +=
-            *(read_buf + i * ndims + dim) * *(read_buf + i * ndims + dim);
-      }
-      norm_pt = std::sqrt(norm_pt);
-      for (_u32 dim = 0; dim < ndims_u32; dim++) {
-        *(read_buf + i * ndims + dim) = *(read_buf + i * ndims + dim) / norm_pt;
-      }
+      futures.push_back(thread_pool->push([&, index = i]() {
+        float norm_pt = std::numeric_limits<float>::epsilon();
+        for (_u32 dim = 0; dim < ndims_u32; dim++) {
+          norm_pt += *(read_buf + index * ndims + dim) *
+                     *(read_buf + index * ndims + dim);
+        }
+        norm_pt = std::sqrt(norm_pt);
+        for (_u32 dim = 0; dim < ndims_u32; dim++) {
+          *(read_buf + index * ndims + dim) =
+              *(read_buf + index * ndims + dim) / norm_pt;
+        }
+      }));
+    }
+    for (auto& future : futures) {
+      future.get();
     }
     writr.write((char*) read_buf, npts * ndims * sizeof(float));
   }

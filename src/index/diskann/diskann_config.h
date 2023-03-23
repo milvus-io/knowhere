@@ -46,13 +46,6 @@ class DiskANNConfig : public BaseConfig {
     // This is the flag to enable fast build, in which we will not build vamana graph by full 2 round. This can
     // accelerate index build ~30% with an ~1% recall regression.
     CFG_BOOL accelerate_build;
-    // The number of threads used for preparing and searching. When 'num_threads' uses as build parameter, the indexing
-    // time improves almost linearly with the number of threads (subject to the cores available on the machine and DRAM
-    // bandwidth). When 'num_threads' uses as prepare parameter, Threads run in parallel and one thread handles one
-    // query at a time. More threads will result in higher aggregate query throughput, but will also use more IOs/second
-    // across the system, which may lead to higher per-query latency. So find the balance depending on the maximum
-    // number of IOPs supported by the SSD.
-    CFG_INT num_threads;
     // While serving the index, the entire graph is stored on SSD. For faster search performance, you can cache a few
     // frequently accessed nodes in memory.
     CFG_FLOAT search_cache_budget_gb;
@@ -102,13 +95,6 @@ class DiskANNConfig : public BaseConfig {
             .description("limit on the memory allowed for building the index in GB.")
             .set_range(0, std::numeric_limits<CFG_FLOAT>::max())
             .for_train();
-        KNOWHERE_CONFIG_DECLARE_FIELD(num_threads)
-            .description("number of threads used by the index build/search process.")
-            .set_default(8)
-            .set_range(1, 256)
-            .for_train()
-            .for_search()
-            .for_range_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(disk_pq_dims)
             .description("the dimension of compressed vectors stored on the ssd, use 0 to store uncompressed data.")
             .set_default(0)

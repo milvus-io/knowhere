@@ -136,43 +136,37 @@ namespace diskann {
   void PQFlashIndex<T>::setup_thread_data(_u64 nthreads) {
     LOG(INFO) << "Setting up thread-specific contexts for nthreads: "
               << nthreads;
-// omp parallel for to generate unique thread IDs
-#pragma omp parallel for num_threads((int) nthreads)
     for (_s64 thread = 0; thread < (_s64) nthreads; thread++) {
-#pragma omp critical
-      {
-        QueryScratch<T> scratch;
-        _u64 coord_alloc_size = ROUND_UP(sizeof(T) * this->aligned_dim, 256);
-        diskann::alloc_aligned((void **) &scratch.coord_scratch,
-                               coord_alloc_size, 256);
-        diskann::alloc_aligned((void **) &scratch.sector_scratch,
-                               (_u64) MAX_N_SECTOR_READS * read_len_for_node,
-                               SECTOR_LEN);
-        diskann::alloc_aligned(
-            (void **) &scratch.aligned_pq_coord_scratch,
-            (_u64) MAX_GRAPH_DEGREE * (_u64) this->aligned_dim * sizeof(_u8),
-            256);
-        diskann::alloc_aligned((void **) &scratch.aligned_pqtable_dist_scratch,
-                               256 * (_u64) this->aligned_dim * sizeof(float),
-                               256);
-        diskann::alloc_aligned((void **) &scratch.aligned_dist_scratch,
-                               (_u64) MAX_GRAPH_DEGREE * sizeof(float), 256);
-        diskann::alloc_aligned((void **) &scratch.aligned_query_T,
-                               this->aligned_dim * sizeof(T), 8 * sizeof(T));
-        diskann::alloc_aligned((void **) &scratch.aligned_query_float,
-                               this->aligned_dim * sizeof(float),
-                               8 * sizeof(float));
-        scratch.visited = new tsl::robin_set<_u64>(4096);
+      QueryScratch<T> scratch;
+      _u64 coord_alloc_size = ROUND_UP(sizeof(T) * this->aligned_dim, 256);
+      diskann::alloc_aligned((void **) &scratch.coord_scratch, coord_alloc_size,
+                             256);
+      diskann::alloc_aligned((void **) &scratch.sector_scratch,
+                             (_u64) MAX_N_SECTOR_READS * read_len_for_node,
+                             SECTOR_LEN);
+      diskann::alloc_aligned(
+          (void **) &scratch.aligned_pq_coord_scratch,
+          (_u64) MAX_GRAPH_DEGREE * (_u64) this->aligned_dim * sizeof(_u8),
+          256);
+      diskann::alloc_aligned((void **) &scratch.aligned_pqtable_dist_scratch,
+                             256 * (_u64) this->aligned_dim * sizeof(float),
+                             256);
+      diskann::alloc_aligned((void **) &scratch.aligned_dist_scratch,
+                             (_u64) MAX_GRAPH_DEGREE * sizeof(float), 256);
+      diskann::alloc_aligned((void **) &scratch.aligned_query_T,
+                             this->aligned_dim * sizeof(T), 8 * sizeof(T));
+      diskann::alloc_aligned((void **) &scratch.aligned_query_float,
+                             this->aligned_dim * sizeof(float),
+                             8 * sizeof(float));
+      scratch.visited = new tsl::robin_set<_u64>(4096);
 
-        memset(scratch.coord_scratch, 0, sizeof(T) * this->aligned_dim);
-        memset(scratch.aligned_query_T, 0, this->aligned_dim * sizeof(T));
-        memset(scratch.aligned_query_float, 0,
-               this->aligned_dim * sizeof(float));
+      memset(scratch.coord_scratch, 0, sizeof(T) * this->aligned_dim);
+      memset(scratch.aligned_query_T, 0, this->aligned_dim * sizeof(T));
+      memset(scratch.aligned_query_float, 0, this->aligned_dim * sizeof(float));
 
-        ThreadData<T> data;
-        data.scratch = scratch;
-        this->thread_data.push(data);
-      }
+      ThreadData<T> data;
+      data.scratch = scratch;
+      this->thread_data.push(data);
     }
     load_flag = true;
   }
@@ -284,14 +278,13 @@ namespace diskann {
   template<typename T>
   void PQFlashIndex<T>::generate_cache_list_from_sample_queries(
       MemoryMappedFiles &files, std::string sample_bin, _u64 l_search,
-      _u64 beamwidth, _u64 num_nodes_to_cache, uint32_t nthreads,
+      _u64 beamwidth, _u64 num_nodes_to_cache,
       std::vector<uint32_t> &node_list) {
 #else
   template<typename T>
   void PQFlashIndex<T>::generate_cache_list_from_sample_queries(
       std::string sample_bin, _u64 l_search, _u64 beamwidth,
-      _u64 num_nodes_to_cache, uint32_t nthreads,
-      std::vector<uint32_t> &node_list) {
+      _u64 num_nodes_to_cache, std::vector<uint32_t> &node_list) {
 #endif
     this->count_visited_nodes = true;
     this->node_visit_counter.clear();
@@ -324,11 +317,19 @@ namespace diskann {
     std::vector<int64_t> tmp_result_ids_64(sample_num, 0);
     std::vector<float>   tmp_result_dists(sample_num, 0);
 
-#pragma omp parallel for schedule(dynamic, 1) num_threads(nthreads)
+    auto thread_pool = knowhere::ThreadPool::GetGlobalThreadPool();
+    std::vector<std::future<void>> futures;
+    futures.reserve(sample_num);
     for (_s64 i = 0; i < (int64_t) sample_num; i++) {
-      cached_beam_search(samples + (i * sample_aligned_dim), 1, l_search,
-                         tmp_result_ids_64.data() + (i * 1),
-                         tmp_result_dists.data() + (i * 1), beamwidth);
+      futures.push_back(thread_pool->push([&, index = i]() {
+        cached_beam_search(samples + (index * sample_aligned_dim), 1, l_search,
+                           tmp_result_ids_64.data() + (index * 1),
+                           tmp_result_dists.data() + (index * 1), beamwidth);
+      }));
+    }
+
+    for (auto &future : futures) {
+      future.get();
     }
 
     std::sort(this->node_visit_counter.begin(), node_visit_counter.end(),
@@ -1162,8 +1163,8 @@ namespace diskann {
               continue;
             Neighbor nn(id, dist, true);
             auto     r = InsertIntoPool(
-                retset.data(), cur_list_size,
-                nn);  // Return position in sorted list where nn inserted.
+                    retset.data(), cur_list_size,
+                    nn);  // Return position in sorted list where nn inserted.
             if (cur_list_size < l_search)
               ++cur_list_size;
             if (r < nk)

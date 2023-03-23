@@ -3,6 +3,7 @@
 
 #pragma once
 #include <cassert>
+#include <future>
 #include <sstream>
 #include <stack>
 #include <string>
@@ -21,6 +22,7 @@
 #include "utils.h"
 #include "windows_customizations.h"
 #include "diskann/distance.h"
+#include "knowhere/comp/thread_pool.h"
 
 #define MAX_GRAPH_DEGREE 512
 #define SECTOR_LEN (_u64) 4096
@@ -43,7 +45,7 @@ namespace diskann {
         nullptr;  // MUST BE AT LEAST diskann MAX_DEGREE
     _u8 *aligned_pq_coord_scratch =
         nullptr;  // MUST BE AT LEAST  [N_CHUNKS * MAX_DEGREE]
-    T *    aligned_query_T = nullptr;
+    T     *aligned_query_T = nullptr;
     float *aligned_query_float = nullptr;
 
     tsl::robin_set<_u64> *visited = nullptr;
@@ -80,13 +82,12 @@ namespace diskann {
 #ifdef EXEC_ENV_OLS
     DISKANN_DLLEXPORT void generate_cache_list_from_sample_queries(
         MemoryMappedFiles &files, std::string sample_bin, _u64 l_search,
-        _u64 beamwidth, _u64 num_nodes_to_cache, uint32_t nthreads,
+        _u64 beamwidth, _u64 num_nodes_to_cache,
         std::vector<uint32_t> &node_list);
 #else
     DISKANN_DLLEXPORT void generate_cache_list_from_sample_queries(
         std::string sample_bin, _u64 l_search, _u64 beamwidth,
-        _u64 num_nodes_to_cache, uint32_t num_threads,
-        std::vector<uint32_t> &node_list);
+        _u64 num_nodes_to_cache, std::vector<uint32_t> &node_list);
 #endif
 
     DISKANN_DLLEXPORT void cache_bfs_levels(_u64 num_nodes_to_cache,
@@ -177,7 +178,7 @@ namespace diskann {
     // data: _u8 * n_chunks
     // chunk_size = chunk size of each dimension chunk
     // pq_tables = float* [[2^8 * [chunk_size]] * n_chunks]
-    _u8 *             data = nullptr;
+    _u8              *data = nullptr;
     _u64              n_chunks;
     FixedChunkPQTable pq_table;
 
@@ -208,7 +209,7 @@ namespace diskann {
         nhood_cache;  // <id, <neihbors_num, neihbors>>
 
     // coord_cache
-    T *                       coord_cache_buf = nullptr;
+    T                        *coord_cache_buf = nullptr;
     tsl::robin_map<_u32, T *> coord_cache;
 
     // thread-specific scratch
@@ -224,7 +225,7 @@ namespace diskann {
     // any additions we make to the header. This is an outer limit
     // on how big the header can be.
     static const int HEADER_SIZE = SECTOR_LEN;
-    char *           getHeaderBytes();
+    char            *getHeaderBytes();
 #endif
   };
 }  // namespace diskann

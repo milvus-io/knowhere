@@ -56,6 +56,7 @@ set_mirror(){
     restart_docker
     echo "Success."
     exit 0
+
 }
 
 set_mirror
