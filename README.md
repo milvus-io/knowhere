@@ -33,6 +33,30 @@ $ sudo apt install build-essential libopenblas-dev ninja-build libaio-dev libboo
 
 #### Build From Source Code
 
+##### Option 1 (Recommandded)
+
+```bash
+# Install Conan
+# Conan is a dependency manager for C/C++. see https://conan.io/
+$ pip3 install conan==1.58.0
+
+$ mkdir build && cd build
+#DEBUG CPU
+$ conan install .. --build=missing -s build_type=Debug -o with_ut=True
+#RELEASE CPU
+$ conan install .. --build=missing -o with_ut=True
+#DEBUG GPU
+$ conan install .. --build=missing -s build_type=Debug -o with_ut=True -o with_cuda=True
+#RELEASE GPU
+$ conan install .. --build=missing -o with_ut=True -o with_cuda=True
+#ADD -DWITH_DISKANN=ON TO BUILD DISKANN INDEX
+$ conan install .. --build=missing -o with_ut=True -o with_diskann=True
+#verbose compile
+$ conan build ..
+```
+
+##### Option 2
+
 ```bash
 #fetch submodule
 $ git submodule update --recursive --init
