@@ -120,7 +120,7 @@ class AioContextPool {
         LOG(ERROR) << "io_setup() failed; returned " << ret
                    << ", errno=" << -ret << ":" << ::strerror(-ret);
       } else {
-        LOG(DEBUG) << "allocating ctx: " << ctx;
+        LOG_KNOWHERE_DEBUG_ << "allocating ctx: " << ctx;
         ctx_q_.push(ctx);
         ctx_bak_.push_back(ctx);
       }

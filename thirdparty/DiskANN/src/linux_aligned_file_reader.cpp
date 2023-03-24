@@ -143,7 +143,7 @@ void LinuxAlignedFileReader::open(const std::string &fname) {
   this->file_desc = ::open(fname.c_str(), flags);
   // error checks
   assert(this->file_desc != -1);
-  LOG(DEBUG) << "Opened file : " << fname;
+  LOG_KNOWHERE_DEBUG_ << "Opened file : " << fname;
 }
 
 void LinuxAlignedFileReader::close() {

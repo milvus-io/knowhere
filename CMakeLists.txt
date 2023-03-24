@@ -66,7 +66,6 @@ if(USE_CUDA)
   endif()
 endif()
 
-add_definitions(-DAUTO_INITIALIZE_EASYLOGGINGPP)
 add_definitions(-DNOT_COMPILE_FOR_SWIG)
 
 include(cmake/utils/compile_flags.cmake)
@@ -74,7 +73,6 @@ include(cmake/utils/platform_check.cmake)
 include(cmake/libs/libfaiss.cmake)
 include(cmake/libs/libannoy.cmake)
 include(cmake/libs/libhnsw.cmake)
-include(cmake/libs/libeasylogging.cmake)
 
 include_directories(thirdparty/faiss)
 include_directories(thirdparty/bitset)
@@ -96,6 +94,18 @@ if (NOT nlohmann_json_FOUND)
     URL_HASH MD5=e8d56bc54621037842ee9f0aeae27746
   )
   FetchContent_MakeAvailable(nlohmann_json)
+endif()
+
+find_package(glog)
+if (NOT glog_FOUND)
+  message(STATUS "glog not found, fetching from github")
+  Include(FetchContent)
+  FetchContent_Declare(
+    glog
+    URL https://github.com/google/glog/archive/refs/tags/v0.6.0.tar.gz
+    URL_HASH MD5=c98a6068bc9b8ad9cebaca625ca73aa2
+  )
+  FetchContent_MakeAvailable(glog)
 endif()
 set(CMAKE_CXX_STANDARD 17)
 
@@ -137,7 +147,7 @@ include_directories(src)
 include_directories(include)
 
 list(APPEND KNOWHERE_LINKER_LIBS faiss)
-list(APPEND KNOWHERE_LINKER_LIBS easyloggingpp)
+list(APPEND KNOWHERE_LINKER_LIBS glog::glog)
 list(APPEND KNOWHERE_LINKER_LIBS nlohmann_json::nlohmann_json)
 
 add_library(knowhere SHARED ${KNOWHERE_SRCS})
@@ -147,8 +157,7 @@ if(WITH_RAFT)
 endif()
 target_link_libraries(knowhere PUBLIC ${KNOWHERE_LINKER_LIBS})
 target_include_directories(
-  knowhere PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-                  ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/easyloggingpp/src/)
+  knowhere PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 if(WITH_UT)
   add_subdirectory(tests/ut)
@@ -161,8 +170,5 @@ endif()
 
 install(TARGETS knowhere
         DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
-install(
-  FILES "${PROJECT_SOURCE_DIR}/thirdparty/easyloggingpp/src/easylogging++.h"
-  DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/knowhere"
         DESTINATION "${CMAKE_INSTALL_PREFIX}/include")

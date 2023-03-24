@@ -44,11 +44,13 @@ if(__X86_64)
     knowhere_utils STATIC
     ${UTILS_SRC} $<TARGET_OBJECTS:utils_sse> $<TARGET_OBJECTS:utils_avx>
     $<TARGET_OBJECTS:utils_avx512>)
+  target_link_libraries(knowhere_utils PUBLIC glog::glog)
 endif()
 
 if(__AARCH64)
   set(UTILS_SRC src/simd/hook.cc src/simd/distances_ref.cc)
   add_library(knowhere_utils STATIC ${UTILS_SRC})
+  target_link_libraries(knowhere_utils PUBLIC glog::glog)
 endif()
 
 if(LINUX)

@@ -25,25 +25,28 @@ class CustomBuildPy(build_py):
         return build_py.run(self)
 
 
+def get_thirdparty_prefix(lib_name):
+    prefix = ""
+    with open(os.path.join(KNOWHERE_ROOT, "build", lib_name + ".pc")) as f:
+        for line in f.readlines():
+            if line.startswith("prefix="):
+                prefix = line.strip().split("=")[1]
+                break
+    return prefix
+
+
 DEFINE_MACROS = [
     ("FINTEGER", "int"),
     ("SWIGWORDSIZE64", "1"),
 ]
-
-nlohmann_json_include = ""
-with open(os.path.join(KNOWHERE_ROOT, "build/nlohmann_json.pc")) as f:
-    for line in f.readlines():
-        if line.startswith("prefix="):
-            nlohmann_json_include = line.strip().split("=")[1] + "/include"
-            break
 
 INCLUDE_DIRS = [
     get_numpy_include(),
     KNOWHERE_ROOT,
     os.path.join(KNOWHERE_ROOT, "include"),
     os.path.join(KNOWHERE_ROOT, "thirdparty"),
-    os.path.join(KNOWHERE_ROOT, "thirdparty/easyloggingpp/src"),
-    nlohmann_json_include,
+    get_thirdparty_prefix("nlohmann_json") + "/include",
+    get_thirdparty_prefix("libglog") + "/include",
 ]
 
 LIBRARY_DIRS = [os.path.join(KNOWHERE_ROOT, "build/Release")]

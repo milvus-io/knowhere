@@ -62,7 +62,7 @@ namespace diskann {
     }
 
     size_t num_blocks = DIV_ROUND_UP(fsize, read_blk_size);
-    char * dump = new char[read_blk_size];
+    char  *dump = new char[read_blk_size];
     for (_u64 i = 0; i < num_blocks; i++) {
       size_t cur_block_size = read_blk_size > fsize - (i * read_blk_size)
                                   ? fsize - (i * read_blk_size)
@@ -239,7 +239,7 @@ namespace diskann {
   T *load_warmup(MemoryMappedFiles &files, const std::string &cache_warmup_file,
                  uint64_t &warmup_num, uint64_t warmup_dim,
                  uint64_t warmup_aligned_dim) {
-    T *      warmup = nullptr;
+    T       *warmup = nullptr;
     uint64_t file_dim, file_aligned_dim;
 
     if (files.fileExists(cache_warmup_file)) {
@@ -272,7 +272,7 @@ namespace diskann {
   template<typename T>
   T *load_warmup(const std::string &cache_warmup_file, uint64_t &warmup_num,
                  uint64_t warmup_dim, uint64_t warmup_aligned_dim) {
-    T *      warmup = nullptr;
+    T       *warmup = nullptr;
     uint64_t file_dim, file_aligned_dim;
 
     if (file_exists(cache_warmup_file)) {
@@ -346,7 +346,8 @@ namespace diskann {
       nelems += idmap.size();
     }
     nnodes++;
-    LOG(DEBUG) << "# nodes: " << nnodes << ", max. degree: " << max_degree;
+    LOG_KNOWHERE_DEBUG_ << "# nodes: " << nnodes
+                        << ", max. degree: " << max_degree;
 
     // compute inverse map: node -> shards
     std::vector<std::pair<unsigned, unsigned>> node_shard;
@@ -449,14 +450,14 @@ namespace diskann {
         // Gopal. random_shuffle() is deprecated.
         std::shuffle(final_nhood.begin(), final_nhood.end(), urng);
         nnbrs =
-            (unsigned) (std::min) (final_nhood.size(), (uint64_t) max_degree);
+            (unsigned) (std::min)(final_nhood.size(), (uint64_t) max_degree);
         // write into merged ofstream
         merged_vamana_writer.write((char *) &nnbrs, sizeof(unsigned));
         merged_vamana_writer.write((char *) final_nhood.data(),
                                    nnbrs * sizeof(unsigned));
         merged_index_size += (sizeof(unsigned) + nnbrs * sizeof(unsigned));
         if (cur_id % 499999 == 1) {
-          LOG(DEBUG) << ".";
+          LOG_KNOWHERE_DEBUG_ << ".";
         }
         cur_id = node_id;
         nnbrs = 0;
@@ -481,7 +482,7 @@ namespace diskann {
 
     // Gopal. random_shuffle() is deprecated.
     std::shuffle(final_nhood.begin(), final_nhood.end(), urng);
-    nnbrs = (unsigned) (std::min) (final_nhood.size(), (uint64_t) max_degree);
+    nnbrs = (unsigned) (std::min)(final_nhood.size(), (uint64_t) max_degree);
     // write into merged ofstream
     merged_vamana_writer.write((char *) &nnbrs, sizeof(unsigned));
     merged_vamana_writer.write((char *) final_nhood.data(),
@@ -491,7 +492,7 @@ namespace diskann {
       nhood_set[p] = 0;
     final_nhood.clear();
 
-    LOG(DEBUG) << "Expected size: " << merged_index_size;
+    LOG_KNOWHERE_DEBUG_ << "Expected size: " << merged_index_size;
 
     merged_vamana_writer.reset();
     merged_vamana_writer.write((char *) &merged_index_size, sizeof(uint64_t));
@@ -648,7 +649,7 @@ namespace diskann {
       if (qps > max_qps && lat_999 < (15000) + mean_latency * 2) {
         max_qps = qps;
         best_bw = cur_bw;
-        cur_bw = (uint32_t) (std::ceil) ((float) cur_bw * 1.1f);
+        cur_bw = (uint32_t) (std::ceil)((float) cur_bw * 1.1f);
       } else {
         stop_flag = true;
       }
@@ -755,15 +756,15 @@ namespace diskann {
       }
       nsector_per_node = ROUND_UP(max_node_len, SECTOR_LEN) / SECTOR_LEN;
       nnodes_per_sector = -1;
-      LOG(DEBUG) << "medoid: " << medoid << "B"
-                 << "max_node_len: " << max_node_len << "B"
-                 << "nsector_per_node: " << nsector_per_node << "B";
+      LOG_KNOWHERE_DEBUG_ << "medoid: " << medoid << "B"
+                          << "max_node_len: " << max_node_len << "B"
+                          << "nsector_per_node: " << nsector_per_node << "B";
     } else {
       nnodes_per_sector = SECTOR_LEN / max_node_len;
       nsector_per_node = -1;
-      LOG(DEBUG) << "medoid: " << medoid << "B"
-                 << "max_node_len: " << max_node_len << "B"
-                 << "nnodes_per_sector: " << nnodes_per_sector << "B";
+      LOG_KNOWHERE_DEBUG_ << "medoid: " << medoid << "B"
+                          << "max_node_len: " << max_node_len << "B"
+                          << "nnodes_per_sector: " << nnodes_per_sector << "B";
     }
 
     // number of sectors (1 for meta data)
@@ -828,15 +829,15 @@ namespace diskann {
 
         diskann_writer.write(sector_buf.get(), sector_buf_size);
       }
-      LOG(DEBUG) << "Output file written.";
+      LOG_KNOWHERE_DEBUG_ << "Output file written.";
       return;
     }
 
-    LOG(DEBUG) << "# sectors: " << n_sectors;
+    LOG_KNOWHERE_DEBUG_ << "# sectors: " << n_sectors;
     _u64 cur_node_id = 0;
     for (_u64 sector = 0; sector < n_sectors; sector++) {
       if (sector % 100000 == 0) {
-        LOG(DEBUG) << "Sector #" << sector << "written";
+        LOG_KNOWHERE_DEBUG_ << "Sector #" << sector << "written";
       }
       memset(sector_buf.get(), 0, SECTOR_LEN);
       for (_u64 sector_node_id = 0;
@@ -895,7 +896,7 @@ namespace diskann {
         diskann_writer.write(sector_buf.get(), SECTOR_LEN);
       }
     }
-    LOG(DEBUG) << "Output file written.";
+    LOG_KNOWHERE_DEBUG_ << "Output file written.";
   }
 
   template<typename T>
@@ -985,7 +986,7 @@ namespace diskann {
     diskann::get_bin_metadata(data_file_to_use.c_str(), points_num, dim);
 
     size_t num_pq_chunks =
-        (size_t) (std::floor) (_u64(pq_code_size_limit / points_num));
+        (size_t) (std::floor)(_u64(pq_code_size_limit / points_num));
 
     num_pq_chunks = num_pq_chunks <= 0 ? 1 : num_pq_chunks;
     num_pq_chunks = num_pq_chunks > dim ? dim : num_pq_chunks;
@@ -1006,8 +1007,8 @@ namespace diskann {
       if (disk_pq_dims > dim)
         disk_pq_dims = dim;
 
-      LOG(DEBUG) << "Compressing base for disk-PQ into " << disk_pq_dims
-                 << " chunks ";
+      LOG_KNOWHERE_DEBUG_ << "Compressing base for disk-PQ into "
+                          << disk_pq_dims << " chunks ";
       generate_pq_pivots(train_data, train_size, (uint32_t) dim, 256,
                          (uint32_t) disk_pq_dims, NUM_KMEANS_REPS,
                          disk_pq_pivots_path, false);
@@ -1020,7 +1021,7 @@ namespace diskann {
             data_file_to_use.c_str(), 256, (uint32_t) disk_pq_dims,
             disk_pq_pivots_path, disk_pq_compressed_vectors_path);
     }
-    LOG(DEBUG) << "Training data loaded of size " << train_size;
+    LOG_KNOWHERE_DEBUG_ << "Training data loaded of size " << train_size;
 
     // don't translate data to make zero mean for PQ compression. We must not
     // translate for inner product search.
