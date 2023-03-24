@@ -14,14 +14,15 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 
 find_package(HDF5 REQUIRED)
 include_directories(${HDF5_INCLUDE_DIRS})
+
+find_package(GTest REQUIRED)
 set(unittest_libs
-        gtest gmock gtest_main gmock_main)
+        GTest::gtest
+        GTest::gtest_main)
 
 set(depend_libs
         knowhere
         ${HDF5_LIBRARIES}
-        ${OpenBLAS_LIBRARIES}
-        ${LAPACK_LIBRARIES}
         )
 
 if(WITH_PROFILER)

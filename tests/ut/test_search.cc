@@ -44,7 +44,7 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
     auto ivfflat_gen = [&base_gen]() {
         knowhere::Json json = base_gen();
         json[knowhere::indexparam::NLIST] = 16;
-        json[knowhere::indexparam::NPROBE] = 4;
+        json[knowhere::indexparam::NPROBE] = 16;
         return json;
     };
 
