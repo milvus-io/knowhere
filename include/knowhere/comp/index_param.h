@@ -29,17 +29,17 @@ constexpr const char* INDEX_FAISS_IVFFLAT = "IVF_FLAT";
 constexpr const char* INDEX_FAISS_IVFPQ = "IVF_PQ";
 constexpr const char* INDEX_FAISS_IVFSQ8 = "IVF_SQ8";
 
-constexpr const char* INDEX_FAISS_GPU_IDMAP = "GPU_FLAT";
-constexpr const char* INDEX_FAISS_GPU_IVFFLAT = "GPU_IVF_FLAT";
-constexpr const char* INDEX_FAISS_GPU_IVFPQ = "GPU_IVF_PQ";
-constexpr const char* INDEX_FAISS_GPU_IVFSQ8 = "GPU_IVF_SQ8";
+constexpr const char* INDEX_FAISS_GPU_IDMAP = "GPU_FAISS_FLAT";
+constexpr const char* INDEX_FAISS_GPU_IVFFLAT = "GPU_FAISS_IVF_FLAT";
+constexpr const char* INDEX_FAISS_GPU_IVFPQ = "GPU_FAISS_IVF_PQ";
+constexpr const char* INDEX_FAISS_GPU_IVFSQ8 = "GPU_FAISS_IVF_SQ8";
+
+constexpr const char* INDEX_RAFT_IVFFLAT = "GPU_RAFT_IVF_FLAT";
+constexpr const char* INDEX_RAFT_IVFPQ = "GPU_RAFT_IVF_PQ";
 
 constexpr const char* INDEX_ANNOY = "ANNOY";
 constexpr const char* INDEX_HNSW = "HNSW";
-
 constexpr const char* INDEX_DISKANN = "DISKANN";
-constexpr const char* INDEX_RAFT_IVFFLAT = "RAFT_IVF_FLAT";
-constexpr const char* INDEX_RAFT_IVFPQ = "RAFT_IVF_PQ";
 
 }  // namespace IndexEnum
 
