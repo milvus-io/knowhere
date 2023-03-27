@@ -25,6 +25,7 @@
 
 #include "common/raft_metric.h"
 #include "index/ivf_raft/ivf_raft_config.h"
+#include "knowhere/comp/index_param.h"
 #include "knowhere/factory.h"
 #include "knowhere/index_node_thread_pool_wrapper.h"
 #include "raft/core/device_resources.hpp"
@@ -591,10 +592,10 @@ class RaftIvfIndexNode : public IndexNode {
     virtual std::string
     Type() const override {
         if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
-            return "RAFT_IVF_FLAT";
+            return knowhere::IndexEnum::INDEX_RAFT_IVFFLAT;
         }
         if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
-            return "RAFT_IVF_PQ";
+            return knowhere::IndexEnum::INDEX_RAFT_IVFPQ;
         }
     }
 
