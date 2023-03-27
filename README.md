@@ -28,37 +28,39 @@ Here's a list of verified OS types where Knowhere can successfully build and run
 #### Install Dependencies
 
 ```bash
-$ sudo apt install build-essential libopenblas-dev ninja-build libaio-dev libboost-program-options-dev
+$ sudo apt install build-essential libopenblas-dev libaio-dev python3-dev python3-pip
+$ pip3 install conan==1.59.0 --user
+$ export PATH=$PATH:$HOME/.local/bin
 ```
 
 #### Build From Source Code
 
 ```bash
-#fetch submodule
-$ git submodule update --recursive --init
-
 $ mkdir build && cd build
 #DEBUG CPU
-$ cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_UT=ON -G Ninja
+$ conan install .. --build=missing -o with_ut=True -s compiler.libcxx=libstdc++11 -s build_type=Debug
 #RELEASE CPU
-$ cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_UT=ON -G Ninja
+$ conan install .. --build=missing -o with_ut=True -s compiler.libcxx=libstdc++11 -s build_type=Release
 #DEBUG GPU
-$ cmake .. -DCMAKE_BUILD_TYPE=Debug -DUSE_CUDA=ON -DWITH_UT=ON -G Ninja
-#COMPILE with new GPUs, define your CMAKE_CUDA_ARCHITECTURES
-$ cmake .. -DCMAKE_BUILD_TYPE=Debug -DUSE_CUDA=ON -DWITH_UT=ON -DCMAKE_CUDA_ARCHITECTURES="86;89" -G Ninja
+$ conan install .. --build=missing -o with_ut=True -o with_raft=True -s compiler.libcxx=libstdc++11 -s build_type=Debug
 #RELEASE GPU
-$ cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_CUDA=ON -DWITH_UT=ON -G Ninja
-#ADD -DWITH_DISKANN=ON TO BUILD DISKANN INDEX
-$ cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_UT=ON -DWITH_DISKANN=ON -G Ninja
-#verbose compile
-$ninja -v
+$ conan install .. --build=missing -o with_ut=True -o with_raft=True -s compiler.libcxx=libstdc++11 -s build_type=Release
+#DISKANN SUPPORT
+$ conan install .. --build=missing -o with_ut=True -o with_diskann=True -s compiler.libcxx=libstdc++11 -s build_type=Debug/Release
+#build with conan
+$conan build ..
+#verbose
+export VERBOSE=1
 ```
 
 #### Running Unit Tests
 
 ```bash
 # in build directories
-$ ./tests/ut/knowhere_tests
+#Debug
+$ ./Debug/tests/ut/knowhere_tests
+#Release
+$ ./Release/tests/ut/knowhere_tests
 ```
 
 #### Clean up
@@ -67,7 +69,7 @@ $ ./tests/ut/knowhere_tests
 $ git clean -fxd
 ```
 
-## GEN PYTHON WHEEL
+## GEN PYTHON WHEEL(NEED REALSE BUILD)
 
 install dependency:
 

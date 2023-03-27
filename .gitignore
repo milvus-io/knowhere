@@ -61,3 +61,5 @@ python/knowhere/swigknowhere.py
 
 
 *.bin
+
+CMakeUserPresets.json

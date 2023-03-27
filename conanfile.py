@@ -31,6 +31,7 @@ class KnowhereConan(ConanFile):
         "with_diskann": [True, False],
         "with_profiler": [True, False],
         "with_ut": [True, False],
+        "with_benchmark": [True, False],
     }
     default_options = {
         "shared": True,
@@ -42,6 +43,7 @@ class KnowhereConan(ConanFile):
         "with_profiler": False,
         "with_ut": False,
         "glog:with_gflags": False,
+        "with_benchmark": False,
     }
 
     exports_sources = (
@@ -80,8 +82,10 @@ class KnowhereConan(ConanFile):
         self.requires("glog/0.6.0")
         self.requires("nlohmann_json/3.11.2")
         if self.options.with_ut:
-            self.requires("gtest/1.13.0")
             self.requires("catch2/3.3.1")
+        if self.options.with_benchmark:
+            self.requires("gtest/1.13.0")
+            self.requires("hdf5/1.14.0")
 
     @property
     def _required_boost_components(self):
@@ -112,6 +116,7 @@ class KnowhereConan(ConanFile):
         cmake_layout(self)
 
     def generate(self):
+
         tc = CMakeToolchain(self)
         tc.variables["CMAKE_POSITION_INDEPENDENT_CODE"] = self.options.get_safe(
             "fPIC", True
@@ -138,8 +143,8 @@ class KnowhereConan(ConanFile):
         tc.variables["WITH_RAFT"] = self.options.with_raft
         tc.variables["WITH_PROFILER"] = self.options.with_profiler
         tc.variables["WITH_UT"] = self.options.with_ut
+        tc.variables["WITH_BENCHMARK"] = self.options.with_benchmark
         tc.generate()
-
         deps = CMakeDeps(self)
         deps.generate()
 
@@ -166,8 +171,6 @@ class KnowhereConan(ConanFile):
             "boost::program_options",
             "glog::glog",
         ]
-        if self.options.with_ut:
-            self.cpp_info.components["libknowhere"].requires.append("gtest::gtest")
 
         self.cpp_info.filenames["cmake_find_package"] = "knowhere"
         self.cpp_info.filenames["cmake_find_package_multi"] = "knowhere"

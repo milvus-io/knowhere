@@ -76,7 +76,6 @@ include(cmake/libs/libhnsw.cmake)
 
 include_directories(thirdparty/faiss)
 include_directories(thirdparty/bitset)
-include_directories(thirdparty)
 
 find_package(OpenMP REQUIRED)
 
@@ -164,7 +163,6 @@ if(WITH_UT)
 endif()
 
 if(WITH_BENCHMARK)
-  add_subdirectory(thirdparty/gtest)
   add_subdirectory(benchmark)
 endif()
 
