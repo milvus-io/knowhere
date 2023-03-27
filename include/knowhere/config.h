@@ -418,6 +418,11 @@ class BaseConfig : public Config {
     }
 };
 
+struct LoadConfig {
+    // load with mmap
+    bool enable_mmap{false};
+};
+
 }  // namespace knowhere
 
 #endif /* CONFIG_H */

@@ -13,13 +13,19 @@
 
 #include <omp.h>
 
+#include <exception>
+#include <new>
+
 #include "common/range_util.h"
 #include "hnswlib/hnswalg.h"
 #include "hnswlib/hnswlib.h"
 #include "index/hnsw/hnsw_config.h"
 #include "knowhere/comp/index_param.h"
 #include "knowhere/comp/thread_pool.h"
+#include "knowhere/config.h"
+#include "knowhere/expected.h"
 #include "knowhere/factory.h"
+#include "knowhere/log.h"
 
 namespace knowhere {
 class HnswIndexNode : public IndexNode {
@@ -314,6 +320,22 @@ class HnswIndexNode : public IndexNode {
             hnswlib::SpaceInterface<float>* space = nullptr;
             index_ = new (std::nothrow) hnswlib::HierarchicalNSW<float>(space);
             index_->loadIndex(reader);
+        } catch (std::exception& e) {
+            LOG_KNOWHERE_WARNING_ << "hnsw inner error, " << e.what();
+            return Status::hnsw_inner_error;
+        }
+        return Status::success;
+    }
+
+    Status
+    DeserializeFromFile(const std::string& filename, const LoadConfig& config) override {
+        if (index_) {
+            delete index_;
+        }
+        try {
+            hnswlib::SpaceInterface<float>* space = nullptr;
+            index_ = new (std::nothrow) hnswlib::HierarchicalNSW<float>(space);
+            index_->loadIndex(filename, config);
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "hnsw inner error, " << e.what();
             return Status::hnsw_inner_error;

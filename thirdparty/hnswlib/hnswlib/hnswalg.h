@@ -1,3 +1,11 @@
+#include <sys/mman.h>
+#include <unistd.h>
+
+#include <cstddef>
+#include <cstdio>
+#include <stdexcept>
+
+#include "io/fileIO.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #pragma GCC diagnostic ignored "-Wsign-compare"
@@ -5,6 +13,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <sys/fcntl.h>
 
 #include <atomic>
 #include <list>
@@ -13,6 +22,7 @@
 
 #include "hnswlib.h"
 #include "io/FaissIO.h"
+#include "knowhere/config.h"
 #include "neighbor.h"
 #include "visited_list_pool.h"
 
@@ -72,7 +82,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         // label_offset_ = size_links_level0_ + data_size_;
         offsetLevel0_ = 0;
 
-        data_level0_memory_ = (char*)malloc(max_elements_ * size_data_per_element_); //NOLINT
+        data_level0_memory_ = (char*)malloc(max_elements_ * size_data_per_element_);  // NOLINT
         if (data_level0_memory_ == nullptr)
             throw std::runtime_error("Not enough memory");
 
@@ -569,55 +579,29 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     }
 
     void
-    saveIndex(const std::string& location) {
-        std::ofstream output(location, std::ios::binary);
-        std::streampos position;
+    loadIndex(const std::string& location, const knowhere::LoadConfig& config, size_t max_elements_i = 0) {
+        auto input = knowhere::FileReader(location, true);
 
-        writeBinaryPOD(output, offsetLevel0_);
-        writeBinaryPOD(output, max_elements_);
-        writeBinaryPOD(output, cur_element_count);
-        writeBinaryPOD(output, size_data_per_element_);
-        writeBinaryPOD(output, label_offset_);
-        writeBinaryPOD(output, offsetData_);
-        writeBinaryPOD(output, maxlevel_);
-        writeBinaryPOD(output, enterpoint_node_);
-        writeBinaryPOD(output, maxM_);
-
-        writeBinaryPOD(output, maxM0_);
-        writeBinaryPOD(output, M_);
-        writeBinaryPOD(output, mult_);
-        writeBinaryPOD(output, ef_construction_);
-
-        output.write(data_level0_memory_, cur_element_count * size_data_per_element_);
-
-        for (size_t i = 0; i < cur_element_count; i++) {
-            unsigned int linkListSize = element_levels_[i] > 0 ? size_links_per_element_ * element_levels_[i] : 0;
-            writeBinaryPOD(output, linkListSize);
-            if (linkListSize)
-                output.write(linkLists_[i], linkListSize);
+        size_t dim;
+        readBinaryPOD(input, metric_type_);
+        readBinaryPOD(input, data_size_);
+        readBinaryPOD(input, dim);
+        if (metric_type_ == 0) {
+            space_ = new hnswlib::L2Space(dim);
+        } else if (metric_type_ == 1) {
+            space_ = new hnswlib::InnerProductSpace(dim);
+        } else {
+            throw std::runtime_error("Invalid metric type " + std::to_string(metric_type_));
         }
-        output.close();
-    }
-
-    void
-    loadIndex(const std::string& location, SpaceInterface<dist_t>* s, size_t max_elements_i = 0) {
-        std::ifstream input(location, std::ios::binary);
-
-        if (!input.is_open())
-            throw std::runtime_error("Cannot open file");
-
-        // get file size:
-        input.seekg(0, input.end);
-        std::streampos total_filesize = input.tellg();
-        input.seekg(0, input.beg);
 
         readBinaryPOD(input, offsetLevel0_);
         readBinaryPOD(input, max_elements_);
         readBinaryPOD(input, cur_element_count);
 
         size_t max_elements = max_elements_i;
-        if (max_elements < cur_element_count)
+        if (max_elements < cur_element_count) {
             max_elements = max_elements_;
+        }
         max_elements_ = max_elements;
         readBinaryPOD(input, size_data_per_element_);
         readBinaryPOD(input, label_offset_);
@@ -631,53 +615,30 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         readBinaryPOD(input, mult_);
         readBinaryPOD(input, ef_construction_);
 
-        data_size_ = s->get_data_size();
-        fstdistfunc_ = s->get_dist_func();
-        dist_func_param_ = s->get_dist_func_param();
+        auto pos = input.offset();
 
-        auto pos = input.tellg();
-
-        /// Optional - check if index is ok:
-
-        input.seekg(cur_element_count * size_data_per_element_, input.cur);
-        for (size_t i = 0; i < cur_element_count; i++) {
-            if (input.tellg() < 0 || input.tellg() >= total_filesize) {
-                throw std::runtime_error("Index seems to be corrupted or unsupported");
-            }
-
-            unsigned int linkListSize;
-            readBinaryPOD(input, linkListSize);
-            if (linkListSize != 0) {
-                input.seekg(linkListSize, input.cur);
-            }
+        if (config.enable_mmap) {
+            // For HNSW, we only mmap the data part, but not the linked lists,
+            // which affects the performance significantly
+            data_level0_memory_ =
+                (char*)mmap(nullptr, max_elements * size_data_per_element_, PROT_READ, MAP_PRIVATE, input.fd, pos);
+            input.advance(max_elements * size_data_per_element_);
+        } else {
+            data_level0_memory_ = (char*)malloc(max_elements * size_data_per_element_);  // NOLINT
+            input.read(data_level0_memory_, cur_element_count * size_data_per_element_);
         }
-
-        // throw exception if it either corrupted or old index
-        if (input.tellg() != total_filesize)
-            throw std::runtime_error("Index seems to be corrupted or unsupported");
-
-        input.clear();
-
-        /// Optional check end
-
-        input.seekg(pos, input.beg);
-
-        data_level0_memory_ = (char*)malloc(max_elements * size_data_per_element_);
-        if (data_level0_memory_ == nullptr)
-            throw std::runtime_error("Not enough memory: loadIndex failed to allocate level0");
-        input.read(data_level0_memory_, cur_element_count * size_data_per_element_);
 
         size_links_per_element_ = maxM_ * sizeof(tableint) + sizeof(linklistsizeint);
 
         size_links_level0_ = maxM0_ * sizeof(tableint) + sizeof(linklistsizeint);
         std::vector<std::mutex>(max_elements).swap(link_list_locks_);
-        std::vector<std::mutex>(max_update_element_locks).swap(link_list_update_locks_);
 
         visited_list_pool_ = new VisitedListPool(max_elements);
 
-        linkLists_ = (char**)malloc(sizeof(void*) * max_elements);
-        if (linkLists_ == nullptr)
+        linkLists_ = (char**)malloc(sizeof(void*) * max_elements);  // NOLINT
+        if (linkLists_ == nullptr) {
             throw std::runtime_error("Not enough memory: loadIndex failed to allocate linklists");
+        }
         element_levels_ = std::vector<int>(max_elements);
         revSize_ = 1.0 / mult_;
         ef_ = 10;
@@ -686,19 +647,19 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             readBinaryPOD(input, linkListSize);
             if (linkListSize == 0) {
                 element_levels_[i] = 0;
-
                 linkLists_[i] = nullptr;
             } else {
                 element_levels_[i] = linkListSize / size_links_per_element_;
                 linkLists_[i] = (char*)malloc(linkListSize);
-                if (linkLists_[i] == nullptr)
+                if (linkLists_[i] == nullptr) {
                     throw std::runtime_error("Not enough memory: loadIndex failed to allocate linklist");
+                }
                 input.read(linkLists_[i], linkListSize);
             }
         }
 
+        // split
         input.close();
-
         return;
     }
 
@@ -738,7 +699,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     void
     loadIndex(knowhere::MemoryIOReader& input, size_t max_elements_i = 0) {
         // linxj: init with metrictype
-        size_t dim = 100;
+        size_t dim;
         readBinaryPOD(input, metric_type_);
         readBinaryPOD(input, data_size_);
         readBinaryPOD(input, dim);
@@ -757,8 +718,9 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         readBinaryPOD(input, cur_element_count);
 
         size_t max_elements = max_elements_i;
-        if (max_elements < cur_element_count)
+        if (max_elements < cur_element_count) {
             max_elements = max_elements_;
+        }
         max_elements_ = max_elements;
         readBinaryPOD(input, size_data_per_element_);
         readBinaryPOD(input, label_offset_);
@@ -772,7 +734,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         readBinaryPOD(input, mult_);
         readBinaryPOD(input, ef_construction_);
 
-        data_level0_memory_ = (char*)malloc(max_elements * size_data_per_element_); //NOLINT
+        data_level0_memory_ = (char*)malloc(max_elements * size_data_per_element_);  // NOLINT
         if (data_level0_memory_ == nullptr)
             throw std::runtime_error("Not enough memory: loadIndex failed to allocate level0");
         input.read(data_level0_memory_, cur_element_count * size_data_per_element_);

@@ -132,6 +132,8 @@ AVX512Capable() {
 #include <queue>
 #include <vector>
 
+#include "io/FaissIO.h"
+
 namespace hnswlib {
 typedef int64_t labeltype;
 
@@ -211,7 +213,7 @@ class AlgorithmInterface {
     searchKnnCloserFirst(const void* query_data, size_t k, const knowhere::BitsetView) const;
 
     virtual void
-    saveIndex(const std::string& location) = 0;
+    saveIndex(knowhere::MemoryIOWriter& output) = 0;
     virtual ~AlgorithmInterface() {
     }
 };
@@ -227,7 +229,6 @@ AlgorithmInterface<dist_t>::searchKnnCloserFirst(const void* query_data, size_t 
 }
 }  // namespace hnswlib
 
-#include "bruteforce.h"
 #include "hnswalg.h"
 #include "space_ip.h"
 #include "space_l2.h"

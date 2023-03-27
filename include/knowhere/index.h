@@ -12,6 +12,7 @@
 #ifndef INDEX_H
 #define INDEX_H
 
+#include "knowhere/config.h"
 #include "knowhere/index_node.h"
 #include "knowhere/log.h"
 
@@ -246,6 +247,11 @@ class Index {
     Status
     Deserialize(const BinarySet& binset) {
         return this->node->Deserialize(binset);
+    }
+
+    Status
+    DeserializeFromFile(const std::string& filename, const LoadConfig& config = {}) {
+        return this->node->Deserialize(filename, config);
     }
 
     int64_t

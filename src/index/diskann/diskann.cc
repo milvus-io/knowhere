@@ -80,6 +80,11 @@ class DiskANNIndexNode : public IndexNode {
         return Status::not_implemented;
     }
 
+    Status
+    DeserializeFromFile(const std::string& filename, const LoadConfig& config) override {
+        return Status::not_implemented;
+    }
+
     std::unique_ptr<BaseConfig>
     CreateConfig() const override {
         return std::make_unique<DiskANNConfig>();

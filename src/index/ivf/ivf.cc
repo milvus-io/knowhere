@@ -68,6 +68,8 @@ class IvfIndexNode : public IndexNode {
     Serialize(BinarySet& binset) const override;
     Status
     Deserialize(const BinarySet& binset) override;
+    Status
+    DeserializeFromFile(const std::string& filename, const LoadConfig& config) override;
     std::unique_ptr<BaseConfig>
     CreateConfig() const override {
         if constexpr (std::is_same<faiss::IndexIVFFlat, T>::value) {
@@ -603,6 +605,12 @@ IvfIndexNode<T>::Deserialize(const BinarySet& binset) {
         return Status::faiss_inner_error;
     }
     return Status::success;
+}
+
+template <typename T>
+Status
+IvfIndexNode<T>::DeserializeFromFile(const std::string& filename, const LoadConfig& config) {
+    return Status::not_implemented;
 }
 
 template <>
