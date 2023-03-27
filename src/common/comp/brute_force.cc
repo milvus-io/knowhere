@@ -178,7 +178,7 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
 
                     if (faiss_metric_type == faiss::METRIC_Tanimoto) {
                         for (int i = 0; i < topk; i++) {
-                            cur_distances[i] = faiss::Jaccard_2_Tanimoto(distances[i]);
+                            cur_distances[i] = faiss::Jaccard_2_Tanimoto(cur_distances[i]);
                         }
                     }
                     break;
