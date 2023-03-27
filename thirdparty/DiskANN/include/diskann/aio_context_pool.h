@@ -112,11 +112,15 @@ class AioContextPool {
       : num_ctx_(num_ctx), max_events_(max_events) {
     for (size_t i = 0; i < num_ctx_; ++i) {
       io_context_t ctx = 0;
-      int          ret = io_setup(max_events, &ctx);
-
+      int          ret = -1;
+      for (int retry = 0; (ret = io_setup(max_events, &ctx)) != 0 && retry < 5;
+           ++retry) {
+        if (-ret != EAGAIN) {
+          LOG(ERROR) << "Unknown error occur in io_setup, errno: " << -ret
+                     << ", " << strerror(-ret);
+        }
+      }
       if (ret != 0) {
-        assert(-ret != EAGAIN);
-        assert(-ret != ENOMEM);
         LOG(ERROR) << "io_setup() failed; returned " << ret
                    << ", errno=" << -ret << ":" << ::strerror(-ret);
       } else {
