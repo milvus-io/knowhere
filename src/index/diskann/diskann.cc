@@ -156,7 +156,6 @@ class DiskANNIndexNode : public IndexNode {
     std::string index_prefix_;
     mutable std::mutex preparation_lock_;
     std::atomic_bool is_prepared_;
-    int32_t num_threads_;
     std::shared_ptr<FileManager> file_manager_;
     std::unique_ptr<diskann::PQFlashIndex<T>> pq_flash_index_;
     std::atomic_int64_t dim_;
@@ -280,7 +279,6 @@ DiskANNIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
                                                        static_cast<unsigned>(build_conf.search_list_size),
                                                        static_cast<double>(build_conf.pq_code_budget_gb),
                                                        static_cast<double>(build_conf.build_dram_budget_gb),
-                                                       static_cast<uint32_t>(build_conf.num_threads),
                                                        static_cast<uint32_t>(build_conf.disk_pq_dims),
                                                        false,
                                                        build_conf.accelerate_build};
@@ -355,8 +353,8 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
 
     pq_flash_index_ = std::make_unique<diskann::PQFlashIndex<T>>(reader, diskann_metric);
 
-    auto load_expect = TryDiskANNCall<int>(
-        [&]() -> int { return pq_flash_index_->load(prep_conf.num_threads, index_prefix_.c_str()); });
+    auto load_expect =
+        TryDiskANNCall<int>([&]() -> int { return pq_flash_index_->load(pool_->size(), index_prefix_.c_str()); });
 
     if (!load_expect.has_value() || load_expect.value() != 0) {
         LOG_KNOWHERE_ERROR_ << "Failed to load DiskANN.";
@@ -397,7 +395,7 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
         } else {
             auto gen_cache_expect = TryDiskANNCall<bool>([&]() -> bool {
                 pq_flash_index_->generate_cache_list_from_sample_queries(warmup_query_file, 15, 6, num_nodes_to_cache,
-                                                                         prep_conf.num_threads, node_list);
+                                                                         node_list);
                 return true;
             });
 
@@ -416,10 +414,6 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
             return false;
         }
     }
-
-    // set thread number
-    omp_set_num_threads(prep_conf.num_threads);
-    num_threads_ = prep_conf.num_threads;
 
     // warmup
     if (prep_conf.warm_up) {
@@ -441,15 +435,22 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
         std::vector<float> warmup_result_dists(warmup_num, 0);
 
         bool all_searches_are_good = true;
-#pragma omp parallel for schedule(dynamic, 1)
+
+        std::vector<std::future<void>> futures;
+        futures.reserve(warmup_num);
         for (_s64 i = 0; i < (int64_t)warmup_num; ++i) {
-            auto search_expect = TryDiskANNCall<bool>([&]() -> bool {
-                pq_flash_index_->cached_beam_search(warmup + (i * warmup_aligned_dim), 1, warmup_L,
-                                                    warmup_result_ids_64.data() + (i * 1),
-                                                    warmup_result_dists.data() + (i * 1), 4);
+            futures.push_back(pool_->push([&, index = i]() {
+                pq_flash_index_->cached_beam_search(warmup + (index * warmup_aligned_dim), 1, warmup_L,
+                                                    warmup_result_ids_64.data() + (index * 1),
+                                                    warmup_result_dists.data() + (index * 1), 4);
+            }));
+        }
+        for (auto& future : futures) {
+            auto one_search_res = TryDiskANNCall<bool>([&]() {
+                future.get();
                 return true;
             });
-            if (!search_expect.has_value()) {
+            if (!one_search_res.has_value()) {
                 all_searches_are_good = false;
             }
         }
@@ -507,6 +508,7 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
     auto p_id = new int64_t[k * nq];
     auto p_dist = new float[k * nq];
 
+    bool all_searches_are_good = true;
     std::vector<std::future<void>> futures;
     futures.reserve(nq);
     for (int64_t row = 0; row < nq; ++row) {
@@ -516,7 +518,17 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
         }));
     }
     for (auto& future : futures) {
-        future.get();
+        auto one_search_res = TryDiskANNCall<bool>([&]() {
+            future.get();
+            return true;
+        });
+        if (!one_search_res.has_value()) {
+            all_searches_are_good = false;
+        }
+    }
+
+    if (!all_searches_are_good) {
+        return unexpected(Status::diskann_inner_error);
     }
 
     auto res = GenResultDataSet(nq, k, p_id, p_dist);
@@ -572,6 +584,7 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
 
     std::vector<std::future<void>> futures;
     futures.reserve(nq);
+    bool all_searches_are_good = true;
     for (int64_t row = 0; row < nq; ++row) {
         futures.push_back(pool_->push([&, index = row]() {
             std::vector<int64_t> indices;
@@ -586,8 +599,18 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
         }));
     }
     for (auto& future : futures) {
-        future.get();
+        auto one_search_res = TryDiskANNCall<bool>([&]() {
+            future.get();
+            return true;
+        });
+        if (!one_search_res.has_value()) {
+            all_searches_are_good = false;
+        }
     }
+    if (!all_searches_are_good) {
+        return unexpected(Status::diskann_inner_error);
+    }
+
     GetRangeSearchResult(result_dist_array, result_id_array, is_ip, nq, radius, search_conf.range_filter, p_dist, p_id,
                          p_lims);
     return GenResultDataSet(nq, p_id, p_dist, p_lims);
@@ -603,8 +626,7 @@ DiskANNIndexNode<T>::GetIndexMeta(const Config& cfg) const {
     auto diskann_conf = static_cast<const DiskANNConfig&>(cfg);
     feder::diskann::DiskANNMeta meta(diskann_conf.data_path, diskann_conf.max_degree, diskann_conf.search_list_size,
                                      diskann_conf.pq_code_budget_gb, diskann_conf.build_dram_budget_gb,
-                                     diskann_conf.num_threads, diskann_conf.disk_pq_dims, diskann_conf.accelerate_build,
-                                     Count(), entry_points);
+                                     diskann_conf.disk_pq_dims, diskann_conf.accelerate_build, Count(), entry_points);
     std::unordered_set<int64_t> id_set(entry_points.begin(), entry_points.end());
 
     Json json_meta, json_id_set;

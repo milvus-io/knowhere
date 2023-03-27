@@ -4,6 +4,7 @@
 #pragma once
 #include <algorithm>
 #include <fcntl.h>
+#include <future>
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
@@ -31,6 +32,7 @@ typedef int FileHandle;
 
 #include "utils.h"
 #include "windows_customizations.h"
+#include "knowhere/comp/thread_pool.h"
 
 namespace diskann {
   const size_t   MAX_PQ_TRAINING_SET_SIZE = 256000;
@@ -117,8 +119,6 @@ namespace diskann {
     double pq_code_size_gb = 0.0;
     // M (memory limit while indexing)
     double index_mem_gb = 0.0;
-    // T (number of threads for indexing)
-    uint32_t num_threads = 0;
     // B' (PQ dim for disk index: optional parameter for very
     // large dimensional data)
     uint32_t disk_pq_dims = 0;
