@@ -25,7 +25,6 @@ class KnowhereConan(ConanFile):
     options = {
         "shared": [True, False],
         "fPIC": [True, False],
-        "with_cuda": [True, False],
         "with_raft": [True, False],
         "with_asan": [True, False],
         "with_diskann": [True, False],
@@ -36,7 +35,6 @@ class KnowhereConan(ConanFile):
     default_options = {
         "shared": True,
         "fPIC": False,
-        "with_cuda": False,
         "with_raft": False,
         "with_asan": False,
         "with_diskann": False,
@@ -139,7 +137,6 @@ class KnowhereConan(ConanFile):
             tc.variables["MSVC_USE_STATIC_RUNTIME"] = "MT" in msvc_runtime_flag(self)
         tc.variables["WITH_ASAN"] = self.options.with_asan
         tc.variables["WITH_DISKANN"] = self.options.with_diskann
-        tc.variables["USE_CUDA"] = self.options.with_cuda
         tc.variables["WITH_RAFT"] = self.options.with_raft
         tc.variables["WITH_PROFILER"] = self.options.with_profiler
         tc.variables["WITH_UT"] = self.options.with_ut

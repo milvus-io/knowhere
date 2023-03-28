@@ -21,7 +21,6 @@ include(GNUInstallDirs)
 include(ExternalProject)
 include(cmake/utils/utils.cmake)
 
-knowhere_option(USE_CUDA "Build with CUDA" OFF)
 knowhere_option(WITH_UT "Build with UT test" OFF)
 knowhere_option(WITH_ASAN "Build with ASAN" OFF)
 knowhere_option(WITH_DISKANN "Build with diskann index" OFF)
@@ -30,11 +29,6 @@ knowhere_option(WITH_BENCHMARK "Build with benchmark" OFF)
 knowhere_option(WITH_COVERAGE "Build with coverage" OFF)
 knowhere_option(WITH_CCACHE "Build with ccache" ON)
 knowhere_option(WITH_PROFILER "Build with profiler" OFF)
-
-if(WITH_RAFT AND NOT USE_CUDA)
-  message(WARNING "WITH_RAFT requires USE_CUDA. Setting USE_CUDA to ON.")
-  set(USE_CUDA ON)
-endif()
 
 if(KNOWHERE_VERSION)
   message(STATUS "Building KNOWHERE version: ${KNOWHERE_VERSION}")
@@ -53,8 +47,7 @@ if(WITH_CCACHE)
   endif()
 endif()
 
-if(USE_CUDA)
-  add_definitions(-DUSE_CUDA)
+if(WITH_RAFT)
   if("${CMAKE_CUDA_ARCHITECTURES}" STREQUAL "")
     set(CMAKE_CUDA_ARCHITECTURES 80;75;70;61)
   endif()
@@ -130,11 +123,9 @@ else()
   list(REMOVE_ITEM KNOWHERE_SRCS ${KNOWHERE_DISKANN_SRCS})
 endif()
 
-if(NOT USE_CUDA)
-  knowhere_file_glob(GLOB_RECURSE KNOWHERE_GPU_SRCS src/index/flat_gpu/*.cc
+knowhere_file_glob(GLOB_RECURSE KNOWHERE_GPU_SRCS src/index/flat_gpu/*.cc
                      src/index/ivf_gpu/*.cc)
-  list(REMOVE_ITEM KNOWHERE_SRCS ${KNOWHERE_GPU_SRCS})
-endif()
+list(REMOVE_ITEM KNOWHERE_SRCS ${KNOWHERE_GPU_SRCS})
 
 if(NOT WITH_RAFT)
   knowhere_file_glob(GLOB_RECURSE KNOWHERE_RAFT_SRCS src/index/ivf_raft/*.cc
