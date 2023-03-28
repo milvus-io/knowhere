@@ -232,7 +232,6 @@ class RaftIvfIndexNode : public IndexNode {
                 }
                 devs_.insert(devs_.begin(), ivf_raft_cfg.gpu_ids.begin(), ivf_raft_cfg.gpu_ids.end());
                 auto scoped_device = detail::device_setter{*ivf_raft_cfg.gpu_ids.begin()};
-                raft_res_pool::resource::instance().init(rmm::cuda_device_id(devs_[0]));
                 auto* res_ = &raft_res_pool::get_context().resources_;
                 auto rows = dataset.GetRows();
                 auto dim = dataset.GetDim();
@@ -297,7 +296,7 @@ class RaftIvfIndexNode : public IndexNode {
                 auto dim = dataset.GetDim();
                 auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
                 auto scoped_device = detail::device_setter{devs_[0]};
-                raft_res_pool::resource::instance().init(rmm::cuda_device_id(devs_[0]));
+                // raft_res_pool::resource::instance().init(rmm::cuda_device_id(devs_[0]));
                 auto* res_ = &raft_res_pool::get_context().resources_;
 
                 auto stream = res_->get_stream();
@@ -434,7 +433,7 @@ class RaftIvfIndexNode : public IndexNode {
         os.write((char*)(&this->devs_[0]), sizeof(this->devs_[0]));
 
         auto scoped_device = detail::device_setter{devs_[0]};
-        raft_res_pool::resource::instance().init(rmm::cuda_device_id(devs_[0]));
+        // raft_res_pool::resource::instance().init(rmm::cuda_device_id(devs_[0]));
         auto* res_ = &raft_res_pool::get_context().resources_;
 
         if constexpr (std::is_same_v<T, detail::raft_ivf_flat_index>) {
@@ -500,7 +499,7 @@ class RaftIvfIndexNode : public IndexNode {
         is.read((char*)(&this->devs_[0]), sizeof(this->devs_[0]));
         auto scoped_device = detail::device_setter{devs_[0]};
 
-        raft_res_pool::resource::instance().init(rmm::cuda_device_id(devs_[0]));
+        // raft_res_pool::resource::instance().init(rmm::cuda_device_id(devs_[0]));
         auto* res_ = &raft_res_pool::get_context().resources_;
 
         if constexpr (std::is_same_v<T, detail::raft_ivf_flat_index>) {
@@ -567,6 +566,11 @@ class RaftIvfIndexNode : public IndexNode {
         is.sync();
 
         return Status::success;
+    }
+
+    virtual Status
+    DeserializeFromFile(const std::string& filename, const LoadConfig& config) {
+        return Status::not_implemented;
     }
 
     virtual std::unique_ptr<BaseConfig>

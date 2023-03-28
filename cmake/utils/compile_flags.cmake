@@ -17,14 +17,10 @@ endif()
 
 set(CMAKE_CXX_FLAGS "-Wall -fPIC ${CMAKE_CXX_FLAGS}")
 
-if(USE_CUDA)
-  set(CMAKE_CUDA_FLAGS "-Xcompiler=-w -Xcompiler=-fPIC ${CMAKE_CUDA_FLAGS}")
-endif()
-
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
-if(USE_CUDA)
+if(WITH_RAFT)
   set(CMAKE_CUDA_FLAGS_DEBUG "-O0 -g")
   set(CMAKE_CUDA_FLAGS_RELEASE "-O3 -DNDEBUG")
 endif()

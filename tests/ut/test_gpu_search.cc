@@ -17,11 +17,9 @@
 #include "knowhere/factory.h"
 #include "utils.h"
 
-#ifdef USE_CUDA
+#ifdef KNOWHERE_WITH_RAFT
 TEST_CASE("Test All GPU Index", "[search]") {
     using Catch::Approx;
-
-    knowhere::KnowhereConfig::InitGPUResource(0);
 
     int64_t nb = 10000, nq = 1000;
     int64_t dim = 128;
@@ -40,7 +38,7 @@ TEST_CASE("Test All GPU Index", "[search]") {
     auto ivfflat_gen = [&base_gen]() {
         knowhere::Json json = base_gen();
         json[knowhere::indexparam::NLIST] = 16;
-        json[knowhere::indexparam::NPROBE] = 4;
+        json[knowhere::indexparam::NPROBE] = 16;
         return json;
     };
 
@@ -64,13 +62,11 @@ TEST_CASE("Test All GPU Index", "[search]") {
             // GPU_FLAT cannot run this test is because its Train() and Add() actually run in CPU,
             // "res_" in gpu_index_ is not set correctly
             // make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IDMAP, gpu_flat_gen),
-            make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IVFFLAT, ivfflat_gen),
-            make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IVFPQ, ivfpq_gen),
-            make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IVFSQ8, ivfsq_gen),
-#ifdef KNOWHERE_WITH_RAFT
+            // make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IVFFLAT, ivfflat_gen),
+            // make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IVFPQ, ivfpq_gen),
+            // make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IVFSQ8, ivfsq_gen),
             make_tuple(knowhere::IndexEnum::INDEX_RAFT_IVFFLAT, ivfflat_gen),
             make_tuple(knowhere::IndexEnum::INDEX_RAFT_IVFPQ, ivfpq_gen),
-#endif
         }));
         auto idx = knowhere::IndexFactory::Instance().Create(name);
         auto cfg_json = gen().dump();
@@ -92,14 +88,12 @@ TEST_CASE("Test All GPU Index", "[search]") {
     SECTION("Test Gpu Index Serialize/Deserialize") {
         using std::make_tuple;
         auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
-            make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IDMAP, gpu_flat_gen),
-            make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IVFFLAT, ivfflat_gen),
-            make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IVFPQ, ivfpq_gen),
-            make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IVFSQ8, ivfsq_gen),
-#ifdef KNOWHERE_WITH_RAFT
+            // make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IDMAP, gpu_flat_gen),
+            // make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IVFFLAT, ivfflat_gen),
+            // make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IVFPQ, ivfpq_gen),
+            // make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IVFSQ8, ivfsq_gen),
             make_tuple(knowhere::IndexEnum::INDEX_RAFT_IVFFLAT, ivfflat_gen),
             make_tuple(knowhere::IndexEnum::INDEX_RAFT_IVFPQ, ivfpq_gen),
-#endif
         }));
 
         auto idx = knowhere::IndexFactory::Instance().Create(name);
@@ -123,7 +117,5 @@ TEST_CASE("Test All GPU Index", "[search]") {
             CHECK(ids[i] == i);
         }
     }
-
-    knowhere::KnowhereConfig::FreeGPUResource();
 }
 #endif

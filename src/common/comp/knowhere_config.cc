@@ -29,11 +29,7 @@ KnowhereConfig::ShowVersion() {
 #define XSTR(x) STR(x)
 #define STR(x) #x
 #ifdef KNOWHERE_VERSION
-#ifdef USE_CUDA
-    LOG_KNOWHERE_INFO_ << "Knowhere Version: " << XSTR(KNOWHERE_VERSION) << "-gpu";
-#else
     LOG_KNOWHERE_INFO_ << "Knowhere Version: " << XSTR(KNOWHERE_VERSION);
-#endif
 #else
     LOG_KNOWHERE_INFO_ << "Knowhere Version: unknown";
 #endif
@@ -127,24 +123,6 @@ void
 KnowhereConfig::SetAioContextPool(size_t num_ctx, size_t max_events) {
 #ifdef KNOWHERE_WITH_DISKANN
     AioContextPool::InitGlobalAioPool(num_ctx, max_events);
-#endif
-}
-
-void
-KnowhereConfig::InitGPUResource(int64_t gpu_id, int64_t res_num) {
-#ifdef USE_CUDA
-    LOG_KNOWHERE_INFO_ << "init GPU resource for gpu id " << gpu_id << ", resource num " << res_num;
-    knowhere::GPUParams gpu_params(res_num);
-    knowhere::GPUResMgr::GetInstance().InitDevice(gpu_id, gpu_params);
-    knowhere::GPUResMgr::GetInstance().Init();
-#endif
-}
-
-void
-KnowhereConfig::FreeGPUResource() {
-#ifdef USE_CUDA
-    LOG_KNOWHERE_INFO_ << "free GPU resource";
-    knowhere::GPUResMgr::GetInstance().Free();
 #endif
 }
 
