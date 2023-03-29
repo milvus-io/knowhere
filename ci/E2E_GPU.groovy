@@ -69,7 +69,7 @@ pipeline {
                       sh "apt-get install dirmngr -y"
                       sh "apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 42D5A192B819C5DA"
                       sh "apt install python3-pip -y"
-                      sh "apt install libopenblas-dev libaio-dev -y"
+                      sh "apt install libopenblas-dev libaio-dev libdouble-conversion-dev libevent-dev -y"
                       sh "nvidia-smi"
                       sh "pip3 install ${knowhere_wheel} \
                           && pip3 install -r requirements.txt --timeout 30 --retries 6  && pytest -v -m 'L0 and gpu'"

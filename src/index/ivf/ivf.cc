@@ -20,9 +20,9 @@
 #include "faiss/index_io.h"
 #include "index/ivf/ivf_config.h"
 #include "io/FaissIO.h"
+#include "knowhere/comp/thread_pool.h"
 #include "knowhere/factory.h"
 #include "knowhere/feder/IVFFlat.h"
-#include "knowhere/index_node_thread_pool_wrapper.h"
 #include "knowhere/log.h"
 #include "knowhere/utils.h"
 
@@ -384,10 +384,10 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
     int32_t* i_distances = reinterpret_cast<int32_t*>(distances);
     try {
         size_t max_codes = 0;
-        std::vector<std::future<void>> futs;
+        std::vector<folly::Future<folly::Unit>> futs;
         futs.reserve(rows);
         for (int i = 0; i < rows; ++i) {
-            futs.push_back(pool_->push([&, index = i] {
+            futs.emplace_back(pool_->push([&, index = i] {
                 ThreadPool::ScopedOmpSetter setter(1);
                 auto offset = k * index;
                 if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value) {
@@ -410,7 +410,7 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
             }));
         }
         for (auto& fut : futs) {
-            fut.get();
+            fut.wait();
         }
     } catch (const std::exception& e) {
         delete[] ids;
@@ -468,10 +468,10 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
 
     try {
         size_t max_codes = 0;
-        std::vector<std::future<void>> futs;
+        std::vector<folly::Future<folly::Unit>> futs;
         futs.reserve(nq);
         for (int i = 0; i < nq; ++i) {
-            futs.push_back(pool_->push([&, index = i] {
+            futs.emplace_back(pool_->push([&, index = i] {
                 ThreadPool::ScopedOmpSetter setter(1);
                 faiss::RangeSearchResult res(1);
                 if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value) {
@@ -501,7 +501,7 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
             }));
         }
         for (auto& fut : futs) {
-            fut.get();
+            fut.wait();
         }
         GetRangeSearchResult(result_dist_array, result_id_array, is_ip, nq, radius, range_filter, distances, ids, lims);
     } catch (const std::exception& e) {

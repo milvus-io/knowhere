@@ -53,6 +53,7 @@ INCLUDE_DIRS = [
     os.path.join("..", "thirdparty"),
     get_thirdparty_prefix("nlohmann_json") + "/include",
     get_thirdparty_prefix("libglog") + "/include",
+    get_thirdparty_prefix("gflags") + "/include"
 ]
 
 LIBRARY_DIRS = [os.path.join("..", "build", "Release")]
@@ -61,12 +62,13 @@ EXTRA_LINK_ARGS = [
     "-lknowhere",
     "-Wl,-rpath,$ORIGIN",
 ]
-EXTRA_OBJECTS = [os.path.join(get_thirdparty_prefix("libglog"), "lib", "libglog.a")]
 
 SWIG_OPTS = [
     "-c++",
     "-I" + os.path.join("..", "include")
 ]
+
+EXTRA_OBJECTS = []
 
 _swigknowhere = Extension(
     "knowhere._swigknowhere",

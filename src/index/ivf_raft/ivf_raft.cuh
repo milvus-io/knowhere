@@ -31,7 +31,6 @@
 #include "knowhere/comp/index_param.h"
 #include "knowhere/device_bitset.h"
 #include "knowhere/factory.h"
-#include "knowhere/index_node_thread_pool_wrapper.h"
 #include "knowhere/log.h"
 #include "knowhere/utils.h"
 #include "raft/core/device_resources.hpp"

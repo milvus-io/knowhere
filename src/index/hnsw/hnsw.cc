@@ -121,10 +121,10 @@ class HnswIndexNode : public IndexNode {
         bool transform =
             (index_->metric_type_ == hnswlib::Metric::INNER_PRODUCT || index_->metric_type_ == hnswlib::Metric::COSINE);
 
-        std::vector<std::future<void>> futures;
-        futures.reserve(nq);
+        std::vector<folly::Future<folly::Unit>> futs;
+        futs.reserve(nq);
         for (int i = 0; i < nq; ++i) {
-            futures.push_back(pool_->push([&, idx = i]() {
+            futs.emplace_back(pool_->push([&, idx = i]() {
                 auto single_query = (const char*)xq + idx * index_->data_size_;
                 auto rst = index_->searchKnn((void*)single_query, k, bitset, &param, feder_result);
                 size_t rst_size = rst.size();
@@ -141,8 +141,8 @@ class HnswIndexNode : public IndexNode {
                 }
             }));
         }
-        for (auto& future : futures) {
-            future.get();
+        for (auto& fut : futs) {
+            fut.wait();
         }
 
         auto res = GenResultDataSet(nq, k, p_id, p_dist);
@@ -193,10 +193,10 @@ class HnswIndexNode : public IndexNode {
         std::vector<size_t> result_size(nq);
         std::vector<size_t> result_lims(nq + 1);
 
-        std::vector<std::future<void>> futures;
-        futures.reserve(nq);
+        std::vector<folly::Future<folly::Unit>> futs;
+        futs.reserve(nq);
         for (int64_t i = 0; i < nq; ++i) {
-            futures.push_back(pool_->push([&, idx = i]() {
+            futs.emplace_back(pool_->push([&, idx = i]() {
                 auto single_query = (const char*)xq + idx * index_->data_size_;
                 auto rst = index_->searchRange((void*)single_query, radius, bitset, &param, feder_result);
                 auto elem_cnt = rst.size();
@@ -214,8 +214,8 @@ class HnswIndexNode : public IndexNode {
                 }
             }));
         }
-        for (auto& future : futures) {
-            future.get();
+        for (auto& fut : futs) {
+            fut.wait();
         }
 
         // filter range search result

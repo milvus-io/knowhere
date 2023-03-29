@@ -469,17 +469,17 @@ DiskANNIndexNode<T>::Deserialize(const BinarySet& binset, const Config& cfg) {
 
         bool all_searches_are_good = true;
 
-        std::vector<std::future<void>> futures;
+        std::vector<folly::Future<folly::Unit>> futures;
         futures.reserve(warmup_num);
         for (_s64 i = 0; i < (int64_t)warmup_num; ++i) {
-            futures.push_back(pool_->push([&, index = i]() {
+            futures.emplace_back(pool_->push([&, index = i]() {
                 pq_flash_index_->cached_beam_search(warmup + (index * warmup_aligned_dim), 1, warmup_L,
                                                     warmup_result_ids_64.data() + (index * 1),
                                                     warmup_result_dists.data() + (index * 1), 4);
             }));
         }
         for (auto& future : futures) {
-            if (TryDiskANNCall([&]() { future.get(); }) != Status::success) {
+            if (TryDiskANNCall([&]() { future.wait(); }) != Status::success) {
                 all_searches_are_good = false;
             }
         }
@@ -539,17 +539,17 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
     auto p_dist = new float[k * nq];
 
     bool all_searches_are_good = true;
-    std::vector<std::future<void>> futures;
+    std::vector<folly::Future<folly::Unit>> futures;
     futures.reserve(nq);
     for (int64_t row = 0; row < nq; ++row) {
-        futures.push_back(pool_->push([&, index = row]() {
+        futures.emplace_back(pool_->push([&, index = row]() {
             pq_flash_index_->cached_beam_search(xq + (index * dim), k, lsearch, p_id + (index * k),
                                                 p_dist + (index * k), beamwidth, false, nullptr, feder_result, bitset,
                                                 filter_ratio, for_tuning);
         }));
     }
     for (auto& future : futures) {
-        if (TryDiskANNCall([&]() { future.get(); }) != Status::success) {
+        if (TryDiskANNCall([&]() { future.wait(); }) != Status::success) {
             all_searches_are_good = false;
         }
     }
@@ -606,11 +606,11 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
     std::vector<std::vector<int64_t>> result_id_array(nq);
     std::vector<std::vector<float>> result_dist_array(nq);
 
-    std::vector<std::future<void>> futures;
+    std::vector<folly::Future<folly::Unit>> futures;
     futures.reserve(nq);
     bool all_searches_are_good = true;
     for (int64_t row = 0; row < nq; ++row) {
-        futures.push_back(pool_->push([&, index = row]() {
+        futures.emplace_back(pool_->push([&, index = row]() {
             std::vector<int64_t> indices;
             std::vector<float> distances;
             pq_flash_index_->range_search(xq + (index * dim), radius, min_k, max_k, result_id_array[index],
@@ -623,7 +623,7 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
         }));
     }
     for (auto& future : futures) {
-        if (TryDiskANNCall([&]() { future.get(); }) != Status::success) {
+        if (TryDiskANNCall([&]() { future.wait(); }) != Status::success) {
             all_searches_are_good = false;
         }
     }

@@ -7,10 +7,10 @@ namespace diskann {
     readr.read((char*) read_buf, npts * ndims * sizeof(float));
     _u32 ndims_u32 = (_u32) ndims;
     auto thread_pool = knowhere::ThreadPool::GetGlobalThreadPool();
-    std::vector<std::future<void>> futures;
+    std::vector<folly::Future<folly::Unit>> futures;
     futures.reserve(npts);
     for (_s64 i = 0; i < (_s64) npts; i++) {
-      futures.push_back(thread_pool->push([&, index = i]() {
+      futures.emplace_back(thread_pool->push([&, index = i]() {
         float norm_pt = std::numeric_limits<float>::epsilon();
         for (_u32 dim = 0; dim < ndims_u32; dim++) {
           norm_pt += *(read_buf + index * ndims + dim) *
@@ -24,7 +24,7 @@ namespace diskann {
       }));
     }
     for (auto& future : futures) {
-      future.get();
+      future.wait();
     }
     writr.write((char*) read_buf, npts * ndims * sizeof(float));
   }

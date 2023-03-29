@@ -310,13 +310,13 @@ int generate_pq_pivots(const float *passed_train_data, size_t num_train,
   full_pivot_data.reset(new float[num_centers * dim]);
 
   auto thread_pool = knowhere::ThreadPool::GetGlobalThreadPool();
-  std::vector<std::future<void>> futures;
+  std::vector<folly::Future<folly::Unit>> futures;
   futures.reserve(num_pq_chunks);
   for (size_t i = 0; i < num_pq_chunks; i++) {
     size_t cur_chunk_size = chunk_offsets[i + 1] - chunk_offsets[i];
     if (cur_chunk_size == 0)
       continue;
-    futures.push_back(thread_pool->push([&, chunk_size = cur_chunk_size,
+    futures.emplace_back(thread_pool->push([&, chunk_size = cur_chunk_size,
                                          index = i]() {
       std::unique_ptr<float[]> cur_pivot_data =
           std::make_unique<float[]>(num_centers * chunk_size);
@@ -350,7 +350,7 @@ int generate_pq_pivots(const float *passed_train_data, size_t num_train,
     }));
   }
   for (auto &future : futures) {
-    future.get();
+    future.wait();
   }
 
   diskann::save_bin<float>(pq_pivots_path.c_str(), full_pivot_data.get(),
@@ -487,7 +487,7 @@ int generate_pq_data_from_pivots(const std::string data_file,
 
   size_t num_blocks = DIV_ROUND_UP(num_points, block_size);
   auto   thread_pool = knowhere::ThreadPool::GetGlobalThreadPool();
-  std::vector<std::future<void>> futures;
+  std::vector<folly::Future<folly::Unit>> futures;
   futures.reserve(num_pq_chunks);
 
   for (size_t block = 0; block < num_blocks; block++) {
@@ -506,7 +506,7 @@ int generate_pq_data_from_pivots(const std::string data_file,
     futures.reserve(num_threads);
     auto batch_size = DIV_ROUND_UP(cur_blk_size, num_threads);
     for (uint64_t p = 0; p < cur_blk_size; p += batch_size) {
-      futures.push_back(thread_pool->push(
+      futures.emplace_back(thread_pool->push(
           [&, batch_beg_id = p,
            batch_end_id = std::min(p + batch_size, cur_blk_size)]() {
             std::vector<float> block_data_tmp(dim);
@@ -531,7 +531,7 @@ int generate_pq_data_from_pivots(const std::string data_file,
       size_t cur_chunk_size = chunk_offsets[i + 1] - chunk_offsets[i];
       if (cur_chunk_size == 0)
         continue;
-      futures.push_back(thread_pool->push([&, chunk_size = cur_chunk_size,
+      futures.emplace_back(thread_pool->push([&, chunk_size = cur_chunk_size,
                                            chunk_index = i]() {
         std::unique_ptr<float[]> cur_pivot_data =
             std::make_unique<float[]>(num_centers * chunk_size);
@@ -569,7 +569,7 @@ int generate_pq_data_from_pivots(const std::string data_file,
       }));
     }
     for (auto &future : futures) {
-      future.get();
+      future.wait();
     }
 
     if (num_centers > 256) {

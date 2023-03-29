@@ -19,7 +19,7 @@ jobs:
           submodules: recursive
       - name: Install Dependency
         run: |
-          sudo apt update && sudo apt install -y cmake g++ gcc libopenblas-dev libaio-dev libcurl4-openssl-dev clang-tidy python3-pip && pip3 install conan==1.58.0
+          sudo apt update && sudo apt install -y cmake g++ gcc libopenblas-dev libaio-dev libcurl4-openssl-dev libdouble-conversion-dev libevent-dev clang-tidy python3-pip && pip3 install conan==1.58.0
       - name: Build & Analyzer
         run: |
           mkdir build && cd build && conan install .. --build=missing -o with_ut=True -o with_diskann=True -o with_asan=True && conan build .. \

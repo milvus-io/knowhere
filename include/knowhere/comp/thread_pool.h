@@ -16,15 +16,20 @@
 #include <memory>
 #include <utility>
 
-#include "ctpl/ctpl-std.h"
+#include "folly/executors/CPUThreadPoolExecutor.h"
+#include "folly/futures/Future.h"
 #include "knowhere/log.h"
 
 namespace knowhere {
 
 class ThreadPool {
  public:
-    explicit ThreadPool(uint32_t num_threads) {
-        pool_ = std::make_unique<ctpl::thread_pool>(num_threads);
+    explicit ThreadPool(uint32_t num_threads)
+        : pool_(folly::CPUThreadPoolExecutor(
+              num_threads,
+              std::make_unique<
+                  folly::LifoSemMPMCQueue<folly::CPUThreadPoolExecutor::CPUTask, folly::QueueBehaviorIfFull::BLOCK>>(
+                  num_threads * kTaskQueueFactor))) {
     }
 
     ThreadPool(const ThreadPool&) = delete;
@@ -39,15 +44,14 @@ class ThreadPool {
 
     template <typename Func, typename... Args>
     auto
-    push(Func&& func, Args&&... args) -> std::future<decltype(func(args...))> {
-        return pool_->push([func = std::forward<Func>(func), &args...](int /* unused */) mutable {
-            return func(std::forward<Args>(args)...);
-        });
+    push(Func&& func, Args&&... args) {
+        return folly::makeSemiFuture().via(&pool_).then(
+            [func = std::forward<Func>(func), &args...](auto&&) mutable { return func(std::forward<Args>(args)...); });
     }
 
-    uint32_t
+    [[nodiscard]] int32_t
     size() const noexcept {
-        return pool_->size();
+        return pool_.numThreads();
     }
 
     /**
@@ -105,8 +109,9 @@ class ThreadPool {
     };
 
  private:
-    std::unique_ptr<ctpl::thread_pool> pool_;
+    folly::CPUThreadPoolExecutor pool_;
     inline static uint32_t global_thread_pool_size_ = 0;
     inline static std::mutex global_thread_pool_mutex_;
+    constexpr static size_t kTaskQueueFactor = 16;
 };
 }  // namespace knowhere
