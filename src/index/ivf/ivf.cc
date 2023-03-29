@@ -610,7 +610,21 @@ IvfIndexNode<T>::Deserialize(const BinarySet& binset) {
 template <typename T>
 Status
 IvfIndexNode<T>::DeserializeFromFile(const std::string& filename, const LoadConfig& config) {
-    return Status::not_implemented;
+    int io_flags = 0;
+    if (config.enable_mmap) {
+        io_flags |= faiss::IO_FLAG_MMAP;
+    }
+    try {
+        if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value) {
+            index_.reset(static_cast<T*>(faiss::read_index_binary(filename.data(), io_flags)));
+        } else {
+            index_.reset(static_cast<T*>(faiss::read_index(filename.data(), io_flags)));
+        }
+    } catch (const std::exception& e) {
+        LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
+        return Status::faiss_inner_error;
+    }
+    return Status::success;
 }
 
 template <>

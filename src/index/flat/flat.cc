@@ -273,7 +273,20 @@ class FlatIndexNode : public IndexNode {
 
     Status
     DeserializeFromFile(const std::string& filename, const LoadConfig& config) override {
-        return Status::not_implemented;
+        int io_flags = 0;
+        if (config.enable_mmap) {
+            io_flags |= faiss::IO_FLAG_MMAP;
+        }
+
+        if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
+            faiss::Index* index = faiss::read_index(filename.data(), io_flags);
+            index_.reset(static_cast<T*>(index));
+        }
+        if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
+            faiss::IndexBinary* index = faiss::read_index_binary(filename.data(), io_flags);
+            index_.reset(static_cast<T*>(index));
+        }
+        return Status::success;
     }
 
     std::unique_ptr<BaseConfig>
