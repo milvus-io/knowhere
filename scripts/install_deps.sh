@@ -34,7 +34,7 @@ if [[ "${MACHINE}" == "Linux" ]]; then
     if [[ -x "$(command -v apt)" ]]; then
         # for Ubuntu 18.04
         release_num=$(lsb_release -r --short)
-        sudo apt install -y g++ gcc make ccache python3-dev gfortran
+        sudo apt install -y g++ gcc make ccache python3-dev gfortran libcurl4-openssl-dev
         if [ "$release_num" == "20.04" ];then
             sudo apt install -y python3-setuptools swig
         fi
