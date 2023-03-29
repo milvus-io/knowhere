@@ -70,6 +70,7 @@ pull_request_rules:
       - 'status-success=analyzer'
       - 'status-success=python3 wheel'
       - "status-success=e2e"
+      - "status-success=e2e-gpu"
     actions:
       label:
         add:
@@ -95,6 +96,7 @@ pull_request_rules:
       - 'status-success=pre-commit'
       - 'status-success=analyzer'
       - "status-success=e2e"
+      - "status-success=e2e-gpu"
     actions:
       label:
         add:
@@ -122,6 +124,7 @@ pull_request_rules:
         - "status-success!=analyzer"
         - "status-success!=python3 wheel"
         - "status-success!=e2e"
+        - "status-success!=e2e-gpu"
       - files~=^(?=.*((\.(h|cpp)|CMakeLists.txt))).*$
     actions:
       label:
