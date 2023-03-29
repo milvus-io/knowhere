@@ -21,11 +21,6 @@
 
 namespace knowhere {
 
-namespace {
-static uint32_t global_thread_pool_size_ = 0;
-static std::mutex global_thread_pool_mutex_;
-}  // namespace
-
 class ThreadPool {
  public:
     explicit ThreadPool(uint32_t num_threads) {
@@ -111,5 +106,7 @@ class ThreadPool {
 
  private:
     std::unique_ptr<ctpl::thread_pool> pool_;
+    inline static uint32_t global_thread_pool_size_ = 0;
+    inline static std::mutex global_thread_pool_mutex_;
 };
 }  // namespace knowhere
