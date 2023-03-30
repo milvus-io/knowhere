@@ -55,7 +55,7 @@ class HnswIndexNode : public IndexNode {
         } else if (hnsw_cfg.metric_type == metric::IP) {
             space = new (std::nothrow) hnswlib::InnerProductSpace(dim);
         } else {
-            LOG_KNOWHERE_WARNING_ << "metric type not support in hnsw, " << hnsw_cfg.metric_type;
+            LOG_KNOWHERE_WARNING_ << "metric type not support in hnsw: " << hnsw_cfg.metric_type;
             return Status::invalid_metric_type;
         }
         auto index =
@@ -66,7 +66,7 @@ class HnswIndexNode : public IndexNode {
         }
         if (this->index_) {
             delete this->index_;
-            LOG_KNOWHERE_WARNING_ << "index not empty, deleted old index.";
+            LOG_KNOWHERE_WARNING_ << "index not empty, deleted old index";
         }
         this->index_ = index;
         return Status::success;
@@ -160,7 +160,7 @@ class HnswIndexNode : public IndexNode {
     expected<DataSetPtr, Status>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
-            LOG_KNOWHERE_WARNING_ << "range search on empty index.";
+            LOG_KNOWHERE_WARNING_ << "range search on empty index";
             return unexpected(Status::empty_index);
         }
 
@@ -243,26 +243,26 @@ class HnswIndexNode : public IndexNode {
         auto rows = dataset.GetRows();
         auto ids = dataset.GetIds();
 
-        float* p_x = nullptr;
+        float* data = nullptr;
         try {
-            p_x = new float[dim * rows];
+            data = new float[dim * rows];
             for (int64_t i = 0; i < rows; i++) {
                 int64_t id = ids[i];
                 assert(id >= 0 && id < (int64_t)index_->cur_element_count);
-                memcpy(p_x + i * dim, index_->getDataByInternalId(id), dim * sizeof(float));
+                std::copy_n((float*)index_->getDataByInternalId(id), dim, data + i * dim);
             }
+            return GenResultDataSet(data);
         } catch (std::exception& e) {
-            LOG_KNOWHERE_WARNING_ << "hnsw inner error, " << e.what();
-            std::unique_ptr<float> auto_delete_px(p_x);
+            LOG_KNOWHERE_WARNING_ << "hnsw inner error: " << e.what();
+            std::unique_ptr<float> auto_del(data);
             return unexpected(Status::hnsw_inner_error);
         }
-        return GenResultDataSet(p_x);
     }
 
     expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const override {
         if (!index_) {
-            LOG_KNOWHERE_WARNING_ << "get index meta on empty index.";
+            LOG_KNOWHERE_WARNING_ << "get index meta on empty index";
             return unexpected(Status::empty_index);
         }
 
@@ -299,7 +299,7 @@ class HnswIndexNode : public IndexNode {
             std::shared_ptr<uint8_t[]> data(writer.data_);
             binset.Append("HNSW", data, writer.rp);
         } catch (std::exception& e) {
-            LOG_KNOWHERE_WARNING_ << "hnsw inner error, " << e.what();
+            LOG_KNOWHERE_WARNING_ << "hnsw inner error: " << e.what();
             return Status::hnsw_inner_error;
         }
         return Status::success;
@@ -321,7 +321,7 @@ class HnswIndexNode : public IndexNode {
             index_ = new (std::nothrow) hnswlib::HierarchicalNSW<float>(space);
             index_->loadIndex(reader);
         } catch (std::exception& e) {
-            LOG_KNOWHERE_WARNING_ << "hnsw inner error, " << e.what();
+            LOG_KNOWHERE_WARNING_ << "hnsw inner error: " << e.what();
             return Status::hnsw_inner_error;
         }
         return Status::success;
@@ -337,7 +337,7 @@ class HnswIndexNode : public IndexNode {
             index_ = new (std::nothrow) hnswlib::HierarchicalNSW<float>(space);
             index_->loadIndex(filename, config);
         } catch (std::exception& e) {
-            LOG_KNOWHERE_WARNING_ << "hnsw inner error, " << e.what();
+            LOG_KNOWHERE_WARNING_ << "hnsw inner error: " << e.what();
             return Status::hnsw_inner_error;
         }
         return Status::success;
