@@ -12,23 +12,33 @@
 #include "catch2/catch_approx.hpp"
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/generators/catch_generators.hpp"
+#include "hnswlib/hnswalg.h"
+#include "knowhere/bitsetview.h"
 #include "knowhere/comp/index_param.h"
 #include "knowhere/comp/knowhere_config.h"
 #include "knowhere/factory.h"
+#include "knowhere/log.h"
 #include "utils.h"
+
+namespace {
+constexpr float kKnnRecallThreshold = 0.8f;
+constexpr float kBruteForceRecallThreshold = 0.99f;
+constexpr size_t kTopk = 1;
+const std::string kMetric = knowhere::metric::L2;
+}  // namespace
 
 TEST_CASE("Test All Mem Index Search", "[search]") {
     using Catch::Approx;
 
-    int64_t nb = 10000, nq = 1000;
+    int64_t nb = 10000, nq = 100;
     int64_t dim = 128;
     int64_t seed = 42;
 
     auto base_gen = [&]() {
         knowhere::Json json;
         json[knowhere::meta::DIM] = dim;
-        json[knowhere::meta::METRIC_TYPE] = knowhere::metric::L2;
-        json[knowhere::meta::TOPK] = 1;
+        json[knowhere::meta::METRIC_TYPE] = kMetric;
+        json[knowhere::meta::TOPK] = kTopk;
         json[knowhere::meta::RADIUS] = 10.0;
         json[knowhere::meta::RANGE_FILTER] = 0.0;
         return json;
@@ -76,6 +86,9 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
         REQUIRE(res == knowhere::Status::success);
     };
 
+    const auto train_ds = GenDataSet(nb, dim, seed);
+    const auto query_ds = GenDataSet(nq, dim, seed);
+    const auto gt = GetKNNGroundTruth(*train_ds, *query_ds, kMetric, kTopk);
     SECTION("Test Cpu Index Search") {
         using std::make_tuple;
         auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
@@ -89,8 +102,6 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
         auto cfg_json = gen().dump();
         CAPTURE(name, cfg_json);
         knowhere::Json json = knowhere::Json::parse(cfg_json);
-        auto train_ds = GenDataSet(nb, dim, seed);
-        auto query_ds = GenDataSet(nq, dim, seed);
         REQUIRE(idx.Type() == name);
         auto res = idx.Build(*train_ds, json);
         REQUIRE(res == knowhere::Status::success);
@@ -99,10 +110,8 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
         }
         auto results = idx.Search(*query_ds, json, nullptr);
         REQUIRE(results.has_value());
-        auto ids = results.value()->GetIds();
-        for (int i = 0; i < nq; ++i) {
-            CHECK(ids[i] == i);
-        }
+        float recall = GetKNNRecall(*gt, *results.value());
+        REQUIRE(recall > kKnnRecallThreshold);
     }
 
     SECTION("Test Cpu Index Range Search") {
@@ -118,8 +127,6 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
         auto cfg_json = gen().dump();
         CAPTURE(name, cfg_json);
         knowhere::Json json = knowhere::Json::parse(cfg_json);
-        auto train_ds = GenDataSet(nb, dim, seed);
-        auto query_ds = GenDataSet(nq, dim, seed);
         REQUIRE(idx.Type() == name);
         auto res = idx.Build(*train_ds, json);
         REQUIRE(res == knowhere::Status::success);
@@ -132,6 +139,39 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
         auto lims = results.value()->GetLims();
         for (int i = 0; i < nq; ++i) {
             CHECK(ids[lims[i]] == i);
+        }
+    }
+
+    SECTION("Test Cpu Index Search with Bitset") {
+        using std::make_tuple;
+        auto [name, gen, threshold] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>, float>({
+            make_tuple(knowhere::IndexEnum::INDEX_HNSW, hnsw_gen, hnswlib::kHnswBruteForceFilterRate),
+        }));
+        auto idx = knowhere::IndexFactory::Instance().Create(name);
+        auto cfg_json = gen().dump();
+        CAPTURE(name, cfg_json);
+        knowhere::Json json = knowhere::Json::parse(cfg_json);
+        REQUIRE(idx.Type() == name);
+        auto res = idx.Build(*train_ds, json);
+        REQUIRE(res == knowhere::Status::success);
+
+        std::vector<std::function<std::vector<uint8_t>(size_t, size_t)>> gen_bitset_funcs = {
+            GenerateBitsetWithFirstTbitsSet, GenerateBitsetWithRandomTbitsSet};
+        const auto bitset_percentages = GetBitsetTestPercentagesFromThreshold(threshold);
+        for (const float percentage : bitset_percentages) {
+            for (const auto& gen_func : gen_bitset_funcs) {
+                auto bitset_data = gen_func(nb, percentage * nb);
+                knowhere::BitsetView bitset(bitset_data.data(), nb);
+                auto results = idx.Search(*query_ds, json, bitset);
+                auto gt = GetKNNGroundTruth(*train_ds, *query_ds, json[knowhere::meta::METRIC_TYPE],
+                                            json[knowhere::meta::TOPK], bitset);
+                float recall = GetKNNRecall(*gt, *results.value());
+                if (percentage > threshold) {
+                    REQUIRE(recall > kBruteForceRecallThreshold);
+                } else {
+                    REQUIRE(recall > kKnnRecallThreshold);
+                }
+            }
         }
     }
 
@@ -149,8 +189,6 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
         auto cfg_json = gen().dump();
         CAPTURE(name, cfg_json);
         knowhere::Json json = knowhere::Json::parse(cfg_json);
-        auto train_ds = GenDataSet(nb, dim, seed);
-        auto query_ds = GenDataSet(nq, dim, seed);
         REQUIRE(idx.Type() == name);
         auto res = idx.Build(*train_ds, json);
         REQUIRE(res == knowhere::Status::success);

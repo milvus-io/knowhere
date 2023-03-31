@@ -39,7 +39,6 @@ typedef int FileHandle;
 #if defined(__ARM_NEON__) && defined(__aarch64__)
 #include "distance_neon.h"
 #endif
-#include "utils.h"
 #include "logger.h"
 #include "cached_io.h"
 #include "ann_exception.h"

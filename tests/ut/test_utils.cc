@@ -9,11 +9,17 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
+#include <vector>
+
 #include "catch2/catch_approx.hpp"
 #include "catch2/catch_test_macros.hpp"
 #include "knowhere/comp/time_recorder.h"
 #include "knowhere/utils.h"
 #include "utils.h"
+
+namespace {
+const std::vector<size_t> kBitsetSizes{4, 8, 10, 64, 100, 500, 1024};
+}
 
 TEST_CASE("Test Vector Normalization", "[normalize]") {
     using Catch::Approx;
@@ -36,6 +42,37 @@ TEST_CASE("Test Vector Normalization", "[normalize]") {
                 sum += val * val;
             }
             CHECK(std::abs(1.0f - sum) <= floatDiff);
+        }
+    }
+}
+
+TEST_CASE("Test Bitset Generation", "[utils]") {
+    SECTION("Sequential") {
+        for (const auto size : kBitsetSizes) {
+            for (size_t i = 0; i <= size; ++i) {
+                auto bitset_data = GenerateBitsetWithFirstTbitsSet(size, i);
+                knowhere::BitsetView bitset(bitset_data.data(), size);
+                for (size_t j = 0; j < i; ++j) {
+                    REQUIRE(bitset.test(j));
+                }
+                for (size_t j = i; j < size; ++j) {
+                    REQUIRE(!bitset.test(j));
+                }
+            }
+        }
+    }
+
+    SECTION("Random") {
+        for (const auto size : kBitsetSizes) {
+            for (size_t i = 0; i <= size; ++i) {
+                auto bitset_data = GenerateBitsetWithRandomTbitsSet(size, i);
+                knowhere::BitsetView bitset(bitset_data.data(), size);
+                size_t cnt = 0;
+                for (size_t j = 0; j < size; ++j) {
+                    cnt += bitset.test(j);
+                }
+                REQUIRE(cnt == i);
+            }
         }
     }
 }
