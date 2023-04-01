@@ -21,11 +21,11 @@
 #include "faiss/gpu/GpuIndexIVFPQ.h"
 #include "faiss/gpu/GpuIndexIVFScalarQuantizer.h"
 #include "faiss/index_io.h"
+#include "index/gpu/gpu_res_mgr.h"
 #include "index/ivf_gpu/ivf_gpu_config.h"
 #include "io/FaissIO.h"
 #include "knowhere/comp/index_param.h"
 #include "knowhere/factory.h"
-#include "knowhere/gpu/gpu_res_mgr.h"
 
 namespace knowhere {
 

@@ -17,8 +17,8 @@
 #include "faiss/utils/distances.h"
 #include "faiss/utils/utils.h"
 #include "knowhere/log.h"
-#ifdef USE_CUDA
-#include "knowhere/gpu/gpu_res_mgr.h"
+#ifdef KNOWHERE_WITH_GPU
+#include "index/gpu/gpu_res_mgr.h"
 #endif
 #include "simd/hook.h"
 
@@ -127,6 +127,24 @@ void
 KnowhereConfig::SetAioContextPool(size_t num_ctx, size_t max_events) {
 #ifdef KNOWHERE_WITH_DISKANN
     AioContextPool::InitGlobalAioPool(num_ctx, max_events);
+#endif
+}
+
+void
+KnowhereConfig::InitGPUResource(int64_t gpu_id, int64_t res_num) {
+#ifdef KNOWHERE_WITH_GPU
+    LOG_KNOWHERE_INFO_ << "init GPU resource for gpu id " << gpu_id << ", resource num " << res_num;
+    knowhere::GPUParams gpu_params(res_num);
+    knowhere::GPUResMgr::GetInstance().InitDevice(gpu_id, gpu_params);
+    knowhere::GPUResMgr::GetInstance().Init();
+#endif
+}
+
+void
+KnowhereConfig::FreeGPUResource() {
+#ifdef KNOWHERE_WITH_GPU
+    LOG_KNOWHERE_INFO_ << "free GPU resource";
+    knowhere::GPUResMgr::GetInstance().Free();
 #endif
 }
 

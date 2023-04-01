@@ -137,7 +137,7 @@ class Benchmark_knowhere_float : public Benchmark_knowhere, public ::testing::Te
         cfg_[knowhere::meta::METRIC_TYPE] = metric_type_;
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX2);
         printf("faiss::distance_compute_blas_threshold: %ld\n", knowhere::KnowhereConfig::GetBlasThreshold());
-#ifdef USE_CUDA
+#ifdef KNOWHERE_WITH_GPU
         knowhere::KnowhereConfig::InitGPUResource(GPU_DEVICE_ID);
         cfg_[knowhere::meta::DEVICE_ID] = GPU_DEVICE_ID;
 #endif
@@ -146,7 +146,7 @@ class Benchmark_knowhere_float : public Benchmark_knowhere, public ::testing::Te
     void
     TearDown() override {
         free_all();
-#ifdef USE_CUDA
+#ifdef KNOWHERE_WITH_GPU
         knowhere::KnowhereConfig::FreeGPUResource();
 #endif
     }
@@ -174,7 +174,7 @@ class Benchmark_knowhere_float : public Benchmark_knowhere, public ::testing::Te
 };
 
 TEST_F(Benchmark_knowhere_float, TEST_IDMAP) {
-#ifdef USE_CUDA
+#ifdef KNOWHERE_WITH_GPU
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_GPU_IDMAP;
 #else
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IDMAP;
@@ -189,7 +189,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IDMAP) {
 }
 
 TEST_F(Benchmark_knowhere_float, TEST_IVF_FLAT_NM) {
-#ifdef USE_CUDA
+#ifdef KNOWHERE_WITH_GPU
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_GPU_IVFFLAT;
 #else
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
@@ -215,7 +215,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_FLAT_NM) {
 }
 
 TEST_F(Benchmark_knowhere_float, TEST_IVF_SQ8) {
-#ifdef USE_CUDA
+#ifdef KNOWHERE_WITH_GPU
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_GPU_IVFSQ8;
 #else
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFSQ8;
@@ -234,7 +234,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_SQ8) {
 }
 
 TEST_F(Benchmark_knowhere_float, TEST_IVF_PQ) {
-#ifdef USE_CUDA
+#ifdef KNOWHERE_WITH_GPU
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_GPU_IVFPQ;
 #else
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFPQ;

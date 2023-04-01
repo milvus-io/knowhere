@@ -87,7 +87,7 @@ class KnowhereConan(ConanFile):
 
     @property
     def _required_boost_components(self):
-        return ["context", "filesystem", "program_options"]
+        return ["program_options"]
 
     def validate(self):
         if self.settings.compiler.get_safe("cppstd"):
