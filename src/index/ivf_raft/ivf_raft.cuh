@@ -73,12 +73,20 @@ class resource {
         static resource res;
         return res;
     }
+
+    void
+    set_pool_size(std::size_t init_size, std::size_t max_size) {
+        this->initial_pool_size = init_size;
+        this->maximum_pool_size = max_size;
+    }
+
     void
     init(rmm::cuda_device_id device_id) {
         std::lock_guard<std::mutex> lock(mtx_);
         auto it = map_.find(device_id.value());
         if (it == map_.end()) {
-            auto mr_ = std::make_unique<rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>>(&up_mr_);
+            auto mr_ = std::make_unique<rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>>(
+                &up_mr_, initial_pool_size << 20, maximum_pool_size << 20);
             rmm::mr::set_per_device_resource(device_id, mr_.get());
             map_[device_id.value()] = std::move(mr_);
         }
@@ -98,6 +106,8 @@ class resource {
              std::unique_ptr<rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>>>
         map_;
     mutable std::mutex mtx_;
+    std::size_t initial_pool_size = 2048;  // MB
+    std::size_t maximum_pool_size = 4096;  // MB
 };
 
 };  // namespace raft_res_pool
@@ -437,45 +447,10 @@ class RaftIvfIndexNode : public IndexNode {
         auto* res_ = &raft_res_pool::get_context().resources_;
 
         if constexpr (std::is_same_v<T, detail::raft_ivf_flat_index>) {
-            raft::serialize_scalar(*res_, os, gpu_index_->size());
-            raft::serialize_scalar(*res_, os, gpu_index_->dim());
-            raft::serialize_scalar(*res_, os, gpu_index_->n_lists());
-            raft::serialize_scalar(*res_, os, gpu_index_->metric());
-            raft::serialize_scalar(*res_, os, gpu_index_->veclen());
-            raft::serialize_scalar(*res_, os, gpu_index_->adaptive_centers());
-            raft::serialize_mdspan(*res_, os, gpu_index_->data());
-            raft::serialize_mdspan(*res_, os, gpu_index_->indices());
-            raft::serialize_mdspan(*res_, os, gpu_index_->list_sizes());
-            raft::serialize_mdspan(*res_, os, gpu_index_->list_offsets());
-            raft::serialize_mdspan(*res_, os, gpu_index_->centers());
-            if (gpu_index_->center_norms()) {
-                bool has_norms = true;
-                serialize_scalar(*res_, os, has_norms);
-                serialize_mdspan(*res_, os, *gpu_index_->center_norms());
-            } else {
-                bool has_norms = false;
-                serialize_scalar(*res_, os, has_norms);
-            }
+            raft::neighbors::ivf_flat::serialize<float, std::int64_t>(*res_, os, *gpu_index_);
         }
         if constexpr (std::is_same_v<T, detail::raft_ivf_pq_index>) {
-            raft::serialize_scalar(*res_, os, gpu_index_->size());
-            raft::serialize_scalar(*res_, os, gpu_index_->dim());
-            raft::serialize_scalar(*res_, os, gpu_index_->pq_bits());
-            raft::serialize_scalar(*res_, os, gpu_index_->pq_dim());
-
-            raft::serialize_scalar(*res_, os, gpu_index_->metric());
-            raft::serialize_scalar(*res_, os, gpu_index_->codebook_kind());
-            raft::serialize_scalar(*res_, os, gpu_index_->n_lists());
-            raft::serialize_scalar(*res_, os, gpu_index_->n_nonempty_lists());
-
-            raft::serialize_mdspan(*res_, os, gpu_index_->pq_centers());
-            raft::serialize_mdspan(*res_, os, gpu_index_->pq_dataset());
-            raft::serialize_mdspan(*res_, os, gpu_index_->indices());
-            raft::serialize_mdspan(*res_, os, gpu_index_->rotation_matrix());
-            raft::serialize_mdspan(*res_, os, gpu_index_->list_offsets());
-            raft::serialize_mdspan(*res_, os, gpu_index_->list_sizes());
-            raft::serialize_mdspan(*res_, os, gpu_index_->centers());
-            raft::serialize_mdspan(*res_, os, gpu_index_->centers_rot());
+            raft::neighbors::ivf_pq::serialize<std::int64_t>(*res_, os, *gpu_index_);
         }
 
         os.flush();
@@ -503,57 +478,12 @@ class RaftIvfIndexNode : public IndexNode {
         auto* res_ = &raft_res_pool::get_context().resources_;
 
         if constexpr (std::is_same_v<T, detail::raft_ivf_flat_index>) {
-            auto n_rows = raft::deserialize_scalar<std::int64_t>(*res_, is);
-            auto dim = raft::deserialize_scalar<std::uint32_t>(*res_, is);
-            auto n_lists = raft::deserialize_scalar<std::uint32_t>(*res_, is);
-            auto metric = raft::deserialize_scalar<raft::distance::DistanceType>(*res_, is);
-            auto veclen = raft::deserialize_scalar<std::uint32_t>(*res_, is);
-            bool adaptive_centers = raft::deserialize_scalar<bool>(*res_, is);
-
-            T index_ = T(*res_, metric, n_lists, adaptive_centers, dim);
-
-            index_.allocate(*res_, n_rows);
-            raft::deserialize_mdspan(*res_, is, index_.data());
-            raft::deserialize_mdspan(*res_, is, index_.indices());
-            raft::deserialize_mdspan(*res_, is, index_.list_sizes());
-            raft::deserialize_mdspan(*res_, is, index_.list_offsets());
-            raft::deserialize_mdspan(*res_, is, index_.centers());
-            bool has_norms = raft::deserialize_scalar<bool>(*res_, is);
-            if (has_norms) {
-                if (!index_.center_norms()) {
-                    RAFT_FAIL("Error inconsistent center norms");
-                } else {
-                    auto center_norms = *index_.center_norms();
-                    raft::deserialize_mdspan(*res_, is, center_norms);
-                }
-            }
-            res_->sync_stream();
+            T index_ = raft::neighbors::ivf_flat::deserialize<float, std::int64_t>(*res_, is);
             is.sync();
             gpu_index_ = T(std::move(index_));
         }
         if constexpr (std::is_same_v<T, detail::raft_ivf_pq_index>) {
-            auto n_rows = raft::deserialize_scalar<std::int64_t>(*res_, is);
-            auto dim = raft::deserialize_scalar<std::uint32_t>(*res_, is);
-            auto pq_bits = raft::deserialize_scalar<std::uint32_t>(*res_, is);
-            auto pq_dim = raft::deserialize_scalar<std::uint32_t>(*res_, is);
-
-            auto metric = raft::deserialize_scalar<raft::distance::DistanceType>(*res_, is);
-            auto codebook_kind = raft::deserialize_scalar<raft::neighbors::ivf_pq::codebook_gen>(*res_, is);
-            auto n_lists = raft::deserialize_scalar<std::uint32_t>(*res_, is);
-            auto n_nonempty_lists = raft::deserialize_scalar<std::uint32_t>(*res_, is);
-
-            T index_ = T(*res_, metric, codebook_kind, n_lists, dim, pq_bits, pq_dim, n_nonempty_lists);
-            index_.allocate(*res_, n_rows);
-
-            raft::deserialize_mdspan(*res_, is, index_.pq_centers());
-            raft::deserialize_mdspan(*res_, is, index_.pq_dataset());
-            raft::deserialize_mdspan(*res_, is, index_.indices());
-            raft::deserialize_mdspan(*res_, is, index_.rotation_matrix());
-            raft::deserialize_mdspan(*res_, is, index_.list_offsets());
-            raft::deserialize_mdspan(*res_, is, index_.list_sizes());
-            raft::deserialize_mdspan(*res_, is, index_.centers());
-            raft::deserialize_mdspan(*res_, is, index_.centers_rot());
-            res_->sync_stream();
+            T index_ = raft::neighbors::ivf_pq::deserialize<std::int64_t>(*res_, is);
             is.sync();
             gpu_index_ = T(std::move(index_));
         }
@@ -609,5 +539,6 @@ class RaftIvfIndexNode : public IndexNode {
     int64_t counts_ = 0;
     std::optional<T> gpu_index_;
 };
+
 }  // namespace knowhere
 #endif /* IVF_RAFT_CUH */

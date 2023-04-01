@@ -14,9 +14,9 @@
 #include "faiss/gpu/GpuCloner.h"
 #include "faiss/index_io.h"
 #include "index/flat_gpu/flat_gpu_config.h"
+#include "index/gpu/gpu_res_mgr.h"
 #include "io/FaissIO.h"
 #include "knowhere/factory.h"
-#include "knowhere/gpu/gpu_res_mgr.h"
 
 namespace knowhere {
 
