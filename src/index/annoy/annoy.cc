@@ -139,23 +139,22 @@ class AnnoyIndexNode : public IndexNode {
 
         auto rows = dataset.GetRows();
         auto dim = dataset.GetDim();
-        auto p_ids = dataset.GetIds();
+        auto ids = dataset.GetIds();
 
-        float* p_x = nullptr;
+        float* data = nullptr;
         try {
-            p_x = new (std::nothrow) float[dim * rows];
+            data = new float[dim * rows];
             for (int64_t i = 0; i < rows; i++) {
-                int64_t id = p_ids[i];
+                int64_t id = ids[i];
                 assert(id >= 0 && id < index_->get_n_items());
-                index_->get_item(id, p_x + i * dim);
+                index_->get_item(id, data + i * dim);
             }
+            return GenResultDataSet(data);
         } catch (const std::exception& e) {
-            std::unique_ptr<float> auto_del(p_x);
-            LOG_KNOWHERE_WARNING_ << "error in annoy, " << e.what();
+            std::unique_ptr<float> auto_del(data);
+            LOG_KNOWHERE_WARNING_ << "error in annoy: " << e.what();
             return unexpected(Status::annoy_inner_error);
         }
-
-        return GenResultDataSet(p_x);
     }
 
     expected<DataSetPtr, Status>

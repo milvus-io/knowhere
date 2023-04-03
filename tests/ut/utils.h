@@ -28,6 +28,7 @@ struct DisPairLess {
     }
 };
 };  // namespace
+
 inline std::unique_ptr<knowhere::DataSet>
 GenDataSet(int rows, int dim, int seed = 42) {
     std::mt19937 rng(seed);
@@ -39,6 +40,32 @@ GenDataSet(int rows, int dim, int seed = 42) {
     float* ts = new float[rows * dim];
     for (int i = 0; i < rows * dim; ++i) ts[i] = (float)distrib(rng);
     ds->SetTensor(ts);
+    return ds;
+}
+
+inline std::unique_ptr<knowhere::DataSet>
+GenBinDataSet(int rows, int dim, int seed = 42) {
+    std::mt19937 rng(seed);
+    std::uniform_int_distribution<> distrib(0.0, 100.0);
+
+    auto ds = std::make_unique<knowhere::DataSet>();
+    ds->SetRows(rows);
+    ds->SetDim(dim);
+    int uint8_num = dim / 8;
+    uint8_t* ts = new uint8_t[rows * uint8_num];
+    for (int i = 0; i < rows * uint8_num; ++i) ts[i] = (uint8_t)distrib(rng);
+    ds->SetTensor(ts);
+    return ds;
+}
+
+inline std::unique_ptr<knowhere::DataSet>
+GenIdsDataSet(int rows, int dim) {
+    auto ds = std::make_unique<knowhere::DataSet>();
+    ds->SetRows(rows);
+    ds->SetDim(dim);
+    int64_t* ids = new int64_t[rows];
+    for (int i = 0; i < rows; ++i) ids[i] = i;
+    ds->SetIds(ids);
     return ds;
 }
 

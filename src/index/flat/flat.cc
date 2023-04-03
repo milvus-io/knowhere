@@ -26,7 +26,7 @@ class FlatIndexNode : public IndexNode {
  public:
     FlatIndexNode(const Object&) : index_(nullptr) {
         static_assert(std::is_same<T, faiss::IndexFlat>::value || std::is_same<T, faiss::IndexBinaryFlat>::value,
-                      "not suppprt.");
+                      "not support");
         pool_ = ThreadPool::GetGlobalThreadPool();
     }
 
@@ -45,7 +45,7 @@ class FlatIndexNode : public IndexNode {
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
         auto metric = Str2FaissMetricType(f_cfg.metric_type);
         if (!metric.has_value()) {
-            LOG_KNOWHERE_WARNING_ << "please check metric type, " << f_cfg.metric_type;
+            LOG_KNOWHERE_WARNING_ << "please check metric type: " << f_cfg.metric_type;
             return metric.error();
         }
         index_ = std::make_unique<T>(dataset.GetDim(), metric.value());
@@ -112,7 +112,7 @@ class FlatIndexNode : public IndexNode {
         } catch (const std::exception& e) {
             std::unique_ptr<int64_t[]> auto_delete_ids(ids);
             std::unique_ptr<float[]> auto_delete_dis(distances);
-            LOG_KNOWHERE_WARNING_ << "error inner faiss, " << e.what();
+            LOG_KNOWHERE_WARNING_ << "error inner faiss: " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
 
@@ -122,7 +122,7 @@ class FlatIndexNode : public IndexNode {
     expected<DataSetPtr, Status>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
-            LOG_KNOWHERE_WARNING_ << "range search on empty index.";
+            LOG_KNOWHERE_WARNING_ << "range search on empty index";
             return unexpected(Status::empty_index);
         }
 
@@ -174,7 +174,7 @@ class FlatIndexNode : public IndexNode {
             GetRangeSearchResult(result_dist_array, result_id_array, is_ip, nq, radius, range_filter, distances, ids,
                                  lims);
         } catch (const std::exception& e) {
-            LOG_KNOWHERE_WARNING_ << "error inner faiss, " << e.what();
+            LOG_KNOWHERE_WARNING_ << "error inner faiss: " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
 
@@ -183,32 +183,34 @@ class FlatIndexNode : public IndexNode {
 
     expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
-        auto nq = dataset.GetRows();
+        auto rows = dataset.GetRows();
         auto dim = dataset.GetDim();
-        auto in_ids = dataset.GetIds();
+        auto ids = dataset.GetIds();
         if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
+            float* data = nullptr;
             try {
-                float* xq = new (std::nothrow) float[nq * dim];
-                for (int64_t i = 0; i < nq; i++) {
-                    int64_t id = in_ids[i];
-                    index_->reconstruct(id, xq + i * dim);
+                data = new float[rows * dim];
+                for (int64_t i = 0; i < rows; i++) {
+                    index_->reconstruct(ids[i], data + i * dim);
                 }
-                return GenResultDataSet(xq);
+                return GenResultDataSet(data);
             } catch (const std::exception& e) {
+                std::unique_ptr<float[]> auto_del(data);
                 LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
                 return unexpected(Status::faiss_inner_error);
             }
         }
         if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
+            uint8_t* data = nullptr;
             try {
-                uint8_t* xq = new (std::nothrow) uint8_t[nq * dim / 8];
-                for (int64_t i = 0; i < nq; i++) {
-                    int64_t id = in_ids[i];
-                    index_->reconstruct(id, xq + i * dim / 8);
+                data = new uint8_t[rows * dim / 8];
+                for (int64_t i = 0; i < rows; i++) {
+                    index_->reconstruct(ids[i], data + i * dim / 8);
                 }
-                return GenResultDataSet(xq);
+                return GenResultDataSet(data);
             } catch (const std::exception& e) {
-                LOG_KNOWHERE_WARNING_ << "error inner faiss, " << e.what();
+                std::unique_ptr<uint8_t[]> auto_del(data);
+                LOG_KNOWHERE_WARNING_ << "error inner faiss: " << e.what();
                 return unexpected(Status::faiss_inner_error);
             }
         }
@@ -241,7 +243,7 @@ class FlatIndexNode : public IndexNode {
             }
             return Status::success;
         } catch (const std::exception& e) {
-            LOG_KNOWHERE_WARNING_ << "error inner faiss, " << e.what();
+            LOG_KNOWHERE_WARNING_ << "error inner faiss: " << e.what();
             return Status::faiss_inner_error;
         }
     }
@@ -315,7 +317,7 @@ class FlatIndexNode : public IndexNode {
             return knowhere::IndexEnum::INDEX_FAISS_IDMAP;
         }
         if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
-            return knowhere::IndexEnum::INDEX_FAISS_BIN_IVFFLAT;
+            return knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP;
         }
     }
 
