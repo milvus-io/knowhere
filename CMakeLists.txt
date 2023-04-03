@@ -66,7 +66,6 @@ include(cmake/utils/platform_check.cmake)
 include(cmake/libs/libfaiss.cmake)
 include(cmake/libs/libannoy.cmake)
 include(cmake/libs/libhnsw.cmake)
-include(cmake/libs/libprometheus.cmake)
 
 include_directories(thirdparty/faiss)
 include_directories(thirdparty/bitset)
@@ -100,6 +99,9 @@ if (NOT glog_FOUND)
   )
   FetchContent_MakeAvailable(glog)
 endif()
+
+find_package(prometheus-cpp REQUIRED)
+
 set(CMAKE_CXX_STANDARD 17)
 
 if(OPENMP_FOUND)
