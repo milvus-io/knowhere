@@ -64,7 +64,6 @@ add_definitions(-DNOT_COMPILE_FOR_SWIG)
 include(cmake/utils/compile_flags.cmake)
 include(cmake/utils/platform_check.cmake)
 include(cmake/libs/libfaiss.cmake)
-include(cmake/libs/libannoy.cmake)
 include(cmake/libs/libhnsw.cmake)
 
 include_directories(thirdparty/faiss)

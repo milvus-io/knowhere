@@ -31,7 +31,6 @@ enum class Status {
     index_not_trained = 8,
     index_already_trained = 9,
     faiss_inner_error = 10,
-    annoy_inner_error = 11,
     hnsw_inner_error = 12,
     malloc_error = 13,
     diskann_inner_error = 14,
