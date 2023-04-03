@@ -112,13 +112,14 @@ namespace diskann {
   static inline unsigned InsertIntoPool(Neighbor *addr, int K,
                                         Neighbor nn) {
     // find the location to insert
+    assert(K >= 0);
     int left = 0, right = K - 1;
     if (addr[left].distance > nn.distance) {
       memmove((char *) &addr[left + 1], &addr[left], K * sizeof(Neighbor));
       addr[left] = nn;
       return left;
     }
-    if (addr[right].distance < nn.distance) {
+    if (K == 0 || addr[right].distance < nn.distance) {
       addr[K] = nn;
       return K;
     }
