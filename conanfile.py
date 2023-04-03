@@ -79,6 +79,8 @@ class KnowhereConan(ConanFile):
         self.requires("boost/1.81.0")
         self.requires("glog/0.6.0")
         self.requires("nlohmann_json/3.11.2")
+        self.requires("openssl/1.1.1t")
+        self.requires("prometheus-cpp/1.1.0")
         if self.options.with_ut:
             self.requires("catch2/3.3.1")
         if self.options.with_benchmark:
@@ -167,6 +169,9 @@ class KnowhereConan(ConanFile):
         self.cpp_info.components["libknowhere"].requires = [
             "boost::program_options",
             "glog::glog",
+            "prometheus-cpp::core",
+            "prometheus-cpp::pull",
+            "prometheus-cpp::push",
         ]
 
         self.cpp_info.filenames["cmake_find_package"] = "knowhere"
