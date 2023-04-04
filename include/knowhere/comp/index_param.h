@@ -37,7 +37,6 @@ constexpr const char* INDEX_FAISS_GPU_IVFSQ8 = "GPU_FAISS_IVF_SQ8";
 constexpr const char* INDEX_RAFT_IVFFLAT = "GPU_RAFT_IVF_FLAT";
 constexpr const char* INDEX_RAFT_IVFPQ = "GPU_RAFT_IVF_PQ";
 
-constexpr const char* INDEX_ANNOY = "ANNOY";
 constexpr const char* INDEX_HNSW = "HNSW";
 constexpr const char* INDEX_DISKANN = "DISKANN";
 
@@ -73,9 +72,6 @@ constexpr const char* EFCONSTRUCTION = "efConstruction";
 constexpr const char* HNSW_M = "M";
 constexpr const char* EF = "ef";
 constexpr const char* OVERVIEW_LEVELS = "overview_levels";
-// Annoy Params
-constexpr const char* N_TREES = "n_trees";
-constexpr const char* SEARCH_K = "search_k";
 }  // namespace indexparam
 
 using MetricType = std::string;

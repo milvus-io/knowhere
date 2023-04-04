@@ -38,16 +38,6 @@ test_data = [
         },
     ),
     (
-        "ANNOY",
-        {
-            "dim": 128,
-            "k": 100,
-            "metric_type": "L2",
-            "n_tree": 200,
-            "search_k": 100,
-        },
-    ),
-    (
         "IVFFLAT",
         {
             "dim": 128,

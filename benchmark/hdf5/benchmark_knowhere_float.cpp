@@ -97,33 +97,6 @@ class Benchmark_knowhere_float : public Benchmark_knowhere, public ::testing::Te
         printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
     }
 
-    void
-    test_annoy(const knowhere::Json& cfg) {
-        auto conf = cfg;
-        auto n_trees = conf[knowhere::indexparam::N_TREES].get<int64_t>();
-
-        printf("\n[%0.3f s] %s | %s | n_trees=%ld \n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(),
-               n_trees);
-        printf("================================================================================\n");
-        for (auto sk : SEARCH_Ks_) {
-            conf[knowhere::indexparam::SEARCH_K] = sk;
-            for (auto nq : NQs_) {
-                knowhere::DataSetPtr ds_ptr = knowhere::GenDataSet(nq, dim_, xq_);
-                for (auto k : TOPKs_) {
-                    conf[knowhere::meta::TOPK] = k;
-                    CALC_TIME_SPAN(auto result = index_.Search(*ds_ptr, conf, nullptr));
-                    auto ids = result.value()->GetIds();
-                    float recall = CalcRecall(ids, nq, k);
-                    printf("  search_k = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", sk, nq, k, t_diff,
-                           recall);
-                    std::fflush(stdout);
-                }
-            }
-        }
-        printf("================================================================================\n");
-        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
-    }
-
  protected:
     void
     SetUp() override {
@@ -167,10 +140,6 @@ class Benchmark_knowhere_float : public Benchmark_knowhere, public ::testing::Te
     const std::vector<int32_t> HNSW_Ms_ = {16};
     const std::vector<int32_t> EFCONs_ = {200};
     const std::vector<int32_t> EFs_ = {128, 256, 512};
-
-    // ANNOY index params
-    const std::vector<int32_t> N_TREEs_ = {8};
-    const std::vector<int32_t> SEARCH_Ks_ = {50, 100, 500};
 };
 
 TEST_F(Benchmark_knowhere_float, TEST_IDMAP) {
@@ -271,20 +240,5 @@ TEST_F(Benchmark_knowhere_float, TEST_HNSW) {
             binary_set_.clear();
             test_hnsw(conf);
         }
-    }
-}
-
-TEST_F(Benchmark_knowhere_float, TEST_ANNOY) {
-    index_type_ = knowhere::IndexEnum::INDEX_ANNOY;
-
-    knowhere::Json conf = cfg_;
-    for (auto n : N_TREEs_) {
-        conf[knowhere::indexparam::N_TREES] = n;
-
-        std::string index_file_name = get_index_name({n});
-        create_index(index_file_name, conf);
-        index_.Deserialize(binary_set_);
-        binary_set_.clear();
-        test_annoy(conf);
     }
 }

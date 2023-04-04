@@ -11,16 +11,6 @@ test_data = [
             "metric_type": "L2",
         },
     ),
-    (
-        "ANNOY",
-        {
-            "dim": 256,
-            "k": 15,
-            "metric_type": "L2",
-            "n_tree": 10000,
-            "search_k": 100000,
-        },
-    ),
 ]
 @pytest.mark.parametrize("name,config", test_data)
 def test_save_and_load(gen_data, faiss_ans, recall, error, name, config):

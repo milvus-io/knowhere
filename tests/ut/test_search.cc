@@ -34,13 +34,6 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
         return json;
     };
 
-    auto annoy_gen = [&base_gen]() {
-        knowhere::Json json = base_gen();
-        json[knowhere::indexparam::N_TREES] = 16;
-        json[knowhere::indexparam::SEARCH_K] = 100;
-        return json;
-    };
-
     auto ivfflat_gen = [&base_gen]() {
         knowhere::Json json = base_gen();
         json[knowhere::indexparam::NLIST] = 16;
@@ -86,7 +79,6 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
     SECTION("Test Cpu Index Search") {
         using std::make_tuple;
         auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
-            make_tuple(knowhere::IndexEnum::INDEX_ANNOY, annoy_gen),
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IDMAP, flat_gen),
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFFLAT, ivfflat_gen),
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFSQ8, ivfsq_gen),
@@ -146,7 +138,6 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
     SECTION("Test Cpu Index Serialize/Deserialize") {
         using std::make_tuple;
         auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
-            make_tuple(knowhere::IndexEnum::INDEX_ANNOY, annoy_gen),
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IDMAP, flat_gen),
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFFLAT, ivfflat_gen),
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFSQ8, ivfsq_gen),
