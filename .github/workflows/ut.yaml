@@ -38,25 +38,6 @@ jobs:
           mkdir build && cd build && conan install .. --build=missing -s build_type=Debug -o with_ut=True -o with_diskann=True -o with_asan=True && conan build .. \
           && ./Debug/tests/ut/knowhere_tests
 
-  cmake-build:
-    name: cmake build on ubuntu-20.04
-    runs-on: ubuntu-20.04
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          submodules: recursive
-      - name: Install Dependency
-        run: |
-          sudo apt update && sudo apt install -y cmake g++ gcc libopenblas-dev libaio-dev libboost-program-options-dev libcurl4-openssl-dev
-      - name: Build & Run
-        run: |
-          mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DWITH_DISKANN=ON -DWITH_UT=ON -DWITH_ASAN=ON \
-          && make -j8
-
   swig-build:
     name: python3 wheel
     runs-on: ubuntu-20.04
