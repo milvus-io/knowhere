@@ -60,10 +60,7 @@ class DiskANNIndexNode : public IndexNode {
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
 
     expected<DataSetPtr, Status>
-    GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
-        LOG_KNOWHERE_ERROR_ << "DiskANN doesn't support GetVectorById.";
-        return unexpected(Status::not_implemented);
-    }
+    GetVectorByIds(const DataSet& dataset, const Config& cfg) const override;
 
     expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const override;
@@ -614,6 +611,51 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
     GetRangeSearchResult(result_dist_array, result_id_array, is_ip, nq, radius, search_conf.range_filter, p_dist, p_id,
                          p_lims);
     return GenResultDataSet(nq, p_id, p_dist, p_lims);
+}
+
+template <typename T>
+expected<DataSetPtr, Status>
+DiskANNIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const {
+    if (!is_prepared_.load()) {
+        const_cast<DiskANNIndexNode<T>*>(this)->Prepare(cfg);
+    }
+    if (!is_prepared_.load() || !pq_flash_index_) {
+        LOG_KNOWHERE_ERROR_ << "Failed to load diskann.";
+        return unexpected(Status::empty_index);
+    }
+
+    auto dim = dataset.GetDim();
+    auto rows = dataset.GetRows();
+    auto ids = dataset.GetIds();
+
+    float* data = new float[dim * rows];
+    if (data == nullptr) {
+        LOG_KNOWHERE_ERROR_ << "Failed to allocate memory for data.";
+        return unexpected(Status::malloc_error);
+    }
+
+    auto sectors_id_idx = pq_flash_index_->get_sectors_layout_and_write_data_from_cache(ids, rows, data);
+    std::vector<std::future<void>> futures;
+    const size_t sectors_size = sectors_id_idx.size();
+    futures.reserve(sectors_size);
+    bool all_good = true;
+    for (const auto& e : sectors_id_idx) {
+        futures.push_back(pool_->push([&]() { pq_flash_index_->get_vector_by_sector(e.first, e.second, ids, data); }));
+    }
+    for (auto& future : futures) {
+        auto one_search_res = TryDiskANNCall<bool>([&]() {
+            future.get();
+            return true;
+        });
+        if (!one_search_res.has_value()) {
+            all_good = false;
+        }
+    }
+    if (!all_good) {
+        std::unique_ptr<float> auto_del(data);
+        return unexpected(Status::diskann_inner_error);
+    }
+    return GenResultDataSet(data);
 }
 
 template <typename T>

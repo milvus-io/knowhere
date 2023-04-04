@@ -201,8 +201,8 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
     auto query_ds = GenDataSet(kNumQueries, kDim, 42);
     knowhere::DataSetPtr knn_gt_ptr = nullptr;
     knowhere::DataSetPtr range_search_gt_ptr = nullptr;
+    auto base_ds = GenDataSet(kNumRows, kDim, 30);
     {
-        auto base_ds = GenDataSet(kNumRows, kDim, 30);
         auto base_ptr = static_cast<const float*>(base_ds->GetTensor());
         WriteRawDataToDisk(kRawDataPath, base_ptr, kNumRows, kDim);
 
@@ -242,6 +242,25 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
             auto ap = GetRangeSearchRecall(*range_search_gt_ptr, *range_search_res.value());
             float standard_ap = metric_str == knowhere::metric::L2 ? kL2RangeAp : kIpRangeAp;
             REQUIRE(ap > standard_ap);
+        }
+        // test get vector by ids
+        {
+            if (metric_str == knowhere::metric::L2) {  // run once
+                auto diskann = knowhere::IndexFactory::Instance().Create("DISKANN", diskann_index_pack);
+                auto knn_search_json = knn_search_gen().dump();
+                knowhere::Json knn_json = knowhere::Json::parse(knn_search_json);
+                auto ids_ds = GenIdsDataSet(kNumRows, kDim);
+                auto results = diskann.GetVectorByIds(*ids_ds, knn_json);
+                REQUIRE(results.has_value());
+                auto xb = (float*)base_ds->GetTensor();
+                auto data = (float*)results.value()->GetTensor();
+                for (size_t i = 0; i < kNumRows; ++i) {
+                    auto id = ids_ds->GetIds()[i];
+                    for (size_t j = 0; j < kDim; ++j) {
+                        REQUIRE(data[i * kDim + j] == xb[id * kDim + j]);
+                    }
+                }
+            }
         }
     }
     fs::remove_all(kDir);

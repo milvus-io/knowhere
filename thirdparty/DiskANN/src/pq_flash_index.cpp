@@ -13,12 +13,14 @@
 #include <iterator>
 #include <random>
 #include <thread>
+#include <unordered_map>
 #include "diskann/distance.h"
 #include "diskann/exceptions.h"
 #include "diskann/parameters.h"
 #include "diskann/timer.h"
 #include "diskann/utils.h"
 
+#include "knowhere/log.h"
 #include "tsl/robin_set.h"
 
 #ifdef _WINDOWS
@@ -1324,6 +1326,54 @@ namespace diskann {
     indices.resize(res_count);
     distances.resize(res_count);
     return res_count;
+  }
+
+  template<typename T>
+  std::unordered_map<_u64, std::vector<_u64>>
+  PQFlashIndex<T>::get_sectors_layout_and_write_data_from_cache(const int64_t* ids, int64_t n, T* output_data) {
+    std::unordered_map<_u64, std::vector<_u64>> sectors_to_visit;
+    for (int64_t i = 0; i < n; ++i) {
+      _u64 id = ids[i];
+      if (coord_cache.find(id) != coord_cache.end()) {
+        memcpy(output_data + i * data_dim, coord_cache.at(id),
+               data_dim * sizeof(T));
+      } else {
+        const _u64 sector_offset = get_node_sector_offset(id);
+        sectors_to_visit[sector_offset].push_back(i);
+      }
+    }
+    return sectors_to_visit;
+  }
+
+  template<typename T>
+  void PQFlashIndex<T>::get_vector_by_sector(const _u64 sector_offset,
+                                             const std::vector<_u64> &ids_idx,
+                                             const int64_t *ids, T *output_data) {
+    ThreadData<T> data = this->thread_data.pop();
+    while (data.scratch.sector_scratch == nullptr) {
+      this->thread_data.wait_for_push_notify();
+      data = this->thread_data.pop();
+    }
+    auto  ctx = this->reader->get_ctx();
+    char *sector_scratch = data.scratch.sector_scratch;
+    _u64 &sector_scratch_idx = data.scratch.sector_idx;
+    std::vector<AlignedRead> frontier_read_reqs;
+
+    char *sector_buf = sector_scratch + sector_scratch_idx * read_len_for_node;
+    frontier_read_reqs.emplace_back(sector_offset, read_len_for_node,
+                                    sector_buf);
+#ifdef USE_BING_INFRA
+    reader->read(frontier_read_reqs, ctx, true);  // async reader windows.
+#else
+    reader->read(frontier_read_reqs, ctx);  // synchronous IO linux
+#endif
+    for (const auto idx : ids_idx) {
+      char *node_buf = get_offset_to_node(sector_buf, ids[idx]);
+      memcpy(output_data + idx * data_dim, node_buf, data_dim * sizeof(T));
+    }
+    this->thread_data.push(data);
+    this->thread_data.push_notify_all();
+    this->reader->put_ctx(ctx);
   }
 
   template<typename T>

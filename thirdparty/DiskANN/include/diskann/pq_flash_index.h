@@ -107,6 +107,18 @@ namespace diskann {
         const float l_k_ratio, knowhere::BitsetView bitset_view = nullptr,
         QueryStats *stats = nullptr);
 
+    // assign the index of ids to its corresponding sector and if it is in
+    // cache, write to the output_data
+    DISKANN_DLLEXPORT std::unordered_map<_u64, std::vector<_u64>>
+    get_sectors_layout_and_write_data_from_cache(const int64_t *ids, int64_t n,
+                                                 T *output_data);
+
+    // perform I/O and write to the output_data
+    DISKANN_DLLEXPORT void get_vector_by_sector(const _u64 sector_offset,
+                                                const std::vector<_u64> &ids_idx,
+                                                const int64_t *ids,
+                                                T *output_data);
+
     std::shared_ptr<AlignedFileReader> reader;
 
     DISKANN_DLLEXPORT _u64 get_num_points() const noexcept;
