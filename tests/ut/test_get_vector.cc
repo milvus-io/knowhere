@@ -20,8 +20,8 @@
 TEST_CASE("Test Get Vector By Ids", "[GetVectorByIds]") {
     using Catch::Approx;
 
-    int64_t nb = 10000;
-    int64_t dim = 128;
+    uint64_t nb = 10000;
+    uint64_t dim = 128;
     int64_t seed = 42;
 
     auto base_gen = [&]() {

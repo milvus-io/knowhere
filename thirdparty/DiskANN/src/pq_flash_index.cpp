@@ -1329,14 +1329,28 @@ namespace diskann {
   }
 
   template<typename T>
+  inline void
+  PQFlashIndex<T>::copy_vec_base_data(T* des, const int64_t des_idx, void* src) {
+    if (metric == Metric::INNER_PRODUCT) {
+      assert(max_base_norm != 0);
+      const auto original_dim = data_dim - 1;
+      memcpy(des + des_idx * original_dim, src, original_dim * sizeof(T));
+      for (size_t i = 0; i < original_dim; ++i) {
+        des[des_idx * original_dim + i] *= max_base_norm;
+      }
+    } else {
+      memcpy(des + des_idx * data_dim, src, data_dim * sizeof(T));
+    }
+  }
+
+  template<typename T>
   std::unordered_map<_u64, std::vector<_u64>>
   PQFlashIndex<T>::get_sectors_layout_and_write_data_from_cache(const int64_t* ids, int64_t n, T* output_data) {
     std::unordered_map<_u64, std::vector<_u64>> sectors_to_visit;
     for (int64_t i = 0; i < n; ++i) {
       _u64 id = ids[i];
       if (coord_cache.find(id) != coord_cache.end()) {
-        memcpy(output_data + i * data_dim, coord_cache.at(id),
-               data_dim * sizeof(T));
+        copy_vec_base_data(output_data, i, coord_cache.at(id));
       } else {
         const _u64 sector_offset = get_node_sector_offset(id);
         sectors_to_visit[sector_offset].push_back(i);
@@ -1369,7 +1383,7 @@ namespace diskann {
 #endif
     for (const auto idx : ids_idx) {
       char *node_buf = get_offset_to_node(sector_buf, ids[idx]);
-      memcpy(output_data + idx * data_dim, node_buf, data_dim * sizeof(T));
+      copy_vec_base_data(output_data, idx, node_buf);
     }
     this->thread_data.push(data);
     this->thread_data.push_notify_all();
