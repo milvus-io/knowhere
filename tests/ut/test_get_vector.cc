@@ -107,8 +107,12 @@ TEST_CASE("Test Get Vector By Ids", "[GetVectorByIds]") {
         REQUIRE(results.has_value());
         auto xb = (uint8_t*)train_ds->GetTensor();
         auto data = (uint8_t*)results.value()->GetTensor();
-        for (int i = 0; i < nb * dim / 8; ++i) {
-            CHECK(data[i] == xb[i]);
+        const auto data_bytes = dim / 8;
+        for (size_t i = 0; i < nb; ++i) {
+            auto id = ids_ds->GetIds()[i];
+            for (size_t j = 0; j < data_bytes; ++j) {
+                REQUIRE(data[i * data_bytes + j] == xb[id * data_bytes + j]);
+            }
         }
     }
 
@@ -136,8 +140,11 @@ TEST_CASE("Test Get Vector By Ids", "[GetVectorByIds]") {
         REQUIRE(results.has_value());
         auto xb = (float*)train_ds->GetTensor();
         auto data = (float*)results.value()->GetTensor();
-        for (int i = 0; i < nb * dim; ++i) {
-            CHECK(data[i] == xb[i]);
+        for (size_t i = 0; i < nb; ++i) {
+            const auto id = ids_ds->GetIds()[i];
+            for (size_t j = 0; j < dim; ++j) {
+                REQUIRE(data[i * dim + j] == xb[id * dim + j]);
+            }
         }
     }
 }
