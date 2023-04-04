@@ -245,18 +245,20 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
         }
         // test get vector by ids
         {
-            if (metric_str == knowhere::metric::L2) {  // run once
-                auto diskann = knowhere::IndexFactory::Instance().Create("DISKANN", diskann_index_pack);
-                auto knn_search_json = knn_search_gen().dump();
-                knowhere::Json knn_json = knowhere::Json::parse(knn_search_json);
-                auto ids_ds = GenIdsDataSet(kNumRows, kDim);
-                auto results = diskann.GetVectorByIds(*ids_ds, knn_json);
-                REQUIRE(results.has_value());
-                auto xb = (float*)base_ds->GetTensor();
-                auto data = (float*)results.value()->GetTensor();
-                for (size_t i = 0; i < kNumRows; ++i) {
-                    auto id = ids_ds->GetIds()[i];
-                    for (size_t j = 0; j < kDim; ++j) {
+            auto diskann = knowhere::IndexFactory::Instance().Create("DISKANN", diskann_index_pack);
+            auto knn_search_json = knn_search_gen().dump();
+            knowhere::Json knn_json = knowhere::Json::parse(knn_search_json);
+            auto ids_ds = GenIdsDataSet(kNumRows, kDim);
+            auto results = diskann.GetVectorByIds(*ids_ds, knn_json);
+            REQUIRE(results.has_value());
+            auto xb = (float*)base_ds->GetTensor();
+            auto data = (float*)results.value()->GetTensor();
+            for (size_t i = 0; i < kNumRows; ++i) {
+                auto id = ids_ds->GetIds()[i];
+                for (size_t j = 0; j < kDim; ++j) {
+                    if (metric_str == knowhere::metric::IP) {
+                        REQUIRE(Catch::Approx(data[i * kDim + j]) == xb[id * kDim + j]);
+                    } else {
                         REQUIRE(data[i * kDim + j] == xb[id * kDim + j]);
                     }
                 }
