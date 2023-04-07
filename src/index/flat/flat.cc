@@ -18,6 +18,7 @@
 #include "io/FaissIO.h"
 #include "knowhere/comp/thread_pool.h"
 #include "knowhere/factory.h"
+#include "knowhere/utils.h"
 
 namespace knowhere {
 
@@ -43,6 +44,12 @@ class FlatIndexNode : public IndexNode {
     Status
     Train(const DataSet& dataset, const Config& cfg) override {
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
+
+        // do normalize for COSINE metric type
+        if (IsMetricType(f_cfg.metric_type, knowhere::metric::COSINE)) {
+            Normalize(dataset);
+        }
+
         auto metric = Str2FaissMetricType(f_cfg.metric_type);
         if (!metric.has_value()) {
             LOG_KNOWHERE_WARNING_ << "please check metric type: " << f_cfg.metric_type;
@@ -74,6 +81,12 @@ class FlatIndexNode : public IndexNode {
 
         DataSetPtr results = std::make_shared<DataSet>();
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
+
+        // do normalize for COSINE metric type
+        if (IsMetricType(f_cfg.metric_type, knowhere::metric::COSINE)) {
+            Normalize(dataset);
+        }
+
         auto k = f_cfg.k;
         auto nq = dataset.GetRows();
         auto x = dataset.GetTensor();
@@ -127,6 +140,12 @@ class FlatIndexNode : public IndexNode {
         }
 
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
+
+        // do normalize for COSINE metric type
+        if (IsMetricType(f_cfg.metric_type, knowhere::metric::COSINE)) {
+            Normalize(dataset);
+        }
+
         auto nq = dataset.GetRows();
         auto xq = dataset.GetTensor();
         auto dim = dataset.GetDim();

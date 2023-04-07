@@ -23,6 +23,7 @@
 #include "knowhere/factory.h"
 #include "knowhere/feder/IVFFlat.h"
 #include "knowhere/index_node_thread_pool_wrapper.h"
+#include "knowhere/utils.h"
 
 namespace knowhere {
 
@@ -207,6 +208,12 @@ template <typename T>
 Status
 IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
     const BaseConfig& base_cfg = static_cast<const IvfConfig&>(cfg);
+
+    // do normalize for COSINE metric type
+    if (IsMetricType(base_cfg.metric_type, knowhere::metric::COSINE)) {
+        Normalize(dataset);
+    }
+
     auto metric = Str2FaissMetricType(base_cfg.metric_type);
     if (!metric.has_value()) {
         return Status::invalid_metric_type;
@@ -323,6 +330,12 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
     auto data = dataset.GetTensor();
 
     const IvfConfig& ivf_cfg = static_cast<const IvfConfig&>(cfg);
+
+    // do normalize for COSINE metric type
+    if (IsMetricType(ivf_cfg.metric_type, knowhere::metric::COSINE)) {
+        Normalize(dataset);
+    }
+
     auto k = ivf_cfg.k;
     auto nprobe = ivf_cfg.nprobe;
 
@@ -392,6 +405,12 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
     auto dim = dataset.GetDim();
 
     const IvfConfig& ivf_cfg = static_cast<const IvfConfig&>(cfg);
+
+    // do normalize for COSINE metric type
+    if (IsMetricType(ivf_cfg.metric_type, knowhere::metric::COSINE)) {
+        Normalize(dataset);
+    }
+
     auto nprobe = ivf_cfg.nprobe;
 
     int parallel_mode = 0;

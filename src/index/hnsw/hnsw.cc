@@ -26,6 +26,7 @@
 #include "knowhere/expected.h"
 #include "knowhere/factory.h"
 #include "knowhere/log.h"
+#include "knowhere/utils.h"
 
 namespace knowhere {
 class HnswIndexNode : public IndexNode {
@@ -50,10 +51,13 @@ class HnswIndexNode : public IndexNode {
         auto dim = dataset.GetDim();
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
         hnswlib::SpaceInterface<float>* space = nullptr;
-        if (hnsw_cfg.metric_type == metric::L2) {
+        if (IsMetricType(hnsw_cfg.metric_type, metric::L2)) {
             space = new (std::nothrow) hnswlib::L2Space(dim);
-        } else if (hnsw_cfg.metric_type == metric::IP) {
+        } else if (IsMetricType(hnsw_cfg.metric_type, metric::IP)) {
             space = new (std::nothrow) hnswlib::InnerProductSpace(dim);
+        } else if (IsMetricType(hnsw_cfg.metric_type, metric::COSINE)) {
+            space = new (std::nothrow) hnswlib::InnerProductSpace(dim);
+            Normalize(dataset);
         } else {
             LOG_KNOWHERE_WARNING_ << "metric type not support in hnsw: " << hnsw_cfg.metric_type;
             return Status::invalid_metric_type;
@@ -102,6 +106,12 @@ class HnswIndexNode : public IndexNode {
         const float* xq = static_cast<const float*>(dataset.GetTensor());
 
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
+
+        // do normalize for COSINE metric type
+        if (IsMetricType(hnsw_cfg.metric_type, metric::COSINE)) {
+            Normalize(dataset);
+        }
+
         auto k = hnsw_cfg.k;
         auto maxef = std::max(65536, hnsw_cfg.k * 2);
         if (hnsw_cfg.ef > maxef) {
@@ -175,6 +185,12 @@ class HnswIndexNode : public IndexNode {
         const float* xq = static_cast<const float*>(dataset.GetTensor());
 
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
+
+        // do normalize for COSINE metric type
+        if (IsMetricType(hnsw_cfg.metric_type, metric::COSINE)) {
+            Normalize(dataset);
+        }
+
         bool is_ip = (index_->metric_type_ == 1);  // 0:L2, 1:IP
         float radius = (is_ip ? (1.0f - hnsw_cfg.radius) : hnsw_cfg.radius);
         float range_filter = hnsw_cfg.range_filter;
