@@ -9,7 +9,7 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License
 
-#include "knowhere/comp/Timer.h"
+#include "knowhere/comp/time_recorder.h"
 
 #include <iostream>
 #include <utility>
@@ -24,10 +24,8 @@ TimeRecorder::TimeRecorder(std::string hdr, int64_t log_level) : header_(std::mo
 
 std::string
 TimeRecorder::GetTimeSpanStr(double span) {
-    std::string str_sec = std::to_string(span * 0.000001) + ((span > 1000000) ? " seconds" : " second");
     std::string str_ms = std::to_string(span * 0.001) + " ms";
-
-    return str_sec + " [" + str_ms + "]";
+    return str_ms;
 }
 
 void
