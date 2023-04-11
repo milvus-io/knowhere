@@ -32,10 +32,14 @@ set(RAFT_FORK "rapidsai")
 set(RAFT_PINNED_TAG "branch-${RAPIDS_VERSION}")
 
 function(find_and_configure_raft)
-  set(oneValueArgs VERSION FORK PINNED_TAG)
+  set(oneValueArgs VERSION FORK PINNED_TAG COMPILE_LIBRARY)
   cmake_parse_arguments(PKG "${options}" "${oneValueArgs}" "${multiValueArgs}"
                         ${ARGN})
 
+  set(RAFT_COMPONENTS "")
+  if(PKG_COMPILE_LIBRARY)
+      string(APPEND RAFT_COMPONENTS " compiled")
+  endif()
   # -----------------------------------------------------
   # Invoke CPM find_package()
   # -----------------------------------------------------
@@ -44,12 +48,8 @@ function(find_and_configure_raft)
     ${PKG_VERSION}
     GLOBAL_TARGETS
     raft::raft
-    BUILD_EXPORT_SET
-    faiss-exports
-    INSTALL_EXPORT_SET
-    faiss-exports
     COMPONENTS
-    "distance nn"
+    ${RAFT_COMPONENTS}
     CPM_ARGS
     GIT_REPOSITORY
     https://github.com/${PKG_FORK}/raft.git
@@ -60,13 +60,17 @@ function(find_and_configure_raft)
     OPTIONS
     "BUILD_TESTS OFF"
     "BUILD_BENCH OFF"
-    "RAFT_COMPILE_LIBRARIES OFF"
-    "RAFT_COMPILE_NN_LIBRARY OFF"
-    "RAFT_USE_FAISS_STATIC OFF" # Turn this on to build FAISS into your binary
-    "RAFT_ENABLE_NN_DEPENDENCIES OFF")
+    "RAFT_COMPILE_LIBRARY ${PKG_COMPILE_LIBRARY}"
+    "RAFT_USE_FAISS_STATIC OFF") # Turn this on to build FAISS into your binary
+
+    if(raft_ADDED)
+        message(VERBOSE "KNOWHERE: Using RAFT located in ${raft_SOURCE_DIR}")
+    else()
+        message(VERBOSE "KNOWHERE: Using RAFT located in ${raft_DIR}")
+    endif()
 endfunction()
 
 # Change pinned tag here to test a commit in CI To use a different RAFT locally,
 # set the CMake variable CPM_raft_SOURCE=/path/to/local/raft
 find_and_configure_raft(VERSION ${RAFT_VERSION}.00 FORK ${RAFT_FORK} PINNED_TAG
-                        ${RAFT_PINNED_TAG})
+                        ${RAFT_PINNED_TAG} COMPILE_LIBRARY OFF)
