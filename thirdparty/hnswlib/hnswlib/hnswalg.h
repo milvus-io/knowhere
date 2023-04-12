@@ -13,7 +13,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
-#include <sys/fcntl.h>
+#include <fcntl.h>
 
 #include <atomic>
 #include <list>

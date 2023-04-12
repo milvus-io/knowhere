@@ -1,0 +1,85 @@
+name: Build and Publish Python Wheels
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '[a.b.devN/a.b.c]'
+        required: true
+        type: string
+      is_formal_release:
+        description: 'Is this a formal release? [true/false]'
+        default: 'false'
+        type: string
+
+jobs:
+  build_wheels:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-20.04
+            arch: x86_64
+          # - os: ubuntu-20.04
+          #   arch: aarch64
+          # - os: macos-11
+          #   arch: x86_64
+          # - os: macos-11
+          #   arch: arm64
+    name: Build wheels on ${{ matrix.os }} ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Set up QEMU
+        if: matrix.arch == 'aarch64'
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: arm64
+
+      - uses: actions/checkout@v3
+
+      - uses: pypa/cibuildwheel@v2.12.1
+        env:
+          CIBW_BUILD: "cp38-* cp39-* cp310-* cp311*"
+          CIBW_SKIP: "*musllinux*" # faiss-cpu fails to build on musllinux
+          CIBW_ARCHS: ${{ matrix.arch }}
+          CIBW_BEFORE_ALL_LINUX: "bash scripts/python_deps.sh && rm -rf build && mkdir build && cd build && conan install .. --build=missing -o with_diskann=True -s compiler.libcxx=libstdc++11 -s build_type=Release && conan build .. && cd -"
+          # CIBW_BEFORE_ALL_MACOS: "bash scripts/python_deps.sh && rm -rf build && mkdir build && cd build && CC=$(brew --prefix llvm)/bin/clang CXX=$(brew --prefix llvm)/bin/clang++ conan install .. --build=missing -s build_type=Release && CC=$(brew --prefix llvm)/bin/clang CXX=$(brew --prefix llvm)/bin/clang++ conan build .. && cd -"
+          CIBW_BEFORE_BUILD: "pip3 install pytest numpy faiss-cpu"
+          # CIBW_ENVIRONMENT_MACOS: >
+          #   _PYTHON_HOST_PLATFORM=macosx-10.15-${{ matrix.arch }}
+          # CIBW_BEFORE_BUILD: "bash scripts/python_deps.sh && pip3 install pytest numpy faiss-cpu"
+          # CIBW_CONFIG_SETTINGS: --build-option='-c clang'
+          # CIBW_REPAIR_WHEEL_COMMAND_MACOS: >
+          #   DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}
+          CIBW_TEST_REQUIRES: "pytest numpy faiss-cpu"
+          CIBW_TEST_COMMAND: "pytest {project}/tests/python/test_index_with_random.py"
+          CIBW_ENVIRONMENT: "SETUPTOOLS_SCM_PRETEND_VERSION=${{ github.event.inputs.tag }}"
+        with:
+          package-dir: python
+          output-dir: wheelhouse
+      - uses: actions/upload-artifact@v3
+        with:
+          path: wheelhouse/*.whl
+
+  upload:
+    needs: [build_wheels]
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: artifact
+          path: dist
+
+      - name: Display structure of downloaded files
+        run: ls -R dist
+
+      - uses: pypa/gh-action-pypi-publish@v1.8.5
+        if: ${{ github.event.inputs.is_formal_release == 'false' }}
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+
+      - uses: pypa/gh-action-pypi-publish@v1.8.5
+        if: ${{ github.event.inputs.is_formal_release == 'true' }}
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
