@@ -20,8 +20,8 @@
 TEST_CASE("Test Get Vector By Ids", "[GetVectorByIds]") {
     using Catch::Approx;
 
-    uint64_t nb = 10000;
-    uint64_t dim = 128;
+    int64_t nb = 10000;
+    int64_t dim = 128;
     int64_t seed = 42;
 
     auto base_gen = [&]() {
@@ -105,9 +105,9 @@ TEST_CASE("Test Get Vector By Ids", "[GetVectorByIds]") {
         REQUIRE(res_rows == nb);
         REQUIRE(res_dim == dim);
         const auto data_bytes = dim / 8;
-        for (size_t i = 0; i < nb; ++i) {
+        for (int i = 0; i < nb; ++i) {
             auto id = ids_ds->GetIds()[i];
-            for (size_t j = 0; j < data_bytes; ++j) {
+            for (int j = 0; j < data_bytes; ++j) {
                 REQUIRE(res_data[i * data_bytes + j] == xb[id * data_bytes + j]);
             }
         }
@@ -140,9 +140,9 @@ TEST_CASE("Test Get Vector By Ids", "[GetVectorByIds]") {
         auto res_data = (float*)results.value()->GetTensor();
         REQUIRE(res_rows == nb);
         REQUIRE(res_dim == dim);
-        for (size_t i = 0; i < nb; ++i) {
+        for (int i = 0; i < nb; ++i) {
             const auto id = ids_ds->GetIds()[i];
-            for (size_t j = 0; j < dim; ++j) {
+            for (int j = 0; j < dim; ++j) {
                 REQUIRE(res_data[i * dim + j] == xb[id * dim + j]);
             }
         }
