@@ -41,6 +41,7 @@ class KnowhereConan(ConanFile):
         "with_profiler": False,
         "with_ut": False,
         "glog:with_gflags": False,
+        "prometheus-cpp:with_pull": False,
         "with_benchmark": False,
     }
 
@@ -170,7 +171,6 @@ class KnowhereConan(ConanFile):
             "boost::program_options",
             "glog::glog",
             "prometheus-cpp::core",
-            "prometheus-cpp::pull",
             "prometheus-cpp::push",
         ]
 
