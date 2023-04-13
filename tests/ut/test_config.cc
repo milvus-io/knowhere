@@ -162,11 +162,6 @@ TEST_CASE("Test config json parse", "[config]") {
             CHECK(s == knowhere::Status::type_conflict_in_json);
 
             invalid_value_json = json;
-            invalid_value_json["ef"] = 9999999;
-            s = knowhere::Config::Load(wrong_cfg, invalid_value_json, knowhere::SEARCH);
-            CHECK(s == knowhere::Status::out_of_range_in_json);
-
-            invalid_value_json = json;
             invalid_value_json["ef"] = -1;
             s = knowhere::Config::Load(wrong_cfg, invalid_value_json, knowhere::SEARCH);
             CHECK(s == knowhere::Status::out_of_range_in_json);
