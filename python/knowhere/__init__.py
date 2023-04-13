@@ -12,10 +12,13 @@ def CreateBitSet(bits_num):
 
 
 def ArrayToDataSet(arr):
-    if arr.dtype == np.int32:
-        return swigknowhere.Array2DataSetI(arr)
-    if arr.dtype == np.float32:
-        return swigknowhere.Array2DataSetF(arr)
+    if arr.ndim == 1:
+        return swigknowhere.Array2DataSetIds(arr)
+    if arr.ndim == 2:
+        if arr.dtype == np.int32:
+            return swigknowhere.Array2DataSetI(arr)
+        if arr.dtype == np.float32:
+            return swigknowhere.Array2DataSetF(arr)
     raise ValueError(
         """
         ArrayToDataSet only support numpy array dtype float32 and int32.
@@ -63,3 +66,10 @@ def RangeSearchDataSetToArray(ans):
         ids_list.append(ids[lims[idx] : lims[idx + 1]])
 
     return dis_list, ids_list
+
+def GetVectorDataSetToArray(ans):
+    dim = swigknowhere.DataSet_Dim(ans)
+    rows = swigknowhere.DataSet_Rows(ans)
+    data = np.zeros([rows, dim]).astype(np.float32)
+    swigknowhere.DataSetTensor2Array(ans, data)
+    return data
