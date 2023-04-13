@@ -239,7 +239,7 @@ class HnswIndexNode : public IndexNode {
             return unexpected(Status::empty_index);
         }
 
-        auto dim = dataset.GetDim();
+        auto dim = Dim();
         auto rows = dataset.GetRows();
         auto ids = dataset.GetIds();
 
@@ -251,7 +251,7 @@ class HnswIndexNode : public IndexNode {
                 assert(id >= 0 && id < (int64_t)index_->cur_element_count);
                 std::copy_n((float*)index_->getDataByInternalId(id), dim, data + i * dim);
             }
-            return GenResultDataSet(data);
+            return GenResultDataSet(rows, dim, data);
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "hnsw inner error: " << e.what();
             std::unique_ptr<float> auto_del(data);

@@ -99,12 +99,16 @@ TEST_CASE("Test Get Vector By Ids", "[GetVectorByIds]") {
         auto results = idx.GetVectorByIds(*ids_ds, json);
         REQUIRE(results.has_value());
         auto xb = (uint8_t*)train_ds->GetTensor();
-        auto data = (uint8_t*)results.value()->GetTensor();
+        auto res_rows = results.value()->GetRows();
+        auto res_dim = results.value()->GetDim();
+        auto res_data = (uint8_t*)results.value()->GetTensor();
+        REQUIRE(res_rows == nb);
+        REQUIRE(res_dim == dim);
         const auto data_bytes = dim / 8;
         for (size_t i = 0; i < nb; ++i) {
             auto id = ids_ds->GetIds()[i];
             for (size_t j = 0; j < data_bytes; ++j) {
-                REQUIRE(data[i * data_bytes + j] == xb[id * data_bytes + j]);
+                REQUIRE(res_data[i * data_bytes + j] == xb[id * data_bytes + j]);
             }
         }
     }
@@ -131,11 +135,15 @@ TEST_CASE("Test Get Vector By Ids", "[GetVectorByIds]") {
         auto results = idx.GetVectorByIds(*ids_ds, json);
         REQUIRE(results.has_value());
         auto xb = (float*)train_ds->GetTensor();
-        auto data = (float*)results.value()->GetTensor();
+        auto res_rows = results.value()->GetRows();
+        auto res_dim = results.value()->GetDim();
+        auto res_data = (float*)results.value()->GetTensor();
+        REQUIRE(res_rows == nb);
+        REQUIRE(res_dim == dim);
         for (size_t i = 0; i < nb; ++i) {
             const auto id = ids_ds->GetIds()[i];
             for (size_t j = 0; j < dim; ++j) {
-                REQUIRE(data[i * dim + j] == xb[id * dim + j]);
+                REQUIRE(res_data[i * dim + j] == xb[id * dim + j]);
             }
         }
     }

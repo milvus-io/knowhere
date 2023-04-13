@@ -624,7 +624,7 @@ DiskANNIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) c
         return unexpected(Status::empty_index);
     }
 
-    auto dim = dataset.GetDim();
+    auto dim = Dim();
     auto rows = dataset.GetRows();
     auto ids = dataset.GetIds();
 
@@ -655,7 +655,7 @@ DiskANNIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) c
         std::unique_ptr<float> auto_del(data);
         return unexpected(Status::diskann_inner_error);
     }
-    return GenResultDataSet(data);
+    return GenResultDataSet(rows, dim, data);
 }
 
 template <typename T>
