@@ -467,8 +467,8 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
     if (!this->index_->is_trained) {
         return unexpected(Status::index_not_trained);
     }
+    auto dim = Dim();
     auto rows = dataset.GetRows();
-    auto dim = dataset.GetDim();
     auto ids = dataset.GetIds();
     float* data = nullptr;
     try {
@@ -483,7 +483,7 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
                 index_->reconstruct(id, data + i * dim);
             }
         }
-        return GenResultDataSet(data);
+        return GenResultDataSet(rows, dim, data);
     } catch (const std::exception& e) {
         std::unique_ptr<float> auto_del(data);
         LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
@@ -500,8 +500,8 @@ IvfIndexNode<faiss::IndexBinaryIVF>::GetVectorByIds(const DataSet& dataset, cons
     if (!this->index_->is_trained) {
         return unexpected(Status::index_not_trained);
     }
+    auto dim = Dim();
     auto rows = dataset.GetRows();
-    auto dim = dataset.GetDim();
     auto ids = dataset.GetIds();
     uint8_t* data = nullptr;
     try {
@@ -512,7 +512,7 @@ IvfIndexNode<faiss::IndexBinaryIVF>::GetVectorByIds(const DataSet& dataset, cons
             assert(id >= 0 && id < index_->ntotal);
             index_->reconstruct(id, data + i * dim / 8);
         }
-        return GenResultDataSet(data);
+        return GenResultDataSet(rows, dim, data);
     } catch (const std::exception& e) {
         std::unique_ptr<uint8_t> auto_del(data);
         LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();

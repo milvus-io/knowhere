@@ -183,8 +183,8 @@ class FlatIndexNode : public IndexNode {
 
     expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
+        auto dim = Dim();
         auto rows = dataset.GetRows();
-        auto dim = dataset.GetDim();
         auto ids = dataset.GetIds();
         if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
             float* data = nullptr;
@@ -193,7 +193,7 @@ class FlatIndexNode : public IndexNode {
                 for (int64_t i = 0; i < rows; i++) {
                     index_->reconstruct(ids[i], data + i * dim);
                 }
-                return GenResultDataSet(data);
+                return GenResultDataSet(rows, dim, data);
             } catch (const std::exception& e) {
                 std::unique_ptr<float[]> auto_del(data);
                 LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
@@ -207,7 +207,7 @@ class FlatIndexNode : public IndexNode {
                 for (int64_t i = 0; i < rows; i++) {
                     index_->reconstruct(ids[i], data + i * dim / 8);
                 }
-                return GenResultDataSet(data);
+                return GenResultDataSet(rows, dim, data);
             } catch (const std::exception& e) {
                 std::unique_ptr<uint8_t[]> auto_del(data);
                 LOG_KNOWHERE_WARNING_ << "error inner faiss: " << e.what();
