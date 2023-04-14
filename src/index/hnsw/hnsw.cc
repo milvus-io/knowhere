@@ -22,6 +22,7 @@
 #include "index/hnsw/hnsw_config.h"
 #include "knowhere/comp/index_param.h"
 #include "knowhere/comp/thread_pool.h"
+#include "knowhere/comp/time_recorder.h"
 #include "knowhere/config.h"
 #include "knowhere/expected.h"
 #include "knowhere/factory.h"
@@ -78,6 +79,7 @@ class HnswIndexNode : public IndexNode {
             return Status::empty_index;
         }
 
+        knowhere::TimeRecorder build_time("Building HNSW cost");
         auto rows = dataset.GetRows();
         auto dim = dataset.GetDim();
         auto tensor = dataset.GetTensor();
@@ -88,6 +90,10 @@ class HnswIndexNode : public IndexNode {
         for (int i = 1; i < rows; ++i) {
             index_->addPoint((static_cast<const float*>(tensor) + dim * i), i);
         }
+        build_time.RecordSection("");
+        LOG_KNOWHERE_INFO_ << "HNSW built with #points num:" << index_->max_elements_ << " #M:" << index_->M_
+                           << " #max level:" << index_->maxlevel_ << " #ef_construction:" << index_->ef_construction_
+                           << " #dim:" << *(size_t*)(index_->space_->get_dist_func_param());
         return Status::success;
     }
 
@@ -326,6 +332,10 @@ class HnswIndexNode : public IndexNode {
             hnswlib::SpaceInterface<float>* space = nullptr;
             index_ = new (std::nothrow) hnswlib::HierarchicalNSW<float>(space);
             index_->loadIndex(reader);
+            LOG_KNOWHERE_INFO_ << "Loaded HNSW index. #points num:" << index_->max_elements_ << " #M:" << index_->M_
+                               << " #max level:" << index_->maxlevel_
+                               << " #ef_construction:" << index_->ef_construction_
+                               << " #dim:" << *(size_t*)(index_->space_->get_dist_func_param());
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "hnsw inner error: " << e.what();
             return Status::hnsw_inner_error;
