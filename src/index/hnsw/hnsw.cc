@@ -103,7 +103,13 @@ class HnswIndexNode : public IndexNode {
 
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
         auto k = hnsw_cfg.k;
+        auto maxef = std::max(65536, hnsw_cfg.k * 2);
+        if (hnsw_cfg.ef > maxef) {
+            LOG_KNOWHERE_ERROR_ << "ef should be in range: [topk, max(65536, topk * 2)]";
+            return unexpected(Status::invalid_args);
+        }
         if (k > hnsw_cfg.ef) {
+            LOG_KNOWHERE_ERROR_ << "k should be smaller or equal than ef";
             return unexpected(Status::invalid_args);
         }
         feder::hnsw::FederResultUniq feder_result;

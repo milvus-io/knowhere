@@ -31,7 +31,7 @@ class HnswConfig : public BaseConfig {
         KNOWHERE_CONFIG_DECLARE_FIELD(ef)
             .description("hnsw ef")
             .set_default(32)
-            .set_range(1, 65536)
+            .set_range(1, std::numeric_limits<CFG_INT>::max())
             .for_search()
             .for_range_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(overview_levels)
