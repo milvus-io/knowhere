@@ -29,7 +29,7 @@ Here's a list of verified OS types where Knowhere can successfully build and run
 
 ```bash
 $ sudo apt install build-essential libopenblas-dev libaio-dev python3-dev python3-pip
-$ pip3 install conan==1.59.0 --user
+$ pip3 install conan==1.59.0 pylibraft-cu11 --user --extra-index=https://pypi.nvidia.com
 $ export PATH=$PATH:$HOME/.local/bin
 ```
 
@@ -48,7 +48,7 @@ $ conan install .. --build=missing -o with_ut=True -o with_raft=True -s compiler
 #DISKANN SUPPORT
 $ conan install .. --build=missing -o with_ut=True -o with_diskann=True -s compiler.libcxx=libstdc++11 -s build_type=Debug/Release
 #build with conan
-$conan build ..
+$ conan build ..
 #verbose
 export VERBOSE=1
 ```
