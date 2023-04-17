@@ -470,53 +470,43 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
     auto dim = Dim();
     auto rows = dataset.GetRows();
     auto ids = dataset.GetIds();
-    float* data = nullptr;
-    try {
-        data = new float[dim * rows];
-        index_->make_direct_map(true);
-        for (int64_t i = 0; i < rows; i++) {
-            int64_t id = ids[i];
-            assert(id >= 0 && id < index_->ntotal);
-            if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
-                index_->reconstruct_without_codes(id, data + i * dim);
-            } else {
-                index_->reconstruct(id, data + i * dim);
-            }
-        }
-        return GenResultDataSet(rows, dim, data);
-    } catch (const std::exception& e) {
-        std::unique_ptr<float> auto_del(data);
-        LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
-        return unexpected(Status::faiss_inner_error);
-    }
-}
 
-template <>
-expected<DataSetPtr, Status>
-IvfIndexNode<faiss::IndexBinaryIVF>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const {
-    if (!this->index_) {
-        return unexpected(Status::empty_index);
-    }
-    if (!this->index_->is_trained) {
-        return unexpected(Status::index_not_trained);
-    }
-    auto dim = Dim();
-    auto rows = dataset.GetRows();
-    auto ids = dataset.GetIds();
-    uint8_t* data = nullptr;
-    try {
-        data = new uint8_t[dim * rows / 8];
-        index_->make_direct_map(true);
-        for (int64_t i = 0; i < rows; i++) {
-            int64_t id = ids[i];
-            assert(id >= 0 && id < index_->ntotal);
-            index_->reconstruct(id, data + i * dim / 8);
+    if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value) {
+        uint8_t* data = nullptr;
+        try {
+            data = new uint8_t[dim * rows / 8];
+            index_->make_direct_map(true);
+            for (int64_t i = 0; i < rows; i++) {
+                int64_t id = ids[i];
+                assert(id >= 0 && id < index_->ntotal);
+                index_->reconstruct(id, data + i * dim / 8);
+            }
+            return GenResultDataSet(rows, dim, data);
+        } catch (const std::exception& e) {
+            std::unique_ptr<uint8_t> auto_del(data);
+            LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
+            return unexpected(Status::faiss_inner_error);
         }
-        return GenResultDataSet(rows, dim, data);
-    } catch (const std::exception& e) {
-        std::unique_ptr<uint8_t> auto_del(data);
-        LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
-        return unexpected(Status::faiss_inner_error);
+    } else {
+        float* data = nullptr;
+        try {
+            data = new float[dim * rows];
+            index_->make_direct_map(true);
+            for (int64_t i = 0; i < rows; i++) {
+                int64_t id = ids[i];
+                assert(id >= 0 && id < index_->ntotal);
+                if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
+                    index_->reconstruct_without_codes(id, data + i * dim);
+                } else {
+                    index_->reconstruct(id, data + i * dim);
+                }
+            }
+            return GenResultDataSet(rows, dim, data);
+        } catch (const std::exception& e) {
+            std::unique_ptr<float> auto_del(data);
+            LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
+            return unexpected(Status::faiss_inner_error);
+        }
     }
 }
 
