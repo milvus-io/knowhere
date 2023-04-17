@@ -56,7 +56,7 @@ class RaftIvfPqConfig : public IvfPqConfig {
     CFG_LIST gpu_ids;
     CFG_INT kmeans_n_iters;
     CFG_FLOAT kmeans_trainset_fraction;
-    CFG_INT pq_dim;
+    CFG_INT m;
     CFG_STRING codebook_kind;
     CFG_BOOL force_random_rotation;
     CFG_BOOL conservative_memory_allocation;
@@ -78,10 +78,7 @@ class RaftIvfPqConfig : public IvfPqConfig {
             .description("fraction of data to use in kmeans building")
             .set_default(0.5)
             .for_train();
-        KNOWHERE_CONFIG_DECLARE_FIELD(pq_dim)
-            .description("dimension after compression by PQ")
-            .set_default(0)
-            .for_train();
+        KNOWHERE_CONFIG_DECLARE_FIELD(m).description("dimension after compression by PQ").set_default(0).for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(codebook_kind)
             .description("how PQ codebooks are created")
             .set_default("PER_SUBSPACE")
