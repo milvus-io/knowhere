@@ -239,6 +239,16 @@ GenDataSet(const int64_t nb, const int64_t dim, const void* xb) {
 }
 
 #ifdef NOT_COMPILE_FOR_SWIG
+// TOOD: python wheel build error for this API, need check
+inline DataSetPtr
+GenIdsDataSet(const int64_t rows, const int64_t* ids) {
+    auto ret_ds = std::make_shared<DataSet>();
+    ret_ds->SetRows(rows);
+    ret_ds->SetIds(ids);
+    ret_ds->SetIsOwner(false);
+    return ret_ds;
+}
+
 inline DataSetPtr
 GenResultDataSet(const int64_t rows, const int64_t dim, const void* tensor) {
     auto ret_ds = std::make_shared<DataSet>();
