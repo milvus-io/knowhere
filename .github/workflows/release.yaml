@@ -48,7 +48,7 @@ jobs:
     name: Create a Release
     env:
       RELEASE_NAME: "knowhere-${{ github.event.inputs.tag }}"
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@v2
