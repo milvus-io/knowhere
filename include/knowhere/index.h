@@ -221,6 +221,11 @@ class Index {
         return this->node->GetVectorByIds(dataset, *cfg);
     }
 
+    bool
+    HasRawData(const std::string& metric_type) const {
+        return this->node->HasRawData(metric_type);
+    }
+
     expected<DataSetPtr, Status>
     GetIndexMeta(const Json& json) const {
         Json json_(json);

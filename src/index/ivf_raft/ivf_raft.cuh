@@ -438,6 +438,16 @@ class RaftIvfIndexNode : public IndexNode {
         return unexpected(Status::not_implemented);
     }
 
+    virtual bool
+    HasRawData(const std::string& metric_type) const override {
+        if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
+            return true;
+        }
+        if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
+            return false;
+        }
+    }
+
     expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const override {
         return unexpected(Status::not_implemented);

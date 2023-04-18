@@ -41,6 +41,9 @@ class IndexNode : public Object {
     virtual expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const = 0;
 
+    virtual bool
+    HasRawData(const std::string& metric_type) const = 0;
+
     virtual expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const = 0;
 

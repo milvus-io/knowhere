@@ -235,6 +235,11 @@ class FlatIndexNode : public IndexNode {
         }
     }
 
+    bool
+    HasRawData(const std::string& metric_type) const override {
+        return true;
+    }
+
     expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const override {
         return unexpected(Status::not_implemented);
