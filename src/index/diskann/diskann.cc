@@ -63,6 +63,11 @@ class DiskANNIndexNode : public IndexNode {
     expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override;
 
+    bool
+    HasRawData(const std::string& metric_type) const override {
+        return IsMetricType(metric_type, metric::L2);
+    }
+
     expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const override;
 

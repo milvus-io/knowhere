@@ -287,6 +287,11 @@ class HnswIndexNode : public IndexNode {
         }
     }
 
+    bool
+    HasRawData(const std::string& metric_type) const override {
+        return true;
+    }
+
     expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const override {
         if (!index_) {

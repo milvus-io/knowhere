@@ -61,6 +61,21 @@ class IvfIndexNode : public IndexNode {
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
     expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override;
+    bool
+    HasRawData(const std::string& metric_type) const override {
+        if constexpr (std::is_same<faiss::IndexIVFFlat, T>::value) {
+            return true;
+        }
+        if constexpr (std::is_same<faiss::IndexIVFPQ, T>::value) {
+            return false;
+        }
+        if constexpr (std::is_same<faiss::IndexIVFScalarQuantizer, T>::value) {
+            return false;
+        }
+        if constexpr (std::is_same<faiss::IndexBinaryIVF, T>::value) {
+            return true;
+        }
+    }
     expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const override {
         return unexpected(Status::not_implemented);
@@ -506,7 +521,7 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
             LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
-    } else {
+    } else if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
         float* data = nullptr;
         try {
             data = new float[dim * rows];
@@ -514,11 +529,7 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
             for (int64_t i = 0; i < rows; i++) {
                 int64_t id = ids[i];
                 assert(id >= 0 && id < index_->ntotal);
-                if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
-                    index_->reconstruct_without_codes(id, data + i * dim);
-                } else {
-                    index_->reconstruct(id, data + i * dim);
-                }
+                index_->reconstruct_without_codes(id, data + i * dim);
             }
             return GenResultDataSet(rows, dim, data);
         } catch (const std::exception& e) {
@@ -526,6 +537,8 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
             LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
+    } else {
+        return unexpected(Status::not_implemented);
     }
 }
 
