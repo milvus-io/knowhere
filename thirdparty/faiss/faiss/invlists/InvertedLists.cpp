@@ -92,6 +92,28 @@ const uint8_t* InvertedLists::get_single_code(size_t list_no, size_t offset)
     return get_codes(list_no) + offset * code_size;
 }
 
+size_t InvertedLists::get_segment_num(size_t list_no) const {
+    return 1;
+}
+
+size_t InvertedLists::get_segment_size(size_t list_no, size_t segment_no) const {
+    return list_size(list_no);
+}
+
+size_t InvertedLists::get_segment_offset(size_t list_no, size_t segment_no) const {
+    return 0;
+}
+
+const uint8_t* InvertedLists::get_codes(size_t list_no, size_t offset)
+        const {
+    assert(offset < list_size(list_no));
+    return get_codes(list_no) + offset * code_size;
+}
+
+const Index::idx_t* InvertedLists::get_ids(size_t list_no, size_t offset) const {
+    return get_ids(list_no);
+}
+
 size_t InvertedLists::add_entry(
         size_t list_no,
         idx_t theid,
@@ -272,6 +294,273 @@ InvertedLists* ArrayInvertedLists::to_readonly() {
 }
 
 ArrayInvertedLists::~ArrayInvertedLists() {}
+
+ConcurrentArrayInvertedLists::ConcurrentArrayInvertedLists(
+        size_t nlist,
+        size_t code_size,
+        size_t segment_size)
+        : InvertedLists(nlist, code_size), segment_size(segment_size), list_cur(nlist) {
+    ids.resize(nlist);
+    codes.resize(nlist);
+    for (int i = 0; i < nlist; i++) {
+        list_cur[i].store(0);
+    }
+}
+
+size_t ConcurrentArrayInvertedLists::cal_segment_num(size_t capacity) const {
+    return (capacity / segment_size) + (capacity % segment_size != 0);
+}
+
+void ConcurrentArrayInvertedLists::reserve(size_t list_no, size_t capacity) {
+    size_t cur_segment_no = ids[list_no].size();
+    size_t target_segment_no = cal_segment_num(capacity);
+
+    for (size_t idx = cur_segment_no; idx < target_segment_no; idx++) {
+        Segment<uint8_t> segment_codes(segment_size, code_size);
+        Segment<idx_t> segment_ids(segment_size, 1);
+        codes[list_no].emplace_back(std::move(segment_codes));
+        ids[list_no].emplace_back(std::move(segment_ids));
+    }
+}
+
+void ConcurrentArrayInvertedLists::shrink_to_fit(size_t list_no, size_t capacity) {
+    size_t cur_segment_no = ids[list_no].size();
+    size_t target_segment_no = cal_segment_num(capacity);
+
+    for (size_t idx = cur_segment_no; idx > target_segment_no; idx--) {
+        ids[list_no].pop_back();
+        codes[list_no].pop_back();
+    }
+}
+
+size_t ConcurrentArrayInvertedLists::list_size(size_t list_no) const {
+    assert(list_no < nlist);
+    return list_cur[list_no].load();
+}
+
+const uint8_t* ConcurrentArrayInvertedLists::get_codes(size_t list_no) const {
+    FAISS_THROW_MSG("not implemented get_codes for non-continuous storage");
+}
+
+const InvertedLists::idx_t* ConcurrentArrayInvertedLists::get_ids(size_t list_no) const {
+    FAISS_THROW_MSG("not implemented get_ids for non-continuous storage");
+}
+size_t ConcurrentArrayInvertedLists::add_entries(
+        size_t list_no,
+        size_t n_entry,
+        const idx_t* ids_in,
+        const uint8_t* codes_in) {
+    if (n_entry == 0)
+        return 0;
+
+    assert(list_no < nlist);
+    size_t o = list_size(list_no);
+
+    reserve(list_no, o + n_entry);
+
+    int64_t first_id  = o / segment_size;
+    int64_t first_cur = o % segment_size;
+
+    if (first_cur + n_entry <= segment_size) {
+        std::memcpy(&ids[list_no][first_id][first_cur], ids_in, n_entry * sizeof(ids_in[0]));
+        std::memcpy(&codes[list_no][first_id][first_cur], codes_in, n_entry * code_size);
+        list_cur[list_no].fetch_add(n_entry);
+        return o;
+    }
+
+    //process first segment
+    int64_t first_rest = segment_size - first_cur;
+    memcpy(&ids[list_no][first_id][first_cur],
+           ids_in,
+           first_rest * sizeof(ids_in[0]));
+    memcpy(&codes[list_no][first_id][first_cur],
+           codes_in,
+           first_rest * code_size);
+    list_cur[list_no].fetch_add(first_rest);
+
+    auto rest_entry = n_entry - first_rest;
+    auto entry_cur  = first_rest;
+    auto segment_id = first_id;
+    //process rest segment
+    while (rest_entry > 0) {
+        segment_id = segment_id + 1;
+        if (rest_entry >= segment_size) {
+            memcpy(&codes[list_no][segment_id][0],
+                   codes_in + entry_cur * code_size,
+                   segment_size * code_size);
+            memcpy(&ids[list_no][segment_id][0],
+                   ids_in + entry_cur,
+                   segment_size * sizeof(ids_in[0]));
+            list_cur[list_no].fetch_add(segment_size);
+
+            entry_cur += segment_size;
+            rest_entry -= segment_size;
+        } else {
+            memcpy(&codes[list_no][segment_id][0],
+                   codes_in + entry_cur * code_size,
+                   rest_entry * code_size);
+            memcpy(&ids[list_no][segment_id][0],
+                   ids_in + entry_cur,
+                   rest_entry * sizeof(ids_in[0]));
+            list_cur[list_no].fetch_add(rest_entry);
+
+            entry_cur += rest_entry;
+            rest_entry -= rest_entry;
+        }
+    }
+    assert(entry_cur == n_entry);
+    assert(rest_entry == 0);
+    return o;
+}
+size_t ConcurrentArrayInvertedLists::add_entries_without_codes(
+        size_t list_no,
+        size_t n_entry,
+        const idx_t* ids_in) {
+    FAISS_THROW_MSG("not implemented add_entries_without_codes");
+}
+void ConcurrentArrayInvertedLists::update_entries(
+        size_t list_no,
+        size_t offset,
+        size_t n_entry,
+        const idx_t* ids_in,
+        const uint8_t* codes_in) {
+    if (n_entry == 0)
+        return;
+
+    assert(list_no < nlist);
+    assert(n_entry + offset <= list_size(list_no));
+
+    size_t  first_id  = offset / segment_size;
+    int64_t first_cur = offset % segment_size;
+    int64_t first_rest = segment_size - first_cur;
+
+    if (n_entry <= first_rest) {
+        memcpy(&ids[list_no][first_id][first_cur], ids_in, n_entry * sizeof(ids_in[0]));
+        memcpy(&codes[list_no][first_id][first_cur], codes_in, n_entry * code_size);
+        return ;
+    }
+
+    // update first segment
+    memcpy(&ids[list_no][first_id][first_cur],
+           ids_in,
+           first_rest * sizeof(ids_in[0]));
+    memcpy(&codes[list_no][first_id][first_cur],
+           codes_in,
+           first_rest * code_size);
+
+    auto rest_entry = n_entry - first_rest;
+    auto entry_cur = first_rest;
+    auto segment_id = first_id;
+    while (rest_entry > 0) {
+        segment_id = segment_id + 1;
+        if (rest_entry >= segment_size) {
+            memcpy(&codes[list_no][segment_id][0],
+                   codes_in + entry_cur * code_size,
+                   segment_size * code_size);
+            memcpy(&ids[list_no][segment_id][0],
+                   ids_in + entry_cur,
+                   segment_size * sizeof(ids_in[0]));
+
+            entry_cur += segment_size;
+            rest_entry -= segment_size;
+        } else {
+            memcpy(&codes[list_no][segment_id][0],
+                   codes_in + entry_cur * code_size,
+                   rest_entry * code_size);
+            memcpy(&ids[list_no][segment_id][0],
+                   ids_in + entry_cur,
+                   rest_entry * sizeof(ids_in[0]));
+
+            entry_cur += rest_entry;
+            rest_entry -= rest_entry;
+        }
+    }
+    assert(entry_cur == n_entry);
+    assert(rest_entry == 0);
+}
+InvertedLists* ConcurrentArrayInvertedLists::to_readonly() {
+    return InvertedLists::to_readonly();
+}
+InvertedLists* ConcurrentArrayInvertedLists::to_readonly_without_codes() {
+    return InvertedLists::to_readonly_without_codes();
+}
+ConcurrentArrayInvertedLists::~ConcurrentArrayInvertedLists() {
+}
+void ConcurrentArrayInvertedLists::resize(size_t list_no, size_t new_size) {
+    size_t o = list_size(list_no);
+
+    if (new_size >= o) {
+        reserve(list_no, new_size);
+        list_cur[list_no].store(new_size);
+    } else {
+        list_cur[list_no].store(new_size);
+        shrink_to_fit(list_no, new_size);
+    }
+
+}
+size_t ConcurrentArrayInvertedLists::get_segment_num(size_t list_no) const {
+    assert(list_no < nlist);
+    auto o = list_cur[list_no].load();
+    return (o / segment_size) + (o % segment_size != 0);
+}
+size_t ConcurrentArrayInvertedLists::get_segment_size(
+        size_t list_no,
+        size_t segment_no) const {
+    assert(list_no < nlist);
+    auto o = list_cur[list_no].load();
+    if (segment_no == 0 && o == 0) {
+        return 0;
+    }
+    auto seg_o = cal_segment_num(o);
+    assert(segment_no < seg_o);
+    auto o_last = o % segment_size > 0 ? o % segment_size : segment_size;
+    if (segment_no < seg_o - 1) {
+        return segment_size;
+    } else {
+        return o_last;
+    }
+}
+size_t ConcurrentArrayInvertedLists::get_segment_offset(
+        size_t list_no,
+        size_t segment_no) const {
+    assert(list_no < nlist);
+    auto o = list_cur[list_no].load();
+    auto seg_o = cal_segment_num(o);
+    assert(segment_no < seg_o);
+    return segment_size * segment_no;
+}
+const uint8_t* ConcurrentArrayInvertedLists::get_codes(
+        size_t list_no,
+        size_t offset) const {
+    assert(list_no < nlist);
+    assert(offset < list_size(list_no));
+    auto segment_no = offset / segment_size;
+    auto segment_off = offset % segment_size;
+    return reinterpret_cast<const uint8_t *>(&(codes[list_no][segment_no][segment_off]));
+}
+
+const InvertedLists::idx_t* ConcurrentArrayInvertedLists::get_ids(
+        size_t list_no,
+        size_t offset) const {
+    assert(list_no < nlist);
+    assert(offset < list_size(list_no));
+    auto segment_no = offset / segment_size;
+    auto segment_off = offset % segment_size;
+    return reinterpret_cast<const idx_t *>(&(ids[list_no][segment_no][segment_off]));
+}
+
+
+const uint8_t* ConcurrentArrayInvertedLists::get_single_code(
+        size_t list_no,
+        size_t offset) const {
+    return get_codes(list_no, offset);
+}
+
+InvertedLists::idx_t ConcurrentArrayInvertedLists::get_single_id(size_t list_no, size_t offset)
+        const {
+    auto *pItem = get_ids(list_no, offset);
+    return *pItem;
+}
 
 /*****************************************************************
  * ReadOnlyArrayInvertedLists implementations

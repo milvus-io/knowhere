@@ -253,6 +253,54 @@ void write_InvertedLists(const InvertedLists* ils, IOWriter* f) {
                 WRITEANDCHECK(ails->ids[i].data(), n);
             }
         }
+    } else if (const auto & lca =
+                       dynamic_cast<const ConcurrentArrayInvertedLists *>(ils)) {
+        uint32_t h = fourcc("ilca");
+        WRITE1(h);
+        WRITE1(lca->nlist);
+        WRITE1(lca->code_size);
+        WRITE1(lca->segment_size);
+
+        // here we store either as a full or a sparse data buffer
+        size_t n_non0 = 0;
+        for (size_t i = 0; i < lca->nlist; i++) {
+            if (lca->list_size(i) > 0) {
+                n_non0++;
+            }
+        }
+        if (n_non0 > lca->nlist / 2) {
+            uint32_t list_type = fourcc("full");
+            WRITE1(list_type);
+            std::vector<size_t> sizes;
+            for (size_t i = 0; i < lca->nlist; i++) {
+                sizes.push_back(lca->list_size(i));
+            }
+            WRITEVECTOR(sizes);
+        } else {
+            int list_type = fourcc("sprs"); // sparse
+            WRITE1(list_type);
+            std::vector<size_t> sizes;
+            for (size_t i = 0; i < lca->nlist; i++) {
+                size_t n = lca->list_size(i);
+                if (n > 0) {
+                    sizes.push_back(i);
+                    sizes.push_back(n);
+                }
+            }
+            WRITEVECTOR(sizes);
+        }
+        // make a single contiguous data buffer (useful for mmapping)
+        for (size_t i = 0; i < lca->nlist; i++) {
+            size_t n = lca->list_size(i);
+            if (n > 0) {
+                size_t seg_num = lca->get_segment_num(i);
+                for (size_t j = 0; j < seg_num; j++) {
+                    size_t seg_size = lca->get_segment_size(i, j);
+                    WRITEANDCHECK(lca->codes[i][j].data_.data(), seg_size * lca->code_size);
+                    WRITEANDCHECK(lca->ids[i][j].data_.data(), seg_size);
+                }
+            }
+        }
     } else if (const auto & oa =
             dynamic_cast<const ReadOnlyArrayInvertedLists *>(ils)) {
         uint32_t h = fourcc("iloa");
@@ -532,6 +580,11 @@ void write_index(const Index* idx, IOWriter* f) {
             }
             WRITEVECTOR(tab);
         }
+        write_InvertedLists(ivfl->invlists, f);
+    } else if (const IndexIVFFlat* ivfl = dynamic_cast<const IndexIVFFlatCC*>(idx)) {
+        uint32_t h = fourcc("IwFc");
+        WRITE1(h);
+        write_ivf_header(ivfl, f);
         write_InvertedLists(ivfl->invlists, f);
     } else if (
             const IndexIVFFlat* ivfl = dynamic_cast<const IndexIVFFlat*>(idx)) {

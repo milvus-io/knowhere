@@ -22,6 +22,17 @@ test_data = [
         },
     ),
     (
+        "IVFFLATCC",
+        {
+            "dim": 256,
+            "k": 15,
+            "metric_type": "L2",
+            "n_list": 1024,
+            "nprobe": 1024,
+            "ssize" : 48
+        },
+    ),
+    (
         "IVFSQ",
         {
             "dim": 256,

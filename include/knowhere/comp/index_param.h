@@ -26,6 +26,7 @@ constexpr const char* INDEX_FAISS_BIN_IVFFLAT = "BIN_IVF_FLAT";
 
 constexpr const char* INDEX_FAISS_IDMAP = "FLAT";
 constexpr const char* INDEX_FAISS_IVFFLAT = "IVF_FLAT";
+constexpr const char* INDEX_FAISS_IVFFLAT_CC = "IVF_FLAT_CC";
 constexpr const char* INDEX_FAISS_IVFPQ = "IVF_PQ";
 constexpr const char* INDEX_FAISS_IVFSQ8 = "IVF_SQ8";
 
@@ -43,6 +44,7 @@ constexpr const char* INDEX_DISKANN = "DISKANN";
 }  // namespace IndexEnum
 
 namespace meta {
+constexpr const char* INDEX_TYPE = "index_type";
 constexpr const char* METRIC_TYPE = "metric_type";
 constexpr const char* DIM = "dim";
 constexpr const char* TENSOR = "tensor";
@@ -56,6 +58,7 @@ constexpr const char* RANGE_FILTER = "range_filter";
 constexpr const char* INPUT_IDS = "input_ids";
 constexpr const char* OUTPUT_TENSOR = "output_tensor";
 constexpr const char* DEVICE_ID = "gpu_id";
+constexpr const char* NUM_BUILD_THREAD = "num_build_thread";
 constexpr const char* TRACE_VISIT = "trace_visit";
 constexpr const char* JSON_INFO = "json_info";
 constexpr const char* JSON_ID_SET = "json_id_set";
@@ -67,6 +70,7 @@ constexpr const char* NPROBE = "nprobe";
 constexpr const char* NLIST = "nlist";
 constexpr const char* NBITS = "nbits";  // PQ/SQ
 constexpr const char* M = "m";          // PQ param for IVFPQ
+constexpr const char* SSIZE = "ssize";
 // HNSW Params
 constexpr const char* EFCONSTRUCTION = "efConstruction";
 constexpr const char* HNSW_M = "M";

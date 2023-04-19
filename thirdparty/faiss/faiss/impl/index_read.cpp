@@ -213,6 +213,31 @@ InvertedLists* read_InvertedLists(IOReader* f, int io_flags) {
         READANDCHECK(ails->readonly_codes.data(), n * code_size);
 #endif
         return ails;
+    } else if (h == fourcc("ilca")) {
+        size_t nlist, code_size, segment_size;
+        READ1(nlist);
+        READ1(code_size);
+        READ1(segment_size);
+
+        auto lca = new ConcurrentArrayInvertedLists(nlist, code_size, segment_size);
+        std::vector<size_t> sizes(nlist);
+        read_ArrayInvertedLists_sizes(f, sizes);
+        for (size_t i = 0; i < lca->nlist; i++) {
+            lca->resize(i, sizes[i]);
+        }
+        for (size_t i = 0; i < lca->nlist; i++) {
+            size_t n = lca->list_size(i);
+            if (n > 0) {
+                size_t seg_num = lca->get_segment_num(i);
+                for (size_t j = 0; j < seg_num; j++) {
+                    size_t seg_size = lca->get_segment_size(i , j);
+                    size_t seg_off = lca->get_segment_offset(i, j);
+                    READANDCHECK(lca->codes[i][j].data_.data(), seg_size * lca->code_size);
+                    READANDCHECK(lca->ids[i][j].data_.data(), seg_size);
+                }
+            }
+        }
+        return lca;
     } else if (h == fourcc("ilar") && !(io_flags & IO_FLAG_SKIP_IVF_DATA)) {
         auto ails = new ArrayInvertedLists(0, 0);
         READ1(ails->nlist);
@@ -698,6 +723,12 @@ Index* read_index(IOReader* f, int io_flags) {
         }
         read_InvertedLists(ivfl, f, io_flags);
         idx = ivfl;
+    } else if (h == fourcc("IwFc")) { // legacy
+        IndexIVFFlatCC* ivf_cc = new IndexIVFFlatCC();
+        read_ivf_header(ivf_cc, f);
+        ivf_cc->code_size = ivf_cc->d * sizeof(float);
+        read_InvertedLists(ivf_cc, f, io_flags);
+        idx = ivf_cc;
     } else if (h == fourcc("IwFl")) {
         IndexIVFFlat* ivfl = new IndexIVFFlat();
         read_ivf_header(ivfl, f);

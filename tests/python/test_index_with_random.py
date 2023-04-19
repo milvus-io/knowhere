@@ -21,6 +21,17 @@ test_data = [
             "nprobe": 1024,
         },
     ),
+    (
+        "IVFFLATCC",
+        {
+            "dim": 256,
+            "k": 15,
+            "metric_type": "L2",
+            "nlist": 1024,
+            "nprobe": 1024,
+            "ssize": 48
+        },
+    ),
     # (
     #     "IVFSQ",
     #     {
