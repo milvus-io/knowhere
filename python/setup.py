@@ -2,18 +2,13 @@ from setuptools import setup
 from setuptools.extension import Extension
 from setuptools.command.build_py import build_py
 import os
+import shutil
 
-KNOWHERE_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-NAME = "knowhere"
-VERSION = os.getenv("VERSION")
-if not VERSION:
-    VERSION = "1.0.0"
-
+NAME = "pyknowhere"
 
 class get_numpy_include(object):
     def __str__(self):
         import numpy as np
-
         return np.get_include()
 
 
@@ -21,18 +16,30 @@ class CustomBuildPy(build_py):
     """Run build_ext before build_py to compile swig code."""
 
     def run(self):
+        so_src = os.path.join("..", "build", "Release", "libknowhere.so")
+        dylib_src = os.path.join("..", "build", "Release", "libknowhere.dylib")
+        if os.path.exists(so_src):
+            shutil.copyfile(so_src, os.path.join("knowhere", "libknowhere.so"))
+        elif os.path.exists(dylib_src):
+            shutil.copyfile(dylib_src, os.path.join("knowhere", "libknowhere.dylib"))
+        else:
+            raise FileNotFoundError("libknowhere.so or libknowhere.dylib not found")
         self.run_command("build_ext")
         return build_py.run(self)
 
 
 def get_thirdparty_prefix(lib_name):
     prefix = ""
-    with open(os.path.join(KNOWHERE_ROOT, "build", lib_name + ".pc")) as f:
+    with open(os.path.join("..", "build", lib_name + ".pc")) as f:
         for line in f.readlines():
             if line.startswith("prefix="):
                 prefix = line.strip().split("=")[1]
                 break
     return prefix
+
+def get_readme():
+    with open(os.path.join("..", "README.md"), "r") as f:
+        return f.read()
 
 
 DEFINE_MACROS = [
@@ -42,29 +49,28 @@ DEFINE_MACROS = [
 
 INCLUDE_DIRS = [
     get_numpy_include(),
-    KNOWHERE_ROOT,
-    os.path.join(KNOWHERE_ROOT, "include"),
-    os.path.join(KNOWHERE_ROOT, "thirdparty"),
+    os.path.join("..", "include"),
+    os.path.join("..", "thirdparty"),
     get_thirdparty_prefix("nlohmann_json") + "/include",
     get_thirdparty_prefix("libglog") + "/include",
 ]
 
-LIBRARY_DIRS = [os.path.join(KNOWHERE_ROOT, "build/Release")]
+LIBRARY_DIRS = [os.path.join("..", "build", "Release")]
 EXTRA_COMPILE_ARGS = ["-fPIC", "-std=gnu++17"]
 EXTRA_LINK_ARGS = [
     "-lknowhere",
-    "-Wl,-rpath,$ORIGIN/../../../",
+    "-Wl,-rpath,$ORIGIN",
 ]
 
 SWIG_OPTS = [
     "-c++",
-    "-I" + os.path.join(KNOWHERE_ROOT, "include"),
+    "-I" + os.path.join("..", "include")
 ]
 
 _swigknowhere = Extension(
     "knowhere._swigknowhere",
     sources=[
-        os.path.join(KNOWHERE_ROOT, "python", "knowhere", "knowhere.i"),
+        os.path.join("knowhere", "knowhere.i"),
     ],
     language="c++",
     define_macros=DEFINE_MACROS,
@@ -77,33 +83,34 @@ _swigknowhere = Extension(
 
 setup(
     name=NAME,
-    version=VERSION,
     description=(
-        "A library for efficient similarity search and clustering of dense " "vectors."
+        "A library for efficient similarity search and clustering of vectors."
     ),
     url="https://github.com/milvus-io/knowhere",
-    author="milvus",
-    author_email="yusheng.ma@zilliz.com",
-    license="MIT",
+    author="Milvus Team",
+    author_email="milvus-team@zilliz.com",
+    license='Apache License 2.0',
     keywords="search nearest neighbors",
-    setup_requires=["numpy"],
+    setup_requires=["numpy", "setuptools_scm"],
+    use_scm_version={'root': '..', 'local_scheme': 'no-local-version', 'version_scheme': 'release-branch-semver'},
+    long_description=get_readme(),
+    long_description_content_type="text/markdown",
     packages=["knowhere"],
-    data_files=[
-        (
-            "lib",
-            [os.path.join(KNOWHERE_ROOT, "build/Release/libknowhere.so")],
-        )
-    ],
+    include_package_data=True,
+    package_data={"knowhere": ["libknowhere.so"]},
+    python_requires=">=3.8",
     ext_modules=[_swigknowhere],
     cmdclass={"build_py": CustomBuildPy},
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: Apache Software License",
         "Operating System :: POSIX",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
     ],
 )

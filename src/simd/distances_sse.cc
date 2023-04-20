@@ -15,6 +15,7 @@
 #include <immintrin.h>
 
 #include <cassert>
+#include <cstdint>
 
 #include "distances_ref.h"
 

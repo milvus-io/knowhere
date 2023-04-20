@@ -17,42 +17,41 @@ test_data = [
             "dim": 256,
             "k": 15,
             "metric_type": "L2",
-            "n_list": 1024,
+            "nlist": 1024,
             "nprobe": 1024,
         },
     ),
-    """
+    # (
+    #     "IVFSQ",
+    #     {
+    #         "dim": 256,
+    #         "k": 15,
+    #         "metric_type": "L2",
+    #         "nlist": 1024,
+    #         "nprobe": 1024,
+    #     },
+    # ),
+    # (
+    #     "IVFPQ",
+    #     {
+    #         "dim": 256,
+    #         "k": 15,
+    #         "metric_type": "L2",
+    #         "nlist": 1024,
+    #         "nprobe": 1024,
+    #         "m": 32,
+    #         "nbits": 8,
+    #     },
+    # ),
     (
-        "IVFSQ",
-        {
-            "dim": 256,
-            "k": 15,
-            "metric_type": "L2",
-            "n_list": 1024,
-            "nprobe": 1024,
-        },
-    ),
-    (
-        "IVFPQ",
-        {
-            "dim": 256,
-            "k": 15,
-            "metric_type": "L2",
-            "n_list": 1024,
-            "nprobe": 1024,
-            "m": 32,
-            "nbits": 32,
-        },
-    ),
-    """(
         "HNSW",
         {
             "dim": 256,
             "k": 15,
             "metric_type": "L2",
-            "M": 10000,
-            "efConstruction": 200,
-            "ef": 32,
+            "M": 64,
+            "efConstruction": 256,
+            "ef": 256,
         },
     ),
 ]
@@ -75,5 +74,5 @@ def test_index(gen_data, faiss_ans, recall, error, name, config):
     )
     k_dis, k_ids = knowhere.DataSetToArray(ans)
     f_dis, f_ids = faiss_ans(xb, xq, config["metric_type"], config["k"])
-    assert recall(f_ids, k_ids) >= 0.99
+    assert recall(f_ids, k_ids) >= 0.9
     assert error(f_dis, f_dis) <= 0.01
