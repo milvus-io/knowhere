@@ -16,8 +16,13 @@ namespace knowhere {
 
 static const std::unordered_set<std::string> ext_legal_json_keys = {"metric_type",
                                                                     "dim",
-                                                                    "nlist",
-                                                                    "nprobe",
+                                                                    "nlist",           // IVF param
+                                                                    "nprobe",          // IVF param
+                                                                    "nbits",           // IVF_PQ param
+                                                                    "m",               // IVF_PQ param
+                                                                    "M",               // HNSW param
+                                                                    "efConstruction",  // HNSW param
+                                                                    "ef",              // HNSW param
                                                                     "level",
                                                                     "index_type",
                                                                     "index_mode",
@@ -38,8 +43,6 @@ static const std::unordered_set<std::string> ext_legal_json_keys = {"metric_type
                                                                     "num_load_thread",
                                                                     "index_files",
                                                                     "gpu_id",
-                                                                    "nbits",
-                                                                    "m",
                                                                     "num_threads"};
 
 Status
