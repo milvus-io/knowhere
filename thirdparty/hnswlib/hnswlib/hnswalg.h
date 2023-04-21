@@ -35,7 +35,7 @@
 namespace hnswlib {
 typedef unsigned int tableint;
 typedef unsigned int linklistsizeint;
-constexpr float kHnswBruteForceFilterRate = 0.8f;
+constexpr float kHnswBruteForceFilterRate = 0.93f;
 
 template <typename dist_t>
 class HierarchicalNSW : public AlgorithmInterface<dist_t> {
@@ -1030,7 +1030,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         if (cur_element_count == 0)
             return {};
 
-        if (!bitset.empty() && bitset.count() > (cur_element_count * kHnswBruteForceFilterRate)) {
+        if (!bitset.empty() && bitset.count() >= (cur_element_count * kHnswBruteForceFilterRate)) {
             assert(cur_element_count == bitset.size());
             knowhere::ResultMaxHeap<dist_t, labeltype> max_heap(k);
             for (labeltype id = 0; id < cur_element_count; ++id) {

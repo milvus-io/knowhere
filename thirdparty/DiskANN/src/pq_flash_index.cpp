@@ -1001,7 +1001,7 @@ namespace diskann {
     float query_norm = query_norm_opt.value();
     auto ctx = this->reader->get_ctx();
 
-    if (!bitset_view.empty() && bitset_view.count() > bitset_view.size() * kDiskAnnBruteForceFilterRate) {
+    if (!bitset_view.empty() && bitset_view.count() >= bitset_view.size() * kDiskAnnBruteForceFilterRate) {
         brute_force_beam_search(data, query_norm, k_search, indices, distances,
                                 beam_width, ctx, stats, feder, bitset_view);
         this->thread_data.push(data);
