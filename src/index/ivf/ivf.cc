@@ -23,6 +23,7 @@
 #include "knowhere/factory.h"
 #include "knowhere/feder/IVFFlat.h"
 #include "knowhere/index_node_thread_pool_wrapper.h"
+#include "knowhere/utils.h"
 
 namespace knowhere {
 
@@ -42,7 +43,8 @@ template <typename T>
 class IvfIndexNode : public IndexNode {
  public:
     IvfIndexNode(const Object& object) : index_(nullptr) {
-        static_assert(std::is_same<T, faiss::IndexIVFFlat>::value || std::is_same<T, faiss::IndexIVFPQ>::value ||
+        static_assert(std::is_same<T, faiss::IndexIVFFlat>::value || std::is_same<T, faiss::IndexIVFFlatCC>::value ||
+                          std::is_same<T, faiss::IndexIVFPQ>::value ||
                           std::is_same<T, faiss::IndexIVFScalarQuantizer>::value ||
                           std::is_same<T, faiss::IndexBinaryIVF>::value,
                       "not support");
@@ -60,6 +62,24 @@ class IvfIndexNode : public IndexNode {
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
     expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override;
+    bool
+    HasRawData(const std::string& metric_type) const override {
+        if constexpr (std::is_same<faiss::IndexIVFFlat, T>::value) {
+            return true;
+        }
+        if constexpr (std::is_same<faiss::IndexIVFFlatCC, T>::value) {
+            return false;
+        }
+        if constexpr (std::is_same<faiss::IndexIVFPQ, T>::value) {
+            return false;
+        }
+        if constexpr (std::is_same<faiss::IndexIVFScalarQuantizer, T>::value) {
+            return false;
+        }
+        if constexpr (std::is_same<faiss::IndexBinaryIVF, T>::value) {
+            return true;
+        }
+    }
     expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const override {
         return unexpected(Status::not_implemented);
@@ -74,6 +94,9 @@ class IvfIndexNode : public IndexNode {
     CreateConfig() const override {
         if constexpr (std::is_same<faiss::IndexIVFFlat, T>::value) {
             return std::make_unique<IvfFlatConfig>();
+        }
+        if constexpr (std::is_same<faiss::IndexIVFFlatCC, T>::value) {
+            return std::make_unique<IvfFlatCcConfig>();
         }
         if constexpr (std::is_same<faiss::IndexIVFPQ, T>::value) {
             return std::make_unique<IvfPqConfig>();
@@ -98,6 +121,12 @@ class IvfIndexNode : public IndexNode {
             return 0;
         }
         if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
+            auto nb = index_->invlists->compute_ntotal();
+            auto nlist = index_->nlist;
+            auto code_size = index_->code_size;
+            return (nb * code_size + nb * sizeof(int64_t) + nlist * code_size);
+        }
+        if constexpr (std::is_same<T, faiss::IndexIVFFlatCC>::value) {
             auto nb = index_->invlists->compute_ntotal();
             auto nlist = index_->nlist;
             auto code_size = index_->code_size;
@@ -140,6 +169,9 @@ class IvfIndexNode : public IndexNode {
         if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
             return knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
         }
+        if constexpr (std::is_same<T, faiss::IndexIVFFlatCC>::value) {
+            return knowhere::IndexEnum::INDEX_FAISS_IVFFLAT_CC;
+        }
         if constexpr (std::is_same<T, faiss::IndexIVFPQ>::value) {
             return knowhere::IndexEnum::INDEX_FAISS_IVFPQ;
         }
@@ -163,6 +195,9 @@ namespace knowhere {
 template <typename T>
 Status
 IvfIndexNode<T>::Build(const DataSet& dataset, const Config& cfg) {
+    const BaseConfig& base_cfg = static_cast<const IvfConfig&>(cfg);
+    auto build_thread_num = base_cfg.get_build_thread_num();
+    ThreadPool::ScopedOmpSetter setter(build_thread_num);
     auto err = Train(dataset, cfg);
     if (err != Status::success) {
         return err;
@@ -207,6 +242,14 @@ template <typename T>
 Status
 IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
     const BaseConfig& base_cfg = static_cast<const IvfConfig&>(cfg);
+    auto build_thread_num = base_cfg.get_build_thread_num();
+    ThreadPool::ScopedOmpSetter setter(build_thread_num);
+
+    // do normalize for COSINE metric type
+    if (IsMetricType(base_cfg.metric_type, knowhere::metric::COSINE)) {
+        Normalize(dataset);
+    }
+
     auto metric = Str2FaissMetricType(base_cfg.metric_type);
     if (!metric.has_value()) {
         return Status::invalid_metric_type;
@@ -223,6 +266,14 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
             auto nlist = MatchNlist(rows, ivf_flat_cfg.nlist);
             qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
             index = std::make_unique<faiss::IndexIVFFlat>(qzr, dim, nlist, metric.value());
+            index->own_fields = true;
+            index->train(rows, (const float*)data);
+        }
+        if constexpr (std::is_same<faiss::IndexIVFFlatCC, T>::value) {
+            const IvfFlatCcConfig& ivf_flat_cc_cfg = static_cast<const IvfFlatCcConfig&>(cfg);
+            auto nlist = MatchNlist(rows, ivf_flat_cc_cfg.nlist);
+            qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
+            index = std::make_unique<faiss::IndexIVFFlatCC>(qzr, dim, nlist, ivf_flat_cc_cfg.ssize, metric.value());
             index->own_fields = true;
             index->train(rows, (const float*)data);
         }
@@ -266,12 +317,15 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
 
 template <typename T>
 Status
-IvfIndexNode<T>::Add(const DataSet& dataset, const Config&) {
+IvfIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
     if (!this->index_) {
         return Status::empty_index;
     }
     auto data = dataset.GetTensor();
     auto rows = dataset.GetRows();
+    const BaseConfig& base_cfg = static_cast<const IvfConfig&>(cfg);
+    auto build_thread_num = base_cfg.get_build_thread_num();
+    ThreadPool::ScopedOmpSetter setter(build_thread_num);
     try {
         if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
             index_->add_without_codes(rows, (const float*)data);
@@ -323,6 +377,12 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
     auto data = dataset.GetTensor();
 
     const IvfConfig& ivf_cfg = static_cast<const IvfConfig&>(cfg);
+
+    // do normalize for COSINE metric type
+    if (IsMetricType(ivf_cfg.metric_type, knowhere::metric::COSINE)) {
+        Normalize(dataset);
+    }
+
     auto k = ivf_cfg.k;
     auto nprobe = ivf_cfg.nprobe;
 
@@ -392,6 +452,12 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
     auto dim = dataset.GetDim();
 
     const IvfConfig& ivf_cfg = static_cast<const IvfConfig&>(cfg);
+
+    // do normalize for COSINE metric type
+    if (IsMetricType(ivf_cfg.metric_type, knowhere::metric::COSINE)) {
+        Normalize(dataset);
+    }
+
     auto nprobe = ivf_cfg.nprobe;
 
     int parallel_mode = 0;
@@ -467,56 +533,60 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
     if (!this->index_->is_trained) {
         return unexpected(Status::index_not_trained);
     }
+    auto dim = Dim();
     auto rows = dataset.GetRows();
-    auto dim = dataset.GetDim();
     auto ids = dataset.GetIds();
-    float* data = nullptr;
-    try {
-        data = new float[dim * rows];
-        index_->make_direct_map(true);
-        for (int64_t i = 0; i < rows; i++) {
-            int64_t id = ids[i];
-            assert(id >= 0 && id < index_->ntotal);
-            if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
+
+    if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value) {
+        uint8_t* data = nullptr;
+        try {
+            data = new uint8_t[dim * rows / 8];
+            index_->make_direct_map(true);
+            for (int64_t i = 0; i < rows; i++) {
+                int64_t id = ids[i];
+                assert(id >= 0 && id < index_->ntotal);
+                index_->reconstruct(id, data + i * dim / 8);
+            }
+            return GenResultDataSet(rows, dim, data);
+        } catch (const std::exception& e) {
+            std::unique_ptr<uint8_t> auto_del(data);
+            LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
+            return unexpected(Status::faiss_inner_error);
+        }
+    } else if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
+        float* data = nullptr;
+        try {
+            data = new float[dim * rows];
+            index_->make_direct_map(true);
+            for (int64_t i = 0; i < rows; i++) {
+                int64_t id = ids[i];
+                assert(id >= 0 && id < index_->ntotal);
                 index_->reconstruct_without_codes(id, data + i * dim);
-            } else {
+            }
+            return GenResultDataSet(rows, dim, data);
+        } catch (const std::exception& e) {
+            std::unique_ptr<float> auto_del(data);
+            LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
+            return unexpected(Status::faiss_inner_error);
+        }
+    } else if constexpr (std::is_same<T, faiss::IndexIVFFlatCC>::value) {
+        float* data = nullptr;
+        try {
+            data = new float[dim * rows];
+            index_->make_direct_map(true);
+            for (int64_t i = 0; i < rows; i++) {
+                int64_t id = ids[i];
+                assert(id >= 0 && id < index_->ntotal);
                 index_->reconstruct(id, data + i * dim);
             }
+            return GenResultDataSet(rows, dim, data);
+        } catch (const std::exception& e) {
+            std::unique_ptr<float> auto_del(data);
+            LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
+            return unexpected(Status::faiss_inner_error);
         }
-        return GenResultDataSet(data);
-    } catch (const std::exception& e) {
-        std::unique_ptr<float> auto_del(data);
-        LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
-        return unexpected(Status::faiss_inner_error);
-    }
-}
-
-template <>
-expected<DataSetPtr, Status>
-IvfIndexNode<faiss::IndexBinaryIVF>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const {
-    if (!this->index_) {
-        return unexpected(Status::empty_index);
-    }
-    if (!this->index_->is_trained) {
-        return unexpected(Status::index_not_trained);
-    }
-    auto rows = dataset.GetRows();
-    auto dim = dataset.GetDim();
-    auto ids = dataset.GetIds();
-    uint8_t* data = nullptr;
-    try {
-        data = new uint8_t[dim * rows / 8];
-        index_->make_direct_map(true);
-        for (int64_t i = 0; i < rows; i++) {
-            int64_t id = ids[i];
-            assert(id >= 0 && id < index_->ntotal);
-            index_->reconstruct(id, data + i * dim / 8);
-        }
-        return GenResultDataSet(data);
-    } catch (const std::exception& e) {
-        std::unique_ptr<uint8_t> auto_del(data);
-        LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
-        return unexpected(Status::faiss_inner_error);
+    } else {
+        return unexpected(Status::not_implemented);
     }
 }
 
@@ -679,6 +749,12 @@ KNOWHERE_REGISTER_GLOBAL(IVFFLAT,
                          [](const Object& object) { return Index<IvfIndexNode<faiss::IndexIVFFlat>>::Create(object); });
 KNOWHERE_REGISTER_GLOBAL(IVF_FLAT,
                          [](const Object& object) { return Index<IvfIndexNode<faiss::IndexIVFFlat>>::Create(object); });
+KNOWHERE_REGISTER_GLOBAL(IVFFLATCC, [](const Object& object) {
+    return Index<IvfIndexNode<faiss::IndexIVFFlatCC>>::Create(object);
+});
+KNOWHERE_REGISTER_GLOBAL(IVF_FLAT_CC, [](const Object& object) {
+    return Index<IvfIndexNode<faiss::IndexIVFFlatCC>>::Create(object);
+});
 KNOWHERE_REGISTER_GLOBAL(IVFPQ,
                          [](const Object& object) { return Index<IvfIndexNode<faiss::IndexIVFPQ>>::Create(object); });
 KNOWHERE_REGISTER_GLOBAL(IVF_PQ,

@@ -36,6 +36,18 @@ class IvfConfig : public BaseConfig {
 
 class IvfFlatConfig : public IvfConfig {};
 
+class IvfFlatCcConfig : public IvfFlatConfig {
+ public:
+    int ssize;
+    KNOHWERE_DECLARE_CONFIG(IvfFlatCcConfig) {
+        KNOWHERE_CONFIG_DECLARE_FIELD(ssize)
+            .description("segment size")
+            .set_default(48)
+            .for_train()
+            .set_range(32, 2048);
+    }
+};
+
 class IvfPqConfig : public IvfConfig {
  public:
     int m;

@@ -25,6 +25,7 @@
 #include "knowhere/feder/DiskANN.h"
 #include "knowhere/file_manager.h"
 #include "knowhere/log.h"
+#include "knowhere/utils.h"
 
 namespace knowhere {
 
@@ -61,6 +62,11 @@ class DiskANNIndexNode : public IndexNode {
 
     expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override;
+
+    bool
+    HasRawData(const std::string& metric_type) const override {
+        return IsMetricType(metric_type, metric::L2);
+    }
 
     expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const override;
@@ -267,8 +273,9 @@ DiskANNIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
     count_.store(count);
     dim_.store(dim);
 
-    auto diskann_metric =
-        build_conf.metric_type == knowhere::metric::L2 ? diskann::Metric::L2 : diskann::Metric::INNER_PRODUCT;
+    bool is_ip = IsMetricType(build_conf.metric_type, knowhere::metric::IP) ||
+                 IsMetricType(build_conf.metric_type, knowhere::metric::COSINE);
+    auto diskann_metric = is_ip ? diskann::Metric::INNER_PRODUCT : diskann::Metric::L2;
     diskann::BuildConfig diskann_internal_build_config{data_path,
                                                        index_prefix_,
                                                        diskann_metric,
@@ -289,7 +296,7 @@ DiskANNIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
     }
 
     // Add file to the file manager
-    for (auto& filename : GetNecessaryFilenames(index_prefix_, diskann_metric == diskann::INNER_PRODUCT, true, true)) {
+    for (auto& filename : GetNecessaryFilenames(index_prefix_, is_ip, true, true)) {
         if (!AddFile(filename)) {
             LOG_KNOWHERE_ERROR_ << "Failed to add file " << filename << ".";
             return Status::diskann_file_error;
@@ -318,13 +325,14 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
         return true;
     }
     index_prefix_ = prep_conf.index_prefix;
-    auto diskann_metric =
-        prep_conf.metric_type == knowhere::metric::L2 ? diskann::Metric::L2 : diskann::Metric::INNER_PRODUCT;
+    bool is_ip = IsMetricType(prep_conf.metric_type, knowhere::metric::IP) ||
+                 IsMetricType(prep_conf.metric_type, knowhere::metric::COSINE);
+    auto diskann_metric = is_ip ? diskann::Metric::INNER_PRODUCT : diskann::Metric::L2;
 
     // Load file from file manager.
     for (auto& filename :
-         GetNecessaryFilenames(index_prefix_, diskann_metric == diskann::INNER_PRODUCT,
-                               prep_conf.search_cache_budget_gb > 0 && !prep_conf.use_bfs_cache, prep_conf.warm_up)) {
+         GetNecessaryFilenames(index_prefix_, is_ip, prep_conf.search_cache_budget_gb > 0 && !prep_conf.use_bfs_cache,
+                               prep_conf.warm_up)) {
         if (!LoadFile(filename)) {
             return false;
         }
@@ -360,7 +368,7 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
 
     count_.store(pq_flash_index_->get_num_points());
     // DiskANN will add one more dim for IP type.
-    if (diskann_metric == diskann::Metric::INNER_PRODUCT) {
+    if (is_ip) {
         dim_.store(pq_flash_index_->get_data_dim() - 1);
     } else {
         dim_.store(pq_flash_index_->get_data_dim());
@@ -624,7 +632,7 @@ DiskANNIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) c
         return unexpected(Status::empty_index);
     }
 
-    auto dim = dataset.GetDim();
+    auto dim = Dim();
     auto rows = dataset.GetRows();
     auto ids = dataset.GetIds();
 
@@ -655,7 +663,7 @@ DiskANNIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) c
         std::unique_ptr<float> auto_del(data);
         return unexpected(Status::diskann_inner_error);
     }
-    return GenResultDataSet(data);
+    return GenResultDataSet(rows, dim, data);
 }
 
 template <typename T>

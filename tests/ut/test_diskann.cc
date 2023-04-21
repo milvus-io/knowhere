@@ -12,6 +12,7 @@
 #include "catch2/catch_approx.hpp"
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/generators/catch_generators.hpp"
+#include "diskann/defines_export.h"
 #include "index/diskann/diskann.cc"
 #include "index/diskann/diskann_config.h"
 #include "knowhere/comp/local_file_manager.h"
@@ -225,8 +226,8 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
             knowhere::Json json = knowhere::Json::parse(build_json);
             diskann.Build(*ds_ptr, json);
         }
-        //  knn search & range search process
         {
+            // knn search
             auto diskann = knowhere::IndexFactory::Instance().Create("DISKANN", diskann_index_pack);
             auto knn_search_json = knn_search_gen().dump();
             knowhere::Json knn_json = knowhere::Json::parse(knn_search_json);
@@ -235,6 +236,27 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
             auto recall = GetKNNRecall(*knn_gt_ptr, *res.value());
             REQUIRE(recall > kL2KnnRecall);
 
+            // knn search with bitset
+            std::vector<std::function<std::vector<uint8_t>(size_t, size_t)>> gen_bitset_funcs = {
+                GenerateBitsetWithFirstTbitsSet, GenerateBitsetWithRandomTbitsSet};
+            const auto bitset_percentages =
+                GetBitsetTestPercentagesFromThreshold(diskann::kDiskAnnBruteForceFilterRate);
+            for (const float percentage : bitset_percentages) {
+                for (const auto& gen_func : gen_bitset_funcs) {
+                    auto bitset_data = gen_func(kNumRows, percentage * kNumRows);
+                    knowhere::BitsetView bitset(bitset_data.data(), kNumRows);
+                    auto results = diskann.Search(*query_ds, knn_json, bitset);
+                    auto gt = GetKNNGroundTruth(*base_ds, *query_ds, metric_str, kK, bitset);
+                    float recall = GetKNNRecall(*gt, *results.value());
+                    if (percentage > diskann::kDiskAnnBruteForceFilterRate) {
+                        REQUIRE(recall >= 0.99f);
+                    } else {
+                        REQUIRE(recall >= kL2KnnRecall);
+                    }
+                }
+            }
+
+            // range search process
             auto range_search_json = range_search_gen().dump();
             knowhere::Json range_json = knowhere::Json::parse(range_search_json);
             auto range_search_res = diskann.RangeSearch(*query_ds, range_json, nullptr);

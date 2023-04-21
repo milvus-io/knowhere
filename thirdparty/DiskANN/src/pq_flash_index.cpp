@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
 
+#include "diskann/aligned_file_reader.h"
 #include "diskann/logger.h"
 #include "diskann/pq_flash_index.h"
 #include <malloc.h>
@@ -11,6 +12,7 @@
 #include <chrono>
 #include <cmath>
 #include <iterator>
+#include <optional>
 #include <random>
 #include <thread>
 #include <unordered_map>
@@ -19,6 +21,8 @@
 #include "diskann/parameters.h"
 #include "diskann/timer.h"
 #include "diskann/utils.h"
+#include "diskann/defines_export.h"
+#include "knowhere/heap.h"
 
 #include "knowhere/log.h"
 #include "tsl/robin_set.h"
@@ -86,6 +90,7 @@ namespace {
       }
     }
   }
+  constexpr _u64 kBruteForceBeamWidthFactor = 1; // TODO: after experiment, change this value
 }  // namespace
 
 namespace diskann {
@@ -812,29 +817,12 @@ namespace diskann {
 #endif
 
   template<typename T>
-  void PQFlashIndex<T>::cached_beam_search(
-      const T *query1, const _u64 k_search, const _u64 l_search, _s64 *indices,
-      float *distances, const _u64 beam_width, const bool use_reorder_data,
-      QueryStats *stats, const knowhere::feder::diskann::FederResultUniq &feder,
-      knowhere::BitsetView bitset_view) {
-    ThreadData<T> data = this->thread_data.pop();
-    while (data.scratch.sector_scratch == nullptr) {
-      this->thread_data.wait_for_push_notify();
-      data = this->thread_data.pop();
-    }
-    auto ctx = this->reader->get_ctx();
-
-    if (beam_width > MAX_N_SECTOR_READS)
-      throw ANNException("Beamwidth can not be higher than MAX_N_SECTOR_READS",
-                         -1, __FUNCSIG__, __FILE__, __LINE__);
-
+  std::optional<float> PQFlashIndex<T>::init_thread_data(ThreadData<T> &data,
+                                                         const T *query1) {
     // copy query to thread specific aligned and allocated memory (for distance
     // calculations we need aligned data)
-    float        query_norm = 0;
-    const T     *query = data.scratch.aligned_query_T;
-    const float *query_float = data.scratch.aligned_query_float;
-
-    auto q_dim = this->data_dim;
+    float query_norm = 0;
+    auto  q_dim = this->data_dim;
     if (metric == diskann::Metric::INNER_PRODUCT) {
       // query_dim need to be specially treated when using IP
       q_dim--;
@@ -849,10 +837,7 @@ namespace diskann {
     // to 0 (this is the extra coordindate used to convert MIPS to L2 search)
     if (metric == diskann::Metric::INNER_PRODUCT) {
       if (query_norm == 0) {
-        // return an empty answer when calcu a zero point
-        this->thread_data.push(data);
-        this->thread_data.push_notify_all();
-        return;
+        return std::nullopt;
       }
       query_norm = std::sqrt(query_norm);
       data.scratch.aligned_query_T[this->data_dim - 1] = 0;
@@ -863,10 +848,171 @@ namespace diskann {
       }
     }
 
-    auto query_scratch = &(data.scratch);
+    data.scratch.reset();
+    return query_norm;
+  }
 
-    // reset query
-    query_scratch->reset();
+  template<typename T>
+  void PQFlashIndex<T>::brute_force_beam_search(
+      ThreadData<T> &data, const float query_norm, const _u64 k_search,
+      _s64 *indices, float *distances, const _u64 beam_width_parm, IOContext &ctx,
+      QueryStats *stats, const knowhere::feder::diskann::FederResultUniq &feder,
+      knowhere::BitsetView bitset_view) {
+    auto     query_scratch = &(data.scratch);
+    const T *query = data.scratch.aligned_query_T;
+    auto beam_width = beam_width_parm * kBruteForceBeamWidthFactor;
+
+    T *data_buf = query_scratch->coord_scratch;
+    std::unordered_map<_u64, std::vector<_u64>> nodes_in_sectors_to_visit;
+    std::vector<AlignedRead>                    frontier_read_reqs;
+    frontier_read_reqs.reserve(2 * beam_width);
+    char *sector_scratch = query_scratch->sector_scratch;
+    _u64 &sector_scratch_idx = query_scratch->sector_idx;
+
+    Timer                                io_timer, query_timer;
+    knowhere::ResultMaxHeap<float, _u64> max_heap(k_search);
+    // TODO: maybe we can pipeline here
+    assert(bitset_view.size() == num_points);
+    for (_u64 id = 0; id < num_points;) {
+      // gathering information about reading which nodes and which sector
+      if (!bitset_view.test(id)) {
+        const _u64 sector_offset = get_node_sector_offset(id);
+        if (nodes_in_sectors_to_visit.find(sector_offset) ==
+            nodes_in_sectors_to_visit.end()) {
+          while (id < num_points &&
+                 get_node_sector_offset(id) == sector_offset) {
+            if (!bitset_view.test(id)) {
+              if (coord_cache.find(id) != coord_cache.end()) {
+                float dist =
+                    dist_cmp(query, coord_cache.at(id), (size_t) aligned_dim);
+                max_heap.Push(dist, id);
+              } else {
+                nodes_in_sectors_to_visit[sector_offset].push_back(id);
+              }
+            }
+            ++id;
+          }
+        } else {
+          LOG_KNOWHERE_ERROR_ << "Should not be visited twice";
+        }
+      } else {
+        ++id;
+      }
+      if (id < num_points && nodes_in_sectors_to_visit.size() < beam_width)
+        continue;
+
+      // perform I/O
+      for (const auto &[sector_offset, ids_in_sectors] :
+           nodes_in_sectors_to_visit) {
+        frontier_read_reqs.emplace_back(
+            sector_offset, read_len_for_node,
+            sector_scratch + sector_scratch_idx * read_len_for_node);
+        ++sector_scratch_idx;
+        if (stats != nullptr) {
+          stats->n_4k++;
+          stats->n_ios++;
+        }
+      }
+      io_timer.reset();
+#ifdef USE_BING_INFRA
+      reader->read(frontier_read_reqs, ctx, true);  // async reader windows.
+#else
+      reader->read(frontier_read_reqs, ctx);    // synchronous IO linux
+#endif
+      if (stats != nullptr) {
+        stats->io_us += (double) io_timer.elapsed();
+      }
+
+      T *node_fp_coords_copy = data_buf;
+      for (const auto &req : frontier_read_reqs) {
+        const _u64 sector_offset = req.offset;
+        char      *sector_buf = reinterpret_cast<char *>(req.buf);
+        for (const auto cur_id : nodes_in_sectors_to_visit[sector_offset]) {
+          char *node_buf = get_offset_to_node(sector_buf, cur_id);
+          memcpy(node_fp_coords_copy, node_buf,
+                 disk_bytes_per_point);  // Do we really need memcpy here?
+          float dist =
+              dist_cmp(query, node_fp_coords_copy, (size_t) aligned_dim);
+          max_heap.Push(dist, cur_id);
+          if (feder != nullptr) {
+            feder->visit_info_.AddTopCandidateInfo(cur_id, dist);
+            feder->id_set_.insert(cur_id);
+          }
+        }
+      }
+
+      nodes_in_sectors_to_visit.clear();
+      frontier_read_reqs.clear();
+      sector_scratch_idx = 0;
+    }
+
+    for (_s64 i = k_search - 1; i >= 0; --i) {
+      if ((_u64) i >= max_heap.Size()) {
+        indices[i] = -1;
+        if (distances != nullptr) {
+          distances[i] = -1;
+        }
+        continue;
+      }
+      if (const auto op = max_heap.Pop()) {
+        const auto [dis, id] = op.value();
+        indices[i] = id;
+        if (distances != nullptr) {
+          distances[i] = dis;
+          if (metric == diskann::Metric::INNER_PRODUCT) {
+            distances[i] = 1.0 - distances[i] / 2.0;
+            if (max_base_norm != 0) {
+              distances[i] *= (max_base_norm * query_norm);
+            }
+          }
+        }
+      } else {
+        LOG_KNOWHERE_ERROR_ << "Size is incorrect";
+      }
+    }
+    if (stats != nullptr) {
+      stats->total_us = (double) query_timer.elapsed();
+    }
+    return;
+  }
+
+  template<typename T>
+  void PQFlashIndex<T>::cached_beam_search(
+      const T *query1, const _u64 k_search, const _u64 l_search, _s64 *indices,
+      float *distances, const _u64 beam_width, const bool use_reorder_data,
+      QueryStats *stats, const knowhere::feder::diskann::FederResultUniq &feder,
+      knowhere::BitsetView bitset_view) {
+    if (beam_width > MAX_N_SECTOR_READS)
+      throw ANNException("Beamwidth can not be higher than MAX_N_SECTOR_READS",
+                         -1, __FUNCSIG__, __FILE__, __LINE__);
+
+    ThreadData<T> data = this->thread_data.pop();
+    while (data.scratch.sector_scratch == nullptr) {
+      this->thread_data.wait_for_push_notify();
+      data = this->thread_data.pop();
+    }
+    auto query_norm_opt = init_thread_data(data, query1);
+    if (!query_norm_opt.has_value()) {
+        // return an empty answer when calcu a zero point
+        this->thread_data.push(data);
+        this->thread_data.push_notify_all();
+        return;
+    }
+    float query_norm = query_norm_opt.value();
+    auto ctx = this->reader->get_ctx();
+
+    if (!bitset_view.empty() && bitset_view.count() >= bitset_view.size() * kDiskAnnBruteForceFilterRate) {
+        brute_force_beam_search(data, query_norm, k_search, indices, distances,
+                                beam_width, ctx, stats, feder, bitset_view);
+        this->thread_data.push(data);
+        this->thread_data.push_notify_all();
+        this->reader->put_ctx(ctx);
+        return;
+    }
+
+    auto query_scratch = &(data.scratch);
+    const T     *query = data.scratch.aligned_query_T;
+    const float *query_float = data.scratch.aligned_query_float;
 
     // pointers to buffers for data
     T *data_buf = query_scratch->coord_scratch;
@@ -874,6 +1020,18 @@ namespace diskann {
     // sector scratch
     char *sector_scratch = query_scratch->sector_scratch;
     _u64 &sector_scratch_idx = query_scratch->sector_idx;
+
+    Timer io_timer, query_timer;
+    // cleared every iteration
+    std::vector<unsigned> frontier;
+    frontier.reserve(2 * beam_width);
+    std::vector<std::pair<unsigned, char *>> frontier_nhoods;
+    frontier_nhoods.reserve(2 * beam_width);
+    std::vector<AlignedRead> frontier_read_reqs;
+    frontier_read_reqs.reserve(2 * beam_width);
+    std::vector<std::pair<unsigned, std::pair<unsigned, unsigned *>>>
+        cached_nhoods;
+    cached_nhoods.reserve(2 * beam_width);
 
     // query <-> PQ chunk centers distances
     float *pq_dists = query_scratch->aligned_pqtable_dist_scratch;
@@ -892,7 +1050,7 @@ namespace diskann {
       ::pq_dist_lookup(pq_coord_scratch, n_ids, this->n_chunks, pq_dists,
                        dists_out);
     };
-    Timer                 query_timer, io_timer, cpu_timer;
+    Timer                 cpu_timer;
     std::vector<Neighbor> retset(l_search + 1);
     tsl::robin_set<_u64> &visited = *(query_scratch->visited);
 
@@ -925,17 +1083,6 @@ namespace diskann {
     unsigned hops = 0;
     unsigned num_ios = 0;
     unsigned k = 0;
-
-    // cleared every iteration
-    std::vector<unsigned> frontier;
-    frontier.reserve(2 * beam_width);
-    std::vector<std::pair<unsigned, char *>> frontier_nhoods;
-    frontier_nhoods.reserve(2 * beam_width);
-    std::vector<AlignedRead> frontier_read_reqs;
-    frontier_read_reqs.reserve(2 * beam_width);
-    std::vector<std::pair<unsigned, std::pair<unsigned, unsigned *>>>
-        cached_nhoods;
-    cached_nhoods.reserve(2 * beam_width);
 
     while (k < cur_list_size) {
       auto nk = cur_list_size;

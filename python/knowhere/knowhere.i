@@ -64,6 +64,7 @@ import_array();
 %apply (float *IN_ARRAY1, int DIM1) {(float *dis, int len)}
 %apply (float* INPLACE_ARRAY2, int DIM1, int DIM2){(float *dis,int nq_1,int k_1)}
 %apply (int *INPLACE_ARRAY2, int DIM1, int DIM2){(int *ids,int nq_2,int k_2)}
+%apply (float* INPLACE_ARRAY2, int DIM1, int DIM2){(float *data,int rows,int dim)}
 
 %typemap(in, numinputs=0) knowhere::Status& status(knowhere::Status tmp) %{
     $1 = &tmp;
@@ -231,6 +232,20 @@ Array2DataSetI(int *xb, int nb, int dim){
     return ds;
 };
 
+knowhere::DataSetPtr
+Array2DataSetIds(int* ids, int len){
+    auto ds = std::make_shared<DataSet>();
+    ds->SetIsOwner(true);
+    ds->SetRows(len);
+
+    int64_t* ids_ = new int64_t[len];
+    for (int i = 0; i < len; i++) {
+        ids_[i] = (int64_t)ids[i];
+    }
+    ds->SetIds(ids_);
+    return ds;
+};
+
 int64_t DataSet_Rows(knowhere::DataSetPtr results){
     return results->GetRows();
 }
@@ -257,6 +272,16 @@ DataSet2Array(knowhere::DataSetPtr result, float* dis, int nq_1, int k_1, int* i
         for (int j = 0; j < k_1; ++j) {
             *(ids + i * k_1 + j) = *((int64_t*)(ids_) + i * k_1 + j);
             *(dis + i * k_1 + j) = *((float*)(dist_) + i * k_1 + j);
+        }
+    }
+}
+
+void
+DataSetTensor2Array(knowhere::DataSetPtr result, float* data, int rows, int dim) {
+    auto data_ = result->GetTensor();
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < dim; ++j) {
+            *(data + i * dim + j) = *((float*)(data_) + i * dim + j);
         }
     }
 }

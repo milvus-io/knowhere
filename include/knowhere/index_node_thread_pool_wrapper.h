@@ -57,6 +57,11 @@ class IndexNodeThreadPoolWrapper : public IndexNode {
         return index_node_->GetVectorByIds(dataset, cfg);
     }
 
+    bool
+    HasRawData(const std::string& metric_type) const {
+        return index_node_->HasRawData(metric_type);
+    }
+
     expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const {
         return index_node_->GetIndexMeta(cfg);

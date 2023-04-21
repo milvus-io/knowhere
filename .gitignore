@@ -54,10 +54,11 @@ coverage/
 
 # virtualenv
 venv/
-python/dist/
-python/knowhere.egg-info/
-python/knowhere/knowhere_wrap.cpp
-python/knowhere/swigknowhere.py
+**/dist/
+**/knowhere.egg-info/
+**/knowhere/knowhere_wrap.cpp
+**/knowhere/swigknowhere.py
+wheelhouse/*
 
 
 *.bin

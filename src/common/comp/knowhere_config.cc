@@ -21,7 +21,9 @@
 #include "index/gpu/gpu_res_mgr.h"
 #endif
 #include "simd/hook.h"
-
+#ifdef KNOWHERE_WITH_RAFT
+#include "index/ivf_raft/set_pool.h"
+#endif
 namespace knowhere {
 
 void
@@ -145,6 +147,12 @@ KnowhereConfig::FreeGPUResource() {
 #ifdef KNOWHERE_WITH_GPU
     LOG_KNOWHERE_INFO_ << "free GPU resource";
     knowhere::GPUResMgr::GetInstance().Free();
+#endif
+}
+void
+KnowhereConfig::SetRaftMemPool(size_t init_size, size_t max_size) {
+#ifdef KNOWHERE_WITH_RAFT
+    knowhere::SetRaftMemPool(init_size, max_size);
 #endif
 }
 

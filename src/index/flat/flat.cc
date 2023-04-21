@@ -18,6 +18,7 @@
 #include "io/FaissIO.h"
 #include "knowhere/comp/thread_pool.h"
 #include "knowhere/factory.h"
+#include "knowhere/utils.h"
 
 namespace knowhere {
 
@@ -43,6 +44,12 @@ class FlatIndexNode : public IndexNode {
     Status
     Train(const DataSet& dataset, const Config& cfg) override {
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
+
+        // do normalize for COSINE metric type
+        if (IsMetricType(f_cfg.metric_type, knowhere::metric::COSINE)) {
+            Normalize(dataset);
+        }
+
         auto metric = Str2FaissMetricType(f_cfg.metric_type);
         if (!metric.has_value()) {
             LOG_KNOWHERE_WARNING_ << "please check metric type: " << f_cfg.metric_type;
@@ -74,6 +81,12 @@ class FlatIndexNode : public IndexNode {
 
         DataSetPtr results = std::make_shared<DataSet>();
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
+
+        // do normalize for COSINE metric type
+        if (IsMetricType(f_cfg.metric_type, knowhere::metric::COSINE)) {
+            Normalize(dataset);
+        }
+
         auto k = f_cfg.k;
         auto nq = dataset.GetRows();
         auto x = dataset.GetTensor();
@@ -127,6 +140,12 @@ class FlatIndexNode : public IndexNode {
         }
 
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
+
+        // do normalize for COSINE metric type
+        if (IsMetricType(f_cfg.metric_type, knowhere::metric::COSINE)) {
+            Normalize(dataset);
+        }
+
         auto nq = dataset.GetRows();
         auto xq = dataset.GetTensor();
         auto dim = dataset.GetDim();
@@ -183,8 +202,8 @@ class FlatIndexNode : public IndexNode {
 
     expected<DataSetPtr, Status>
     GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
+        auto dim = Dim();
         auto rows = dataset.GetRows();
-        auto dim = dataset.GetDim();
         auto ids = dataset.GetIds();
         if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
             float* data = nullptr;
@@ -193,7 +212,7 @@ class FlatIndexNode : public IndexNode {
                 for (int64_t i = 0; i < rows; i++) {
                     index_->reconstruct(ids[i], data + i * dim);
                 }
-                return GenResultDataSet(data);
+                return GenResultDataSet(rows, dim, data);
             } catch (const std::exception& e) {
                 std::unique_ptr<float[]> auto_del(data);
                 LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
@@ -207,13 +226,18 @@ class FlatIndexNode : public IndexNode {
                 for (int64_t i = 0; i < rows; i++) {
                     index_->reconstruct(ids[i], data + i * dim / 8);
                 }
-                return GenResultDataSet(data);
+                return GenResultDataSet(rows, dim, data);
             } catch (const std::exception& e) {
                 std::unique_ptr<uint8_t[]> auto_del(data);
                 LOG_KNOWHERE_WARNING_ << "error inner faiss: " << e.what();
                 return unexpected(Status::faiss_inner_error);
             }
         }
+    }
+
+    bool
+    HasRawData(const std::string& metric_type) const override {
+        return true;
     }
 
     expected<DataSetPtr, Status>

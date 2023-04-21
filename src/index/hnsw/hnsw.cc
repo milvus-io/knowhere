@@ -22,10 +22,12 @@
 #include "index/hnsw/hnsw_config.h"
 #include "knowhere/comp/index_param.h"
 #include "knowhere/comp/thread_pool.h"
+#include "knowhere/comp/time_recorder.h"
 #include "knowhere/config.h"
 #include "knowhere/expected.h"
 #include "knowhere/factory.h"
 #include "knowhere/log.h"
+#include "knowhere/utils.h"
 
 namespace knowhere {
 class HnswIndexNode : public IndexNode {
@@ -50,10 +52,13 @@ class HnswIndexNode : public IndexNode {
         auto dim = dataset.GetDim();
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
         hnswlib::SpaceInterface<float>* space = nullptr;
-        if (hnsw_cfg.metric_type == metric::L2) {
+        if (IsMetricType(hnsw_cfg.metric_type, metric::L2)) {
             space = new (std::nothrow) hnswlib::L2Space(dim);
-        } else if (hnsw_cfg.metric_type == metric::IP) {
+        } else if (IsMetricType(hnsw_cfg.metric_type, metric::IP)) {
             space = new (std::nothrow) hnswlib::InnerProductSpace(dim);
+        } else if (IsMetricType(hnsw_cfg.metric_type, metric::COSINE)) {
+            space = new (std::nothrow) hnswlib::InnerProductSpace(dim);
+            Normalize(dataset);
         } else {
             LOG_KNOWHERE_WARNING_ << "metric type not support in hnsw: " << hnsw_cfg.metric_type;
             return Status::invalid_metric_type;
@@ -78,6 +83,7 @@ class HnswIndexNode : public IndexNode {
             return Status::empty_index;
         }
 
+        knowhere::TimeRecorder build_time("Building HNSW cost");
         auto rows = dataset.GetRows();
         auto dim = dataset.GetDim();
         auto tensor = dataset.GetTensor();
@@ -88,6 +94,10 @@ class HnswIndexNode : public IndexNode {
         for (int i = 1; i < rows; ++i) {
             index_->addPoint((static_cast<const float*>(tensor) + dim * i), i);
         }
+        build_time.RecordSection("");
+        LOG_KNOWHERE_INFO_ << "HNSW built with #points num:" << index_->max_elements_ << " #M:" << index_->M_
+                           << " #max level:" << index_->maxlevel_ << " #ef_construction:" << index_->ef_construction_
+                           << " #dim:" << *(size_t*)(index_->space_->get_dist_func_param());
         return Status::success;
     }
 
@@ -102,8 +112,20 @@ class HnswIndexNode : public IndexNode {
         const float* xq = static_cast<const float*>(dataset.GetTensor());
 
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
+
+        // do normalize for COSINE metric type
+        if (IsMetricType(hnsw_cfg.metric_type, metric::COSINE)) {
+            Normalize(dataset);
+        }
+
         auto k = hnsw_cfg.k;
+        auto maxef = std::max(65536, hnsw_cfg.k * 2);
+        if (hnsw_cfg.ef > maxef) {
+            LOG_KNOWHERE_ERROR_ << "ef should be in range: [topk, max(65536, topk * 2)]";
+            return unexpected(Status::invalid_args);
+        }
         if (k > hnsw_cfg.ef) {
+            LOG_KNOWHERE_ERROR_ << "k should be smaller or equal than ef";
             return unexpected(Status::invalid_args);
         }
         feder::hnsw::FederResultUniq feder_result;
@@ -169,6 +191,12 @@ class HnswIndexNode : public IndexNode {
         const float* xq = static_cast<const float*>(dataset.GetTensor());
 
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
+
+        // do normalize for COSINE metric type
+        if (IsMetricType(hnsw_cfg.metric_type, metric::COSINE)) {
+            Normalize(dataset);
+        }
+
         bool is_ip = (index_->metric_type_ == 1);  // 0:L2, 1:IP
         float radius = (is_ip ? (1.0f - hnsw_cfg.radius) : hnsw_cfg.radius);
         float range_filter = hnsw_cfg.range_filter;
@@ -239,7 +267,7 @@ class HnswIndexNode : public IndexNode {
             return unexpected(Status::empty_index);
         }
 
-        auto dim = dataset.GetDim();
+        auto dim = Dim();
         auto rows = dataset.GetRows();
         auto ids = dataset.GetIds();
 
@@ -251,12 +279,17 @@ class HnswIndexNode : public IndexNode {
                 assert(id >= 0 && id < (int64_t)index_->cur_element_count);
                 std::copy_n((float*)index_->getDataByInternalId(id), dim, data + i * dim);
             }
-            return GenResultDataSet(data);
+            return GenResultDataSet(rows, dim, data);
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "hnsw inner error: " << e.what();
             std::unique_ptr<float> auto_del(data);
             return unexpected(Status::hnsw_inner_error);
         }
+    }
+
+    bool
+    HasRawData(const std::string& metric_type) const override {
+        return true;
     }
 
     expected<DataSetPtr, Status>
@@ -320,6 +353,10 @@ class HnswIndexNode : public IndexNode {
             hnswlib::SpaceInterface<float>* space = nullptr;
             index_ = new (std::nothrow) hnswlib::HierarchicalNSW<float>(space);
             index_->loadIndex(reader);
+            LOG_KNOWHERE_INFO_ << "Loaded HNSW index. #points num:" << index_->max_elements_ << " #M:" << index_->M_
+                               << " #max level:" << index_->maxlevel_
+                               << " #ef_construction:" << index_->ef_construction_
+                               << " #dim:" << *(size_t*)(index_->space_->get_dist_func_param());
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "hnsw inner error: " << e.what();
             return Status::hnsw_inner_error;

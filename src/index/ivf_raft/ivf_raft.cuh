@@ -33,6 +33,7 @@
 #include "raft/neighbors/ivf_flat_types.hpp"
 #include "raft/neighbors/ivf_pq.cuh"
 #include "raft/neighbors/ivf_pq_types.hpp"
+#include "set_pool.h"
 #include "thrust/execution_policy.h"
 #include "thrust/sequence.h"
 
@@ -89,6 +90,20 @@ class resource {
         std::lock_guard<std::mutex> lock(mtx_);
         auto it = map_.find(device_id.value());
         if (it == map_.end()) {
+            char* env_str = getenv("KNOWHERE_GPU_MEM_POOL_SIZE");
+            if (env_str != NULL) {
+                std::size_t initial_pool_size_tmp, maximum_pool_size_tmp;
+                auto stat = sscanf(env_str, "%zu;%zu", &initial_pool_size_tmp, &maximum_pool_size_tmp);
+                if (stat == 2) {
+                    LOG_KNOWHERE_INFO_ << "Get Gpu Pool Size From env, init size: " << initial_pool_size_tmp
+                                       << " MB, max size: " << maximum_pool_size_tmp << " MB";
+                    this->initial_pool_size = initial_pool_size_tmp;
+                    this->maximum_pool_size = maximum_pool_size_tmp;
+                } else {
+                    LOG_KNOWHERE_WARNING_ << "please check env format";
+                }
+            }
+
             auto mr_ = std::make_unique<rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>>(
                 &up_mr_, initial_pool_size << 20, maximum_pool_size << 20);
             rmm::mr::set_per_device_resource(device_id, mr_.get());
@@ -271,7 +286,7 @@ class RaftIvfIndexNode : public IndexNode {
                     build_params.pq_bits = ivf_raft_cfg.nbits;
                     build_params.kmeans_n_iters = ivf_raft_cfg.kmeans_n_iters;
                     build_params.kmeans_trainset_fraction = ivf_raft_cfg.kmeans_trainset_fraction;
-                    build_params.pq_dim = ivf_raft_cfg.pq_dim;
+                    build_params.pq_dim = ivf_raft_cfg.m;
                     auto codebook_kind = detail::str_to_codebook_gen(ivf_raft_cfg.codebook_kind);
                     if (!codebook_kind.has_value()) {
                         LOG_KNOWHERE_WARNING_ << "please check codebook kind: " << ivf_raft_cfg.codebook_kind;
@@ -310,7 +325,6 @@ class RaftIvfIndexNode : public IndexNode {
                 auto dim = dataset.GetDim();
                 auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
                 auto scoped_device = detail::device_setter{devs_[0]};
-                // raft_res_pool::resource::instance().init(rmm::cuda_device_id(devs_[0]));
                 auto* res_ = &raft_res_pool::get_context().resources_;
 
                 auto stream = res_->get_stream();
@@ -431,6 +445,16 @@ class RaftIvfIndexNode : public IndexNode {
         return unexpected(Status::not_implemented);
     }
 
+    virtual bool
+    HasRawData(const std::string& metric_type) const override {
+        if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
+            return true;
+        }
+        if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
+            return false;
+        }
+    }
+
     expected<DataSetPtr, Status>
     GetIndexMeta(const Config& cfg) const override {
         return unexpected(Status::not_implemented);
@@ -449,7 +473,6 @@ class RaftIvfIndexNode : public IndexNode {
         os.write((char*)(&this->devs_[0]), sizeof(this->devs_[0]));
 
         auto scoped_device = detail::device_setter{devs_[0]};
-        // raft_res_pool::resource::instance().init(rmm::cuda_device_id(devs_[0]));
         auto* res_ = &raft_res_pool::get_context().resources_;
 
         if constexpr (std::is_same_v<T, detail::raft_ivf_flat_index>) {
@@ -480,7 +503,7 @@ class RaftIvfIndexNode : public IndexNode {
         is.read((char*)(&this->devs_[0]), sizeof(this->devs_[0]));
         auto scoped_device = detail::device_setter{devs_[0]};
 
-        // raft_res_pool::resource::instance().init(rmm::cuda_device_id(devs_[0]));
+        raft_res_pool::resource::instance().init(rmm::cuda_device_id(devs_[0]));
         auto* res_ = &raft_res_pool::get_context().resources_;
 
         if constexpr (std::is_same_v<T, detail::raft_ivf_flat_index>) {
@@ -545,6 +568,12 @@ class RaftIvfIndexNode : public IndexNode {
     int64_t counts_ = 0;
     std::optional<T> gpu_index_;
 };
+
+void
+SetRaftMemPool(size_t init_size, size_t max_size) {
+    LOG_KNOWHERE_INFO_ << "Set GPU pool size: init size " << init_size << ", max size " << max_size;
+    raft_res_pool::resource::instance().set_pool_size(init_size, max_size);
+}
 
 }  // namespace knowhere
 #endif /* IVF_RAFT_CUH */

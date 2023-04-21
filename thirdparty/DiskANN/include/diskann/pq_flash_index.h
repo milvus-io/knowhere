@@ -4,6 +4,7 @@
 #pragma once
 #include <cassert>
 #include <future>
+#include <optional>
 #include <sstream>
 #include <stack>
 #include <string>
@@ -156,6 +157,19 @@ namespace diskann {
     }
 
     inline void copy_vec_base_data(T *des, const int64_t des_idx, void *src);
+
+    // Init thread data and returns query norm if avaialble.
+    // If there is no value, there is nothing to do with the given query
+    std::optional<float> init_thread_data(ThreadData<T> &data, const T *query1);
+
+    // Brute force search for the given query.
+    // The beam width is adjusted in the function.
+    void brute_force_beam_search(
+        ThreadData<T> &data, const float query_norm, const _u64 k_search,
+        _s64 *indices, float *distances, const _u64 beam_width_param, IOContext &ctx,
+        QueryStats                                      *stats,
+        const knowhere::feder::diskann::FederResultUniq &feder,
+        knowhere::BitsetView                             bitset_view);
 
     // index info
     // nhood of node `i` is in sector: [i / nnodes_per_sector]

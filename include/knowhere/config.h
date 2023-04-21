@@ -12,10 +12,13 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include <omp.h>
+
 #include <iostream>
 #include <list>
 #include <optional>
 #include <sstream>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 #include <variant>
@@ -392,6 +395,7 @@ class BaseConfig : public Config {
  public:
     CFG_STRING metric_type;
     CFG_INT k;
+    CFG_INT num_build_thread;
     CFG_FLOAT radius;
     CFG_FLOAT range_filter;
     CFG_BOOL trace_visit;
@@ -401,6 +405,10 @@ class BaseConfig : public Config {
             .set_default(10)
             .description("search for top k similar vector.")
             .set_range(1, std::numeric_limits<CFG_INT>::max())
+            .for_search();
+        KNOWHERE_CONFIG_DECLARE_FIELD(num_build_thread)
+            .set_default(-1)
+            .description("index thread limit for build.")
             .for_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(radius)
             .set_default(0.0)
@@ -415,6 +423,14 @@ class BaseConfig : public Config {
             .description("trace visit for feder")
             .for_search()
             .for_range_search();
+    }
+
+    int
+    get_build_thread_num() const {
+        if (num_build_thread > 0) {
+            return num_build_thread;
+        }
+        return omp_get_max_threads();
     }
 };
 

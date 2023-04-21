@@ -13,7 +13,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
-#include <sys/fcntl.h>
+#include <fcntl.h>
 
 #include <atomic>
 #include <list>
@@ -23,6 +23,7 @@
 #include "hnswlib.h"
 #include "io/FaissIO.h"
 #include "knowhere/config.h"
+#include "knowhere/heap.h"
 #include "neighbor.h"
 #include "visited_list_pool.h"
 
@@ -34,6 +35,7 @@
 namespace hnswlib {
 typedef unsigned int tableint;
 typedef unsigned int linklistsizeint;
+constexpr float kHnswBruteForceFilterRate = 0.93f;
 
 template <typename dist_t>
 class HierarchicalNSW : public AlgorithmInterface<dist_t> {
@@ -1027,6 +1029,24 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
               const knowhere::feder::hnsw::FederResultUniq& feder_result = nullptr) const {
         if (cur_element_count == 0)
             return {};
+
+        if (!bitset.empty() && bitset.count() >= (cur_element_count * kHnswBruteForceFilterRate)) {
+            assert(cur_element_count == bitset.size());
+            knowhere::ResultMaxHeap<dist_t, labeltype> max_heap(k);
+            for (labeltype id = 0; id < cur_element_count; ++id) {
+                if (!bitset.test(id)) {
+                    dist_t dist = fstdistfunc_(query_data, getDataByInternalId(id), dist_func_param_);
+                    max_heap.Push(dist, id);
+                }
+            }
+            const size_t len = std::min(max_heap.Size(), k);
+            std::vector<std::pair<dist_t, labeltype>> result(len);
+            for (int64_t i = len - 1; i >= 0; --i) {
+                const auto op = max_heap.Pop();
+                result[i] = op.value();
+            }
+            return result;
+        }
 
         tableint currObj = enterpoint_node_;
         dist_t curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);

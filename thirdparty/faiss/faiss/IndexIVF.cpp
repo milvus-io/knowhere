@@ -562,20 +562,30 @@ void IndexIVF::search_preassigned(
 
             nlistv++;
 
+            size_t scan_cnt = 0;
             try {
-                InvertedLists::ScopedCodes scodes(invlists, key);
+                size_t segment_num = invlists->get_segment_num(key);
+                for (size_t segment_idx = 0; segment_idx < segment_num; segment_idx++) {
+                    size_t segment_size = invlists->get_segment_size(key, segment_idx);
+                    size_t segment_offset = invlists->get_segment_offset(key, segment_idx);
+                    InvertedLists::ScopedCodes scodes(invlists, key, segment_offset);
+                    std::unique_ptr<InvertedLists::ScopedIds> sids;
+                    const Index::idx_t* ids = nullptr;
 
-                std::unique_ptr<InvertedLists::ScopedIds> sids;
-                const Index::idx_t* ids = nullptr;
-
-                if (!store_pairs) {
-                    sids.reset(new InvertedLists::ScopedIds(invlists, key));
-                    ids = sids->get();
+                    if (!store_pairs) {
+                        sids.reset(new InvertedLists::ScopedIds(invlists, key, segment_offset));
+                        ids = sids->get();
+                    }
+                    nheap += scanner->scan_codes(
+                            segment_size,
+                            scodes.get(),
+                            ids,
+                            simi,
+                            idxi,
+                            k,
+                            bitset);
+                    scan_cnt += segment_size;
                 }
-
-                nheap += scanner->scan_codes(
-                        list_size, scodes.get(), ids, simi, idxi, k, bitset);
-
             } catch (const std::exception& e) {
                 std::lock_guard<std::mutex> lock(exception_mutex);
                 exception_string =
@@ -584,7 +594,7 @@ void IndexIVF::search_preassigned(
                 return size_t(0);
             }
 
-            return list_size;
+            return scan_cnt;
         };
 
         /****************************************************
@@ -817,20 +827,25 @@ void IndexIVF::range_search_preassigned(
                 return;
 
             try {
-                InvertedLists::ScopedCodes scodes(invlists, key);
-                InvertedLists::ScopedIds ids(invlists, key);
+                size_t segment_num = invlists->get_segment_num(key);
+                for (size_t segment_idx = 0; segment_idx < segment_num; segment_idx++) {
+                    size_t segment_size = invlists->get_segment_size(key, segment_idx);
+                    size_t segment_offset = invlists->get_segment_offset(key, segment_idx);
 
-                scanner->set_list(key, coarse_dis[i * nprobe + ik]);
-                nlistv++;
-                ndis += list_size;
-                scanner->scan_codes_range(
-                        list_size,
-                        scodes.get(),
-                        ids.get(),
-                        radius,
-                        qres,
-                        bitset);
+                    InvertedLists::ScopedCodes scodes(invlists, key, segment_offset);
+                    InvertedLists::ScopedIds ids(invlists, key, segment_offset);
 
+                    scanner->set_list(key, coarse_dis[i * nprobe + ik]);
+                    nlistv++;
+                    ndis += segment_size;
+                    scanner->scan_codes_range(
+                            segment_size,
+                            scodes.get(),
+                            ids.get(),
+                            radius,
+                            qres,
+                            bitset);
+                }
             } catch (const std::exception& e) {
                 std::lock_guard<std::mutex> lock(exception_mutex);
                 exception_string =

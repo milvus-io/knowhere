@@ -10,6 +10,9 @@
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
 #include <algorithm>
+#include <cstdint>
+#include <limits>
+#include <memory>
 #include <queue>
 #include <random>
 #include <set>
@@ -19,7 +22,7 @@
 #include "knowhere/binaryset.h"
 #include "knowhere/dataset.h"
 
-namespace {
+constexpr int64_t kSeed = 42;
 using IdDisPair = std::pair<int64_t, float>;
 struct DisPairLess {
     bool
@@ -27,47 +30,38 @@ struct DisPairLess {
         return p1.second < p2.second;
     }
 };
-};  // namespace
 
-inline std::unique_ptr<knowhere::DataSet>
+inline knowhere::DataSetPtr
 GenDataSet(int rows, int dim, int seed = 42) {
     std::mt19937 rng(seed);
     std::uniform_int_distribution<> distrib(0.0, 100.0);
-
-    auto ds = std::make_unique<knowhere::DataSet>();
-    ds->SetRows(rows);
-    ds->SetDim(dim);
     float* ts = new float[rows * dim];
     for (int i = 0; i < rows * dim; ++i) ts[i] = (float)distrib(rng);
-    ds->SetTensor(ts);
+    auto ds = knowhere::GenDataSet(rows, dim, ts);
+    ds->SetIsOwner(true);
     return ds;
 }
 
-inline std::unique_ptr<knowhere::DataSet>
+inline knowhere::DataSetPtr
 GenBinDataSet(int rows, int dim, int seed = 42) {
     std::mt19937 rng(seed);
     std::uniform_int_distribution<> distrib(0.0, 100.0);
-
-    auto ds = std::make_unique<knowhere::DataSet>();
-    ds->SetRows(rows);
-    ds->SetDim(dim);
     int uint8_num = dim / 8;
     uint8_t* ts = new uint8_t[rows * uint8_num];
     for (int i = 0; i < rows * uint8_num; ++i) ts[i] = (uint8_t)distrib(rng);
-    ds->SetTensor(ts);
+    auto ds = knowhere::GenDataSet(rows, dim, ts);
+    ds->SetIsOwner(true);
     return ds;
 }
 
-inline std::unique_ptr<knowhere::DataSet>
-GenIdsDataSet(int rows, int dim, int64_t seed = 42) {
+inline knowhere::DataSetPtr
+GenIdsDataSet(int rows, int64_t seed = 42) {
     std::mt19937 g(seed);
-    auto ds = std::make_unique<knowhere::DataSet>();
-    ds->SetRows(rows);
-    ds->SetDim(dim);
     int64_t* ids = new int64_t[rows];
     for (int i = 0; i < rows; ++i) ids[i] = i;
     std::shuffle(ids, ids + rows, g);
-    ds->SetIds(ids);
+    auto ds = knowhere::GenIdsDataSet(rows, ids);
+    ds->SetIsOwner(true);
     return ds;
 }
 
@@ -215,4 +209,53 @@ GetRangeSearchRecall(const knowhere::DataSet& gt, const knowhere::DataSet& resul
     float precision = ninter * 1.0f / res_lims_p[nq];
 
     return (1 + precision) * recall / 2;
+}
+
+// Generate two bitset percentages from given threshold, so that bruteforce
+// strategy can be fully tested
+inline std::vector<float>
+GetBitsetTestPercentagesFromThreshold(const float threshold) {
+    assert(threshold >= 0 && threshold <= 1.0f);
+    return {threshold / 2, threshold + (1 - threshold) / 2};
+}
+
+// Return a n-bits bitset data with first t bits set to true
+inline std::vector<uint8_t>
+GenerateBitsetWithFirstTbitsSet(size_t n, size_t t) {
+    assert(t >= 0 && t <= n);
+    std::vector<uint8_t> data((n + 8 - 1) / 8, 0);
+    for (size_t i = 0; i < t; ++i) {
+        data[i >> 3] |= (0x1 << (i & 0x7));
+    }
+    return data;
+}
+
+// Return a n-bits bitset data with random t bits set to true
+inline std::vector<uint8_t>
+GenerateBitsetWithRandomTbitsSet(size_t n, size_t t) {
+    assert(t >= 0 && t <= n);
+    std::vector<bool> bits_shuffle(n, false);
+    for (size_t i = 0; i < t; ++i) bits_shuffle[i] = true;
+    std::mt19937 g(kSeed);
+    std::shuffle(bits_shuffle.begin(), bits_shuffle.end(), g);
+    std::vector<uint8_t> data((n + 8 - 1) / 8, 0);
+    for (size_t i = 0; i < n; ++i) {
+        if (bits_shuffle[i]) {
+            data[i >> 3] |= (0x1 << (i & 0x7));
+        }
+    }
+    return data;
+}
+
+// Randomly generate n (distances, id) pairs
+inline std::vector<std::pair<float, size_t>>
+GenerateRandomDistanceIdPair(size_t n) {
+    std::mt19937 rng(kSeed);
+    std::uniform_real_distribution<> distrib(std::numeric_limits<float>().min(), std::numeric_limits<float>().max());
+    std::vector<std::pair<float, size_t>> res;
+    res.reserve(n);
+    for (size_t i = 0; i < n; ++i) {
+        res.emplace_back(distrib(rng), i);
+    }
+    return res;
 }

@@ -264,6 +264,29 @@ void IndexIVFFlat::reconstruct_from_offset_without_codes(
 #endif
 }
 
+IndexIVFFlatCC::IndexIVFFlatCC(
+        Index* quantizer,
+        size_t d,
+        size_t nlist,
+        size_t ssize,
+        MetricType metric)
+        : IndexIVFFlat(quantizer, d, nlist, metric) {
+    replace_invlists(new ConcurrentArrayInvertedLists(nlist, code_size, ssize), true);
+}
+
+void IndexIVFFlatCC::add_with_ids_without_codes(
+        idx_t n,
+        const float* x,
+        const idx_t* xids) {
+    FAISS_THROW_MSG("ivfflat_cc index not support add_without_codes operation");
+}
+
+void IndexIVFFlatCC::reconstruct_from_offset_without_codes(
+        int64_t list_no,
+        int64_t offset,
+        float* recons) const {
+    FAISS_THROW_MSG("ivfflat_cc index not support reconstruct_from_offset_without_codes operation");
+}
 /*****************************************
  * IndexIVFFlatDedup implementation
  ******************************************/

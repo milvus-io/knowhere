@@ -12,6 +12,12 @@
 #ifndef KNOWHERE_LOG_H
 #define KNOWHERE_LOG_H
 
+#if defined(__APPLE__)
+#include <pthread.h>
+#else
+#include <sys/prctl.h>
+#endif
+
 #include <cstdarg>
 #include <memory>
 
@@ -69,9 +75,14 @@ SetThreadName(const std::string& name) {
 inline std::string
 GetThreadName() {
     std::string thread_name = "unamed";
-    char name[16];
-    size_t len = 16;
+    const size_t len = 16;
+    char name[len];
+
+#if defined(__APPLE__)
     auto err = pthread_getname_np(pthread_self(), name, len);
+#else
+    auto err = prctl(PR_GET_NAME, name, 0, 0, 0);
+#endif
     if (not err) {
         thread_name = name;
     }
