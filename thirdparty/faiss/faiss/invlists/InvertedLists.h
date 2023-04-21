@@ -17,6 +17,9 @@
 
 #include <memory>
 #include <vector>
+#include <atomic>
+#include <set>
+#include <deque>
 #include <faiss/Index.h>
 
 namespace faiss {
@@ -70,6 +73,15 @@ struct InvertedLists {
     /// get the size of a list
     virtual size_t list_size(size_t list_no) const = 0;
 
+    // get the segment number of a list (continuous storage can be regarded as 1-segment storage)
+    virtual size_t get_segment_num(size_t list_no) const;
+
+    // get the size of a segment in the given list (continuous storage can be regarded as 1-segment storage)
+    virtual size_t get_segment_size(size_t list_no, size_t segment_no) const;
+
+    // get the segment minimal number of a list (continuous storage can be regarded as 1-segment storage)
+    virtual size_t get_segment_offset(size_t list_no, size_t segment_no) const;
+
     /** get the codes for an inverted list
      * must be released by release_codes
      *
@@ -83,6 +95,18 @@ struct InvertedLists {
      * @return ids      size list_size
      */
     virtual const idx_t* get_ids(size_t list_no) const = 0;
+
+    /** get the codes slice beginning with offset for an inverted list
+     *
+     * @return codes    size : user guarantee the slice side by list_size or segment_size API
+     */
+    virtual const uint8_t* get_codes(size_t list_no, size_t offset) const;
+
+    /** get the ids slice beginning with offset for an inverted list
+     *
+     * @return ids      size : user guarantee the slice side by list_size or segment_size API
+     */
+    virtual const idx_t* get_ids(size_t list_no, size_t offset) const;
 
     /// release codes returned by get_codes (default implementation is nop
     virtual void release_codes(size_t list_no, const uint8_t* codes) const;
@@ -192,6 +216,9 @@ struct InvertedLists {
         ScopedIds(const InvertedLists* il, size_t list_no)
                 : il(il), ids(il->get_ids(list_no)), list_no(list_no) {}
 
+        ScopedIds(const InvertedLists* il, size_t list_no, size_t offset)
+                : il(il), ids(il->get_ids(list_no, offset)), list_no(list_no) {}
+
         const idx_t* get() {
             return ids;
         }
@@ -271,6 +298,78 @@ struct ArrayInvertedLists : InvertedLists {
     InvertedLists* to_readonly_without_codes() override;
 
     ~ArrayInvertedLists() override;
+};
+
+// A Concurrent implementation for inverted lists
+struct ConcurrentArrayInvertedLists : InvertedLists {
+    template <typename T>
+    struct Segment {
+        Segment(size_t segment_size, size_t code_size) : segment_size_(segment_size), code_size_(code_size) {
+            data_.reserve(segment_size_ * code_size_);
+        }
+        T& operator[](Index::idx_t idx) {
+            assert(idx < segment_size_);
+            return data_[idx * code_size_];
+        }
+        const T& operator[](Index::idx_t idx) const {
+            assert(idx < segment_size_);
+            return data_[idx * code_size_];
+        }
+        size_t segment_size_;
+        size_t code_size_;
+        std::vector<T> data_;
+    };
+
+    ConcurrentArrayInvertedLists(size_t nlist, size_t code_size, size_t segment_size);
+
+    size_t cal_segment_num(size_t capacity) const;
+    void reserve(size_t list_no, size_t capacity);
+    void shrink_to_fit(size_t list_no, size_t capacity);
+
+    size_t list_size(size_t list_no) const override;
+    const uint8_t* get_codes(size_t list_no) const override;
+    const idx_t* get_ids(size_t list_no) const override;
+
+    size_t get_segment_num(size_t list_no) const override;
+    size_t get_segment_size(size_t list_no, size_t segment_no) const override;
+    size_t get_segment_offset(size_t list_no, size_t segment_no) const override;
+
+    const uint8_t* get_codes(size_t list_no, size_t offset) const override;
+    const idx_t* get_ids(size_t list_no, size_t offset) const override;
+
+    idx_t get_single_id(size_t list_no, size_t offset) const;
+    const uint8_t* get_single_code(size_t list_no, size_t offset) const;
+
+    size_t add_entries(
+            size_t list_no,
+            size_t n_entry,
+            const idx_t* ids,
+            const uint8_t* code) override;
+
+    size_t add_entries_without_codes (
+            size_t list_no,
+            size_t n_entry,
+            const idx_t* ids) override;
+
+    void update_entries(
+            size_t list_no,
+            size_t offset,
+            size_t n_entry,
+            const idx_t* ids,
+            const uint8_t* code) override;
+
+    InvertedLists* to_readonly() override;
+
+    InvertedLists* to_readonly_without_codes() override;
+
+    void resize(size_t list_no, size_t new_size) override;
+
+    ~ConcurrentArrayInvertedLists() override;
+
+    const size_t segment_size;
+    std::vector<std::atomic<size_t>> list_cur;
+    std::vector<std::deque<Segment<uint8_t>>> codes;
+    std::vector<std::deque<Segment<idx_t>>> ids;
 };
 
 struct ReadOnlyArrayInvertedLists: InvertedLists {

@@ -61,6 +61,27 @@ struct IndexIVFFlat : IndexIVF {
     IndexIVFFlat() {}
 };
 
+struct IndexIVFFlatCC : IndexIVFFlat {
+    IndexIVFFlatCC(
+            Index* quantizer,
+            size_t d,
+            size_t nlist,
+            size_t ssize,
+            MetricType = METRIC_L2);
+
+    /// implemented for all IndexIVF* classes
+    void add_with_ids_without_codes(idx_t n, const float* x, const idx_t* xids)
+            override;
+
+
+    void reconstruct_from_offset_without_codes(
+            int64_t list_no,
+            int64_t offset,
+            float* recons) const override;
+
+    IndexIVFFlatCC() {}
+};
+
 struct IndexIVFFlatDedup : IndexIVFFlat {
     /** Maps ids stored in the index to the ids of vectors that are
      *  the same. When a vector is unique, it does not appear in the

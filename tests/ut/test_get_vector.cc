@@ -55,6 +55,12 @@ TEST_CASE("Test Get Vector By Ids", "[GetVectorByIds]") {
         return json;
     };
 
+    auto ivfflatcc_gen = [&ivfflat_gen]() {
+        knowhere::Json json = ivfflat_gen();
+        json[knowhere::indexparam::SSIZE] = 48;
+        return json;
+    };
+
     auto bin_ivfflat_gen = [&base_bin_gen]() {
         knowhere::Json json = base_bin_gen();
         json[knowhere::indexparam::NLIST] = 16;
@@ -118,6 +124,7 @@ TEST_CASE("Test Get Vector By Ids", "[GetVectorByIds]") {
         auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IDMAP, flat_gen),
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFFLAT, ivfflat_gen),
+            make_tuple(knowhere::IndexEnum::INDEX_FAISS_IVFFLAT_CC, ivfflatcc_gen),
             make_tuple(knowhere::IndexEnum::INDEX_HNSW, hnsw_gen),
         }));
         auto idx = knowhere::IndexFactory::Instance().Create(name);

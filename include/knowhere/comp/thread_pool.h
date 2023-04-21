@@ -96,7 +96,7 @@ class ThreadPool {
         int omp_before;
 
      public:
-        explicit ScopedOmpSetter(int num_threads = 1) : omp_before(omp_get_num_threads()) {
+        explicit ScopedOmpSetter(int num_threads = 1) : omp_before(omp_get_max_threads()) {
             omp_set_num_threads(num_threads);
         }
         ~ScopedOmpSetter() {
