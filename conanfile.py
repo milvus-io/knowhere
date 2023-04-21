@@ -133,12 +133,6 @@ class KnowhereConan(ConanFile):
             if cxx_std_flag
             else "c++{}".format(self._minimum_cpp_standard)
         )
-        if self.options.with_raft:
-            try:
-                import pylibraft
-                tc.variables["HINT_LIBRAFT"] = pylibraft.__path__[0]
-            except:
-                pass
         tc.variables["CXX_STD"] = cxx_std_value
         if is_msvc(self):
             tc.variables["MSVC_LANGUAGE_VERSION"] = cxx_std_value
