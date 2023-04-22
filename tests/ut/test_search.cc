@@ -170,7 +170,7 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
 
         std::vector<std::function<std::vector<uint8_t>(size_t, size_t)>> gen_bitset_funcs = {
             GenerateBitsetWithFirstTbitsSet, GenerateBitsetWithRandomTbitsSet};
-        const auto bitset_percentages = GetBitsetTestPercentagesFromThreshold(threshold);
+        const auto bitset_percentages = {0.4f, 0.98f};
         for (const float percentage : bitset_percentages) {
             for (const auto& gen_func : gen_bitset_funcs) {
                 auto bitset_data = gen_func(nb, percentage * nb);

@@ -12,7 +12,6 @@
 #include "catch2/catch_approx.hpp"
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/generators/catch_generators.hpp"
-#include "diskann/defines_export.h"
 #include "index/diskann/diskann.cc"
 #include "index/diskann/diskann_config.h"
 #include "knowhere/comp/brute_force.h"
@@ -241,19 +240,22 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
             // knn search with bitset
             std::vector<std::function<std::vector<uint8_t>(size_t, size_t)>> gen_bitset_funcs = {
                 GenerateBitsetWithFirstTbitsSet, GenerateBitsetWithRandomTbitsSet};
-            const auto bitset_percentages =
-                GetBitsetTestPercentagesFromThreshold(diskann::kDiskAnnBruteForceFilterRate);
-            for (const float percentage : bitset_percentages) {
-                for (const auto& gen_func : gen_bitset_funcs) {
-                    auto bitset_data = gen_func(kNumRows, percentage * kNumRows);
-                    knowhere::BitsetView bitset(bitset_data.data(), kNumRows);
-                    auto results = diskann.Search(*query_ds, knn_json, bitset);
-                    auto gt = knowhere::BruteForce::Search(base_ds, query_ds, knn_json, bitset);
-                    float recall = GetKNNRecall(*gt.value(), *results.value());
-                    if (percentage > diskann::kDiskAnnBruteForceFilterRate) {
-                        REQUIRE(recall >= 0.99f);
-                    } else {
-                        REQUIRE(recall >= kL2KnnRecall);
+            const auto bitset_percentages = {0.4f, 0.98f};
+            const auto bitset_thresholds = {-1.0f, 0.9f};
+            for (const float threshold : bitset_thresholds) {
+                knn_json["filter_threshold"] = threshold;
+                for (const float percentage : bitset_percentages) {
+                    for (const auto& gen_func : gen_bitset_funcs) {
+                        auto bitset_data = gen_func(kNumRows, percentage * kNumRows);
+                        knowhere::BitsetView bitset(bitset_data.data(), kNumRows);
+                        auto results = diskann.Search(*query_ds, knn_json, bitset);
+                        auto gt = knowhere::BruteForce::Search(base_ds, query_ds, knn_json, bitset);
+                        float recall = GetKNNRecall(*gt.value(), *results.value());
+                        if (percentage == 0.98f) {
+                            REQUIRE(recall >= 0.9f);
+                        } else {
+                            REQUIRE(recall >= kL2KnnRecall);
+                        }
                     }
                 }
             }

@@ -100,7 +100,8 @@ namespace diskann {
         float *res_dists, const _u64 beam_width,
         const bool use_reorder_data = false, QueryStats *stats = nullptr,
         const knowhere::feder::diskann::FederResultUniq &feder = nullptr,
-        knowhere::BitsetView                             bitset_view = nullptr);
+        knowhere::BitsetView                             bitset_view = nullptr,
+        const float                                      filter_ratio = -1.0f);
 
     DISKANN_DLLEXPORT _u32 range_search(
         const T *query1, const double range, const _u64 min_l_search,
@@ -163,7 +164,9 @@ namespace diskann {
     // If there is no value, there is nothing to do with the given query
     std::optional<float> init_thread_data(ThreadData<T> &data, const T *query1);
 
-    // Brute force search for the given query.
+    // Brute force search for the given query. Use beam search rather than
+    // sending whole bunch of requests at once to avoid all threads sending I/O
+    // requests and the time overlaps.
     // The beam width is adjusted in the function.
     void brute_force_beam_search(
         ThreadData<T> &data, const float query_norm, const _u64 k_search,
