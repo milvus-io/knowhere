@@ -25,6 +25,7 @@
 #include "knowhere/heap.h"
 
 #include "knowhere/log.h"
+#include "knowhere/utils.h"
 #include "tsl/robin_set.h"
 
 #ifdef _WINDOWS
@@ -1056,16 +1057,19 @@ namespace diskann {
 
     std::vector<Neighbor> full_retset;
     full_retset.reserve(4096);
-    _u32                        best_medoid = 0;
-    float                       best_dist = (std::numeric_limits<float>::max)();
-    std::vector<SimpleNeighbor> medoid_dists;
-    for (_u64 cur_m = 0; cur_m < num_medoids; cur_m++) {
-      float cur_expanded_dist =
-          dist_cmp_float(query_float, centroid_data + aligned_dim * cur_m,
-                         (size_t) aligned_dim);
-      if (cur_expanded_dist < best_dist) {
-        best_medoid = medoids[cur_m];
-        best_dist = cur_expanded_dist;
+    auto vec_hash = knowhere::hash_vec(query_float, data_dim);
+    _u32 best_medoid = 0;
+    if (!lru_cache.try_get(vec_hash, best_medoid)) {
+      float best_dist = (std::numeric_limits<float>::max)();
+      std::vector<SimpleNeighbor> medoid_dists;
+      for (_u64 cur_m = 0; cur_m < num_medoids; cur_m++) {
+        float cur_expanded_dist =
+            dist_cmp_float(query_float, centroid_data + aligned_dim * cur_m,
+                          (size_t) aligned_dim);
+        if (cur_expanded_dist < best_dist) {
+          best_medoid = medoids[cur_m];
+          best_dist = cur_expanded_dist;
+        }
       }
     }
 
@@ -1413,6 +1417,9 @@ namespace diskann {
             distances[i] *= (max_base_norm * query_norm);
         }
       }
+    }
+    if (k_search > 0) {
+      lru_cache.put(vec_hash, indices[0]);
     }
 
     this->thread_data.push(data);

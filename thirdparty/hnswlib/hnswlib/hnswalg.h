@@ -5,7 +5,9 @@
 #include <cstdio>
 #include <stdexcept>
 
+#include "common/lru_cache.h"
 #include "io/fileIO.h"
+#include "knowhere/utils.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #pragma GCC diagnostic ignored "-Wsign-compare"
@@ -167,6 +169,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
     std::default_random_engine level_generator_;
     std::default_random_engine update_probability_generator_;
+
+    mutable knowhere::lru_cache<uint64_t, tableint> lru_cache;
 
     inline char*
     getDataByInternalId(tableint internal_id) const {
@@ -1049,47 +1053,49 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         }
 
         tableint currObj = enterpoint_node_;
-        dist_t curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+        auto vec_hash = knowhere::hash_vec((const float*)query_data, *(size_t*)dist_func_param_);
+        if (!lru_cache.try_get(vec_hash, currObj)) {
+            dist_t curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
 
-        for (int level = maxlevel_; level > 0; level--) {
-            bool changed = true;
-            if (feder_result != nullptr) {
-                feder_result->visit_info_.AddLevelVisitRecord(level);
-            }
-            while (changed) {
-                changed = false;
-                unsigned int* data;
-
-                data = (unsigned int*)get_linklist(currObj, level);
-                int size = getListCount(data);
-                metric_hops++;
-                metric_distance_computations += size;
-                tableint* datal = (tableint*)(data + 1);
-#if defined(USE_PREFETCH)
-                for (int i = 0; i < size; ++i) {
-                    _mm_prefetch(getDataByInternalId(datal[i]), _MM_HINT_T0);
+            for (int level = maxlevel_; level > 0; level--) {
+                bool changed = true;
+                if (feder_result != nullptr) {
+                    feder_result->visit_info_.AddLevelVisitRecord(level);
                 }
-#endif
-                for (int i = 0; i < size; i++) {
-                    tableint cand = datal[i];
-                    if (cand < 0 || cand > max_elements_)
-                        throw std::runtime_error("cand error");
-                    dist_t d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
-                    if (feder_result != nullptr) {
-                        feder_result->visit_info_.AddVisitRecord(level, currObj, cand, d);
-                        feder_result->id_set_.insert(currObj);
-                        feder_result->id_set_.insert(cand);
-                    }
+                while (changed) {
+                    changed = false;
+                    unsigned int* data;
 
-                    if (d < curdist) {
-                        curdist = d;
-                        currObj = cand;
-                        changed = true;
+                    data = (unsigned int*)get_linklist(currObj, level);
+                    int size = getListCount(data);
+                    metric_hops++;
+                    metric_distance_computations += size;
+                    tableint* datal = (tableint*)(data + 1);
+#if defined(USE_PREFETCH)
+                    for (int i = 0; i < size; ++i) {
+                        _mm_prefetch(getDataByInternalId(datal[i]), _MM_HINT_T0);
+                    }
+#endif
+                    for (int i = 0; i < size; i++) {
+                        tableint cand = datal[i];
+                        if (cand < 0 || cand > max_elements_)
+                            throw std::runtime_error("cand error");
+                        dist_t d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+                        if (feder_result != nullptr) {
+                            feder_result->visit_info_.AddVisitRecord(level, currObj, cand, d);
+                            feder_result->id_set_.insert(currObj);
+                            feder_result->id_set_.insert(cand);
+                        }
+
+                        if (d < curdist) {
+                            curdist = d;
+                            currObj = cand;
+                            changed = true;
+                        }
                     }
                 }
             }
         }
-
         std::vector<std::pair<dist_t, tableint>> top_candidates;
         size_t ef = param ? param->ef_ : this->ef_;
         if (!bitset.empty()) {
@@ -1102,6 +1108,9 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         result.reserve(len);
         for (int i = 0; i < len; ++i) {
             result.emplace_back(top_candidates[i].first, (labeltype)top_candidates[i].second);
+        }
+        if (len > 0) {
+            lru_cache.put(vec_hash, result[0].second);
         }
         return result;
     };
