@@ -337,8 +337,8 @@ struct ConcurrentArrayInvertedLists : InvertedLists {
     const uint8_t* get_codes(size_t list_no, size_t offset) const override;
     const idx_t* get_ids(size_t list_no, size_t offset) const override;
 
-    idx_t get_single_id(size_t list_no, size_t offset) const;
-    const uint8_t* get_single_code(size_t list_no, size_t offset) const;
+    idx_t get_single_id(size_t list_no, size_t offset) const override;
+    const uint8_t* get_single_code(size_t list_no, size_t offset) const override;
 
     size_t add_entries(
             size_t list_no,
