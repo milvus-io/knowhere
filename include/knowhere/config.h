@@ -409,7 +409,7 @@ class BaseConfig : public Config {
         KNOWHERE_CONFIG_DECLARE_FIELD(num_build_thread)
             .set_default(-1)
             .description("index thread limit for build.")
-            .for_search();
+            .for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(radius)
             .set_default(0.0)
             .description("radius for range search")

@@ -549,7 +549,7 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
             }
             return GenResultDataSet(rows, dim, data);
         } catch (const std::exception& e) {
-            std::unique_ptr<uint8_t> auto_del(data);
+            std::unique_ptr<uint8_t[]> auto_del(data);
             LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
@@ -565,7 +565,7 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
             }
             return GenResultDataSet(rows, dim, data);
         } catch (const std::exception& e) {
-            std::unique_ptr<float> auto_del(data);
+            std::unique_ptr<float[]> auto_del(data);
             LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
@@ -581,7 +581,7 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
             }
             return GenResultDataSet(rows, dim, data);
         } catch (const std::exception& e) {
-            std::unique_ptr<float> auto_del(data);
+            std::unique_ptr<float[]> auto_del(data);
             LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
