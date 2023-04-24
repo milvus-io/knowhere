@@ -289,7 +289,7 @@ class HnswIndexNode : public IndexNode {
 
     bool
     HasRawData(const std::string& metric_type) const override {
-        return true;
+        return !IsMetricType(metric_type, metric::COSINE);
     }
 
     expected<DataSetPtr, Status>

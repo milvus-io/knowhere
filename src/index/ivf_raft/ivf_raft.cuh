@@ -28,6 +28,7 @@
 #include "knowhere/comp/index_param.h"
 #include "knowhere/factory.h"
 #include "knowhere/index_node_thread_pool_wrapper.h"
+#include "knowhere/utils.h"
 #include "raft/core/device_resources.hpp"
 #include "raft/neighbors/ivf_flat.cuh"
 #include "raft/neighbors/ivf_flat_types.hpp"
@@ -36,6 +37,7 @@
 #include "set_pool.h"
 #include "thrust/execution_policy.h"
 #include "thrust/sequence.h"
+
 namespace knowhere {
 
 namespace raft_res_pool {
@@ -441,7 +443,7 @@ class RaftIvfIndexNode : public IndexNode {
     virtual bool
     HasRawData(const std::string& metric_type) const override {
         if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
-            return true;
+            return !IsMetricType(metric_type, metric::COSINE);
         }
         if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
             return false;
