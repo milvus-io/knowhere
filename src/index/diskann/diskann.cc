@@ -29,6 +29,12 @@
 
 namespace knowhere {
 
+static std::unordered_map<MetricType, diskann::Metric> metricMap = {
+    {metric::IP, diskann::Metric::INNER_PRODUCT},
+    {metric::L2, diskann::Metric::L2},
+    {metric::COSINE, diskann::Metric::COSINE},
+};
+
 template <typename T>
 class DiskANNIndexNode : public IndexNode {
     static_assert(std::is_same_v<T, float>, "DiskANN only support float");
@@ -128,7 +134,7 @@ class DiskANNIndexNode : public IndexNode {
 
     std::string
     Type() const override {
-        return std::string(knowhere::IndexEnum::INDEX_DISKANN);
+        return std::string(IndexEnum::INDEX_DISKANN);
     }
 
  private:
@@ -190,7 +196,7 @@ TryDiskANNCall(std::function<T()>&& diskann_call) {
 }
 
 std::vector<std::string>
-GetNecessaryFilenames(const std::string& prefix, const bool is_inner_product, const bool use_sample_cache,
+GetNecessaryFilenames(const std::string& prefix, const diskann::Metric metric, const bool use_sample_cache,
                       const bool use_sample_warmup) {
     std::vector<std::string> filenames;
     auto pq_pivots_filename = diskann::get_pq_pivots_filename(prefix);
@@ -202,7 +208,7 @@ GetNecessaryFilenames(const std::string& prefix, const bool is_inner_product, co
     filenames.push_back(diskann::get_pq_centroid_filename(pq_pivots_filename));
     filenames.push_back(diskann::get_pq_compressed_filename(prefix));
     filenames.push_back(disk_index_filename);
-    if (is_inner_product) {
+    if (metric == diskann::INNER_PRODUCT) {
         filenames.push_back(diskann::get_disk_index_max_base_norm_file(disk_index_filename));
     }
     if (use_sample_cache || use_sample_warmup) {
@@ -235,14 +241,12 @@ AnyIndexFileExist(const std::string& index_prefix) {
 }
 
 inline bool
-CheckMetric(const std::string& diskann_metric) {
-    if (diskann_metric != knowhere::metric::L2 && diskann_metric != knowhere::metric::IP) {
-        LOG_KNOWHERE_ERROR_ << "DiskANN currently only supports floating point data for Max Inner Product Search(IP) "
-                               "and minimum Euclidean distance(L2). "
-                            << std::endl;
-        return false;
-    } else {
+CheckMetric(const std::string& metric) {
+    if (IsMetricType(metric, metric::L2) || IsMetricType(metric, metric::IP) || IsMetricType(metric, metric::COSINE)) {
         return true;
+    } else {
+        LOG_KNOWHERE_ERROR_ << "Invalid DiskANN metric type: " << metric;
+        return false;
     }
 }
 }  // namespace
@@ -273,9 +277,7 @@ DiskANNIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
     count_.store(count);
     dim_.store(dim);
 
-    bool is_ip = IsMetricType(build_conf.metric_type, knowhere::metric::IP) ||
-                 IsMetricType(build_conf.metric_type, knowhere::metric::COSINE);
-    auto diskann_metric = is_ip ? diskann::Metric::INNER_PRODUCT : diskann::Metric::L2;
+    auto diskann_metric = metricMap[build_conf.metric_type];
     diskann::BuildConfig diskann_internal_build_config{data_path,
                                                        index_prefix_,
                                                        diskann_metric,
@@ -296,7 +298,7 @@ DiskANNIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
     }
 
     // Add file to the file manager
-    for (auto& filename : GetNecessaryFilenames(index_prefix_, is_ip, true, true)) {
+    for (auto& filename : GetNecessaryFilenames(index_prefix_, diskann_metric, true, true)) {
         if (!AddFile(filename)) {
             LOG_KNOWHERE_ERROR_ << "Failed to add file " << filename << ".";
             return Status::diskann_file_error;
@@ -325,14 +327,12 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
         return true;
     }
     index_prefix_ = prep_conf.index_prefix;
-    bool is_ip = IsMetricType(prep_conf.metric_type, knowhere::metric::IP) ||
-                 IsMetricType(prep_conf.metric_type, knowhere::metric::COSINE);
-    auto diskann_metric = is_ip ? diskann::Metric::INNER_PRODUCT : diskann::Metric::L2;
+    auto diskann_metric = metricMap[prep_conf.metric_type];
 
     // Load file from file manager.
     for (auto& filename :
-         GetNecessaryFilenames(index_prefix_, is_ip, prep_conf.search_cache_budget_gb > 0 && !prep_conf.use_bfs_cache,
-                               prep_conf.warm_up)) {
+         GetNecessaryFilenames(index_prefix_, diskann_metric,
+                               (prep_conf.search_cache_budget_gb > 0 && !prep_conf.use_bfs_cache), prep_conf.warm_up)) {
         if (!LoadFile(filename)) {
             return false;
         }
@@ -368,7 +368,7 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
 
     count_.store(pq_flash_index_->get_num_points());
     // DiskANN will add one more dim for IP type.
-    if (is_ip) {
+    if (diskann_metric == diskann::Metric::INNER_PRODUCT) {
         dim_.store(pq_flash_index_->get_data_dim() - 1);
     } else {
         dim_.store(pq_flash_index_->get_data_dim());
@@ -574,7 +574,8 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
     auto search_list_and_k_ratio = search_conf.search_list_and_k_ratio;
 
     auto radius = search_conf.radius;
-    bool is_ip = (pq_flash_index_->get_metric() == diskann::Metric::INNER_PRODUCT);
+    auto diskann_metric = pq_flash_index_->get_metric();
+    bool is_ip = (diskann_metric == diskann::Metric::INNER_PRODUCT || diskann_metric == diskann::Metric::COSINE);
 
     auto dim = dataset.GetDim();
     auto nq = dataset.GetRows();
@@ -691,7 +692,7 @@ DiskANNIndexNode<T>::GetCachedNodeNum(const float cache_dram_budget, const uint6
                                       const uint64_t max_degree) {
     uint32_t one_cached_node_budget = (max_degree + 1) * sizeof(unsigned) + sizeof(T) * data_dim;
     auto num_nodes_to_cache =
-        static_cast<uint64_t>(1024 * 1024 * 1024 * cache_dram_budget) / (one_cached_node_budget * kCacheExpansionRate);
+        static_cast<uint64_t>((1LL << 30) * cache_dram_budget) / (one_cached_node_budget * kCacheExpansionRate);
     return num_nodes_to_cache;
 }
 
