@@ -237,7 +237,12 @@ class FlatIndexNode : public IndexNode {
 
     bool
     HasRawData(const std::string& metric_type) const override {
-        return true;
+        if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
+            return !IsMetricType(metric_type, metric::COSINE);
+        }
+        if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
+            return true;
+        }
     }
 
     expected<DataSetPtr, Status>

@@ -65,7 +65,7 @@ class IvfIndexNode : public IndexNode {
     bool
     HasRawData(const std::string& metric_type) const override {
         if constexpr (std::is_same<faiss::IndexIVFFlat, T>::value) {
-            return true;
+            return !IsMetricType(metric_type, metric::COSINE);
         }
         if constexpr (std::is_same<faiss::IndexIVFFlatCC, T>::value) {
             return false;
