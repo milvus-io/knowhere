@@ -152,6 +152,11 @@ class IndexWrap {
         }
     }
 
+    bool
+    HasRawData(const std::string& metric_type) {
+        return idx.HasRawData(metric_type);
+    }
+
     knowhere::Status
     Serialize(knowhere::BinarySetPtr binset) {
         return idx.Serialize(*binset);
