@@ -26,9 +26,17 @@ SetBuildOmpThread(const Config& conf) {
 
 inline void
 SetQueryOmpThread(const Config& conf) {
-    int32_t omp_num =
-        CheckKeyInConfig(conf, meta::QUERY_OMP_NUM) ? GetMetaQueryOmpNum(conf) : omp_get_max_threads();
+    int32_t omp_num = CheckKeyInConfig(conf, meta::QUERY_OMP_NUM) ? GetMetaQueryOmpNum(conf) : omp_get_max_threads();
     omp_set_num_threads(omp_num);
+}
+
+inline uint64_t
+hash_vec(const float* x, size_t d) {
+    uint64_t h = 0;
+    for (size_t i = 0; i < d; ++i) {
+        h = h * 13331 + *(uint32_t*)(x + i);
+    }
+    return h;
 }
 
 }  // namespace knowhere::utils
