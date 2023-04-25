@@ -64,12 +64,9 @@ class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing
                    ann_test_name_.c_str(), index_type_.c_str(), nlist, nprobe, topk_, expected_recall);
             printf("================================================================================\n");
             for (auto thread_num : THREAD_NUMs_) {
-                for (int32_t batch_nq = 1; batch_nq <= nq_; batch_nq *= 10) {
-                    CALC_TIME_SPAN(task(conf, thread_num, batch_nq, nq_));
-                    printf("  thread_num = %2d, nq = %5d, elapse = %6.3fs, VPS = %.3f\n", thread_num, batch_nq, t_diff,
-                           nq_ * thread_num / t_diff);
-                    std::fflush(stdout);
-                }
+                CALC_TIME_SPAN(task(conf, thread_num, nq_));
+                printf("  thread_num = %2d, elapse = %6.3fs, VPS = %.3f\n", thread_num, t_diff, nq_ / t_diff);
+                std::fflush(stdout);
             }
             printf("================================================================================\n");
             printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
@@ -118,12 +115,9 @@ class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing
                    ann_test_name_.c_str(), index_type_.c_str(), M, efConstruction, ef, topk_, expected_recall);
             printf("================================================================================\n");
             for (auto thread_num : THREAD_NUMs_) {
-                for (int32_t batch_nq = 1; batch_nq <= nq_; batch_nq *= 10) {
-                    CALC_TIME_SPAN(task(conf, thread_num, batch_nq, nq_));
-                    printf("  thread_num = %2d, nq = %5d, elapse = %6.3fs, VPS = %.3f\n", thread_num, batch_nq, t_diff,
-                           nq_ * thread_num / t_diff);
-                    std::fflush(stdout);
-                }
+                CALC_TIME_SPAN(task(conf, thread_num, nq_));
+                printf("  thread_num = %2d, elapse = %6.3fs, VPS = %.3f\n", thread_num, t_diff, nq_ / t_diff);
+                std::fflush(stdout);
             }
             printf("================================================================================\n");
             printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
@@ -132,18 +126,24 @@ class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing
 
  private:
     void
-    task(const knowhere::Json& conf, int32_t worker_num, int32_t nq_per_search, int32_t nq_total) {
-        auto worker = [&]() {
-            for (int32_t i = 0; i < nq_total; i += nq_per_search) {
-                int32_t curr_nq = std::min(nq_per_search, nq_total - i);
-                knowhere::DataSetPtr ds_ptr = knowhere::GenDataSet(curr_nq, dim_, (const float*)xq_ + i * dim_);
+    task(const knowhere::Json& conf, int32_t worker_num, int32_t nq_total) {
+        auto worker = [&](int32_t idx_start, int32_t num) {
+            num = std::min(num, nq_total - idx_start);
+            for (int32_t i = 0; i < num; i++) {
+                knowhere::DataSetPtr ds_ptr = knowhere::GenDataSet(1, dim_, (const float*)xq_ + (idx_start + i) * dim_);
                 index_.Search(*ds_ptr, conf, nullptr);
             }
         };
 
         std::vector<std::thread> thread_vector(worker_num);
         for (int32_t i = 0; i < worker_num; i++) {
-            thread_vector[i] = std::thread(worker);
+            int32_t idx_start, req_num;
+            req_num = nq_total / worker_num;
+            if (nq_total % worker_num != 0) {
+                req_num++;
+            }
+            idx_start = req_num * i;
+            thread_vector[i] = std::thread(worker, idx_start, req_num);
         }
         for (int32_t i = 0; i < worker_num; i++) {
             thread_vector[i].join();
@@ -179,7 +179,7 @@ class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing
  protected:
     const int32_t topk_ = 100;
     const std::vector<float> EXPECTED_RECALLs_ = {0.8, 0.95};
-    const std::vector<int32_t> THREAD_NUMs_ = {1, 2, 4, 8, 16, 32};
+    const std::vector<int32_t> THREAD_NUMs_ = {1, 2, 4, 8};
 
     // IVF index params
     const std::vector<int32_t> NLISTs_ = {1024};
