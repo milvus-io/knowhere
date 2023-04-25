@@ -16,13 +16,15 @@
 
 namespace knowhere {
 
+extern const float FloatAccuracy;
+
 inline bool
 IsMetricType(const std::string& str, const knowhere::MetricType& metric_type) {
     return !strcasecmp(str.data(), metric_type.c_str());
 }
 
 extern void
-NormalizeVec(float* data, int32_t dim);
+NormalizeVec(float* x, int32_t d);
 
 extern void
 Normalize(const DataSet& dataset);

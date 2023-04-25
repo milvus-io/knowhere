@@ -78,7 +78,7 @@ fvec_hook(std::string& simd_type) {
         fvec_L1 = fvec_L1_avx512;
         fvec_Linf = fvec_Linf_avx512;
 
-        fvec_norm_L2sqr = fvec_norm_L2sqr_sse;
+        fvec_norm_L2sqr = fvec_norm_L2sqr_avx512;
         fvec_L2sqr_ny = fvec_L2sqr_ny_sse;
         fvec_inner_products_ny = fvec_inner_products_ny_sse;
         fvec_madd = fvec_madd_sse;
@@ -93,7 +93,7 @@ fvec_hook(std::string& simd_type) {
         fvec_L1 = fvec_L1_avx;
         fvec_Linf = fvec_Linf_avx;
 
-        fvec_norm_L2sqr = fvec_norm_L2sqr_sse;
+        fvec_norm_L2sqr = fvec_norm_L2sqr_avx;
         fvec_L2sqr_ny = fvec_L2sqr_ny_sse;
         fvec_inner_products_ny = fvec_inner_products_ny_sse;
         fvec_madd = fvec_madd_sse;

@@ -431,7 +431,6 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
     }
 
     auto res = GenResultDataSet(rows, ivf_cfg.k, ids, distances);
-    res->SetIsOwner(true);
     return res;
 }
 

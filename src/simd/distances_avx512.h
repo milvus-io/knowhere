@@ -32,6 +32,9 @@ fvec_L1_avx512(const float* x, const float* y, size_t d);
 float
 fvec_Linf_avx512(const float* x, const float* y, size_t d);
 
+float
+fvec_norm_L2sqr_avx512(const float* x, size_t d);
+
 }  // namespace faiss
 
 #endif /* DISTANCES_AVX512_H */
