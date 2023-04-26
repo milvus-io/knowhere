@@ -26,7 +26,7 @@ pipeline {
                         def gitShortCommit = sh(returnStdout: true, script: "echo ${env.GIT_COMMIT} | cut -b 1-7 ").trim()
                         version="${env.CHANGE_ID}.${date}.${gitShortCommit}"
                         sh "apt-get update || true"
-                        sh "apt-get install libaio-dev libopenblas-dev libcurl4-openssl-dev git -y"
+                        sh "apt-get install libaio-dev libopenblas-dev libcurl4-openssl-dev libdouble-conversion-dev libevent-dev libgflags-dev git -y"
                         sh "pip3 install conan==1.58.0"
                         sh "rm -rf /usr/local/lib/cmake/"
                         sh "mkdir build"
