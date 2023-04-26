@@ -15,21 +15,19 @@
 #include <cstdint>
 
 #include "knowhere/log.h"
+#include "simd/hook.h"
 
 namespace knowhere {
 
-const float floatDiff = 0.00001;
+const float FloatAccuracy = 0.00001;
 
 void
-NormalizeVec(float* vector, int32_t dim) {
-    double sq_sum = 0.0;
-    for (int32_t j = 0; j < dim; j++) {
-        sq_sum += (double)vector[j] * (double)vector[j];
-    }
-    if (std::abs(1.0f - sq_sum) > floatDiff) {
-        double inv_sq_sum = 1.0 / std::sqrt(sq_sum);
-        for (int32_t j = 0; j < dim; j++) {
-            vector[j] = (float)(vector[j] * inv_sq_sum);
+NormalizeVec(float* x, int32_t d) {
+    float norm_l2_sqr = faiss::fvec_norm_L2sqr(x, d);
+    if (norm_l2_sqr > 0 && std::abs(1.0f - norm_l2_sqr) > FloatAccuracy) {
+        float norm_l2 = std::sqrt(norm_l2_sqr);
+        for (int32_t i = 0; i < d; i++) {
+            x[i] = x[i] / norm_l2;
         }
     }
 }
