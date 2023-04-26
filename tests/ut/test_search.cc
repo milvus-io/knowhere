@@ -14,6 +14,7 @@
 #include "catch2/generators/catch_generators.hpp"
 #include "hnswlib/hnswalg.h"
 #include "knowhere/bitsetview.h"
+#include "knowhere/comp/brute_force.h"
 #include "knowhere/comp/index_param.h"
 #include "knowhere/comp/knowhere_config.h"
 #include "knowhere/factory.h"
@@ -94,7 +95,11 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
 
     const auto train_ds = GenDataSet(nb, dim, seed);
     const auto query_ds = GenDataSet(nq, dim, seed);
-    const auto gt = GetKNNGroundTruth(*train_ds, *query_ds, kMetric, kTopk);
+    const knowhere::Json conf = {
+        {knowhere::meta::METRIC_TYPE, kMetric},
+        {knowhere::meta::TOPK, kTopk},
+    };
+    auto gt = knowhere::BruteForce::Search(train_ds, query_ds, conf, nullptr);
     SECTION("Test Cpu Index Search") {
         using std::make_tuple;
         auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
@@ -117,7 +122,7 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
         }
         auto results = idx.Search(*query_ds, json, nullptr);
         REQUIRE(results.has_value());
-        float recall = GetKNNRecall(*gt, *results.value());
+        float recall = GetKNNRecall(*gt.value(), *results.value());
         REQUIRE(recall > kKnnRecallThreshold);
     }
 
@@ -171,9 +176,8 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
                 auto bitset_data = gen_func(nb, percentage * nb);
                 knowhere::BitsetView bitset(bitset_data.data(), nb);
                 auto results = idx.Search(*query_ds, json, bitset);
-                auto gt = GetKNNGroundTruth(*train_ds, *query_ds, json[knowhere::meta::METRIC_TYPE],
-                                            json[knowhere::meta::TOPK], bitset);
-                float recall = GetKNNRecall(*gt, *results.value());
+                auto gt = knowhere::BruteForce::Search(train_ds, query_ds, json, bitset);
+                float recall = GetKNNRecall(*gt.value(), *results.value());
                 if (percentage > threshold) {
                     REQUIRE(recall > kBruteForceRecallThreshold);
                 } else {
