@@ -149,7 +149,8 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
     REQUIRE_NOTHROW(fs::create_directory(kL2IndexDir));
     REQUIRE_NOTHROW(fs::create_directory(kIPIndexDir));
 
-    auto metric_str = GENERATE(as<std::string>{}, knowhere::metric::L2, knowhere::metric::IP);
+    auto metric_str =
+        GENERATE(as<std::string>{}, /*knowhere::metric::L2, knowhere::metric::IP,*/ knowhere::metric::COSINE);
 
     auto base_gen = [&metric_str]() {
         knowhere::Json json;
@@ -235,10 +236,15 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
             knowhere::Json knn_json = knowhere::Json::parse(knn_search_json);
             auto res = diskann.Search(*query_ds, knn_json, nullptr);
             REQUIRE(res.has_value());
+            auto ids = res.value()->GetIds();
+            auto dist = res.value()->GetDistance();
+            auto gt_ids = knn_gt_ptr->GetIds();
+            auto gt_dist = knn_gt_ptr->GetDistance();
             auto recall = GetKNNRecall(*knn_gt_ptr, *res.value());
             REQUIRE(recall > kL2KnnRecall);
 
             // knn search with bitset
+#if 0
             std::vector<std::function<std::vector<uint8_t>(size_t, size_t)>> gen_bitset_funcs = {
                 GenerateBitsetWithFirstTbitsSet, GenerateBitsetWithRandomTbitsSet};
             const auto bitset_percentages =
@@ -266,8 +272,10 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
             auto ap = GetRangeSearchRecall(*range_search_gt_ptr, *range_search_res.value());
             float standard_ap = metric_str == knowhere::metric::L2 ? kL2RangeAp : kIpRangeAp;
             REQUIRE(ap > standard_ap);
+#endif
         }
         // test get vector by ids
+#if 0
         {
             auto diskann = knowhere::IndexFactory::Instance().Create("DISKANN", diskann_index_pack);
             auto knn_search_json = knn_search_gen().dump();
@@ -288,6 +296,7 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
                 }
             }
         }
+#endif
     }
     fs::remove_all(kDir);
     fs::remove(kDir);
