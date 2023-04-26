@@ -15,6 +15,7 @@
 #include "diskann/defines_export.h"
 #include "index/diskann/diskann.cc"
 #include "index/diskann/diskann_config.h"
+#include "knowhere/comp/brute_force.h"
 #include "knowhere/comp/local_file_manager.h"
 #include "knowhere/factory.h"
 #include "utils.h"
@@ -209,10 +210,11 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
 
         // generate the gt of knn search and range search
         auto base_json = base_gen();
-        knn_gt_ptr = GetKNNGroundTruth(*base_ds, *query_ds, metric_str, kK);
-        float radius = base_json["radius"];
-        float range_filter = base_json["range_filter"];
-        range_search_gt_ptr = GetRangeSearchGroundTruth(*base_ds, *query_ds, metric_str, radius, range_filter);
+
+        auto result_knn = knowhere::BruteForce::Search(base_ds, query_ds, base_json, nullptr);
+        knn_gt_ptr = result_knn.value();
+        auto result_range = knowhere::BruteForce::RangeSearch(base_ds, query_ds, base_json, nullptr);
+        range_search_gt_ptr = result_range.value();
     }
 
     SECTION("Test L2/IP metric.") {
@@ -246,8 +248,8 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
                     auto bitset_data = gen_func(kNumRows, percentage * kNumRows);
                     knowhere::BitsetView bitset(bitset_data.data(), kNumRows);
                     auto results = diskann.Search(*query_ds, knn_json, bitset);
-                    auto gt = GetKNNGroundTruth(*base_ds, *query_ds, metric_str, kK, bitset);
-                    float recall = GetKNNRecall(*gt, *results.value());
+                    auto gt = knowhere::BruteForce::Search(base_ds, query_ds, knn_json, bitset);
+                    float recall = GetKNNRecall(*gt.value(), *results.value());
                     if (percentage > diskann::kDiskAnnBruteForceFilterRate) {
                         REQUIRE(recall >= 0.99f);
                     } else {
