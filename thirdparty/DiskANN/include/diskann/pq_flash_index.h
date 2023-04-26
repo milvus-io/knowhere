@@ -8,6 +8,7 @@
 #include <sstream>
 #include <stack>
 #include <string>
+#include "common/lru_cache.h"
 #include "tsl/robin_map.h"
 #include "tsl/robin_set.h"
 
@@ -250,6 +251,8 @@ namespace diskann {
     bool                           count_visited_nodes = false;
     bool                           reorder_data_exists = false;
     _u64                           reoreder_data_offset = 0;
+
+    mutable knowhere::lru_cache<uint64_t, uint32_t> lru_cache;
 
 #ifdef EXEC_ENV_OLS
     // Set to a larger value than the actual header to accommodate
