@@ -201,16 +201,16 @@ class AlgorithmInterface {
     addPoint(const void* datapoint, labeltype label) = 0;
 
     virtual std::vector<std::pair<dist_t, labeltype>>
-    searchKnn(const void*, size_t, const knowhere::BitsetView, const SearchParam*,
+    searchKnn(void*, size_t, const knowhere::BitsetView, const SearchParam*,
               const knowhere::feder::hnsw::FederResultUniq&) const = 0;
 
     virtual std::vector<std::pair<dist_t, labeltype>>
-    searchRange(const void*, float, const knowhere::BitsetView, const SearchParam*,
+    searchRange(void*, float, const knowhere::BitsetView, const SearchParam*,
                 const knowhere::feder::hnsw::FederResultUniq&) const = 0;
 
     // Return k nearest neighbor in the order of closer fist
     virtual std::vector<std::pair<dist_t, labeltype>>
-    searchKnnCloserFirst(const void* query_data, size_t k, const knowhere::BitsetView) const;
+    searchKnnCloserFirst(void* query_data, size_t k, const knowhere::BitsetView) const;
 
     virtual void
     saveIndex(knowhere::MemoryIOWriter& output) = 0;
@@ -220,7 +220,7 @@ class AlgorithmInterface {
 
 template <typename dist_t>
 std::vector<std::pair<dist_t, labeltype>>
-AlgorithmInterface<dist_t>::searchKnnCloserFirst(const void* query_data, size_t k,
+AlgorithmInterface<dist_t>::searchKnnCloserFirst(void* query_data, size_t k,
                                                  const knowhere::BitsetView bitset) const {
     std::vector<std::pair<dist_t, labeltype>> result;
 
@@ -232,4 +232,5 @@ AlgorithmInterface<dist_t>::searchKnnCloserFirst(const void* query_data, size_t 
 #include "hnswalg.h"
 #include "space_ip.h"
 #include "space_l2.h"
+#include "space_cosine.h"
 #pragma GCC diagnostic pop
