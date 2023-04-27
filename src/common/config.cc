@@ -44,7 +44,9 @@ static const std::unordered_set<std::string> ext_legal_json_keys = {"metric_type
                                                                     "num_load_thread",
                                                                     "index_files",
                                                                     "gpu_id",
-                                                                    "num_threads"};
+                                                                    "num_threads",
+                                                                    "round_decimal",
+                                                                    "offset"};
 
 Status
 Config::FormatAndCheck(const Config& cfg, Json& json) {
