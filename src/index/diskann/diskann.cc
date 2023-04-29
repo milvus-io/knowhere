@@ -61,7 +61,7 @@ class DiskANNIndexNode : public IndexNode {
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
 
     expected<DataSetPtr, Status>
-    GetVectorByIds(const DataSet& dataset, const Config& cfg) const override;
+    GetVectorByIds(const DataSet& dataset) const override;
 
     bool
     HasRawData(const std::string& metric_type) const override {
@@ -625,10 +625,7 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
 
 template <typename T>
 expected<DataSetPtr, Status>
-DiskANNIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const {
-    if (!is_prepared_.load()) {
-        const_cast<DiskANNIndexNode<T>*>(this)->Prepare(cfg);
-    }
+DiskANNIndexNode<T>::GetVectorByIds(const DataSet& dataset) const {
     if (!is_prepared_.load() || !pq_flash_index_) {
         LOG_KNOWHERE_ERROR_ << "Failed to load diskann.";
         return unexpected(Status::empty_index);

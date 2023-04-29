@@ -61,7 +61,7 @@ TEST_CASE("Test Binary Get Vector By Ids", "[Binary GetVectorByIds]") {
 
         auto idx_new = knowhere::IndexFactory::Instance().Create(name);
         idx_new.Deserialize(bs);
-        auto results = idx_new.GetVectorByIds(*ids_ds, json);
+        auto results = idx_new.GetVectorByIds(*ids_ds);
         REQUIRE(results.has_value());
         auto xb = (uint8_t*)train_ds->GetTensor();
         auto res_rows = results.value()->GetRows();
@@ -164,7 +164,7 @@ TEST_CASE("Test Float Get Vector By Ids", "[Float GetVectorByIds]") {
         if (!idx_new.HasRawData(metric)) {
             return;
         }
-        auto results = idx_new.GetVectorByIds(*ids_ds, json);
+        auto results = idx_new.GetVectorByIds(*ids_ds);
         REQUIRE(results.has_value());
         auto xb = (float*)train_ds_copy->GetTensor();
         auto res_rows = results.value()->GetRows();

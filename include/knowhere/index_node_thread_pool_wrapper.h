@@ -53,8 +53,8 @@ class IndexNodeThreadPoolWrapper : public IndexNode {
     }
 
     expected<DataSetPtr, Status>
-    GetVectorByIds(const DataSet& dataset, const Config& cfg) const {
-        return index_node_->GetVectorByIds(dataset, cfg);
+    GetVectorByIds(const DataSet& dataset) const {
+        return index_node_->GetVectorByIds(dataset);
     }
 
     bool

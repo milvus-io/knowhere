@@ -204,21 +204,8 @@ class Index {
     }
 
     expected<DataSetPtr, Status>
-    GetVectorByIds(const DataSet& dataset, const Json& json) const {
-        Json json_(json);
-        auto cfg = this->node->CreateConfig();
-        {
-            auto res = Config::FormatAndCheck(*cfg, json_);
-            LOG_KNOWHERE_DEBUG_ << "GetVectorByIds config dump: " << json_.dump();
-            if (res != Status::success) {
-                return unexpected(res);
-            }
-        }
-        auto res = Config::Load(*cfg, json_, knowhere::SEARCH);
-        if (res != Status::success) {
-            return unexpected(res);
-        }
-        return this->node->GetVectorByIds(dataset, *cfg);
+    GetVectorByIds(const DataSet& dataset) const {
+        return this->node->GetVectorByIds(dataset);
     }
 
     bool

@@ -95,7 +95,7 @@ class GpuFlatIndexNode : public IndexNode {
     }
 
     virtual expected<DataSetPtr, Status>
-    GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
+    GetVectorByIds(const DataSet& dataset) const override {
         DataSetPtr results = std::make_shared<DataSet>();
         auto nq = dataset.GetRows();
         auto dim = dataset.GetDim();

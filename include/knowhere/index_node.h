@@ -39,7 +39,7 @@ class IndexNode : public Object {
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const = 0;
 
     virtual expected<DataSetPtr, Status>
-    GetVectorByIds(const DataSet& dataset, const Config& cfg) const = 0;
+    GetVectorByIds(const DataSet& dataset) const = 0;
 
     virtual bool
     HasRawData(const std::string& metric_type) const = 0;
