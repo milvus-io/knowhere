@@ -492,14 +492,12 @@ int generate_pq_data_from_pivots(const std::string data_file,
 #pragma omp parallel for firstprivate(block_data_tmp) schedule(static, 8192)
     for (uint64_t p = 0; p < cur_blk_size; p++) {
       for (uint64_t d = 0; d < dim; d++) {
-        block_data_float[p * dim + d] -= centroid[d];
-      }
-      for (uint64_t d = 0; d < dim; d++) {
+        auto rearrange_d = rearrangement[d];
         block_data_tmp[d] =
-            block_data_float[p * dim + rearrangement[d]];
+            block_data_float[p * dim + rearrange_d] - centroid[rearrange_d];
       }
       for (uint64_t d = 0; d < dim; d++) {
-        block_data_float[d] = block_data_tmp[d];
+        block_data_float[p * dim + d] = block_data_tmp[d];
       }
     }
 
