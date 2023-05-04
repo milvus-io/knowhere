@@ -195,5 +195,36 @@ fvec_Linf_avx(const float* x, const float* y, size_t d) {
     return _mm_cvtss_f32(msum2);
 }
 
+float
+fvec_norm_L2sqr_avx(const float* x, size_t d) {
+    __m256 msum1 = _mm256_setzero_ps();
+
+    while (d >= 8) {
+        __m256 mx = _mm256_loadu_ps(x);
+        x += 8;
+        msum1 = _mm256_add_ps(msum1, _mm256_mul_ps(mx, mx));
+        d -= 8;
+    }
+
+    __m128 msum2 = _mm256_extractf128_ps(msum1, 1);
+    msum2 = _mm_add_ps(msum2, _mm256_extractf128_ps(msum1, 0));
+
+    if (d >= 4) {
+        __m128 mx = _mm_loadu_ps(x);
+        x += 4;
+        msum2 = _mm_add_ps(msum2, _mm_mul_ps(mx, mx));
+        d -= 4;
+    }
+
+    if (d > 0) {
+        __m128 mx = masked_read(d, x);
+        msum2 = _mm_add_ps(msum2, _mm_mul_ps(mx, mx));
+    }
+
+    msum2 = _mm_hadd_ps(msum2, msum2);
+    msum2 = _mm_hadd_ps(msum2, msum2);
+    return _mm_cvtss_f32(msum2);
+}
+
 }  // namespace faiss
 #endif

@@ -29,7 +29,7 @@ pipeline {
                         sh "nvidia-smi"
                         sh "apt-get install dirmngr -y"
                         sh "apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 42D5A192B819C5DA"
-                        sh "apt-get install build-essential libopenblas-dev libcurl4-openssl-dev libaio-dev git -y"
+                        sh "apt-get install build-essential libopenblas-dev libcurl4-openssl-dev libaio-dev libdouble-conversion-dev libevent-dev libgflags-dev git -y"
                         sh "git config --global --add safe.directory '*'"
                         sh "git submodule update --recursive --init"
                         sh "pip3 install conan==1.58.0"

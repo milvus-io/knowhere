@@ -65,7 +65,7 @@ class IvfIndexNode : public IndexNode {
     bool
     HasRawData(const std::string& metric_type) const override {
         if constexpr (std::is_same<faiss::IndexIVFFlat, T>::value) {
-            return true;
+            return !IsMetricType(metric_type, metric::COSINE);
         }
         if constexpr (std::is_same<faiss::IndexIVFFlatCC, T>::value) {
             return false;
@@ -431,7 +431,6 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
     }
 
     auto res = GenResultDataSet(rows, ivf_cfg.k, ids, distances);
-    res->SetIsOwner(true);
     return res;
 }
 
@@ -549,7 +548,7 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
             }
             return GenResultDataSet(rows, dim, data);
         } catch (const std::exception& e) {
-            std::unique_ptr<uint8_t> auto_del(data);
+            std::unique_ptr<uint8_t[]> auto_del(data);
             LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
@@ -565,7 +564,7 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
             }
             return GenResultDataSet(rows, dim, data);
         } catch (const std::exception& e) {
-            std::unique_ptr<float> auto_del(data);
+            std::unique_ptr<float[]> auto_del(data);
             LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
@@ -581,7 +580,7 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
             }
             return GenResultDataSet(rows, dim, data);
         } catch (const std::exception& e) {
-            std::unique_ptr<float> auto_del(data);
+            std::unique_ptr<float[]> auto_del(data);
             LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
             return unexpected(Status::faiss_inner_error);
         }
