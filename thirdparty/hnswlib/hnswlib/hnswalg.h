@@ -7,6 +7,7 @@
 
 #include "common/lru_cache.h"
 #include "io/fileIO.h"
+#include "knowhere/bitsetview.h"
 #include "knowhere/utils.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -1034,22 +1035,26 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         if (cur_element_count == 0)
             return {};
 
-        if (!bitset.empty() && bitset.count() >= (cur_element_count * kHnswBruteForceFilterRate)) {
-            assert(cur_element_count == bitset.size());
-            knowhere::ResultMaxHeap<dist_t, labeltype> max_heap(k);
-            for (labeltype id = 0; id < cur_element_count; ++id) {
-                if (!bitset.test(id)) {
-                    dist_t dist = fstdistfunc_(query_data, getDataByInternalId(id), dist_func_param_);
-                    max_heap.Push(dist, id);
+        if (!bitset.empty()) {
+            const auto bs_cnt = bitset.count();
+            if (bs_cnt == cur_element_count) return {};
+            if (bs_cnt >= (cur_element_count * kHnswBruteForceFilterRate)) {
+                assert(cur_element_count == bitset.size());
+                knowhere::ResultMaxHeap<dist_t, labeltype> max_heap(k);
+                for (labeltype id = 0; id < cur_element_count; ++id) {
+                    if (!bitset.test(id)) {
+                        dist_t dist = fstdistfunc_(query_data, getDataByInternalId(id), dist_func_param_);
+                        max_heap.Push(dist, id);
+                    }
                 }
+                const size_t len = std::min(max_heap.Size(), k);
+                std::vector<std::pair<dist_t, labeltype>> result(len);
+                for (int64_t i = len - 1; i >= 0; --i) {
+                    const auto op = max_heap.Pop();
+                    result[i] = op.value();
+                }
+                return result;
             }
-            const size_t len = std::min(max_heap.Size(), k);
-            std::vector<std::pair<dist_t, labeltype>> result(len);
-            for (int64_t i = len - 1; i >= 0; --i) {
-                const auto op = max_heap.Pop();
-                result[i] = op.value();
-            }
-            return result;
         }
 
         tableint currObj = enterpoint_node_;
