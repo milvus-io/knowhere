@@ -519,7 +519,7 @@ int generate_pq_data_from_pivots(const std::string data_file,
                     block_data_float[index * dim + rearrangement[d]];
               }
               for (uint64_t d = 0; d < dim; d++) {
-                block_data_float[d] = block_data_tmp[d];
+                block_data_float[index * dim + d] = block_data_tmp[d];
               }
             }
           }));
