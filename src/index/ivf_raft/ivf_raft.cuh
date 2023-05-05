@@ -38,6 +38,10 @@
 #include "thrust/execution_policy.h"
 #include "thrust/sequence.h"
 
+#ifdef RAFT_COMPILED
+#include <raft/neighbors/specializations.cuh>
+#endif
+
 namespace knowhere {
 
 __global__ void
@@ -303,9 +307,9 @@ class RaftIvfIndexNode : public IndexNode {
                 auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
 
                 auto stream = res_->get_stream();
-                auto data_gpu = rmm::device_uvector<float>(rows * dim, stream);
-                RAFT_CUDA_TRY(cudaMemcpyAsync(data_gpu.data(), data, data_gpu.size() * sizeof(float), cudaMemcpyDefault,
-                                              stream.value()));
+                auto data_gpu = raft::make_device_matrix<float, std::int64_t>(*res_, rows, dim);
+                RAFT_CUDA_TRY(cudaMemcpyAsync(data_gpu.data_handle(), data, data_gpu.size() * sizeof(float),
+                                              cudaMemcpyDefault, stream.value()));
                 if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
                     auto build_params = raft::neighbors::ivf_flat::index_params{};
                     build_params.metric = metric.value();
@@ -313,8 +317,8 @@ class RaftIvfIndexNode : public IndexNode {
                     build_params.kmeans_n_iters = ivf_raft_cfg.kmeans_n_iters;
                     build_params.kmeans_trainset_fraction = ivf_raft_cfg.kmeans_trainset_fraction;
                     build_params.adaptive_centers = ivf_raft_cfg.adaptive_centers;
-                    gpu_index_ = raft::neighbors::ivf_flat::build<float, std::int64_t>(*res_, build_params,
-                                                                                       data_gpu.data(), rows, dim);
+                    gpu_index_ =
+                        raft::neighbors::ivf_flat::build<float, std::int64_t>(*res_, build_params, data_gpu.view());
                 } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
                     auto build_params = raft::neighbors::ivf_pq::index_params{};
                     build_params.metric = metric.value();
@@ -330,8 +334,8 @@ class RaftIvfIndexNode : public IndexNode {
                     }
                     build_params.codebook_kind = codebook_kind.value();
                     build_params.force_random_rotation = ivf_raft_cfg.force_random_rotation;
-                    gpu_index_ = raft::neighbors::ivf_pq::build<float, std::int64_t>(*res_, build_params,
-                                                                                     data_gpu.data(), rows, dim);
+                    gpu_index_ =
+                        raft::neighbors::ivf_pq::build<float, std::int64_t>(*res_, build_params, data_gpu.view());
                 } else {
                     static_assert(std::is_same_v<detail::raft_ivf_flat_index, T>);
                 }
@@ -366,19 +370,25 @@ class RaftIvfIndexNode : public IndexNode {
                 auto stream = res_->get_stream();
                 // TODO(wphicks): Clean up transfer with raft
                 // buffer objects when available
-                auto data_gpu = rmm::device_uvector<float>(rows * dim, stream);
-                RAFT_CUDA_TRY(cudaMemcpyAsync(data_gpu.data(), data, data_gpu.size() * sizeof(float), cudaMemcpyDefault,
-                                              stream.value()));
+                auto data_gpu = raft::make_device_matrix<float, std::int64_t>(*res_, rows, dim);
+                RAFT_CUDA_TRY(cudaMemcpyAsync(data_gpu.data_handle(), data, data_gpu.size() * sizeof(float),
+                                              cudaMemcpyDefault, stream.value()));
 
                 auto indices = rmm::device_uvector<std::int64_t>(rows, stream);
                 thrust::sequence(thrust::device, indices.begin(), indices.end(), gpu_index_->size());
 
                 if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
-                    raft::neighbors::ivf_flat::extend<float, std::int64_t>(*res_, *gpu_index_, data_gpu.data(),
-                                                                           indices.data(), rows);
+                    raft::neighbors::ivf_flat::extend<float, std::int64_t>(
+                        *res_, raft::make_const_mdspan(data_gpu.view()),
+                        std::make_optional(
+                            raft::make_device_vector_view<const std::int64_t, std::int64_t>(indices.data(), rows)),
+                        gpu_index_.value());
                 } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
-                    raft::neighbors::ivf_pq::extend<float, std::int64_t>(*res_, *gpu_index_, data_gpu.data(),
-                                                                         indices.data(), rows);
+                    raft::neighbors::ivf_pq::extend<float, std::int64_t>(
+                        *res_, raft::make_const_mdspan(data_gpu.view()),
+                        std::make_optional(
+                            raft::make_device_matrix_view<const std::int64_t, std::int64_t>(indices.data(), rows, 1)),
+                        gpu_index_.value());
                 } else {
                     static_assert(std::is_same_v<detail::raft_ivf_flat_index, T>);
                 }
@@ -410,20 +420,20 @@ class RaftIvfIndexNode : public IndexNode {
             auto stream = res_->get_stream();
             // TODO(wphicks): Clean up transfer with raft
             // buffer objects when available
-            auto data_gpu = rmm::device_uvector<float>(rows * dim, stream);
-            RAFT_CUDA_TRY(cudaMemcpyAsync(data_gpu.data(), data, data_gpu.size() * sizeof(float), cudaMemcpyDefault,
-                                          stream.value()));
+            auto data_gpu = raft::make_device_matrix<float, std::int64_t>(*res_, rows, dim);
+            RAFT_CUDA_TRY(cudaMemcpyAsync(data_gpu.data_handle(), data, data_gpu.size() * sizeof(float),
+                                          cudaMemcpyDefault, stream.value()));
 
-            auto ids_gpu = rmm::device_uvector<std::int64_t>(output_size, stream);
-            auto dis_gpu = rmm::device_uvector<float>(output_size, stream);
+            auto ids_gpu = raft::make_device_matrix<std::int64_t, std::int64_t>(*res_, rows, ivf_raft_cfg.k);
+            auto dis_gpu = raft::make_device_matrix<float, std::int64_t>(*res_, rows, ivf_raft_cfg.k);
 
             if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
                 auto search_params = raft::neighbors::ivf_flat::search_params{};
                 search_params.n_probes = ivf_raft_cfg.nprobe;
                 if (bitset.empty()) {
                     raft::neighbors::ivf_flat::search<float, std::int64_t>(*res_, search_params, *gpu_index_,
-                                                                           data_gpu.data(), rows, ivf_raft_cfg.k,
-                                                                           ids_gpu.data(), dis_gpu.data());
+                                                                           raft::make_const_mdspan(data_gpu.view()),
+                                                                           ids_gpu.view(), dis_gpu.view());
                 } else {
                     auto k1 = ivf_raft_cfg.k;
                     auto k2 = k1;
@@ -434,21 +444,21 @@ class RaftIvfIndexNode : public IndexNode {
                     k2 |= k2 >> 14;
                     k2 += 1;
                     while (k2 <= 1024) {
-                        auto ids_gpu_before = rmm::device_uvector<std::int64_t>(k2 * rows, stream);
-                        auto dis_gpu_before = rmm::device_uvector<float>(k2 * rows, stream);
-                        auto bs_gpu = rmm::device_uvector<uint8_t>(bitset.byte_size(), stream);
-                        RAFT_CUDA_TRY(cudaMemcpyAsync(bs_gpu.data(), bitset.data(), bitset.byte_size(),
+                        auto ids_gpu_before = raft::make_device_matrix<std::int64_t, std::int64_t>(*res_, rows, k2);
+                        auto dis_gpu_before = raft::make_device_matrix<float, std::int64_t>(*res_, rows, k2);
+                        auto bs_gpu = raft::make_device_vector<uint8_t, std::int64_t>(*res_, bitset.byte_size());
+                        RAFT_CUDA_TRY(cudaMemcpyAsync(bs_gpu.data_handle(), bitset.data(), bitset.byte_size(),
                                                       cudaMemcpyDefault, stream.value()));
 
                         raft::neighbors::ivf_flat::search<float, std::int64_t>(
-                            *res_, search_params, *gpu_index_, data_gpu.data(), rows, k2, ids_gpu_before.data(),
-                            dis_gpu_before.data());
+                            *res_, search_params, *gpu_index_, raft::make_const_mdspan(data_gpu.view()),
+                            ids_gpu_before.view(), dis_gpu_before.view());
                         filter<<<dim3(1, rows), k2, k2 * sizeof(std::int64_t) + k2 * sizeof(float), stream.value()>>>(
-                            k1, k2, rows, bs_gpu.data(), ids_gpu_before.data(), dis_gpu_before.data(), ids_gpu.data(),
-                            dis_gpu.data());
+                            k1, k2, rows, bs_gpu.data_handle(), ids_gpu_before.data_handle(),
+                            dis_gpu_before.data_handle(), ids_gpu.data_handle(), dis_gpu.data_handle());
 
                         std::int64_t is_fine = 0;
-                        RAFT_CUDA_TRY(cudaMemcpyAsync(&is_fine, ids_gpu_before.data(), sizeof(std::int64_t),
+                        RAFT_CUDA_TRY(cudaMemcpyAsync(&is_fine, ids_gpu_before.data_handle(), sizeof(std::int64_t),
                                                       cudaMemcpyDefault, stream.value()));
                         stream.synchronize();
                         if (is_fine != -1)
@@ -485,8 +495,8 @@ class RaftIvfIndexNode : public IndexNode {
                 search_params.preferred_shmem_carveout = search_params.preferred_shmem_carveout;
                 if (bitset.empty()) {
                     raft::neighbors::ivf_pq::search<float, std::int64_t>(*res_, search_params, *gpu_index_,
-                                                                         data_gpu.data(), rows, ivf_raft_cfg.k,
-                                                                         ids_gpu.data(), dis_gpu.data());
+                                                                         raft::make_const_mdspan(data_gpu.view()),
+                                                                         ids_gpu.view(), dis_gpu.view());
                 } else {
                     auto k1 = ivf_raft_cfg.k;
                     auto k2 = k1;
@@ -497,22 +507,22 @@ class RaftIvfIndexNode : public IndexNode {
                     k2 |= k2 >> 14;
                     k2 += 1;
                     while (k2 <= 1024) {
-                        auto ids_gpu_before = rmm::device_uvector<std::int64_t>(k2 * rows, stream);
-                        auto dis_gpu_before = rmm::device_uvector<float>(k2 * rows, stream);
-                        auto bs_gpu = rmm::device_uvector<uint8_t>(bitset.byte_size(), stream);
-                        RAFT_CUDA_TRY(cudaMemcpyAsync(bs_gpu.data(), bitset.data(), bitset.byte_size(),
+                        auto ids_gpu_before = raft::make_device_matrix<std::int64_t, std::int64_t>(*res_, rows, k2);
+                        auto dis_gpu_before = raft::make_device_matrix<float, std::int64_t>(*res_, rows, k2);
+                        auto bs_gpu = raft::make_device_vector<uint8_t, std::int64_t>(*res_, bitset.byte_size());
+                        RAFT_CUDA_TRY(cudaMemcpyAsync(bs_gpu.data_handle(), bitset.data(), bitset.byte_size(),
                                                       cudaMemcpyDefault, stream.value()));
 
                         raft::neighbors::ivf_pq::search<float, std::int64_t>(
-                            *res_, search_params, *gpu_index_, data_gpu.data(), rows, k2, ids_gpu_before.data(),
-                            dis_gpu_before.data());
+                            *res_, search_params, *gpu_index_, raft::make_const_mdspan(data_gpu.view()),
+                            ids_gpu_before.view(), dis_gpu_before.view());
 
                         filter<<<dim3(1, rows), k2, k2 * sizeof(std::int64_t) + k2 * sizeof(float), stream.value()>>>(
-                            k1, k2, rows, bs_gpu.data(), ids_gpu_before.data(), dis_gpu_before.data(), ids_gpu.data(),
-                            dis_gpu.data());
+                            k1, k2, rows, bs_gpu.data_handle(), ids_gpu_before.data_handle(),
+                            dis_gpu_before.data_handle(), ids_gpu.data_handle(), dis_gpu.data_handle());
 
                         std::int64_t is_fine = 0;
-                        RAFT_CUDA_TRY(cudaMemcpyAsync(&is_fine, ids_gpu_before.data(), sizeof(std::int64_t),
+                        RAFT_CUDA_TRY(cudaMemcpyAsync(&is_fine, ids_gpu_before.data_handle(), sizeof(std::int64_t),
                                                       cudaMemcpyDefault, stream.value()));
                         stream.synchronize();
                         if (is_fine != -1)
@@ -524,10 +534,10 @@ class RaftIvfIndexNode : public IndexNode {
             } else {
                 static_assert(std::is_same_v<detail::raft_ivf_flat_index, T>);
             }
-            RAFT_CUDA_TRY(cudaMemcpyAsync(ids.get(), ids_gpu.data(), ids_gpu.size() * sizeof(std::int64_t),
+            RAFT_CUDA_TRY(cudaMemcpyAsync(ids.get(), ids_gpu.data_handle(), ids_gpu.size() * sizeof(std::int64_t),
                                           cudaMemcpyDefault, stream.value()));
-            RAFT_CUDA_TRY(cudaMemcpyAsync(dis.get(), dis_gpu.data(), dis_gpu.size() * sizeof(float), cudaMemcpyDefault,
-                                          stream.value()));
+            RAFT_CUDA_TRY(cudaMemcpyAsync(dis.get(), dis_gpu.data_handle(), dis_gpu.size() * sizeof(float),
+                                          cudaMemcpyDefault, stream.value()));
             stream.synchronize();
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "RAFT inner error, " << e.what();

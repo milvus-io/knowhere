@@ -48,7 +48,7 @@ $ conan install .. --build=missing -o with_ut=True -o with_raft=True -s compiler
 #DISKANN SUPPORT
 $ conan install .. --build=missing -o with_ut=True -o with_diskann=True -s compiler.libcxx=libstdc++11 -s build_type=Debug/Release
 #build with conan
-$conan build ..
+$ conan build ..
 #verbose
 export VERBOSE=1
 ```
