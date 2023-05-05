@@ -92,6 +92,10 @@ struct DiskANNQueryConfig {
     // slightly higher total number of IO requests to SSD per query. For the highest query throughput with a fixed SSD
     // IOps rating, use W=1. For best latency, use W=4,8 or higher complexity search.
     uint32_t beamwidth = 8;
+    // The threshold which determines when to switch to PQ + Refine strategy based on the number of bits set. The
+    // value should be in range of [0.0, 1.0] which means when greater or equal to x% of the bits are set,
+    // use PQ + Refine. Default to -1.0f, negative vlaues will use dynamic threshold calculator given topk.
+    float filter_threshold = -1.0f;
 
     static DiskANNQueryConfig
     Get(const Config& config);

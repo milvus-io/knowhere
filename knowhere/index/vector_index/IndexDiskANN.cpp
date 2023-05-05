@@ -403,7 +403,7 @@ IndexDiskANN<T>::Query(const DatasetPtr& dataset_ptr, const Config& config, cons
         futures.push_back(pool_->push([&, index = row]() {
             pq_flash_index_->cached_beam_search(query + (index * dim), k, query_conf.search_list_size,
                                                 p_id + (index * k), p_dist + (index * k), query_conf.beamwidth, false,
-                                                nullptr, nullptr, bitset);
+                                                nullptr, nullptr, bitset, query_conf.filter_threshold);
         }));
     }
 

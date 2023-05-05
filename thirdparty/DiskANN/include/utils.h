@@ -33,7 +33,6 @@ typedef HANDLE FileHandle;
 typedef int FileHandle;
 #endif
 
-#include "utils.h"
 #include "logger.h"
 #include "cached_io.h"
 #include "ann_exception.h"

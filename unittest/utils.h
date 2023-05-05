@@ -16,10 +16,13 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <random>
+#include <cassert>
 
 #include "knowhere/archive/KnowhereConfig.h"
 #include "knowhere/common/Dataset.h"
 #include "knowhere/common/Log.h"
+#include "knowhere/utils/BitsetView.h"
 
 class DataGen {
  public:
@@ -202,3 +205,66 @@ int64_t
 random();
 
 #endif
+
+constexpr int64_t kSeed = 42;
+
+// Return a n-bits bitset data with first t bits set to true
+inline std::vector<uint8_t>
+GenerateBitsetWithFirstTbitsSet(size_t n, size_t t) {
+    assert(t >= 0 && t <= n);
+    std::vector<uint8_t> data((n + 8 - 1) / 8, 0);
+    for (size_t i = 0; i < t; ++i) {
+        data[i >> 3] |= (0x1 << (i & 0x7));
+    }
+    return data;
+}
+
+// Return a n-bits bitset data with random t bits set to true
+inline std::vector<uint8_t>
+GenerateBitsetWithRandomTbitsSet(size_t n, size_t t) {
+    assert(t >= 0 && t <= n);
+    std::vector<bool> bits_shuffle(n, false);
+    for (size_t i = 0; i < t; ++i) bits_shuffle[i] = true;
+    std::mt19937 g(kSeed);
+    std::shuffle(bits_shuffle.begin(), bits_shuffle.end(), g);
+    std::vector<uint8_t> data((n + 8 - 1) / 8, 0);
+    for (size_t i = 0; i < n; ++i) {
+        if (bits_shuffle[i]) {
+            data[i >> 3] |= (0x1 << (i & 0x7));
+        }
+    }
+    return data;
+}
+
+// Randomly generate n (distances, id) pairs
+inline std::vector<std::pair<float, size_t>>
+GenerateRandomDistanceIdPair(size_t n) {
+    std::mt19937 rng(kSeed);
+    std::uniform_real_distribution<> distrib(std::numeric_limits<float>().min(), std::numeric_limits<float>().max());
+    std::vector<std::pair<float, size_t>> res;
+    res.reserve(n);
+    for (size_t i = 0; i < n; ++i) {
+        res.emplace_back(distrib(rng), i);
+    }
+    return res;
+}
+
+using IdDisPair = std::pair<int64_t, float>;
+using GroundTruth = std::vector<std::vector<int64_t>>;
+using GroundTruthPtr = std::shared_ptr<GroundTruth>;
+
+GroundTruthPtr
+GenGroundTruth(const float* data_p, const float* query_p, const std::string metric, const uint32_t num_rows,
+               const uint32_t num_dims, const uint32_t num_queries, const uint32_t topk, const faiss::BitsetView bitset = nullptr);
+
+GroundTruthPtr
+GenRangeSearchGrounTruth(const float* data_p, const float* query_p, const std::string metric, const uint32_t num_rows,
+                         const uint32_t num_dims, const uint32_t num_queries, const float radius,
+                         const float range_filter, const faiss::BitsetView bitset = nullptr);
+
+float
+CheckTopKRecall(GroundTruthPtr ground_truth, const int64_t* result, const int32_t k, const uint32_t num_queries);
+
+float
+CheckRangeSearchRecall(GroundTruthPtr ground_truth, const int64_t* result, const size_t* limits,
+                       const uint32_t num_queries);

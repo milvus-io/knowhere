@@ -45,6 +45,7 @@ set( UTIL_SRCS
 set( ALL_INDEXING_SRCS
         ${UTIL_SRCS}
         test_common.cpp
+        test_utils.cpp
         )
 
 set(ALL_INDEXING_SRCS

@@ -24,6 +24,7 @@
 namespace hnswlib {
 typedef unsigned int tableint;
 typedef unsigned int linklistsizeint;
+constexpr float kHnswBruteForceFilterRate = 0.93f;
 
 template <typename dist_t>
 class HierarchicalNSW : public AlgorithmInterface<dist_t> {
@@ -1099,6 +1100,28 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         std::priority_queue<std::pair<dist_t, labeltype>> result;
         if (cur_element_count == 0)
             return result;
+
+        if (!bitset.empty()) {
+            const auto bs_cnt = bitset.count();
+            if (bs_cnt == cur_element_count) return {};
+            if (bs_cnt >= (cur_element_count * kHnswBruteForceFilterRate)) {
+                assert(cur_element_count == bitset.size());
+                for (labeltype id = 0; id < cur_element_count; ++id) {
+                    if (!bitset.test(id)) {
+                        dist_t dist = fstdistfunc_(query_data, getDataByInternalId(id), dist_func_param_);
+                        if (result.size() < k) {
+                            result.emplace(dist, id);
+                            continue;
+                        }
+                        if (dist < result.top().first) {
+                            result.pop();
+                            result.emplace(dist, id);
+                        }
+                    }
+                }
+                return result;
+            }
+        }
 
         tableint currObj = enterpoint_node_;
         auto vec_hash = knowhere::utils::hash_vec((const float*)query_data, *(size_t*)dist_func_param_);
