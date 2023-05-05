@@ -69,6 +69,10 @@ class DiskANNConfig : public BaseConfig {
     // DiskANN uses TopK search to simulate range search, this is the ratio of search list size and k. With larger
     // ratio, the accuracy will get higher but throughput will get affected.
     CFG_FLOAT search_list_and_k_ratio;
+    // The threshold which determines when to switch to PQ + Refine strategy based on the number of bits set. The
+    // value should be in range of [0.0, 1.0] which means when greater or equal to x% of the bits are set,
+    // use PQ + Refine. Default to -1.0f, negative vlaues will use dynamic threshold calculator given topk.
+    CFG_FLOAT filter_threshold;
     KNOHWERE_DECLARE_CONFIG(DiskANNConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(index_prefix)
             .description("path to load or save Diskann.")
@@ -146,6 +150,11 @@ class DiskANNConfig : public BaseConfig {
             .set_default(2.0)
             .set_range(1.0, 5.0)
             .for_range_search();
+        KNOWHERE_CONFIG_DECLARE_FIELD(filter_threshold)
+            .description("the threshold of filter ratio to use PQ + Refine.")
+            .set_default(-1.0f)
+            .set_range(-1.0f, 1.0f)
+            .for_search();
     }
 };
 }  // namespace knowhere

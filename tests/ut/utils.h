@@ -115,14 +115,6 @@ GetRangeSearchRecall(const knowhere::DataSet& gt, const knowhere::DataSet& resul
     return (1 + precision) * recall / 2;
 }
 
-// Generate two bitset percentages from given threshold, so that bruteforce
-// strategy can be fully tested
-inline std::vector<float>
-GetBitsetTestPercentagesFromThreshold(const float threshold) {
-    assert(threshold >= 0 && threshold <= 1.0f);
-    return {threshold / 2, threshold + (1 - threshold) / 2};
-}
-
 // Return a n-bits bitset data with first t bits set to true
 inline std::vector<uint8_t>
 GenerateBitsetWithFirstTbitsSet(size_t n, size_t t) {
