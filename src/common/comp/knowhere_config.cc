@@ -24,21 +24,30 @@
 #ifdef KNOWHERE_WITH_RAFT
 #include "index/ivf_raft/set_pool.h"
 #endif
+
 namespace knowhere {
 
 void
 KnowhereConfig::ShowVersion() {
 #define XSTR(x) STR(x)
 #define STR(x) #x
+
+    std::string msg = "Knowhere Version: ";
+
 #ifdef KNOWHERE_VERSION
+    msg = msg + XSTR(KNOWHERE_VERSION);
 #ifdef KNOWHERE_WITH_RAFT
-    LOG_KNOWHERE_INFO_ << "Knowhere Version: " << XSTR(KNOWHERE_VERSION) << "-gpu";
-#else
-    LOG_KNOWHERE_INFO_ << "Knowhere Version: " << XSTR(KNOWHERE_VERSION);
+    msg = msg + "-gpu";
 #endif
 #else
-    LOG_KNOWHERE_INFO_ << "Knowhere Version: unknown";
+    msg = msg + " unknown";
 #endif
+
+#ifndef NDEBUG
+    msg = msg + " (DEBUG)";
+#endif
+
+    LOG_KNOWHERE_INFO_ << msg;
 }
 
 std::string
