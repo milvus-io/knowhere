@@ -40,6 +40,13 @@ typedef unsigned int tableint;
 typedef unsigned int linklistsizeint;
 constexpr float kHnswBruteForceFilterRate = 0.93f;
 
+enum Metric {
+    L2 = 0,
+    INNER_PRODUCT = 1,
+    COSINE = 2,
+    UNKNOWN = 100,
+};
+
 template <typename dist_t>
 class HierarchicalNSW : public AlgorithmInterface<dist_t> {
  public:
@@ -59,11 +66,13 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
           element_levels_(max_elements) {
         space_ = s;
         if (auto x = dynamic_cast<L2Space*>(s)) {
-            metric_type_ = 0;
+            metric_type_ = Metric::L2;
         } else if (auto x = dynamic_cast<InnerProductSpace*>(s)) {
-            metric_type_ = 1;
+            metric_type_ = Metric::INNER_PRODUCT;
+        } else if (auto x = dynamic_cast<CosineSpace*>(s)) {
+            metric_type_ = Metric::COSINE;
         } else {
-            metric_type_ = 100;
+            metric_type_ = Metric::UNKNOWN;
         }
 
         max_elements_ = max_elements;
@@ -91,6 +100,12 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         if (data_level0_memory_ == nullptr)
             throw std::runtime_error("Not enough memory");
 
+        if (metric_type_ == Metric::COSINE) {
+            data_norm_l2_ = (float*)malloc(max_elements_ * sizeof(float));  // NOLINT
+            if (data_norm_l2_ == nullptr)
+                throw std::runtime_error("Not enough memory");
+        }
+
         cur_element_count = 0;
 
         visited_list_pool_ = new VisitedListPool(max_elements);
@@ -116,6 +131,9 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
     ~HierarchicalNSW() {
         free(data_level0_memory_);
+        if (metric_type_ == Metric::COSINE) {
+            free(data_norm_l2_);
+        }
         for (tableint i = 0; i < cur_element_count; i++) {
             if (element_levels_[i] > 0)
                 free(linkLists_[i]);
@@ -128,7 +146,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
     // used for free resource
     SpaceInterface<dist_t>* space_;
-    size_t metric_type_;  // 0:L2, 1:IP
+    size_t metric_type_;  // 0:L2, 1:IP, 2:COSINE
 
     size_t max_elements_;
     size_t cur_element_count;
@@ -159,6 +177,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     size_t offsetData_, offsetLevel0_;
 
     char* data_level0_memory_;
+    float* data_norm_l2_;  // vector's l2 norm
     char** linkLists_;
     std::vector<int> element_levels_;
 
@@ -185,6 +204,24 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         return (int)r;
     }
 
+    float
+    calcDistance(const tableint id1, const tableint id2) const {
+        dist_t dist = fstdistfunc_(getDataByInternalId(id1), getDataByInternalId(id2), dist_func_param_);
+        if (metric_type_ == Metric::COSINE) {
+            dist /= (data_norm_l2_[id1] * data_norm_l2_[id2]);
+        }
+        return dist;
+    }
+
+    float
+    calcDistance(const void* vec, const tableint id) const {
+        dist_t dist = fstdistfunc_(vec, getDataByInternalId(id), dist_func_param_);
+        if (metric_type_ == Metric::COSINE) {
+            dist /= data_norm_l2_[id];
+        }
+        return dist;
+    }
+
     std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
     searchBaseLayer(tableint ep_id, const void* data_point, int layer) {
         auto& visited = visited_list_pool_->getFreeVisitedList();
@@ -195,7 +232,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             candidateSet;
 
         dist_t lowerBound;
-        dist_t dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
+        dist_t dist = calcDistance(data_point, ep_id);
         top_candidates.emplace(dist, ep_id);
         lowerBound = dist;
         candidateSet.emplace(-dist, ep_id);
@@ -233,9 +270,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                     continue;
                 }
                 visited[candidate_id] = true;
-                char* currObj1 = (getDataByInternalId(candidate_id));
 
-                dist_t dist1 = fstdistfunc_(data_point, currObj1, dist_func_param_);
+                dist_t dist1 = calcDistance(data_point, candidate_id);
                 if (top_candidates.size() < ef_construction_ || lowerBound > dist1) {
                     candidateSet.emplace(-dist1, candidate_id);
 #if defined(USE_PREFETCH)
@@ -270,7 +306,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         NeighborSet retset(ef);
 
         if (!has_deletions || !bitset.test((int64_t)ep_id)) {
-            dist_t dist = fstdistfunc_(data_point, getDataByInternalId(ep_id), dist_func_param_);
+            dist_t dist = calcDistance(data_point, ep_id);
             retset.insert(Neighbor(ep_id, dist, Neighbor::kValid));
         } else {
             retset.insert(Neighbor(ep_id, std::numeric_limits<dist_t>::max(), Neighbor::kInvalid));
@@ -302,7 +338,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                     continue;
                 }
                 visited[v] = true;
-                dist_t dist = fstdistfunc_(data_point, getDataByInternalId(v), dist_func_param_);
+                dist_t dist = calcDistance(data_point, v);
                 if (feder_result != nullptr) {
                     feder_result->visit_info_.AddVisitRecord(0, u, v, dist);
                     feder_result->id_set_.insert(u);
@@ -353,8 +389,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             for (std::pair<dist_t, tableint>& current_pair : queue_closest) {
                 bool good = true;
                 for (tableint id : return_list) {
-                    dist_t curdist = fstdistfunc_(getDataByInternalId(id), getDataByInternalId(current_pair.second),
-                                                  dist_func_param_);
+                    dist_t curdist = calcDistance(id, current_pair.second);
                     if (curdist < current_pair.first) {
                         good = false;
                         break;
@@ -407,8 +442,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                 if (!visited[candidate_id]) {
                     visited[candidate_id] = true;
                     if (bitset.empty() || !bitset.test((int64_t)candidate_id)) {
-                        char* cand_obj = (getDataByInternalId(candidate_id));
-                        dist_t dist = fstdistfunc_(data_point, cand_obj, dist_func_param_);
+                        dist_t dist = calcDistance(data_point, candidate_id);
                         if (dist < radius) {
                             radius_queue.push({dist, candidate_id});
                             result.emplace_back(dist, candidate_id);
@@ -513,8 +547,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                     setListCount(ll_other, sz_link_list_other + 1);
                 } else {
                     // finding the "weakest" element to replace it with the new one
-                    dist_t d_max = fstdistfunc_(getDataByInternalId(cur_c), getDataByInternalId(selectedNeighbors[idx]),
-                                                dist_func_param_);
+                    dist_t d_max = calcDistance(cur_c, selectedNeighbors[idx]);
                     // Heuristic:
                     std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>,
                                         CompareByFirst>
@@ -522,9 +555,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                     candidates.emplace(d_max, cur_c);
 
                     for (size_t j = 0; j < sz_link_list_other; j++) {
-                        candidates.emplace(fstdistfunc_(getDataByInternalId(data[j]),
-                                                        getDataByInternalId(selectedNeighbors[idx]), dist_func_param_),
-                                           data[j]);
+                        dist_t dist = calcDistance(data[j], selectedNeighbors[idx]);
+                        candidates.emplace(dist, data[j]);
                     }
 
                     std::vector<tableint> selected(getNeighborsByHeuristic2(candidates, Mcurmax));
@@ -576,6 +608,14 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             throw std::runtime_error("Not enough memory: resizeIndex failed to allocate base layer");
         data_level0_memory_ = data_level0_memory_new;
 
+        // for COSINE, resize data_norm_l2_
+        if (metric_type_ == Metric::COSINE) {
+            float* data_norm_l2_new = (float*)realloc(data_norm_l2_, new_max_elements * sizeof(float));
+            if (data_norm_l2_new == nullptr)
+                throw std::runtime_error("Not enough memory: resizeIndex failed to allocate base layer");
+            data_norm_l2_ = data_norm_l2_new;
+        }
+
         // Reallocate all other layers
         char** linkLists_new = (char**)realloc(linkLists_, sizeof(void*) * new_max_elements);
         if (linkLists_new == nullptr)
@@ -593,10 +633,12 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         readBinaryPOD(input, metric_type_);
         readBinaryPOD(input, data_size_);
         readBinaryPOD(input, dim);
-        if (metric_type_ == 0) {
+        if (metric_type_ == Metric::L2) {
             space_ = new hnswlib::L2Space(dim);
-        } else if (metric_type_ == 1) {
+        } else if (metric_type_ == Metric::INNER_PRODUCT) {
             space_ = new hnswlib::InnerProductSpace(dim);
+        } else if (metric_type_ == Metric::COSINE) {
+            space_ = new hnswlib::CosineSpace(dim);
         } else {
             throw std::runtime_error("Invalid metric type " + std::to_string(metric_type_));
         }
@@ -630,9 +672,22 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             data_level0_memory_ =
                 (char*)mmap(nullptr, max_elements * size_data_per_element_, PROT_READ, MAP_PRIVATE, input.fd, pos);
             input.advance(max_elements * size_data_per_element_);
+
+            // for COSINE, need load data_norm_l2_
+            if (metric_type_ == Metric::COSINE) {
+                data_norm_l2_ =
+                    (float*)mmap(nullptr, max_elements * sizeof(float), PROT_READ, MAP_PRIVATE, input.fd, pos);
+                input.advance(max_elements * sizeof(float));
+            }
         } else {
             data_level0_memory_ = (char*)malloc(max_elements * size_data_per_element_);  // NOLINT
             input.read(data_level0_memory_, cur_element_count * size_data_per_element_);
+
+            // for COSINE, need load data_norm_l2_
+            if (metric_type_ == Metric::COSINE) {
+                data_norm_l2_ = (float*)malloc(max_elements * sizeof(float));  // NOLINT
+                input.read((char*)data_norm_l2_, cur_element_count * sizeof(float));
+            }
         }
 
         size_links_per_element_ = maxM_ * sizeof(tableint) + sizeof(linklistsizeint);
@@ -693,6 +748,10 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         writeBinaryPOD(output, ef_construction_);
 
         output.write(data_level0_memory_, cur_element_count * size_data_per_element_);
+        // for COSINE, need save data_norm_l2_
+        if (metric_type_ == Metric::COSINE) {
+            output.write(data_norm_l2_, cur_element_count * sizeof(float));
+        }
 
         for (size_t i = 0; i < cur_element_count; i++) {
             unsigned int linkListSize = element_levels_[i] > 0 ? size_links_per_element_ * element_levels_[i] : 0;
@@ -710,10 +769,12 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         readBinaryPOD(input, metric_type_);
         readBinaryPOD(input, data_size_);
         readBinaryPOD(input, dim);
-        if (metric_type_ == 0) {
+        if (metric_type_ == Metric::L2) {
             space_ = new hnswlib::L2Space(dim);
-        } else if (metric_type_ == 1) {
+        } else if (metric_type_ == Metric::INNER_PRODUCT) {
             space_ = new hnswlib::InnerProductSpace(dim);
+        } else if (metric_type_ == Metric::COSINE) {
+            space_ = new hnswlib::CosineSpace(dim);
         } else {
             throw std::runtime_error("Invalid metric type " + std::to_string(metric_type_));
         }
@@ -745,6 +806,14 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         if (data_level0_memory_ == nullptr)
             throw std::runtime_error("Not enough memory: loadIndex failed to allocate level0");
         input.read(data_level0_memory_, cur_element_count * size_data_per_element_);
+
+        // for COSINE, need load data_norm_l2_
+        if (metric_type_ == Metric::COSINE) {
+            data_norm_l2_ = (float*)malloc(max_elements * sizeof(float));  // NOLINT
+            if (data_norm_l2_ == nullptr)
+                throw std::runtime_error("Not enough memory: loadIndex failed to allocate level0");
+            input.read(data_norm_l2_, cur_element_count * sizeof(float));
+        }
 
         size_links_per_element_ = maxM_ * sizeof(tableint) + sizeof(linklistsizeint);
 
@@ -841,8 +910,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                     if (cand == neigh)
                         continue;
 
-                    dist_t distance =
-                        fstdistfunc_(getDataByInternalId(neigh), getDataByInternalId(cand), dist_func_param_);
+                    dist_t distance = calcDistance(neigh, cand);
                     if (candidates.size() < elementsToKeep) {
                         candidates.emplace(distance, cand);
                     } else {
@@ -879,7 +947,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                                int dataPointLevel, int maxLevel) {
         tableint currObj = entryPointInternalId;
         if (dataPointLevel < maxLevel) {
-            dist_t curdist = fstdistfunc_(dataPoint, getDataByInternalId(currObj), dist_func_param_);
+            dist_t curdist = calcDistance(dataPoint, currObj);
             for (int level = maxLevel; level > dataPointLevel; level--) {
                 bool changed = true;
                 while (changed) {
@@ -896,7 +964,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 #endif
                     for (int i = 0; i < size; i++) {
                         tableint cand = datal[i];
-                        dist_t d = fstdistfunc_(dataPoint, getDataByInternalId(cand), dist_func_param_);
+                        dist_t d = calcDistance(dataPoint, cand);
                         if (d < curdist) {
                             curdist = d;
                             currObj = cand;
@@ -968,6 +1036,11 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
         memset(data_level0_memory_ + cur_c * size_data_per_element_ + offsetLevel0_, 0, size_data_per_element_);
 
+        if (metric_type_ == Metric::COSINE) {
+            data_norm_l2_[cur_c] =
+                std::sqrt(faiss::fvec_norm_L2sqr((const float*)data_point, *(size_t*)(dist_func_param_)));
+        }
+
         memcpy(getDataByInternalId(cur_c), data_point, data_size_);
 
         if (curlevel) {
@@ -979,7 +1052,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
         if ((signed)currObj != -1) {
             if (curlevel < maxlevelcopy) {
-                dist_t curdist = fstdistfunc_(data_point, getDataByInternalId(currObj), dist_func_param_);
+                dist_t curdist = calcDistance(data_point, currObj);
                 for (int level = maxlevelcopy; level > curlevel; level--) {
                     bool changed = true;
                     while (changed) {
@@ -994,7 +1067,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                             tableint cand = datal[i];
                             if (cand < 0 || cand > max_elements_)
                                 throw std::runtime_error("cand error");
-                            dist_t d = fstdistfunc_(data_point, getDataByInternalId(cand), dist_func_param_);
+                            dist_t d = calcDistance(data_point, cand);
                             if (d < curdist) {
                                 curdist = d;
                                 currObj = cand;
@@ -1030,10 +1103,15 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     };
 
     std::vector<std::pair<dist_t, labeltype>>
-    searchKnn(const void* query_data, size_t k, const knowhere::BitsetView bitset, const SearchParam* param = nullptr,
+    searchKnn(void* query_data, size_t k, const knowhere::BitsetView bitset, const SearchParam* param = nullptr,
               const knowhere::feder::hnsw::FederResultUniq& feder_result = nullptr) const {
         if (cur_element_count == 0)
             return {};
+
+        // do normalize for COSINE metric type
+        if (metric_type_ == Metric::COSINE) {
+            knowhere::NormalizeVec((float*)query_data, *((size_t*)dist_func_param_));
+        }
 
         if (!bitset.empty()) {
             const auto bs_cnt = bitset.count();
@@ -1043,7 +1121,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                 knowhere::ResultMaxHeap<dist_t, labeltype> max_heap(k);
                 for (labeltype id = 0; id < cur_element_count; ++id) {
                     if (!bitset.test(id)) {
-                        dist_t dist = fstdistfunc_(query_data, getDataByInternalId(id), dist_func_param_);
+                        dist_t dist = calcDistance(query_data, id);
                         max_heap.Push(dist, id);
                     }
                 }
@@ -1060,7 +1138,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         tableint currObj = enterpoint_node_;
         auto vec_hash = knowhere::hash_vec((const float*)query_data, *(size_t*)dist_func_param_);
         if (!lru_cache.try_get(vec_hash, currObj)) {
-            dist_t curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+            dist_t curdist = calcDistance(query_data, enterpoint_node_);
 
             for (int level = maxlevel_; level > 0; level--) {
                 bool changed = true;
@@ -1085,7 +1163,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                         tableint cand = datal[i];
                         if (cand < 0 || cand > max_elements_)
                             throw std::runtime_error("cand error");
-                        dist_t d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+                        dist_t d = calcDistance(query_data, cand);
                         if (feder_result != nullptr) {
                             feder_result->visit_info_.AddVisitRecord(level, currObj, cand, d);
                             feder_result->id_set_.insert(currObj);
@@ -1121,15 +1199,19 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     };
 
     std::vector<std::pair<dist_t, labeltype>>
-    searchRange(const void* query_data, float radius, const knowhere::BitsetView bitset,
-                const SearchParam* param = nullptr,
+    searchRange(void* query_data, float radius, const knowhere::BitsetView bitset, const SearchParam* param = nullptr,
                 const knowhere::feder::hnsw::FederResultUniq& feder_result = nullptr) const {
         if (cur_element_count == 0) {
             return {};
         }
 
+        // do normalize for COSINE metric type
+        if (metric_type_ == Metric::COSINE) {
+            knowhere::NormalizeVec((float*)query_data, *((size_t*)dist_func_param_));
+        }
+
         tableint currObj = enterpoint_node_;
-        dist_t curdist = fstdistfunc_(query_data, getDataByInternalId(enterpoint_node_), dist_func_param_);
+        dist_t curdist = calcDistance(query_data, enterpoint_node_);
 
         for (int level = maxlevel_; level > 0; level--) {
             bool changed = true;
@@ -1150,7 +1232,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                     tableint cand = datal[i];
                     if (cand < 0 || cand > max_elements_)
                         throw std::runtime_error("cand error");
-                    dist_t d = fstdistfunc_(query_data, getDataByInternalId(cand), dist_func_param_);
+                    dist_t d = calcDistance(query_data, cand);
                     if (feder_result != nullptr) {
                         feder_result->visit_info_.AddVisitRecord(level, currObj, cand, d);
                         feder_result->id_set_.insert(currObj);

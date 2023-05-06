@@ -57,8 +57,7 @@ class HnswIndexNode : public IndexNode {
         } else if (IsMetricType(hnsw_cfg.metric_type, metric::IP)) {
             space = new (std::nothrow) hnswlib::InnerProductSpace(dim);
         } else if (IsMetricType(hnsw_cfg.metric_type, metric::COSINE)) {
-            space = new (std::nothrow) hnswlib::InnerProductSpace(dim);
-            Normalize(dataset);
+            space = new (std::nothrow) hnswlib::CosineSpace(dim);
         } else {
             LOG_KNOWHERE_WARNING_ << "metric type not support in hnsw: " << hnsw_cfg.metric_type;
             return Status::invalid_metric_type;
@@ -112,12 +111,6 @@ class HnswIndexNode : public IndexNode {
         const float* xq = static_cast<const float*>(dataset.GetTensor());
 
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
-
-        // do normalize for COSINE metric type
-        if (IsMetricType(hnsw_cfg.metric_type, metric::COSINE)) {
-            Normalize(dataset);
-        }
-
         auto k = hnsw_cfg.k;
         auto maxef = std::max(65536, hnsw_cfg.k * 2);
         if (hnsw_cfg.ef > maxef) {
@@ -140,20 +133,21 @@ class HnswIndexNode : public IndexNode {
         auto p_dist = new float[k * nq];
 
         hnswlib::SearchParam param{(size_t)hnsw_cfg.ef};
-        bool transform = (index_->metric_type_ == 1);  // InnerProduct: 1
+        bool transform =
+            (index_->metric_type_ == hnswlib::Metric::INNER_PRODUCT || index_->metric_type_ == hnswlib::Metric::COSINE);
 
         std::vector<std::future<void>> futures;
         futures.reserve(nq);
         for (int i = 0; i < nq; ++i) {
             futures.push_back(pool_->push([&, index = i]() {
                 auto single_query = xq + index * dim;
-                auto rst = index_->searchKnn(single_query, k, bitset, &param, feder_result);
+                auto rst = index_->searchKnn((void*)single_query, k, bitset, &param, feder_result);
                 size_t rst_size = rst.size();
                 auto p_single_dis = p_dist + index * k;
                 auto p_single_id = p_id + index * k;
                 for (size_t idx = 0; idx < rst_size; ++idx) {
                     const auto& [dist, id] = rst[idx];
-                    p_single_dis[idx] = transform ? (1 - dist) : dist;
+                    p_single_dis[idx] = transform ? (-dist) : dist;
                     p_single_id[idx] = id;
                 }
                 for (size_t idx = rst_size; idx < (size_t)k; idx++) {
@@ -191,14 +185,9 @@ class HnswIndexNode : public IndexNode {
         const float* xq = static_cast<const float*>(dataset.GetTensor());
 
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
-
-        // do normalize for COSINE metric type
-        if (IsMetricType(hnsw_cfg.metric_type, metric::COSINE)) {
-            Normalize(dataset);
-        }
-
-        bool is_ip = (index_->metric_type_ == 1);  // 0:L2, 1:IP
-        float radius = (is_ip ? (1.0f - hnsw_cfg.radius) : hnsw_cfg.radius);
+        bool is_ip =
+            (index_->metric_type_ == hnswlib::Metric::INNER_PRODUCT || index_->metric_type_ == hnswlib::Metric::COSINE);
+        float radius = (is_ip ? (-hnsw_cfg.radius) : hnsw_cfg.radius);
         float range_filter = hnsw_cfg.range_filter;
 
         feder::hnsw::FederResultUniq feder_result;
@@ -225,13 +214,13 @@ class HnswIndexNode : public IndexNode {
         for (int64_t i = 0; i < nq; ++i) {
             futures.push_back(pool_->push([&, index = i]() {
                 auto single_query = xq + index * dim;
-                auto rst = index_->searchRange(single_query, radius, bitset, &param, feder_result);
+                auto rst = index_->searchRange((void*)single_query, radius, bitset, &param, feder_result);
                 auto elem_cnt = rst.size();
                 result_dist_array[index].resize(elem_cnt);
                 result_id_array[index].resize(elem_cnt);
                 for (size_t j = 0; j < elem_cnt; j++) {
                     auto& p = rst[j];
-                    result_dist_array[index][j] = (is_ip ? (1 - p.first) : p.first);
+                    result_dist_array[index][j] = (is_ip ? (-p.first) : p.first);
                     result_id_array[index][j] = p.second;
                 }
                 result_size[index] = rst.size();
@@ -289,7 +278,7 @@ class HnswIndexNode : public IndexNode {
 
     bool
     HasRawData(const std::string& metric_type) const override {
-        return !IsMetricType(metric_type, metric::COSINE);
+        return true;
     }
 
     expected<DataSetPtr, Status>

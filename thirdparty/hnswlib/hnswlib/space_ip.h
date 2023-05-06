@@ -21,7 +21,7 @@ InnerProduct(const void* pVect1, const void* pVect2, const void* qty_ptr) {
 
 static float
 InnerProductDistance(const void* pVect1, const void* pVect2, const void* qty_ptr) {
-    return 1.0f - InnerProduct(pVect1, pVect2, qty_ptr);
+    return -1.0f * InnerProduct(pVect1, pVect2, qty_ptr);
 }
 
 #if defined(USE_AVX)

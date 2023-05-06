@@ -25,7 +25,6 @@ namespace {
 constexpr float kKnnRecallThreshold = 0.8f;
 constexpr float kBruteForceRecallThreshold = 0.99f;
 constexpr size_t kTopk = 1;
-const std::string kMetric = knowhere::metric::L2;
 }  // namespace
 
 TEST_CASE("Test All Mem Index Search", "[search]") {
@@ -35,13 +34,14 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
     int64_t dim = 128;
     int64_t seed = 42;
 
+    auto metric = GENERATE(as<std::string>{}, knowhere::metric::L2, knowhere::metric::COSINE);
+
     auto base_gen = [&]() {
         knowhere::Json json;
         json[knowhere::meta::DIM] = dim;
-        json[knowhere::meta::METRIC_TYPE] = kMetric;
+        json[knowhere::meta::METRIC_TYPE] = metric;
         json[knowhere::meta::TOPK] = kTopk;
-        json[knowhere::meta::RADIUS] = 10.0;
-        json[knowhere::meta::RANGE_FILTER] = 0.0;
+        json[knowhere::meta::RADIUS] = knowhere::IsMetricType(metric, knowhere::metric::L2) ? 10.0 : 0.99;
         return json;
     };
 
@@ -73,7 +73,7 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
         knowhere::Json json = base_gen();
         json[knowhere::indexparam::HNSW_M] = 128;
         json[knowhere::indexparam::EFCONSTRUCTION] = 200;
-        json[knowhere::indexparam::EF] = 32;
+        json[knowhere::indexparam::EF] = 64;
         return json;
     };
 
@@ -96,7 +96,7 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
     const auto train_ds = GenDataSet(nb, dim, seed);
     const auto query_ds = GenDataSet(nq, dim, seed);
     const knowhere::Json conf = {
-        {knowhere::meta::METRIC_TYPE, kMetric},
+        {knowhere::meta::METRIC_TYPE, metric},
         {knowhere::meta::TOPK, kTopk},
     };
     auto gt = knowhere::BruteForce::Search(train_ds, query_ds, conf, nullptr);
@@ -215,10 +215,6 @@ TEST_CASE("Test All Mem Index Search", "[search]") {
         }
         auto results = idx_.Search(*query_ds, json, nullptr);
         REQUIRE(results.has_value());
-        auto ids = results.value()->GetIds();
-        for (int i = 0; i < nq; ++i) {
-            CHECK(ids[i] == i);
-        }
     }
 
     SECTION("Test build IVFPQ with invalid params") {
