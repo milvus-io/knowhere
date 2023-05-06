@@ -31,7 +31,7 @@ if(__X86_64)
 endif()
 
 if(__AARCH64)
-  set(UTILS_SRC src/simd/hook.cc src/simd/distances_ref.cc)
+  set(UTILS_SRC src/simd/hook.cc src/simd/distances_ref.cc src/simd/distances_neon.cc)
   add_library(knowhere_utils STATIC ${UTILS_SRC})
   target_link_libraries(knowhere_utils PUBLIC glog::glog)
 endif()
@@ -90,6 +90,12 @@ if(__AARCH64)
 
   list(REMOVE_ITEM FAISS_SRCS ${FAISS_AVX_SRCS})
   add_library(faiss STATIC ${FAISS_SRCS})
+
+  if(USE_CUDA)
+    target_link_libraries(faiss PUBLIC CUDA::cudart CUDA::cublas)
+    target_compile_options(
+      faiss PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xfatbin=-compress-all>)
+  endif()
 
   target_compile_options(
     faiss

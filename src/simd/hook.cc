@@ -25,6 +25,10 @@
 #include "instruction_set.h"
 #endif
 
+#if defined(__ARM_NEON__) || defined(__aarch64__)
+#include "distances_neon.h"
+#endif
+
 #include "distances_ref.h"
 #include "knowhere/log.h"
 namespace faiss {
@@ -116,6 +120,22 @@ fvec_hook(std::string& simd_type) {
 
         simd_type = "SSE4_2";
     }
+
+#endif
+
+#if defined(__ARM_NEON__) || defined(__aarch64__)
+    fvec_inner_product = fvec_inner_product_neon;
+    fvec_L2sqr = fvec_L2sqr_neon;
+    fvec_L1 = fvec_L1_neon;
+    fvec_Linf = fvec_Linf_neon;
+
+    fvec_norm_L2sqr = fvec_norm_L2sqr_neon;
+    fvec_L2sqr_ny = fvec_L2sqr_ny_neon;
+    fvec_inner_products_ny = fvec_inner_products_ny_neon;
+    fvec_madd = fvec_madd_neon;
+    fvec_madd_and_argmin = fvec_madd_and_argmin_neon;
+
+    simd_type = "NEON";
 
 #endif
 }

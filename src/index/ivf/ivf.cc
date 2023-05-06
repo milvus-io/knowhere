@@ -532,11 +532,11 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
     if (!this->index_->is_trained) {
         return unexpected(Status::index_not_trained);
     }
-    auto dim = Dim();
-    auto rows = dataset.GetRows();
-    auto ids = dataset.GetIds();
-
     if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value) {
+        auto dim = Dim();
+        auto rows = dataset.GetRows();
+        auto ids = dataset.GetIds();
+
         uint8_t* data = nullptr;
         try {
             data = new uint8_t[dim * rows / 8];
@@ -553,6 +553,10 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
             return unexpected(Status::faiss_inner_error);
         }
     } else if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
+        auto dim = Dim();
+        auto rows = dataset.GetRows();
+        auto ids = dataset.GetIds();
+
         float* data = nullptr;
         try {
             data = new float[dim * rows];
@@ -569,6 +573,10 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const
             return unexpected(Status::faiss_inner_error);
         }
     } else if constexpr (std::is_same<T, faiss::IndexIVFFlatCC>::value) {
+        auto dim = Dim();
+        auto rows = dataset.GetRows();
+        auto ids = dataset.GetIds();
+
         float* data = nullptr;
         try {
             data = new float[dim * rows];
