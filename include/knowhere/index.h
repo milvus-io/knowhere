@@ -119,7 +119,7 @@ class Index {
         auto cfg = this->node->CreateConfig();
         {
             auto res = Config::FormatAndCheck(*cfg, json_);
-            LOG_KNOWHERE_DEBUG_ << json_.dump();
+            LOG_KNOWHERE_DEBUG_ << "Build config dump: " << json_.dump();
             if (res != Status::success) {
                 return res;
             }
@@ -137,7 +137,7 @@ class Index {
         auto cfg = this->node->CreateConfig();
         {
             auto res = Config::FormatAndCheck(*cfg, json_);
-            LOG_KNOWHERE_DEBUG_ << json_.dump();
+            LOG_KNOWHERE_DEBUG_ << "Train config dump: " << json_.dump();
             if (res != Status::success) {
                 return res;
             }
@@ -155,7 +155,7 @@ class Index {
         auto cfg = this->node->CreateConfig();
         {
             auto res = Config::FormatAndCheck(*cfg, json_);
-            LOG_KNOWHERE_DEBUG_ << json_.dump();
+            LOG_KNOWHERE_DEBUG_ << "Add config dump: " << json_.dump();
             if (res != Status::success) {
                 return res;
             }
@@ -173,7 +173,7 @@ class Index {
         auto cfg = this->node->CreateConfig();
         {
             auto res = Config::FormatAndCheck(*cfg, json_);
-            LOG_KNOWHERE_DEBUG_ << json_.dump();
+            LOG_KNOWHERE_DEBUG_ << "Search config dump: " << json_.dump();
             if (res != Status::success) {
                 return unexpected(res);
             }
@@ -191,7 +191,7 @@ class Index {
         auto cfg = this->node->CreateConfig();
         {
             auto res = Config::FormatAndCheck(*cfg, json_);
-            LOG_KNOWHERE_DEBUG_ << json_.dump();
+            LOG_KNOWHERE_DEBUG_ << "RangeSearch config dump: " << json_.dump();
             if (res != Status::success) {
                 return unexpected(res);
             }
@@ -209,7 +209,7 @@ class Index {
         auto cfg = this->node->CreateConfig();
         {
             auto res = Config::FormatAndCheck(*cfg, json_);
-            LOG_KNOWHERE_DEBUG_ << json_.dump();
+            LOG_KNOWHERE_DEBUG_ << "GetVectorByIds config dump: " << json_.dump();
             if (res != Status::success) {
                 return unexpected(res);
             }
@@ -232,7 +232,7 @@ class Index {
         auto cfg = this->node->CreateConfig();
         {
             auto res = Config::FormatAndCheck(*cfg, json_);
-            LOG_KNOWHERE_DEBUG_ << json_.dump();
+            LOG_KNOWHERE_DEBUG_ << "GetIndexMeta config dump: " << json_.dump();
             if (res != Status::success) {
                 return unexpected(res);
             }
