@@ -12,9 +12,12 @@
 #include <thread>
 #include <gtest/gtest.h>
 
+#include "utils.h"
+
 #include "knowhere/common/Dataset.h"
 #include "knowhere/common/Timer.h"
 #include "knowhere/common/Exception.h"
+#include "knowhere/common/Heap.h"
 #include "knowhere/utils/BitsetView.h"
 
 /*Some unittest for knowhere/common, mainly for improve code coverage.*/
@@ -55,4 +58,25 @@ TEST(COMMON_TEST, BitsetView) {
         ASSERT_EQ(bitset.count(), N / 8 * i);
         std::cout << bitset.to_string(0, N) << std::endl;
     }
+}
+
+namespace {
+constexpr size_t kHeapSize = 10;
+constexpr size_t kElementCount = 10000;
+}  // namespace
+
+TEST(COMMON_TEST, ResultMaxHeap) {
+    knowhere::ResultMaxHeap<float, size_t> heap(kHeapSize);
+    auto pairs = GenerateRandomDistanceIdPair(kElementCount);
+    for (const auto& [dist, id] : pairs) {
+        heap.Push(dist, id);
+    }
+    ASSERT_EQ(heap.Size(), kHeapSize);
+    std::sort(pairs.begin(), pairs.end());
+    for (int i = kHeapSize - 1; i >= 0; --i) {
+        auto op = heap.Pop();
+        ASSERT_TRUE(op.has_value());
+        ASSERT_EQ(op.value().second, pairs[i].second);
+    }
+    ASSERT_EQ(heap.Size(), 0);
 }

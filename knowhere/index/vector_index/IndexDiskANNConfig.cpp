@@ -37,6 +37,7 @@ static constexpr const char* kAioMaxnr = "aio_maxnr";
 
 static constexpr const char* kK = "k";
 static constexpr const char* kBeamwidth = "beamwidth";
+static constexpr const char* kFilterThreshold = "filter_threshold";
 
 static constexpr const char* kRadius = "radius";
 static constexpr const char* kRangeFilter = "range_filter";
@@ -65,6 +66,8 @@ static constexpr std::optional<uint32_t> kDiskPqBytesMaxValue = std::nullopt;
 static constexpr uint32_t kSearchListSizeMaxValue = 200;
 static constexpr uint32_t kBeamwidthMinValue = 1;
 static constexpr uint32_t kBeamwidthMaxValue = 128;
+static constexpr float kFilterThresholdMinValue = -1;
+static constexpr float kFilterThresholdMaxValue = 1;
 static constexpr uint64_t kKMinValue = 1;
 static constexpr std::optional<uint64_t> kKMaxValue = std::nullopt;
 static constexpr uint64_t kAioMaxnrMinValue = 1;
@@ -206,8 +209,10 @@ from_json(const Config& config, DiskANNPrepareConfig& prep_conf) {
 
 void
 to_json(Config& config, const DiskANNQueryConfig& query_conf) {
-    config =
-        Config{{kK, query_conf.k}, {kSearchListSize, query_conf.search_list_size}, {kBeamwidth, query_conf.beamwidth}};
+    config = Config{{kK, query_conf.k},
+                    {kSearchListSize, query_conf.search_list_size},
+                    {kBeamwidth, query_conf.beamwidth},
+                    {kFilterThreshold, query_conf.filter_threshold}};
 }
 
 void
@@ -218,6 +223,8 @@ from_json(const Config& config, DiskANNQueryConfig& query_conf) {
                                       std::max(kSearchListSizeMaxValue, static_cast<uint32_t>(10 * query_conf.k)),
                                       query_conf.search_list_size);
     CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, kBeamwidthMinValue, kBeamwidthMaxValue, query_conf.beamwidth);
+    CheckNumericParamAndSet<float>(config, kFilterThreshold, kFilterThresholdMinValue, kFilterThresholdMaxValue,
+                                   query_conf.filter_threshold);
 }
 
 void

@@ -3,6 +3,7 @@
 
 #pragma once
 #include <cassert>
+#include <optional>
 #include <sstream>
 #include <stack>
 #include <string>
@@ -98,8 +99,9 @@ namespace diskann {
         const T *query, const _u64 k_search, const _u64 l_search, _s64 *res_ids,
         float *res_dists, const _u64 beam_width,
         const bool use_reorder_data = false, QueryStats *stats = nullptr,
-        const knowhere::feder::diskann::FederResultUniq& feder = nullptr,
-        faiss::BitsetView bitset_view = nullptr);
+        const knowhere::feder::diskann::FederResultUniq &feder = nullptr,
+        faiss::BitsetView                             bitset_view = nullptr,
+        const float                                   filter_ratio = -1.0f);
 
 
     DISKANN_DLLEXPORT _u32 range_search(const T *query1, const double range,
@@ -143,6 +145,23 @@ namespace diskann {
         return long_node ? sector_buf
                          : sector_buf + (node_id % nnodes_per_sector) * max_node_len;
     }
+
+    inline void copy_vec_base_data(T *des, const int64_t des_idx, void *src);
+
+    // Init thread data and returns query norm if avaialble.
+    // If there is no value, there is nothing to do with the given query
+    std::optional<float> init_thread_data(ThreadData<T> &data, const T *query1);
+
+    // Brute force search for the given query. Use beam search rather than
+    // sending whole bunch of requests at once to avoid all threads sending I/O
+    // requests and the time overlaps.
+    // The beam width is adjusted in the function.
+    void brute_force_beam_search(
+        ThreadData<T> &data, const float query_norm, const _u64 k_search,
+        _s64 *indices, float *distances, const _u64 beam_width_param, IOContext &ctx,
+        QueryStats                                      *stats,
+        const knowhere::feder::diskann::FederResultUniq &feder,
+        faiss::BitsetView                             bitset_view);
 
     // index info
     // nhood of node `i` is in sector: [i / nnodes_per_sector]

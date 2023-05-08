@@ -11,7 +11,10 @@
 
 #include <gtest/gtest.h>
 #include <random>
+#include <vector>
+#include <functional>
 
+#include "BitsetView.h"
 #include "knowhere/common/Config.h"
 #include "knowhere/feder/HNSW.h"
 #include "knowhere/index/vector_index/ConfAdapterMgr.h"
@@ -343,4 +346,35 @@ TEST_P(HNSWTest, hnsw_data_overflow) {
     ASSERT_EQ(index_->Dim(), dim);
 
     auto result = index_->Query(base_dataset, conf_, nullptr);
+}
+
+namespace {
+    constexpr float kKnnRecallThreshold = 0.8f;
+    constexpr float kBruteForceRecallThreshold = 0.99f;
+}
+
+TEST_P(HNSWTest, hnsw_bitset) {
+    index_->BuildAll(base_dataset, conf_);
+    const auto metric = knowhere::GetMetaMetricType(conf_);
+    std::vector<std::function<std::vector<uint8_t>(size_t, size_t)>> gen_bitset_funcs = {
+        GenerateBitsetWithFirstTbitsSet, GenerateBitsetWithRandomTbitsSet};
+    const float threshold = hnswlib::kHnswBruteForceFilterRate;
+    const auto bitset_percentages = {0.4f, 0.98f};
+    for (const float percentage : bitset_percentages) {
+        for (const auto& gen_func : gen_bitset_funcs) {
+            auto bitset_data = gen_func(nb, percentage * nb);
+            faiss::BitsetView bs(bitset_data.data(), nb);
+            float* data_p = (float*)knowhere::GetDatasetTensor(base_dataset);
+            auto result = index_->Query(query_dataset, conf_, bs);
+            float* query_p = (float*)knowhere::GetDatasetTensor(query_dataset);
+            auto gt = GenGroundTruth(data_p, query_p, metric, nb, dim, nq, k, bs);
+            auto result_p = knowhere::GetDatasetIDs(result);
+            float recall = CheckTopKRecall(gt, result_p, k, nq);
+            if (percentage > threshold) {
+                ASSERT_TRUE(recall > kBruteForceRecallThreshold);
+            } else {
+                ASSERT_TRUE(recall > kKnnRecallThreshold);
+            }
+        }
+    }
 }

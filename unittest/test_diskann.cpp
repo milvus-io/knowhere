@@ -32,16 +32,12 @@ error "Missing the <filesystem> header."
 #include "knowhere/index/vector_index/IndexDiskANN.h"
 #include "knowhere/index/vector_index/IndexDiskANNConfig.h"
 #include "knowhere/index/vector_index/adapter/VectorAdapter.h"
-#include "knowhere/index/vector_index/helpers/RangeUtil.h"
 #include "unittest/LocalFileManager.h"
 #include "unittest/utils.h"
 
 using ::testing::Combine;
 using ::testing::TestWithParam;
 using ::testing::Values;
-using IdDisPair = std::pair<int64_t, float>;
-using GroundTruth = std::vector<std::vector<int64_t>>;
-using GroundTruthPtr = std::shared_ptr<GroundTruth>;
 
 namespace {
 
@@ -113,88 +109,6 @@ GenLargeData(size_t num) {
     return data_p;
 }
 
-struct DisPairLess {
-    bool
-    operator()(const IdDisPair& p1, const IdDisPair& p2) {
-        return p1.second < p2.second;
-    }
-};
-
-GroundTruthPtr
-GenGroundTruth(const float* data_p, const float* query_p, const std::string metric, const uint32_t num_rows,
-               const uint32_t num_dims, const uint32_t num_queries, const faiss::BitsetView bitset = nullptr) {
-    GroundTruthPtr ground_truth = std::make_shared<GroundTruth>();
-    ground_truth->resize(num_queries);
-
-    for (uint32_t query_index = 0; query_index < num_queries; ++query_index) {  // for each query
-        // use priority_queue to keep the topK;
-        std::priority_queue<IdDisPair, std::vector<IdDisPair>, DisPairLess> pq;
-        for (int64_t row = 0; row < num_rows; ++row) {  // for each row
-            if (!bitset.empty() && bitset.test(row)) {
-                continue;
-            }
-            float dis = 0;
-            for (uint32_t dim = 0; dim < num_dims; ++dim) {  // for every dim
-                if (metric == knowhere::metric::IP) {
-                    dis -= (data_p[num_dims * row + dim] * query_p[query_index * num_dims + dim]);
-                } else {
-                    dis += ((data_p[num_dims * row + dim] - query_p[query_index * num_dims + dim]) *
-                            (data_p[num_dims * row + dim] - query_p[query_index * num_dims + dim]));
-                }
-            }
-            if (pq.size() < kK) {
-                pq.push(std::make_pair(row, dis));
-            } else if (pq.top().second > dis) {
-                pq.pop();
-                pq.push(std::make_pair(row, dis));
-            }
-        }
-
-        auto& result_ids = ground_truth->at(query_index);
-
-        // write id in priority_queue to vector for sorting.
-        int pq_size = pq.size();
-        for (uint32_t index = 0; index < pq_size; ++index) {
-            auto& id_dis_pair = pq.top();
-            result_ids.push_back(id_dis_pair.first);
-            pq.pop();
-        }
-    }
-    return ground_truth;
-}
-
-GroundTruthPtr
-GenRangeSearchGrounTruth(const float* data_p, const float* query_p, const std::string metric, const uint32_t num_rows,
-                         const uint32_t num_dims, const uint32_t num_queries, const float radius,
-                         const float range_filter, const faiss::BitsetView bitset = nullptr) {
-    GroundTruthPtr ground_truth = std::make_shared<GroundTruth>();
-    ground_truth->resize(num_queries);
-    bool is_ip = (metric == knowhere::metric::IP);
-    for (uint32_t query_index = 0; query_index < num_queries; ++query_index) {
-        std::vector<IdDisPair> paris;
-        const float* xq = query_p + query_index * num_dims;
-        for (int64_t row = 0; row < num_rows; ++row) {  // for each row
-            if (!bitset.empty() && bitset.test(row)) {
-                continue;
-            }
-            const float* xb = data_p + row * num_dims;
-            float dis = 0;
-            if (metric == knowhere::metric::IP) {
-                for (uint32_t dim = 0; dim < num_dims; ++dim) {  // for every dim
-                    dis += xb[dim] * xq[dim];
-                }
-            } else {
-                for (uint32_t dim = 0; dim < num_dims; ++dim) {  // for every dim
-                    dis += std::pow(xb[dim] - xq[dim], 2);
-                }
-            }
-            if (knowhere::distance_in_range(dis, radius, range_filter, is_ip)) {
-                ground_truth->at(query_index).emplace_back(row);
-            }
-        }
-    }
-    return ground_truth;
-}
 
 void
 WriteRawDataToDisk(const std::string data_path, const float* raw_data, const uint32_t num, const uint32_t dim) {
@@ -203,42 +117,6 @@ WriteRawDataToDisk(const std::string data_path, const float* raw_data, const uin
     writer.write((char*)&dim, sizeof(uint32_t));
     writer.write((char*)raw_data, sizeof(float) * num * dim);
     writer.close();
-}
-
-uint32_t
-GetMatchedNum(const std::vector<int64_t>& ground_truth, const int64_t* result, const int32_t limit) {
-    uint32_t matched_num = 0;
-    int missed = 0;
-    for (uint32_t index = 0; index < limit; ++index) {
-        if (std::find(ground_truth.begin(), ground_truth.end(), result[index]) != ground_truth.end()) {
-            matched_num++;
-        }
-    }
-    return matched_num;
-}
-
-float
-CheckTopKRecall(GroundTruthPtr ground_truth, const int64_t* result, const int32_t k, const uint32_t num_queries) {
-    uint32_t recall = 0;
-    for (uint32_t n = 0; n < num_queries; ++n) {
-        recall += GetMatchedNum(ground_truth->at(n), result + (n * k), ground_truth->at(n).size());
-    }
-    return ((float)recall) / ((float)num_queries * k);
-}
-
-float
-CheckRangeSearchRecall(GroundTruthPtr ground_truth, const int64_t* result, const size_t* limits,
-                       const uint32_t num_queries) {
-    uint32_t recall = 0;
-    uint32_t total = 0;
-    for (uint32_t n = 0; n < num_queries; ++n) {
-        recall += GetMatchedNum(ground_truth->at(n), result + limits[n], limits[n + 1] - limits[n]);
-        total += ground_truth->at(n).size();
-    }
-    if (total == 0) {
-        return 1;
-    }
-    return ((float)recall) / ((float)total);
 }
 
 template <typename DiskANNConfig>
@@ -345,9 +223,9 @@ class DiskANNTest : public TestWithParam<std::tuple<std::string, bool>> {
         // lr.close();
 
         ip_ground_truth_ =
-            GenGroundTruth(global_raw_data_, global_query_data_, knowhere::metric::IP, kNumRows, kDim, kNumQueries);
+            GenGroundTruth(global_raw_data_, global_query_data_, knowhere::metric::IP, kNumRows, kDim, kNumQueries, kK);
         l2_ground_truth_ =
-            GenGroundTruth(global_raw_data_, global_query_data_, knowhere::metric::L2, kNumRows, kDim, kNumQueries);
+            GenGroundTruth(global_raw_data_, global_query_data_, knowhere::metric::L2, kNumRows, kDim, kNumQueries, kK);
         ip_range_search_ground_truth_ = GenRangeSearchGrounTruth(
             global_raw_data_, global_query_data_, knowhere::metric::IP, kNumRows, kDim, kNumQueries, kIPRadius, kIPRangeFilter);
         l2_range_search_ground_truth_ = GenRangeSearchGrounTruth(
@@ -355,10 +233,10 @@ class DiskANNTest : public TestWithParam<std::tuple<std::string, bool>> {
 
         large_dim_ip_ground_truth_ =
             GenGroundTruth(global_large_dim_raw_data_, global_large_dim_query_data_, knowhere::metric::IP,
-                           kLargeDimNumRows, kLargeDim, kLargeDimNumQueries);
+                           kLargeDimNumRows, kLargeDim, kLargeDimNumQueries, kK);
         large_dim_l2_ground_truth_ =
             GenGroundTruth(global_large_dim_raw_data_, global_large_dim_query_data_, knowhere::metric::L2,
-                           kLargeDimNumRows, kLargeDim, kLargeDimNumQueries);
+                           kLargeDimNumRows, kLargeDim, kLargeDimNumQueries, kK);
         large_dim_ip_range_search_ground_truth_ =
             GenRangeSearchGrounTruth(global_large_dim_raw_data_, global_large_dim_query_data_, knowhere::metric::IP,
                                      kLargeDimNumRows, kLargeDim, kLargeDimNumQueries, kLargeDimIPRadius, kLargeDimIPRangeFilter);
@@ -494,7 +372,7 @@ TEST_P(DiskANNTest, bitset_view_test) {
         set_bit(knn_bitset_data.data(), id_to_mask);
     }
     faiss::BitsetView knn_bitset(knn_bitset_data.data(), num_rows_);
-    auto ground_truth = GenGroundTruth(raw_data_, query_data_, metric_, num_rows_, dim_, num_queries_, knn_bitset);
+    auto ground_truth = GenGroundTruth(raw_data_, query_data_, metric_, num_rows_, dim_, num_queries_, kK, knn_bitset);
 
     // query with bitset view
     result = diskann->Query(data_set_ptr, cfg, knn_bitset);
@@ -502,6 +380,33 @@ TEST_P(DiskANNTest, bitset_view_test) {
 
     auto recall = CheckTopKRecall(ground_truth, ids, kK, num_queries_);
     EXPECT_GT(recall, 0.8);
+
+    // test query with bitset view below/above threshold
+    knowhere::DiskANNQueryConfig bs_cfg = query_conf;
+    std::vector<std::function<std::vector<uint8_t>(size_t, size_t)>> gen_bitset_funcs = {
+        GenerateBitsetWithFirstTbitsSet, GenerateBitsetWithRandomTbitsSet};
+    const auto bitset_percentages = {0.4f, 0.98f};
+    const auto bitset_thresholds = {-1.0f, 0.9f};
+    for (const float threshold : bitset_thresholds) {
+        bs_cfg.filter_threshold = threshold;
+        cfg.clear();
+        knowhere::DiskANNQueryConfig::Set(cfg, bs_cfg);
+        for (const float percentage : bitset_percentages) {
+            for (const auto& gen_func : gen_bitset_funcs) {
+                auto bitset_data = gen_func(num_rows_, percentage * num_rows_);
+                faiss::BitsetView bs(bitset_data.data(), num_rows_);
+                auto result = diskann->Query(data_set_ptr, cfg, bs);
+                auto gt = GenGroundTruth(raw_data_, query_data_, metric_, num_rows_, dim_, num_queries_, kK, bs);
+                auto ids = knowhere::GetDatasetIDs(result);
+                float recall = CheckTopKRecall(gt, ids, kK, num_queries_);
+                if (percentage == 0.98f) {
+                    EXPECT_GT(recall, 0.9f);
+                } else {
+                    EXPECT_GT(recall, 0.8f);
+                }
+            }
+        }
+    }
 
     // test for range search
     cfg.clear();
