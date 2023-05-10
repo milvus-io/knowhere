@@ -768,6 +768,78 @@ namespace diskann {
     return max_norm;
   }
 
+  template<typename T>
+  std::vector<float> prepare_base_for_cosine(const std::string in_file,
+                                        const std::string out_file) {
+    LOG_KNOWHERE_DEBUG_
+        << "Pre-processing base file by normalizing";
+    std::ifstream in_reader(in_file.c_str(), std::ios::binary);
+    std::ofstream out_writer(out_file.c_str(), std::ios::binary);
+    _u64          npts, in_dims, out_dims;
+
+    _u32 npts32, dims32;
+    in_reader.read((char*) &npts32, sizeof(uint32_t));
+    in_reader.read((char*) &dims32, sizeof(uint32_t));
+
+    npts = npts32;
+    in_dims = dims32;
+    out_dims = in_dims;
+    _u32 outdims32 = (_u32) out_dims;
+
+    out_writer.write((char*) &npts32, sizeof(uint32_t));
+    out_writer.write((char*) &outdims32, sizeof(uint32_t));
+
+    size_t               BLOCK_SIZE = 100000;
+    size_t               block_size = npts <= BLOCK_SIZE ? npts : BLOCK_SIZE;
+    std::unique_ptr<T[]> in_block_data =
+        std::make_unique<T[]>(block_size * in_dims);
+    std::unique_ptr<float[]> out_block_data =
+        std::make_unique<float[]>(block_size * out_dims);
+
+    std::memset(out_block_data.get(), 0, sizeof(float) * block_size * out_dims);
+    _u64 num_blocks = DIV_ROUND_UP(npts, block_size);
+
+    std::vector<float> norms(npts, 0);
+
+    for (_u64 b = 0; b < num_blocks; b++) {
+      _u64 start_id = b * block_size;
+      _u64 end_id = (b + 1) * block_size < npts ? (b + 1) * block_size : npts;
+      _u64 block_pts = end_id - start_id;
+      in_reader.read((char*) in_block_data.get(),
+                     block_pts * in_dims * sizeof(T));
+      for (_u64 p = 0; p < block_pts; p++) {
+        for (_u64 j = 0; j < in_dims; j++) {
+          norms[start_id + p] +=
+              in_block_data[p * in_dims + j] * in_block_data[p * in_dims + j];
+        }
+      }
+    }
+
+    for (auto& norm : norms) {
+      norm = std::sqrt(norm);
+    }
+
+    in_reader.seekg(2 * sizeof(_u32), std::ios::beg);
+    for (_u64 b = 0; b < num_blocks; b++) {
+      _u64 start_id = b * block_size;
+      _u64 end_id = (b + 1) * block_size < npts ? (b + 1) * block_size : npts;
+      _u64 block_pts = end_id - start_id;
+      in_reader.read((char*) in_block_data.get(),
+                     block_pts * in_dims * sizeof(T));
+      for (_u64 p = 0; p < block_pts; p++) {
+        for (_u64 j = 0; j < in_dims; j++) {
+          out_block_data[p * out_dims + j] =
+              in_block_data[p * in_dims + j] / norms[start_id + p];
+        }
+      }
+      out_writer.write((char*) out_block_data.get(),
+                       block_pts * out_dims * sizeof(float));
+    }
+    out_writer.close();
+
+    return norms;
+  }
+
   // plain saves data as npts X ndims array into filename
   template<typename T>
   void save_Tvecs(const char* filename, T* data, size_t npts, size_t ndims) {

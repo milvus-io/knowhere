@@ -192,6 +192,9 @@ namespace diskann {
     // (due to the pre-processing of base during index build)
     float max_base_norm = 0.0f;
 
+    // used only for cosine search to re-scale the caculated distance.
+    float *base_norms = nullptr;
+
     // data info
     bool long_node = false;
     _u64 nsectors_per_node = 0;
@@ -220,6 +223,23 @@ namespace diskann {
     // distance comparator
     DISTFUN<T>     dist_cmp;
     DISTFUN<float> dist_cmp_float;
+
+    T dist_cmp_wrap(const T *x, const T *y, size_t d, int32_t u) {
+      if (metric == Metric::COSINE) {
+        return 1 - dist_cmp(x, y, d) / base_norms[u];
+      } else {
+        return dist_cmp(x, y, d);
+      }
+    }
+
+    float dist_cmp_float_wrap(const float *x, const float *y, size_t d,
+                              int32_t u) {
+      if (metric == Metric::COSINE) {
+        return 1 - dist_cmp_float(x, y, d) / base_norms[u];
+      } else {
+        return dist_cmp_float(x, y, d);
+      }
+    }
 
     // for very large datasets: we use PQ even for the disk resident index
     bool              use_disk_index_pq = false;

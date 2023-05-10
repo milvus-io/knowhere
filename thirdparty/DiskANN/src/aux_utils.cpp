@@ -910,10 +910,11 @@ namespace diskann {
   template<typename T>
   int build_disk_index(const BuildConfig &config) {
     if (!std::is_same<T, float>::value &&
-        config.compare_metric == diskann::Metric::INNER_PRODUCT) {
+        (config.compare_metric == diskann::Metric::INNER_PRODUCT ||
+         config.compare_metric == diskann::Metric::COSINE)) {
       std::stringstream stream;
       stream << "DiskANN currently only supports floating point data for Max "
-                "Inner Product Search. "
+                "Inner Product Search and Min Cosine Search."
              << std::endl;
       throw diskann::ANNException(stream.str(), -1);
     }
@@ -925,6 +926,7 @@ namespace diskann {
 
     std::string base_file = config.data_file_path;
     std::string data_file_to_use = base_file;
+    std::string data_file_to_save = base_file;
     std::string index_prefix_path = config.index_file_path;
     std::string pq_pivots_path = get_pq_pivots_filename(index_prefix_path);
     std::string pq_compressed_vectors_path =
@@ -953,11 +955,25 @@ namespace diskann {
              "apart from the intermin indices and final index.";
       std::string prepped_base = index_prefix_path + "_prepped_base.bin";
       data_file_to_use = prepped_base;
+      data_file_to_save = prepped_base;
       float max_norm_of_base =
           diskann::prepare_base_for_inner_products<T>(base_file, prepped_base);
       std::string norm_file =
           get_disk_index_max_base_norm_file(disk_index_path);
       diskann::save_bin<float>(norm_file, &max_norm_of_base, 1, 1);
+    }
+    if (config.compare_metric == diskann::Metric::COSINE) {
+      LOG_KNOWHERE_INFO_
+          << "Using Cosine search, so need to pre-process base "
+             "data into temp file. Please ensure there is additional "
+             "(n*d*4) bytes for storing pre-processed base vectors, "
+             "apart from the intermin indices and final index.";
+      std::string prepped_base = index_prefix_path + "_prepped_base.bin";
+      data_file_to_use = prepped_base;
+      auto norms_of_base = diskann::prepare_base_for_cosine<T>(base_file, prepped_base);
+      std::string norm_file =
+          get_disk_index_max_base_norm_file(disk_index_path);
+      diskann::save_bin<float>(norm_file, norms_of_base.data(), norms_of_base.size(), 1);
     }
 
     unsigned R = config.max_degree;
@@ -1014,7 +1030,8 @@ namespace diskann {
       generate_pq_pivots(train_data, train_size, (uint32_t) dim, 256,
                          (uint32_t) disk_pq_dims, NUM_KMEANS_REPS,
                          disk_pq_pivots_path, false);
-      if (config.compare_metric == diskann::Metric::INNER_PRODUCT)
+      if (config.compare_metric == diskann::Metric::INNER_PRODUCT ||
+          config.compare_metric == diskann::Metric::COSINE)
         generate_pq_data_from_pivots<float>(
             data_file_to_use.c_str(), 256, (uint32_t) disk_pq_dims,
             disk_pq_pivots_path, disk_pq_compressed_vectors_path);
@@ -1028,7 +1045,7 @@ namespace diskann {
     // don't translate data to make zero mean for PQ compression. We must not
     // translate for inner product search.
     bool make_zero_mean = true;
-    if (config.compare_metric == diskann::Metric::INNER_PRODUCT)
+    if (config.compare_metric != diskann::Metric::L2)
       make_zero_mean = false;
 
     auto pq_s = std::chrono::high_resolution_clock::now();
@@ -1060,7 +1077,7 @@ namespace diskann {
     std::chrono::duration<double> graph_diff = graph_e - graph_s;
     LOG_KNOWHERE_INFO_ << "Training graph cost: " << graph_diff.count() << "s";
     if (!use_disk_pq) {
-      diskann::create_disk_layout<T>(data_file_to_use.c_str(), mem_index_path,
+      diskann::create_disk_layout<T>(data_file_to_save.c_str(), mem_index_path,
                                      disk_index_path);
     } else {
       if (!reorder_data)
@@ -1069,7 +1086,7 @@ namespace diskann {
       else
         diskann::create_disk_layout<_u8>(disk_pq_compressed_vectors_path,
                                          mem_index_path, disk_index_path,
-                                         data_file_to_use.c_str());
+                                         data_file_to_save.c_str());
     }
 
     double ten_percent_points = std::ceil(points_num * 0.1);
