@@ -17,25 +17,81 @@
 #include "knowhere/factory.h"
 #include "utils.h"
 
-TEST_CASE("Test Get Vector By Ids", "[GetVectorByIds]") {
+TEST_CASE("Test Binary Get Vector By Ids", "[Binary GetVectorByIds]") {
     using Catch::Approx;
 
     int64_t nb = 10000;
     int64_t dim = 128;
     int64_t seed = 42;
 
-    auto base_gen = [&]() {
-        knowhere::Json json;
-        json[knowhere::meta::DIM] = dim;
-        json[knowhere::meta::METRIC_TYPE] = knowhere::metric::L2;
-        json[knowhere::meta::TOPK] = 1;
-        return json;
-    };
-
     auto base_bin_gen = [&]() {
         knowhere::Json json;
         json[knowhere::meta::DIM] = dim;
         json[knowhere::meta::METRIC_TYPE] = knowhere::metric::HAMMING;
+        json[knowhere::meta::TOPK] = 1;
+        return json;
+    };
+
+    auto bin_ivfflat_gen = [&base_bin_gen]() {
+        knowhere::Json json = base_bin_gen();
+        json[knowhere::indexparam::NLIST] = 16;
+        json[knowhere::indexparam::NPROBE] = 4;
+        return json;
+    };
+
+    auto bin_flat_gen = base_bin_gen;
+
+    SECTION("Test binary index") {
+        using std::make_tuple;
+        auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
+            make_tuple(knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP, bin_flat_gen),
+            make_tuple(knowhere::IndexEnum::INDEX_FAISS_BIN_IVFFLAT, bin_ivfflat_gen),
+        }));
+        auto idx = knowhere::IndexFactory::Instance().Create(name);
+        auto cfg_json = gen().dump();
+        CAPTURE(name, cfg_json);
+        knowhere::Json json = knowhere::Json::parse(cfg_json);
+        auto train_ds = GenBinDataSet(nb, dim, seed);
+        auto ids_ds = GenIdsDataSet(nb, dim);
+        REQUIRE(idx.Type() == name);
+        auto res = idx.Build(*train_ds, json);
+        REQUIRE(res == knowhere::Status::success);
+        knowhere::BinarySet bs;
+        idx.Serialize(bs);
+
+        auto idx_new = knowhere::IndexFactory::Instance().Create(name);
+        idx_new.Deserialize(bs);
+        auto results = idx_new.GetVectorByIds(*ids_ds, json);
+        REQUIRE(results.has_value());
+        auto xb = (uint8_t*)train_ds->GetTensor();
+        auto res_rows = results.value()->GetRows();
+        auto res_dim = results.value()->GetDim();
+        auto res_data = (uint8_t*)results.value()->GetTensor();
+        REQUIRE(res_rows == nb);
+        REQUIRE(res_dim == dim);
+        const auto data_bytes = dim / 8;
+        for (int i = 0; i < nb; ++i) {
+            auto id = ids_ds->GetIds()[i];
+            for (int j = 0; j < data_bytes; ++j) {
+                REQUIRE(res_data[i * data_bytes + j] == xb[id * data_bytes + j]);
+            }
+        }
+    }
+}
+
+TEST_CASE("Test Float Get Vector By Ids", "[Float GetVectorByIds]") {
+    using Catch::Approx;
+
+    int64_t nb = 10000;
+    int64_t dim = 128;
+    int64_t seed = 42;
+
+    auto metric = GENERATE(as<std::string>{}, knowhere::metric::L2, knowhere::metric::COSINE);
+
+    auto base_gen = [&]() {
+        knowhere::Json json;
+        json[knowhere::meta::DIM] = dim;
+        json[knowhere::meta::METRIC_TYPE] = metric;
         json[knowhere::meta::TOPK] = 1;
         return json;
     };
@@ -61,15 +117,7 @@ TEST_CASE("Test Get Vector By Ids", "[GetVectorByIds]") {
         return json;
     };
 
-    auto bin_ivfflat_gen = [&base_bin_gen]() {
-        knowhere::Json json = base_bin_gen();
-        json[knowhere::indexparam::NLIST] = 16;
-        json[knowhere::indexparam::NPROBE] = 4;
-        return json;
-    };
-
     auto flat_gen = base_gen;
-    auto bin_flat_gen = base_bin_gen;
 
     auto load_raw_data = [](knowhere::Index<knowhere::IndexNode>& index, const knowhere::DataSet& dataset,
                             const knowhere::Json& conf) {
@@ -87,38 +135,6 @@ TEST_CASE("Test Get Vector By Ids", "[GetVectorByIds]") {
         REQUIRE(res == knowhere::Status::success);
     };
 
-    SECTION("Test binary index") {
-        using std::make_tuple;
-        auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
-            make_tuple(knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP, bin_flat_gen),
-            make_tuple(knowhere::IndexEnum::INDEX_FAISS_BIN_IVFFLAT, bin_ivfflat_gen),
-        }));
-        auto idx = knowhere::IndexFactory::Instance().Create(name);
-        auto cfg_json = gen().dump();
-        CAPTURE(name, cfg_json);
-        knowhere::Json json = knowhere::Json::parse(cfg_json);
-        auto train_ds = GenBinDataSet(nb, dim, seed);
-        auto ids_ds = GenIdsDataSet(nb, dim);
-        REQUIRE(idx.Type() == name);
-        auto res = idx.Build(*train_ds, json);
-        REQUIRE(res == knowhere::Status::success);
-        auto results = idx.GetVectorByIds(*ids_ds, json);
-        REQUIRE(results.has_value());
-        auto xb = (uint8_t*)train_ds->GetTensor();
-        auto res_rows = results.value()->GetRows();
-        auto res_dim = results.value()->GetDim();
-        auto res_data = (uint8_t*)results.value()->GetTensor();
-        REQUIRE(res_rows == nb);
-        REQUIRE(res_dim == dim);
-        const auto data_bytes = dim / 8;
-        for (int i = 0; i < nb; ++i) {
-            auto id = ids_ds->GetIds()[i];
-            for (int j = 0; j < data_bytes; ++j) {
-                REQUIRE(res_data[i * data_bytes + j] == xb[id * data_bytes + j]);
-            }
-        }
-    }
-
     SECTION("Test float index") {
         using std::make_tuple;
         auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
@@ -132,16 +148,25 @@ TEST_CASE("Test Get Vector By Ids", "[GetVectorByIds]") {
         CAPTURE(name, cfg_json);
         knowhere::Json json = knowhere::Json::parse(cfg_json);
         auto train_ds = GenDataSet(nb, dim, seed);
+        auto train_ds_copy = CopyDataSet(train_ds);
         auto ids_ds = GenIdsDataSet(nb, dim);
         REQUIRE(idx.Type() == name);
         auto res = idx.Build(*train_ds, json);
         REQUIRE(res == knowhere::Status::success);
+        knowhere::BinarySet bs;
+        idx.Serialize(bs);
+
+        auto idx_new = knowhere::IndexFactory::Instance().Create(name);
+        idx_new.Deserialize(bs);
         if (name == knowhere::IndexEnum::INDEX_FAISS_IVFFLAT) {
-            load_raw_data(idx, *train_ds, json);
+            load_raw_data(idx_new, *train_ds, json);
         }
-        auto results = idx.GetVectorByIds(*ids_ds, json);
+        if (!idx_new.HasRawData(metric)) {
+            return;
+        }
+        auto results = idx_new.GetVectorByIds(*ids_ds, json);
         REQUIRE(results.has_value());
-        auto xb = (float*)train_ds->GetTensor();
+        auto xb = (float*)train_ds_copy->GetTensor();
         auto res_rows = results.value()->GetRows();
         auto res_dim = results.value()->GetDim();
         auto res_data = (float*)results.value()->GetTensor();
