@@ -17,6 +17,7 @@ on:
       - '.github/workflows/ut.yaml'
       - 'CMakeLists.txt'
       - '!**.md'
+      - 'tests/**'
 
 jobs:
   ut:
