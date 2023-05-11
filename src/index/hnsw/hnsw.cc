@@ -251,7 +251,7 @@ class HnswIndexNode : public IndexNode {
     }
 
     expected<DataSetPtr, Status>
-    GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
+    GetVectorByIds(const DataSet& dataset) const override {
         if (!index_) {
             return unexpected(Status::empty_index);
         }

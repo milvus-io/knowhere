@@ -274,8 +274,10 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
             auto diskann = knowhere::IndexFactory::Instance().Create("DISKANN", diskann_index_pack);
             auto knn_search_json = knn_search_gen().dump();
             knowhere::Json knn_json = knowhere::Json::parse(knn_search_json);
+            auto res = diskann.Search(*query_ds, knn_json, nullptr);
+            REQUIRE(res.has_value());
             auto ids_ds = GenIdsDataSet(kNumRows, kDim);
-            auto results = diskann.GetVectorByIds(*ids_ds, knn_json);
+            auto results = diskann.GetVectorByIds(*ids_ds);
             REQUIRE(results.has_value());
             auto xb = (float*)base_ds->GetTensor();
             auto data = (float*)results.value()->GetTensor();

@@ -61,7 +61,7 @@ class IvfIndexNode : public IndexNode {
     expected<DataSetPtr, Status>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
     expected<DataSetPtr, Status>
-    GetVectorByIds(const DataSet& dataset, const Config& cfg) const override;
+    GetVectorByIds(const DataSet& dataset) const override;
     bool
     HasRawData(const std::string& metric_type) const override {
         if constexpr (std::is_same<faiss::IndexIVFFlat, T>::value) {
@@ -525,7 +525,7 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
 
 template <typename T>
 expected<DataSetPtr, Status>
-IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset, const Config& cfg) const {
+IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset) const {
     if (!this->index_) {
         return unexpected(Status::empty_index);
     }

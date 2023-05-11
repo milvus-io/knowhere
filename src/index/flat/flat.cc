@@ -201,7 +201,7 @@ class FlatIndexNode : public IndexNode {
     }
 
     expected<DataSetPtr, Status>
-    GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
+    GetVectorByIds(const DataSet& dataset) const override {
         auto dim = Dim();
         auto rows = dataset.GetRows();
         auto ids = dataset.GetIds();

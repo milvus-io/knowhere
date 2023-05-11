@@ -141,8 +141,8 @@ class IndexWrap {
     }
 
     knowhere::DataSetPtr
-    GetVectorByIds(knowhere::DataSetPtr dataset, const std::string& json, knowhere::Status& status) {
-        auto res = idx.GetVectorByIds(*dataset, knowhere::Json::parse(json));
+    GetVectorByIds(knowhere::DataSetPtr dataset, knowhere::Status& status) {
+        auto res = idx.GetVectorByIds(*dataset);
         if (res.has_value()) {
             status = knowhere::Status::success;
             return res.value();

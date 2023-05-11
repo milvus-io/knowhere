@@ -170,7 +170,7 @@ class GpuIvfIndexNode : public IndexNode {
     }
 
     virtual expected<DataSetPtr, Status>
-    GetVectorByIds(const DataSet& dataset, const Config& cfg) const override {
+    GetVectorByIds(const DataSet& dataset) const override {
         return unexpected(Status::not_implemented);
     }
 
