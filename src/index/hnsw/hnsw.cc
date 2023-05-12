@@ -319,7 +319,7 @@ class HnswIndexNode : public IndexNode {
             MemoryIOWriter writer;
             index_->saveIndex(writer);
             std::shared_ptr<uint8_t[]> data(writer.data_);
-            binset.Append("HNSW", data, writer.rp);
+            binset.Append(Type(), data, writer.rp);
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "hnsw inner error: " << e.what();
             return Status::hnsw_inner_error;
@@ -333,7 +333,7 @@ class HnswIndexNode : public IndexNode {
             delete index_;
         }
         try {
-            auto binary = binset.GetByName("HNSW");
+            auto binary = binset.GetByName(Type());
 
             MemoryIOReader reader;
             reader.total = binary->size;

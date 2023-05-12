@@ -129,7 +129,7 @@ class GpuFlatIndexNode : public IndexNode {
             // Serialize() is called after Add(), at this time index_ is CPU index actually
             faiss::write_index(index_.get(), &writer);
             std::shared_ptr<uint8_t[]> data(writer.data_);
-            binset.Append("FLAT", data, writer.rp);
+            binset.Append(Type(), data, writer.rp);
         } catch (const std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
             return Status::faiss_inner_error;
@@ -139,7 +139,7 @@ class GpuFlatIndexNode : public IndexNode {
 
     virtual Status
     Deserialize(const BinarySet& binset) override {
-        auto binary = binset.GetByName("FLAT");
+        auto binary = binset.GetByName(Type());
         MemoryIOReader reader;
         try {
             reader.total = binary->size;

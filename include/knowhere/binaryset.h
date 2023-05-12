@@ -16,6 +16,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace knowhere {
 
@@ -37,6 +38,18 @@ class BinarySet {
     BinaryPtr
     GetByName(const std::string& name) const {
         return binary_map_.at(name);
+    }
+
+    // This API is used to be compatible with knowhere-1.x.
+    // It tries each key name one by one, and returns the first matched.
+    BinaryPtr
+    GetByNames(const std::vector<std::string>& names) const {
+        for (auto& name : names) {
+            if (Contains(name)) {
+                return binary_map_.at(name);
+            }
+        }
+        return nullptr;
     }
 
     void
