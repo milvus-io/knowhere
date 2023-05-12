@@ -356,7 +356,7 @@ class HnswIndexNode : public IndexNode {
     }
 
     Status
-    DeserializeFromFile(const std::string& filename, const LoadConfig& config) override {
+    DeserializeFromFile(const std::string& filename, const Config& config) override {
         if (index_) {
             delete index_;
         }

@@ -732,7 +732,7 @@ class RaftIvfIndexNode : public IndexNode {
     }
 
     virtual Status
-    DeserializeFromFile(const std::string& filename, const LoadConfig& config) {
+    DeserializeFromFile(const std::string& filename, const Config& config) {
         LOG_KNOWHERE_ERROR_ << "RaftIvfIndex doesn't support Deserialization from file.";
         return Status::not_implemented;
     }

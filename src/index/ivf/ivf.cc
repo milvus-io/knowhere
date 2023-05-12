@@ -88,7 +88,7 @@ class IvfIndexNode : public IndexNode {
     Status
     Deserialize(const BinarySet& binset, const Config& config) override;
     Status
-    DeserializeFromFile(const std::string& filename, const LoadConfig& config) override;
+    DeserializeFromFile(const std::string& filename, const Config& config) override;
     std::unique_ptr<BaseConfig>
     CreateConfig() const override {
         if constexpr (std::is_same<faiss::IndexIVFFlat, T>::value) {
@@ -688,9 +688,11 @@ IvfIndexNode<T>::Deserialize(const BinarySet& binset, const Config& config) {
 
 template <typename T>
 Status
-IvfIndexNode<T>::DeserializeFromFile(const std::string& filename, const LoadConfig& config) {
+IvfIndexNode<T>::DeserializeFromFile(const std::string& filename, const Config& config) {
+    auto cfg = static_cast<const knowhere::BaseConfig&>(config);
+
     int io_flags = 0;
-    if (config.enable_mmap) {
+    if (cfg.enable_mmap) {
         io_flags |= faiss::IO_FLAG_MMAP;
     }
     try {

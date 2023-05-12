@@ -78,7 +78,7 @@ class IndexNodeThreadPoolWrapper : public IndexNode {
     }
 
     Status
-    DeserializeFromFile(const std::string& filename, const LoadConfig& config) {
+    DeserializeFromFile(const std::string& filename, const Config& config) {
         return index_node_->DeserializeFromFile(filename, config);
     }
 

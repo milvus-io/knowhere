@@ -300,9 +300,11 @@ class FlatIndexNode : public IndexNode {
     }
 
     Status
-    DeserializeFromFile(const std::string& filename, const LoadConfig& config) override {
+    DeserializeFromFile(const std::string& filename, const Config& config) override {
+        auto cfg = static_cast<const knowhere::BaseConfig&>(config);
+
         int io_flags = 0;
-        if (config.enable_mmap) {
+        if (cfg.enable_mmap) {
             io_flags |= faiss::IO_FLAG_MMAP;
         }
 

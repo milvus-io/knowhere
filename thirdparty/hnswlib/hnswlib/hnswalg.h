@@ -626,7 +626,9 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     }
 
     void
-    loadIndex(const std::string& location, const knowhere::LoadConfig& config, size_t max_elements_i = 0) {
+    loadIndex(const std::string& location, const knowhere::Config& config, size_t max_elements_i = 0) {
+        auto cfg = static_cast<const knowhere::BaseConfig&>(config);
+
         auto input = knowhere::FileReader(location, true);
 
         size_t dim;
@@ -666,7 +668,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
         auto pos = input.offset();
 
-        if (config.enable_mmap) {
+        if (cfg.enable_mmap) {
             // For HNSW, we only mmap the data part, but not the linked lists,
             // which affects the performance significantly
             data_level0_memory_ =

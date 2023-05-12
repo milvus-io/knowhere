@@ -236,7 +236,7 @@ class GpuIvfIndexNode : public IndexNode {
     }
 
     Status
-    DeserializeFromFile(const std::string& filename, const LoadConfig& config) override {
+    DeserializeFromFile(const std::string& filename, const Config& config) override {
         LOG_KNOWHERE_ERROR_ << "GpuIvfIndex doesn't support Deserialization from file.";
         return Status::not_implemented;
     }

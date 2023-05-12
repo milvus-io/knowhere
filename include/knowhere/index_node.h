@@ -54,7 +54,7 @@ class IndexNode : public Object {
     Deserialize(const BinarySet& binset, const Config& config) = 0;
 
     virtual Status
-    DeserializeFromFile(const std::string& filename, const LoadConfig& config) = 0;
+    DeserializeFromFile(const std::string& filename, const Config& config) = 0;
 
     virtual std::unique_ptr<BaseConfig>
     CreateConfig() const = 0;
