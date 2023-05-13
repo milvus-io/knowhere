@@ -9,6 +9,7 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
+#include "common/half.hpp"
 #include "common/metric.h"
 #include "common/range_util.h"
 #include "faiss/IndexBinaryFlat.h"
@@ -19,6 +20,8 @@
 #include "knowhere/comp/thread_pool.h"
 #include "knowhere/factory.h"
 #include "knowhere/utils.h"
+
+using half_float::half;
 
 namespace knowhere {
 
@@ -42,9 +45,9 @@ class FlatIndexNode : public IndexNode {
     }
 
     std::vector<float>
-    convertFloat16ToFloat32(const std::vector<float16>& input) {
+    converthalfToFloat32(const std::vector<half>& input) {
         std::vector<float> output(input.size());
-        std::transform(input.begin(), input.end(), output.begin(), [](float16 f) { return static_cast<float>(f); });
+        std::transform(input.begin(), input.end(), output.begin(), [](half f) { return static_cast<float>(f); });
         return output;
     }
 
@@ -65,9 +68,9 @@ class FlatIndexNode : public IndexNode {
 
         auto dim_data = dataset.GetDim();
 
-        // If dim_data is float16, convert it to float32
-        if (typeid(dim_data[0]) == typeid(float16)) {
-            dim_data = convertFloat16ToFloat32(dim_data);
+        // If dim_data is half, convert it to float32
+        if (typeid(dim_data[0]) == typeid(half)) {
+            dim_data = converthalfToFloat32(dim_data);
         }
 
         index_ = std::make_unique<T>(dataset.GetDim(), metric.value());
@@ -79,7 +82,7 @@ class FlatIndexNode : public IndexNode {
         auto x = dataset.GetTensor();
         auto n = dataset.GetRows();
 
-        if (typeid(x[0]) == typeid(float16)) {
+        if (typeid(x[0]) == typeid(half)) {
             std::vector<float> x_float32(x.begin(), x.end());
             x = x_float32;
         }
@@ -113,9 +116,9 @@ class FlatIndexNode : public IndexNode {
         auto x = dataset.GetTensor();
         auto dim = dataset.GetDim();
 
-        // If x is float16, convert it to float32
-        if (typeid(x[0]) == typeid(float16)) {
-            x = convertFloat16ToFloat32(x);
+        // If x is half, convert it to float32
+        if (typeid(x[0]) == typeid(half)) {
+            x = converthalfToFloat32(x);
         }
 
         auto len = k * nq;
@@ -176,9 +179,9 @@ class FlatIndexNode : public IndexNode {
         auto xq = dataset.GetTensor();
         auto dim = dataset.GetDim();
 
-        // If xq is float16, convert it to float32
-        if (typeid(xq[0]) == typeid(float16)) {
-            xq = convertFloat16ToFloat32(xq);
+        // If xq is half, convert it to float32
+        if (typeid(xq[0]) == typeid(half)) {
+            xq = converthalfToFloat32(xq);
         }
 
         int64_t* ids = nullptr;
@@ -243,9 +246,9 @@ class FlatIndexNode : public IndexNode {
                 for (int64_t i = 0; i < rows; i++) {
                     index_->reconstruct(ids[i], data + i * dim);
                 }
-                // If original data was float16, convert it back before returning
-                if (typeid(dataset.GetTensor()[0]) == typeid(float16)) {
-                    auto data16 = convertFloat32ToFloat16(data, rows * dim);
+                // If original data was half, convert it back before returning
+                if (typeid(dataset.GetTensor()[0]) == typeid(half)) {
+                    auto data16 = convertFloat32Tohalf(data, rows * dim);
                     delete[] data;
                     return GenResultDataSet(rows, dim, data16);
                 } else {
