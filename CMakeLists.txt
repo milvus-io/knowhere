@@ -67,7 +67,6 @@ include(cmake/libs/libfaiss.cmake)
 include(cmake/libs/libhnsw.cmake)
 
 include_directories(thirdparty/faiss)
-include_directories(thirdparty/bitset)
 
 find_package(OpenMP REQUIRED)
 
@@ -148,14 +147,6 @@ add_library(knowhere SHARED ${KNOWHERE_SRCS})
 add_dependencies(knowhere ${KNOWHERE_LINKER_LIBS})
 if(WITH_RAFT)
   list(APPEND KNOWHERE_LINKER_LIBS raft::raft raft::compiled)
-  find_library(LIBRAFT_FOUND raft)
-  if (NOT LIBRAFT_FOUND)
-    message(WARNING "libraft not found")
-  else()
-    message(STATUS "libraft found")
-    list(APPEND KNOWHERE_LINKER_LIBS ${LIBRAFT_FOUND})
-    add_definitions(-DRAFT_COMPILED)
-  endif()
 endif()
 target_link_libraries(knowhere PUBLIC ${KNOWHERE_LINKER_LIBS})
 target_include_directories(
