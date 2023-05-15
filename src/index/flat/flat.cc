@@ -264,12 +264,7 @@ class FlatIndexNode : public IndexNode {
                 faiss::write_index_binary(index_.get(), &writer);
             }
             std::shared_ptr<uint8_t[]> data(writer.data_);
-            if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
-                binset.Append("FLAT", data, writer.rp);
-            }
-            if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
-                binset.Append("BIN_FLAT", data, writer.rp);
-            }
+            binset.Append(Type(), data, writer.rp);
             return Status::success;
         } catch (const std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "error inner faiss: " << e.what();
@@ -279,14 +274,10 @@ class FlatIndexNode : public IndexNode {
 
     Status
     Deserialize(const BinarySet& binset) override {
-        std::string name = "";
-        if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
-            name = "FLAT";
-        }
-        if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
-            name = "BIN_FLAT";
-        }
-        auto binary = binset.GetByName(name);
+        std::vector<std::string> names = {"IVF",        // compatible with knowhere-1.x
+                                          "BinaryIVF",  // compatible with knowhere-1.x
+                                          Type()};
+        auto binary = binset.GetByNames(names);
 
         MemoryIOReader reader;
         reader.total = binary->size;

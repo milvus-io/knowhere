@@ -27,8 +27,6 @@
 
 namespace knowhere {
 
-#define RAW_DATA "RAW_DATA"
-
 template <typename T>
 struct QuantizerT {
     typedef faiss::IndexFlat type;
@@ -649,11 +647,7 @@ IvfIndexNode<T>::Serialize(BinarySet& binset) const {
             faiss::write_index(index_.get(), &writer);
         }
         std::shared_ptr<uint8_t[]> data(writer.data_);
-        if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value) {
-            binset.Append("BIN_IVF", data, writer.rp);
-        } else {
-            binset.Append("IVF", data, writer.rp);
-        }
+        binset.Append(Type(), data, writer.rp);
         return Status::success;
     } catch (const std::exception& e) {
         LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
@@ -664,11 +658,10 @@ IvfIndexNode<T>::Serialize(BinarySet& binset) const {
 template <typename T>
 Status
 IvfIndexNode<T>::Deserialize(const BinarySet& binset) {
-    std::string name = "IVF";
-    if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value) {
-        name = "BIN_IVF";
-    }
-    auto binary = binset.GetByName(name);
+    std::vector<std::string> names = {"IVF",        // compatible with knowhere-1.x
+                                      "BinaryIVF",  // compatible with knowhere-1.x
+                                      Type()};
+    auto binary = binset.GetByNames(names);
 
     MemoryIOReader reader;
     reader.total = binary->size;
@@ -709,8 +702,9 @@ IvfIndexNode<T>::DeserializeFromFile(const std::string& filename, const LoadConf
 template <>
 Status
 IvfIndexNode<faiss::IndexIVFFlat>::Deserialize(const BinarySet& binset) {
-    std::string name = "IVF";
-    auto binary = binset.GetByName(name);
+    std::vector<std::string> names = {"IVF",  // compatible with knowhere-1.x
+                                      Type()};
+    auto binary = binset.GetByNames(names);
 
     MemoryIOReader reader;
     reader.total = binary->size;
@@ -719,7 +713,7 @@ IvfIndexNode<faiss::IndexIVFFlat>::Deserialize(const BinarySet& binset) {
         index_.reset(static_cast<faiss::IndexIVFFlat*>(faiss::read_index_nm(&reader)));
 
         // Construct arranged data from original data
-        auto binary = binset.GetByName(RAW_DATA);
+        auto binary = binset.GetByName("RAW_DATA");
         auto invlists = index_->invlists;
         auto d = index_->d;
         size_t nb = binary->size / invlists->code_size;

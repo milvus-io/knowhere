@@ -196,7 +196,7 @@ class GpuIvfIndexNode : public IndexNode {
                 delete host_index;
             }
             std::shared_ptr<uint8_t[]> data(writer.data_);
-            binset.Append("IVF", data, writer.rp);
+            binset.Append(Type(), data, writer.rp);
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
             return Status::faiss_inner_error;
@@ -207,7 +207,7 @@ class GpuIvfIndexNode : public IndexNode {
 
     virtual Status
     Deserialize(const BinarySet& binset) override {
-        auto binary = binset.GetByName("IVF");
+        auto binary = binset.GetByName(Type());
         MemoryIOReader reader;
         try {
             reader.total = binary->size;
