@@ -60,8 +60,8 @@ KnowhereConfig::SetSimdType(const SimdType simd_type) {
         LOG_KNOWHERE_INFO_ << "FAISS expect simdType::AUTO";
     } else if (simd_type == SimdType::AVX512) {
         faiss::use_avx512 = true;
-        faiss::use_avx2 = true;
-        faiss::use_sse4_2 = true;
+        faiss::use_avx2 = false;
+        faiss::use_sse4_2 = false;
         LOG_KNOWHERE_INFO_ << "FAISS expect simdType::AVX512";
     } else if (simd_type == SimdType::AVX2) {
         faiss::use_avx512 = false;
