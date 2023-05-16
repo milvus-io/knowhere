@@ -88,10 +88,23 @@ del redo
 del Enum
 %}
 
+
 %inline %{
+
+class GILReleaser {
+public:
+    GILReleaser() : save(PyEval_SaveThread()) {
+    }
+    ~GILReleaser() {
+        PyEval_RestoreThread(save);
+    }
+    PyThreadState* save;
+};
+
 class IndexWrap {
  public:
     IndexWrap(const std::string& name) {
+        GILReleaser rel;
         if (name == std::string("DISKANN")) {
             std::shared_ptr<knowhere::FileManager> file_manager = std::make_shared<knowhere::LocalFileManager>();
             auto diskann_pack = knowhere::Pack(file_manager);
@@ -103,21 +116,25 @@ class IndexWrap {
 
     knowhere::Status
     Build(knowhere::DataSetPtr dataset, const std::string& json) {
+        GILReleaser rel;
         return idx.Build(*dataset, knowhere::Json::parse(json));
     }
 
     knowhere::Status
     Train(knowhere::DataSetPtr dataset, const std::string& json) {
+        GILReleaser rel;
         return idx.Train(*dataset, knowhere::Json::parse(json));
     }
 
     knowhere::Status
     Add(knowhere::DataSetPtr dataset, const std::string& json) {
+        GILReleaser rel;
         return idx.Add(*dataset, knowhere::Json::parse(json));
     }
 
     knowhere::DataSetPtr
     Search(knowhere::DataSetPtr dataset, const std::string& json, const knowhere::BitsetView& bitset, knowhere::Status& status) {
+        GILReleaser rel;
         auto res = idx.Search(*dataset, knowhere::Json::parse(json), bitset);
         if (res.has_value()) {
             status = knowhere::Status::success;
@@ -130,6 +147,7 @@ class IndexWrap {
 
     knowhere::DataSetPtr
     RangeSearch(knowhere::DataSetPtr dataset, const std::string& json, const knowhere::BitsetView& bitset, knowhere::Status& status){
+        GILReleaser rel;
         auto res = idx.RangeSearch(*dataset, knowhere::Json::parse(json), bitset);
         if (res.has_value()) {
             status = knowhere::Status::success;
@@ -142,6 +160,7 @@ class IndexWrap {
 
     knowhere::DataSetPtr
     GetVectorByIds(knowhere::DataSetPtr dataset, knowhere::Status& status) {
+        GILReleaser rel;
         auto res = idx.GetVectorByIds(*dataset);
         if (res.has_value()) {
             status = knowhere::Status::success;
@@ -154,16 +173,19 @@ class IndexWrap {
 
     bool
     HasRawData(const std::string& metric_type) {
+        GILReleaser rel;
         return idx.HasRawData(metric_type);
     }
 
     knowhere::Status
     Serialize(knowhere::BinarySetPtr binset) {
+        GILReleaser rel;
         return idx.Serialize(*binset);
     }
 
     knowhere::Status
     Deserialize(knowhere::BinarySetPtr binset) {
+        GILReleaser rel;
         return idx.Deserialize(*binset);
     }
 
@@ -269,6 +291,7 @@ knowhere::DataSetPtr GetNullDataSet() {
 
 void
 DataSet2Array(knowhere::DataSetPtr result, float* dis, int nq_1, int k_1, int* ids, int nq_2, int k_2) {
+    GILReleaser rel;
     auto ids_ = result->GetIds();
     auto dist_ = result->GetDistance();
     assert(nq_1 == nq_2);
@@ -283,6 +306,7 @@ DataSet2Array(knowhere::DataSetPtr result, float* dis, int nq_1, int k_1, int* i
 
 void
 DataSetTensor2Array(knowhere::DataSetPtr result, float* data, int rows, int dim) {
+    GILReleaser rel;
     auto data_ = result->GetTensor();
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < dim; ++j) {
@@ -293,6 +317,7 @@ DataSetTensor2Array(knowhere::DataSetPtr result, float* data, int rows, int dim)
 
 void
 DumpRangeResultIds(knowhere::DataSetPtr result, int* ids, int len) {
+    GILReleaser rel;
     auto ids_ = result->GetIds();
     for (int i = 0; i < len; ++i) {
         *(ids + i) = *((int64_t*)(ids_) + i);
@@ -301,6 +326,7 @@ DumpRangeResultIds(knowhere::DataSetPtr result, int* ids, int len) {
 
 void
 DumpRangeResultLimits(knowhere::DataSetPtr result, int* lims, int len) {
+    GILReleaser rel;
     auto lims_ = result->GetLims();
     for (int i = 0; i < len; ++i) {
         *(lims + i) = *((size_t*)(lims_) + i);
@@ -309,6 +335,7 @@ DumpRangeResultLimits(knowhere::DataSetPtr result, int* lims, int len) {
 
 void
 DumpRangeResultDis(knowhere::DataSetPtr result, float* dis, int len) {
+    GILReleaser rel;
     auto dist_ = result->GetDistance();
     for (int i = 0; i < len; ++i) {
         *(dis + i) = *((float*)(dist_) + i);
