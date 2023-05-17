@@ -204,7 +204,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         return (int)r;
     }
 
-    float
+    inline dist_t
     calcDistance(const tableint id1, const tableint id2) const {
         dist_t dist = fstdistfunc_(getDataByInternalId(id1), getDataByInternalId(id2), dist_func_param_);
         if (metric_type_ == Metric::COSINE) {
@@ -213,7 +213,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         return dist;
     }
 
-    float
+    inline dist_t
     calcDistance(const void* vec, const tableint id) const {
         dist_t dist = fstdistfunc_(vec, getDataByInternalId(id), dist_func_param_);
         if (metric_type_ == Metric::COSINE) {
@@ -223,7 +223,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     }
 
     std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
-    searchBaseLayer(tableint ep_id, const void* data_point, int layer) {
+    searchBaseLayer(tableint ep_id, tableint cur_c, int layer) {
         auto& visited = visited_list_pool_->getFreeVisitedList();
 
         std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
@@ -232,7 +232,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             candidateSet;
 
         dist_t lowerBound;
-        dist_t dist = calcDistance(data_point, ep_id);
+        dist_t dist = calcDistance(cur_c, ep_id);
         top_candidates.emplace(dist, ep_id);
         lowerBound = dist;
         candidateSet.emplace(-dist, ep_id);
@@ -271,7 +271,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                 }
                 visited[candidate_id] = true;
 
-                dist_t dist1 = calcDistance(data_point, candidate_id);
+                dist_t dist1 = calcDistance(cur_c, candidate_id);
                 if (top_candidates.size() < ef_construction_ || lowerBound > dist1) {
                     candidateSet.emplace(-dist1, candidate_id);
 #if defined(USE_PREFETCH)
@@ -1035,13 +1035,12 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         tableint enterpoint_copy = enterpoint_node_;
 
         memset(data_level0_memory_ + cur_c * size_data_per_element_ + offsetLevel0_, 0, size_data_per_element_);
+        memcpy(getDataByInternalId(cur_c), data_point, data_size_);
 
         if (metric_type_ == Metric::COSINE) {
             data_norm_l2_[cur_c] =
                 std::sqrt(faiss::fvec_norm_L2sqr((const float*)data_point, *(size_t*)(dist_func_param_)));
         }
-
-        memcpy(getDataByInternalId(cur_c), data_point, data_size_);
 
         if (curlevel) {
             linkLists_[cur_c] = (char*)malloc(size_links_per_element_ * curlevel + 1);
@@ -1052,7 +1051,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
         if ((signed)currObj != -1) {
             if (curlevel < maxlevelcopy) {
-                dist_t curdist = calcDistance(data_point, currObj);
+                dist_t curdist = calcDistance(cur_c, currObj);
                 for (int level = maxlevelcopy; level > curlevel; level--) {
                     bool changed = true;
                     while (changed) {
@@ -1067,7 +1066,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                             tableint cand = datal[i];
                             if (cand < 0 || cand > max_elements_)
                                 throw std::runtime_error("cand error");
-                            dist_t d = calcDistance(data_point, cand);
+                            dist_t d = calcDistance(cur_c, cand);
                             if (d < curdist) {
                                 curdist = d;
                                 currObj = cand;
@@ -1084,7 +1083,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
                 std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>,
                                     CompareByFirst>
-                    top_candidates = searchBaseLayer(currObj, data_point, level);
+                    top_candidates = searchBaseLayer(currObj, cur_c, level);
                 currObj = mutuallyConnectNewElement(data_point, cur_c, top_candidates, level, false);
             }
 
