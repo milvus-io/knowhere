@@ -30,6 +30,12 @@ class RaftIvfFlatConfig : public IvfFlatConfig {
     CFG_FLOAT kmeans_trainset_fraction;
     CFG_BOOL adaptive_centers;
     KNOHWERE_DECLARE_CONFIG(RaftIvfFlatConfig) {
+        KNOWHERE_CONFIG_DECLARE_FIELD(k)
+            .set_default(10)
+            .description("search for top k similar vector.")
+            .set_range(1, 1024)
+            .for_search();
+
         KNOWHERE_CONFIG_DECLARE_FIELD(gpu_ids)
             .description("gpu device ids")
             .set_default({
@@ -64,6 +70,12 @@ class RaftIvfPqConfig : public IvfPqConfig {
     CFG_STRING internal_distance_dtype;
     CFG_FLOAT preferred_shmem_carveout;
     KNOHWERE_DECLARE_CONFIG(RaftIvfPqConfig) {
+        KNOWHERE_CONFIG_DECLARE_FIELD(k)
+            .set_default(10)
+            .description("search for top k similar vector.")
+            .set_range(1, 1024)
+            .for_search();
+
         KNOWHERE_CONFIG_DECLARE_FIELD(gpu_ids)
             .description("gpu device ids")
             .set_default({
