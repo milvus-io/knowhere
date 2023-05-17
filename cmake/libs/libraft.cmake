@@ -32,14 +32,10 @@ set(RAFT_FORK "rapidsai")
 set(RAFT_PINNED_TAG "branch-${RAPIDS_VERSION}")
 
 function(find_and_configure_raft)
-  set(oneValueArgs VERSION FORK PINNED_TAG COMPILE_LIBRARY)
+  set(oneValueArgs VERSION FORK PINNED_TAG)
   cmake_parse_arguments(PKG "${options}" "${oneValueArgs}" "${multiValueArgs}"
                         ${ARGN})
 
-  set(RAFT_COMPONENTS "")
-  if(PKG_COMPILE_LIBRARY)
-      string(APPEND RAFT_COMPONENTS " compiled")
-  endif()
   # -----------------------------------------------------
   # Invoke CPM find_package()
   # -----------------------------------------------------
@@ -60,7 +56,6 @@ function(find_and_configure_raft)
     OPTIONS
     "BUILD_TESTS OFF"
     "BUILD_BENCH OFF"
-    "RAFT_COMPILE_LIBRARY ${PKG_COMPILE_LIBRARY}"
     "RAFT_USE_FAISS_STATIC OFF") # Turn this on to build FAISS into your binary
 
     if(raft_ADDED)
