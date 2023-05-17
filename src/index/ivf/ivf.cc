@@ -662,6 +662,9 @@ IvfIndexNode<T>::Deserialize(const BinarySet& binset) {
                                       "BinaryIVF",  // compatible with knowhere-1.x
                                       Type()};
     auto binary = binset.GetByNames(names);
+    if (binary == nullptr) {
+        return Status::invalid_binary_set;
+    }
 
     MemoryIOReader reader;
     reader.total = binary->size;
@@ -705,6 +708,9 @@ IvfIndexNode<faiss::IndexIVFFlat>::Deserialize(const BinarySet& binset) {
     std::vector<std::string> names = {"IVF",  // compatible with knowhere-1.x
                                       Type()};
     auto binary = binset.GetByNames(names);
+    if (binary == nullptr) {
+        return Status::invalid_binary_set;
+    }
 
     MemoryIOReader reader;
     reader.total = binary->size;
