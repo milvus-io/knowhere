@@ -28,7 +28,7 @@ done
 ROOT_DIR="$( cd -P "$( dirname "$SOURCE" )/.." && pwd )"
 
 KNOWHERE_CORE_DIR="${ROOT_DIR}/src"
-KNOWHERE_UNITTEST_DIR="${ROOT_DIR}/build/tests/ut"
+KNOWHERE_UNITTEST_DIR="${ROOT_DIR}/build/Release/tests/ut"
 
 echo "ROOT_DIR = ${ROOT_DIR}"
 echo "KNOWHERE_CORE_DIR = ${KNOWHERE_CORE_DIR}"
