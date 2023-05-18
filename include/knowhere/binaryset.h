@@ -37,7 +37,10 @@ class BinarySet {
  public:
     BinaryPtr
     GetByName(const std::string& name) const {
-        return binary_map_.at(name);
+        if (Contains(name)) {
+            return binary_map_.at(name);
+        }
+        return nullptr;
     }
 
     // This API is used to be compatible with knowhere-1.x.

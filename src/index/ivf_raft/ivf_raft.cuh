@@ -691,6 +691,9 @@ class RaftIvfIndexNode : public IndexNode {
     Deserialize(const BinarySet& binset) override {
         std::stringbuf buf;
         auto binary = binset.GetByName(this->Type());
+        if (binary == nullptr) {
+            return Status::invalid_binary_set;
+        }
         buf.sputn((char*)binary->data.get(), binary->size);
         std::istream is(&buf);
 
