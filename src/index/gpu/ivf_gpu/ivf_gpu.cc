@@ -208,6 +208,9 @@ class GpuIvfIndexNode : public IndexNode {
     virtual Status
     Deserialize(const BinarySet& binset) override {
         auto binary = binset.GetByName(Type());
+        if (binary == nullptr) {
+            return Status::invalid_binary_set;
+        }
         MemoryIOReader reader;
         try {
             reader.total = binary->size;

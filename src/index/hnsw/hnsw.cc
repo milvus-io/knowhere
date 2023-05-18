@@ -334,6 +334,9 @@ class HnswIndexNode : public IndexNode {
         }
         try {
             auto binary = binset.GetByName(Type());
+            if (binary == nullptr) {
+                return Status::invalid_binary_set;
+            }
 
             MemoryIOReader reader;
             reader.total = binary->size;

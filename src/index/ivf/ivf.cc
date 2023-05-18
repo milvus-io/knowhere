@@ -720,6 +720,9 @@ IvfIndexNode<faiss::IndexIVFFlat>::Deserialize(const BinarySet& binset) {
 
         // Construct arranged data from original data
         auto binary = binset.GetByName("RAW_DATA");
+        if (binary == nullptr) {
+            return Status::invalid_binary_set;
+        }
         auto invlists = index_->invlists;
         auto d = index_->d;
         size_t nb = binary->size / invlists->code_size;
