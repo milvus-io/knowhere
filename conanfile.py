@@ -31,6 +31,7 @@ class KnowhereConan(ConanFile):
         "with_profiler": [True, False],
         "with_ut": [True, False],
         "with_benchmark": [True, False],
+        "with_coverage": [True, False],
     }
     default_options = {
         "shared": True,
@@ -43,6 +44,7 @@ class KnowhereConan(ConanFile):
         "glog:with_gflags": False,
         "prometheus-cpp:with_pull": False,
         "with_benchmark": False,
+        "with_coverage": False,
     }
 
     exports_sources = (
@@ -144,6 +146,7 @@ class KnowhereConan(ConanFile):
         tc.variables["WITH_PROFILER"] = self.options.with_profiler
         tc.variables["WITH_UT"] = self.options.with_ut
         tc.variables["WITH_BENCHMARK"] = self.options.with_benchmark
+        tc.variables["WITH_COVERAGE"] = self.options.with_coverage
         tc.generate()
         deps = CMakeDeps(self)
         deps.generate()
