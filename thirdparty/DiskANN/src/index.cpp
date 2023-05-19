@@ -206,11 +206,11 @@ namespace diskann {
   // Initialize an index with metric m, load the data of type T with filename
   // (bin), and initialize max_points
   template<typename T, typename TagT>
-  Index<T, TagT>::Index(Metric m, const size_t dim, const size_t max_points,
+  Index<T, TagT>::Index(Metric m, bool ip_prepared, const size_t dim, const size_t max_points,
                         const bool dynamic_index, const Parameters &indexParams,
                         const Parameters &searchParams, const bool enable_tags,
                         const bool support_eager_delete)
-      : Index(m, dim, max_points, dynamic_index, enable_tags,
+      : Index(m, ip_prepared, dim, max_points, dynamic_index, enable_tags,
               support_eager_delete) {  // Thank you C++ 11!
     _indexingQueueSize = indexParams.Get<uint32_t>("L");
     _indexingRange = indexParams.Get<uint32_t>("R");
@@ -226,7 +226,7 @@ namespace diskann {
   }
 
   template<typename T, typename TagT>
-  Index<T, TagT>::Index(Metric m, const size_t dim, const size_t max_points,
+  Index<T, TagT>::Index(Metric m, bool ip_prepared, const size_t dim, const size_t max_points,
                         const bool dynamic_index, const bool enable_tags,
                         const bool support_eager_delete)
       : _dist_metric(m), _dim(dim), _max_points(max_points),
@@ -281,7 +281,16 @@ namespace diskann {
       _in_graph.resize(_max_points + _num_frozen_pts);
     }
 
-    this->_distance = get_distance_function<T>(m);
+    this->_func = get_distance_function<T>(m);
+    if (ip_prepared) {
+        _padding_id = _dim - 1;
+        this->_distance = [this](const T* x, const T* y, size_t n) -> T {
+            auto ret = _func(x, y, n);
+            return ret + 2*x[_padding_id]*y[_padding_id];
+        };
+    } else {
+        this->_distance = _func;
+    }
 
     _locks = std::vector<std::mutex>(_max_points + _num_frozen_pts);
 
