@@ -501,6 +501,7 @@ namespace diskann {
 
   template<typename T>
   int build_merged_vamana_index(std::string     base_file,
+                                bool ip_prepared,
                                 diskann::Metric compareMetric, unsigned L,
                                 unsigned R, bool accelerate_build,
                                 double sampling_rate, double ram_budget,
@@ -528,7 +529,7 @@ namespace diskann {
 
       std::unique_ptr<diskann::Index<T>> _pvamanaIndex =
           std::unique_ptr<diskann::Index<T>>(new diskann::Index<T>(
-              compareMetric, base_dim, base_num, false, false));
+              compareMetric, ip_prepared, base_dim, base_num, false, false));
       _pvamanaIndex->build(base_file.c_str(), base_num, paras);
 
       _pvamanaIndex->save(mem_index_path.c_str(), true);
@@ -571,7 +572,7 @@ namespace diskann {
       get_bin_metadata(shard_base_file, shard_base_pts, shard_base_dim);
       std::unique_ptr<diskann::Index<T>> _pvamanaIndex =
           std::unique_ptr<diskann::Index<T>>(
-              new diskann::Index<T>(compareMetric, shard_base_dim,
+              new diskann::Index<T>(compareMetric, ip_prepared, shard_base_dim,
                                     shard_base_pts, false));  // TODO: Single?
       _pvamanaIndex->build(shard_base_file.c_str(), shard_base_pts, paras);
       _pvamanaIndex->save(shard_index_file.c_str());
@@ -908,6 +909,7 @@ namespace diskann {
     bool use_disk_pq = disk_pq_dims != 0;
 
     bool reorder_data = config.reorder;
+    bool ip_prepared = false;
 
     std::string base_file = config.data_file_path;
     std::string data_file_to_use = base_file;
@@ -944,6 +946,7 @@ namespace diskann {
       std::string norm_file = 
           get_disk_index_max_base_norm_file(disk_index_path);
       diskann::save_bin<float>(norm_file, &max_norm_of_base, 1, 1);
+      ip_prepared = true;
     }
 
     unsigned R = config.max_degree;
@@ -1044,7 +1047,7 @@ namespace diskann {
 #endif
     auto graph_s = std::chrono::high_resolution_clock::now();
     diskann::build_merged_vamana_index<T>(
-        data_file_to_use.c_str(), diskann::Metric::L2, L, R,
+        data_file_to_use.c_str(), ip_prepared, diskann::Metric::L2, L, R,
         config.accelerate_build, p_val, indexing_ram_budget, mem_index_path,
         medoids_path, centroids_path);
     auto graph_e = std::chrono::high_resolution_clock::now();
@@ -1141,17 +1144,17 @@ namespace diskann {
       const BuildConfig &config);
 
   template DISKANN_DLLEXPORT int build_merged_vamana_index<int8_t>(
-      std::string base_file, diskann::Metric compareMetric, unsigned L,
+      std::string base_file, bool ip_prepared, diskann::Metric compareMetric, unsigned L,
       unsigned R, bool accelerate_build, double sampling_rate,
       double ram_budget, std::string mem_index_path, std::string medoids_path,
       std::string centroids_file);
   template DISKANN_DLLEXPORT int build_merged_vamana_index<float>(
-      std::string base_file, diskann::Metric compareMetric, unsigned L,
+      std::string base_file, bool ip_prepared, diskann::Metric compareMetric, unsigned L,
       unsigned R, bool accelerate_build, double sampling_rate,
       double ram_budget, std::string mem_index_path, std::string medoids_path,
       std::string centroids_file);
   template DISKANN_DLLEXPORT int build_merged_vamana_index<uint8_t>(
-      std::string base_file, diskann::Metric compareMetric, unsigned L,
+      std::string base_file, bool ip_prepared, diskann::Metric compareMetric, unsigned L,
       unsigned R, bool accelerate_build, double sampling_rate,
       double ram_budget, std::string mem_index_path, std::string medoids_path,
       std::string centroids_file);

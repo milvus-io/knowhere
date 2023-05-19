@@ -11,6 +11,7 @@
 #include <stack>
 #include <string>
 #include <unordered_map>
+#include <functional>
 #include "tsl/robin_set.h"
 #include "tsl/robin_map.h"
 
@@ -93,13 +94,13 @@ namespace diskann {
    public:
     // Constructor for Bulk operations and for creating the index object solely
     // for loading a prexisting index.
-    DISKANN_DLLEXPORT Index(Metric m, const size_t dim, const size_t max_points,
+    DISKANN_DLLEXPORT Index(Metric m, bool ip_prepared, const size_t dim, const size_t max_points,
                             const bool dynamic_index,
                             const bool enable_tags = false,
                             const bool support_eager_delete = false);
 
     // Constructor for incremental index
-    DISKANN_DLLEXPORT Index(Metric m, const size_t dim, const size_t max_points,
+    DISKANN_DLLEXPORT Index(Metric m, bool ip_prepared, const size_t dim, const size_t max_points,
                             const bool        dynamic_index,
                             const Parameters &indexParameters,
                             const Parameters &searchParameters,
@@ -163,8 +164,8 @@ namespace diskann {
     // insertions possible only when id corresponding to tag does not already
     // exist in the graph
     DISKANN_DLLEXPORT int insert_point(
-        const T *point, 
-        const TagT tag);  
+        const T *point,
+        const TagT tag);
 
     // call before triggering deleteions - sets important flags required for
     // deletion related operations
@@ -234,7 +235,7 @@ namespace diskann {
     // change.
     DISKANN_DLLEXPORT static const int METADATA_ROWS = 5;
 
-    // For Bulk Index FastL2 search, we interleave the data with graph 
+    // For Bulk Index FastL2 search, we interleave the data with graph
     DISKANN_DLLEXPORT void optimize_index_layout();
 
     // For FastL2 search on optimized layout
@@ -352,13 +353,15 @@ namespace diskann {
    private:
     Metric       _dist_metric = diskann::L2;
     size_t       _dim = 0;
+    size_t       _padding_id = 0;
     size_t       _aligned_dim = 0;
     T *          _data = nullptr;
     size_t       _nd = 0;  // number of active points i.e. existing in the graph
     size_t       _max_points = 0;  // total number of points in given data set
     size_t       _num_frozen_pts = 0;
     bool         _has_built = false;
-    DISTFUN<T>   _distance = nullptr;
+    DISTFUN<T>   _func = nullptr;
+    std::function<T(const T*, const T*, size_t)> _distance;
     unsigned     _width = 0;
     unsigned     _ep = 0;
     size_t       _max_range_of_loaded_graph = 0;
