@@ -223,8 +223,12 @@ from_json(const Config& config, DiskANNQueryConfig& query_conf) {
                                       std::max(kSearchListSizeMaxValue, static_cast<uint32_t>(10 * query_conf.k)),
                                       query_conf.search_list_size);
     CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, kBeamwidthMinValue, kBeamwidthMaxValue, query_conf.beamwidth);
-    CheckNumericParamAndSet<float>(config, kFilterThreshold, kFilterThresholdMinValue, kFilterThresholdMaxValue,
-                                   query_conf.filter_threshold);
+    if (config.contains(kFilterThreshold)) {
+        CheckNumericParamAndSet<float>(config, kFilterThreshold, kFilterThresholdMinValue, kFilterThresholdMaxValue,
+                                       query_conf.filter_threshold);
+    } else {
+        query_conf.filter_threshold = kFilterThresholdMinValue;
+    }
 }
 
 void
