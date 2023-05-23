@@ -13,7 +13,7 @@
 #include <string>
 
 #include "catch2/catch_test_macros.hpp"
-#include "knowhere/comp/prometheus_client.h"
+#include "knowhere/prometheus_client.h"
 
 TEST_CASE("Test prometheus client", "[prometheus client]") {
     SECTION("check get metrics") {
