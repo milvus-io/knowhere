@@ -33,11 +33,55 @@ jobs:
           submodules: recursive
       - name: Install Dependency
         run: |
-          sudo apt update && sudo apt install -y cmake g++ gcc libopenblas-dev libcurl4-openssl-dev libaio-dev python3 python3-pip && pip3 install conan==1.58.0
+          sudo apt update \
+          && sudo apt install -y cmake g++ gcc libopenblas-dev libcurl4-openssl-dev libaio-dev python3 python3-pip lcov \
+          && pip3 install conan==1.58.0
       - name: Build & Run
         run: |
-          mkdir build && cd build && conan install .. --build=missing -s build_type=Debug -o with_ut=True -o with_diskann=True -o with_asan=True && conan build .. \
-          && ./Debug/tests/ut/knowhere_tests
+          mkdir build && cd build \
+          && conan install .. --build=missing -s build_type=Release -o with_ut=True -o with_diskann=True -o with_asan=True -o with_coverage=True \
+          && conan build .. \
+          && cd .. \
+          && ./scripts/run_codecov.sh
+      - name: Archive result
+        uses: actions/upload-artifact@v3
+        with:
+          name: codecov-result
+          path: |
+            ./lcov_output.info
+            *.info
+            *.out
+  codecov:
+    name: Upload Code Coverage
+    needs: [ut]
+    runs-on: ubuntu-20.04
+    timeout-minutes: 5
+    steps:
+      - name: Download code coverage results
+        uses: actions/download-artifact@v3.0.1
+        with:
+          name: codecov-result
+      - name: Display structure of code coverage results
+        run: |
+          ls -lah
+      - name: Upload coverage to Codecov
+        if: "github.repository == 'milvus-io/knowhere'"
+        uses: codecov/codecov-action@v3.1.1
+        id: upload_cov
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./lcov_output.info
+          name: ubuntu-20.04-unittests
+          fail_ci_if_error: true
+      - name: Retry Upload coverage to Codecov
+        if: "${{ failure() }} && github.repository == 'milvus-io/knowhere'"
+        uses: codecov/codecov-action@v3.1.1
+        id: retry_upload_cov
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./lcov_output.info
+          name: ubuntu-${{ matrix.ubuntu }}-unittests
+          fail_ci_if_error: true
 
   swig-build:
     name: python3 wheel
@@ -54,10 +98,15 @@ jobs:
           python-version: '3.8'
       - name: Install Dependency
         run: |
-          sudo apt update && sudo apt install -y cmake g++ gcc libopenblas-dev libaio-dev libcurl4-openssl-dev python3 python3-pip python3-setuptools && pip3 install conan==1.58.0 pytest faiss-cpu numpy wheel
+          sudo apt update \
+          && sudo apt install -y cmake g++ gcc libopenblas-dev libaio-dev libcurl4-openssl-dev python3 python3-pip python3-setuptools \
+          && pip3 install conan==1.58.0 pytest faiss-cpu numpy wheel
       - name: Build
         run: |
-          mkdir build && cd build && conan install .. --build=missing -o with_diskann=True -s compiler.libcxx=libstdc++11 -s build_type=Release && conan build ..
+          mkdir build \
+          && cd build \
+          && conan install .. --build=missing -o with_diskann=True -s compiler.libcxx=libstdc++11 -s build_type=Release \
+          && conan build ..
       - name: Swig Build
         run: |
           cd python && python3 setup.py bdist_wheel
