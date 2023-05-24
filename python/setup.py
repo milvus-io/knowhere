@@ -61,6 +61,7 @@ EXTRA_LINK_ARGS = [
     "-lknowhere",
     "-Wl,-rpath,$ORIGIN",
 ]
+EXTRA_OBJECTS = [os.path.join(get_thirdparty_prefix("libglog"), "lib", "libglog.a")]
 
 SWIG_OPTS = [
     "-c++",
@@ -79,6 +80,7 @@ _swigknowhere = Extension(
     extra_compile_args=EXTRA_COMPILE_ARGS,
     extra_link_args=EXTRA_LINK_ARGS,
     swig_opts=SWIG_OPTS,
+    extra_objects=EXTRA_OBJECTS
 )
 
 setup(

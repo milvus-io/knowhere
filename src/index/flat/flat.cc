@@ -18,6 +18,7 @@
 #include "io/FaissIO.h"
 #include "knowhere/comp/thread_pool.h"
 #include "knowhere/factory.h"
+#include "knowhere/log.h"
 #include "knowhere/utils.h"
 
 namespace knowhere {
@@ -253,6 +254,7 @@ class FlatIndexNode : public IndexNode {
     Status
     Serialize(BinarySet& binset) const override {
         if (!index_) {
+            LOG_KNOWHERE_ERROR_ << "Can not serialize empty index.";
             return Status::empty_index;
         }
         try {
@@ -279,6 +281,7 @@ class FlatIndexNode : public IndexNode {
                                           Type()};
         auto binary = binset.GetByNames(names);
         if (binary == nullptr) {
+            LOG_KNOWHERE_ERROR_ << "Invalid binary set.";
             return Status::invalid_binary_set;
         }
 

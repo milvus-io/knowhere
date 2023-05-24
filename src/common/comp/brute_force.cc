@@ -19,6 +19,7 @@
 #include "faiss/utils/distances.h"
 #include "knowhere/comp/thread_pool.h"
 #include "knowhere/config.h"
+#include "knowhere/log.h"
 #include "knowhere/utils.h"
 
 namespace knowhere {
@@ -117,8 +118,10 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
                                            cur_distances, cur_labels, bitset);
                     break;
                 }
-                default:
+                default: {
+                    LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << cfg.metric_type;
                     return Status::invalid_metric_type;
+                }
             }
             return Status::success;
         }));
@@ -156,6 +159,7 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
 
     auto metric_type = Str2FaissMetricType(cfg.metric_type);
     if (!metric_type.has_value()) {
+        LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << cfg.metric_type;
         return Status::invalid_metric_type;
     }
 
@@ -221,8 +225,10 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
                                            cur_distances, cur_labels, bitset);
                     break;
                 }
-                default:
+                default: {
+                    LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << cfg.metric_type;
                     return Status::invalid_metric_type;
+                }
             }
             return Status::success;
         }));
@@ -316,8 +322,10 @@ BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_da
                                                                                dim / 8, &res, bitset);
                     break;
                 }
-                default:
+                default: {
+                    LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << cfg.metric_type;
                     return Status::invalid_metric_type;
+                }
             }
             auto elem_cnt = res.lims[1];
             result_dist_array[index].resize(elem_cnt);

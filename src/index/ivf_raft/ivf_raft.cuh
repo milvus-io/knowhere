@@ -28,6 +28,7 @@
 #include "knowhere/comp/index_param.h"
 #include "knowhere/factory.h"
 #include "knowhere/index_node_thread_pool_wrapper.h"
+#include "knowhere/log.h"
 #include "knowhere/utils.h"
 #include "raft/core/device_resources.hpp"
 #include "raft/neighbors/ivf_flat.cuh"
@@ -659,8 +660,10 @@ class RaftIvfIndexNode : public IndexNode {
 
     virtual Status
     Serialize(BinarySet& binset) const override {
-        if (!gpu_index_.has_value())
+        if (!gpu_index_.has_value()) {
+            LOG_KNOWHERE_ERROR_ << "Can not serialize empty RaftIvfIndex.";
             return Status::empty_index;
+        }
         std::stringbuf buf;
 
         std::ostream os(&buf);
@@ -692,6 +695,7 @@ class RaftIvfIndexNode : public IndexNode {
         std::stringbuf buf;
         auto binary = binset.GetByName(this->Type());
         if (binary == nullptr) {
+            LOG_KNOWHERE_ERROR_ << "Invalid binary set.";
             return Status::invalid_binary_set;
         }
         buf.sputn((char*)binary->data.get(), binary->size);
@@ -729,6 +733,7 @@ class RaftIvfIndexNode : public IndexNode {
 
     virtual Status
     DeserializeFromFile(const std::string& filename, const LoadConfig& config) {
+        LOG_KNOWHERE_ERROR_ << "RaftIvfIndex doesn't support Deserialization from file.";
         return Status::not_implemented;
     }
 
