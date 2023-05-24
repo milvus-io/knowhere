@@ -101,7 +101,8 @@ namespace diskann {
         const bool use_reorder_data = false, QueryStats *stats = nullptr,
         const knowhere::feder::diskann::FederResultUniq &feder = nullptr,
         knowhere::BitsetView                             bitset_view = nullptr,
-        const float                                      filter_ratio = -1.0f);
+        const float                                      filter_ratio = -1.0f,
+        const bool                                       for_tuning = false);
 
     DISKANN_DLLEXPORT _u32 range_search(
         const T *query1, const double range, const _u64 min_l_search,

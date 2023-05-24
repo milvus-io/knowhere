@@ -1144,7 +1144,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
         tableint currObj = enterpoint_node_;
         auto vec_hash = knowhere::hash_vec((const float*)query_data, *(size_t*)dist_func_param_);
-        if (!lru_cache.try_get(vec_hash, currObj)) {
+        // for tuning, do not use cache
+        if (param->for_tuning || !lru_cache.try_get(vec_hash, currObj)) {
             dist_t curdist = calcDistance(query_data, enterpoint_node_);
 
             for (int level = maxlevel_; level > 0; level--) {

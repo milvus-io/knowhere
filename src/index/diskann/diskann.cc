@@ -534,6 +534,7 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
     auto lsearch = static_cast<uint64_t>(search_conf.search_list_size);
     auto beamwidth = static_cast<uint64_t>(search_conf.beamwidth);
     auto filter_ratio = static_cast<float>(search_conf.filter_threshold);
+    auto for_tuning = static_cast<bool>(search_conf.for_tuning);
 
     auto nq = dataset.GetRows();
     auto dim = dataset.GetDim();
@@ -558,7 +559,7 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
         futures.push_back(pool_->push([&, index = row]() {
             pq_flash_index_->cached_beam_search(xq + (index * dim), k, lsearch, p_id + (index * k),
                                                 p_dist + (index * k), beamwidth, false, nullptr, feder_result, bitset,
-                                                filter_ratio);
+                                                filter_ratio, for_tuning);
         }));
     }
     for (auto& future : futures) {
