@@ -206,12 +206,12 @@ namespace diskann {
   // Initialize an index with metric m, load the data of type T with filename
   // (bin), and initialize max_points
   template<typename T, typename TagT>
-  Index<T, TagT>::Index(Metric m, const size_t dim, const size_t max_points,
-                        const bool        dynamic_index,
-                        const Parameters &indexParams,
+  Index<T, TagT>::Index(Metric m, bool ip_prepared, const size_t dim, const size_t max_points,
+                        const bool dynamic_index, const Parameters &indexParams,
                         const Parameters &searchParams, const bool enable_tags,
                         const bool support_eager_delete)
-      : Index(m, dim, max_points, dynamic_index, enable_tags, support_eager_delete) {  // Thank you C++ 11!
+      : Index(m, ip_prepared, dim, max_points, dynamic_index, enable_tags,
+              support_eager_delete) {  // Thank you C++ 11!
     _indexingQueueSize = indexParams.Get<uint32_t>("L");
     _indexingRange = indexParams.Get<uint32_t>("R");
     _indexingMaxC = indexParams.Get<uint32_t>("C");
@@ -227,9 +227,9 @@ namespace diskann {
   }
 
   template<typename T, typename TagT>
-  Index<T, TagT>::Index(Metric m, const size_t dim, const size_t max_points,
-                        const bool dynamic_index,
-                        const bool enable_tags, const bool support_eager_delete)
+  Index<T, TagT>::Index(Metric m, bool ip_prepared, const size_t dim, const size_t max_points,
+                        const bool dynamic_index, const bool enable_tags,
+                        const bool support_eager_delete)
       : _dist_metric(m), _dim(dim), _max_points(max_points),
         _dynamic_index(dynamic_index), _enable_tags(enable_tags),
         _support_eager_delete(support_eager_delete) {
@@ -279,7 +279,17 @@ namespace diskann {
       _in_graph.reserve(_max_points + _num_frozen_pts);
       _in_graph.resize(_max_points + _num_frozen_pts);
     }
-    this->_distance = get_distance_function<T>(m);
+
+    this->_func = get_distance_function<T>(m);
+    if (ip_prepared) {
+        _padding_id = _dim - 1;
+        this->_distance = [this](const T* x, const T* y, size_t n) -> T {
+            auto ret = _func(x, y, n);
+            return ret + 2*x[_padding_id]*y[_padding_id];
+        };
+    } else {
+        this->_distance = _func;
+    }
 
     _locks = std::vector<std::mutex>(_max_points + _num_frozen_pts);
 
@@ -387,7 +397,7 @@ namespace diskann {
     std::ofstream out;
     open_file_to_write(out, graph_file);
 
-    _u64 file_offset = 0; // we will use this if we want 
+    _u64 file_offset = 0; // we will use this if we want
     out.seekp(file_offset, out.beg);
     _u64 index_size = 24;
     _u32 max_degree = 0;
@@ -1181,14 +1191,14 @@ namespace diskann {
 
   template<typename T, typename TagT>
   void Index<T, TagT>::prune_neighbors(const unsigned         location,
-                                       std::vector<Neighbor> &pool, 
+                                       std::vector<Neighbor> &pool,
                                        std::vector<unsigned> &pruned_list) {
                                        prune_neighbors(location, pool, _indexingRange, _indexingMaxC, _indexingAlpha, pruned_list);
                                        }
 
   template<typename T, typename TagT>
   void Index<T, TagT>::prune_neighbors(const unsigned         location,
-                                       std::vector<Neighbor> &pool, const _u32 range, const _u32 max_candidate_size, const float alpha, 
+                                       std::vector<Neighbor> &pool, const _u32 range, const _u32 max_candidate_size, const float alpha,
                                        std::vector<unsigned> &pruned_list) {
     if (pool.size() == 0) {
       std::stringstream ss;
@@ -2715,7 +2725,7 @@ namespace diskann {
   }
 
   template<typename T, typename TagT>
-  int Index<T, TagT>::insert_point(const T *point, 
+  int Index<T, TagT>::insert_point(const T *point,
                                    const TagT tag) {
     std::shared_lock<std::shared_timed_mutex> lock(_update_lock);
     unsigned range = _indexingRange;  // parameters.Get<unsigned>("R");
