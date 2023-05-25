@@ -92,7 +92,7 @@ setup(
     license='Apache License 2.0',
     keywords="search nearest neighbors",
     setup_requires=["numpy", "setuptools_scm"],
-    use_scm_version={'root': '..', 'local_scheme': 'no-local-version', 'version_scheme': 'release-branch-semver'},
+    #use_scm_version={'root': '..', 'local_scheme': 'no-local-version', 'version_scheme': 'release-branch-semver'},
     long_description=get_readme(),
     long_description_content_type="text/markdown",
     packages=["knowhere"],
