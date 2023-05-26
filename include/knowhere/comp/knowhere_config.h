@@ -71,19 +71,6 @@ class KnowhereConfig {
     SetClusteringType(const ClusteringType clustering_type);
 
     /**
-     * set Statistics Level [0, 3]
-     */
-    static void
-    SetStatisticsLevel(const int32_t stat_level);
-
-    // todo: add log level?
-    /**
-     * set Log handler
-     */
-    static void
-    SetLogHandler();
-
-    /**
      * The numebr of maximum parallel disk reads per thread. It should be set linearly proportional to `beam_width`.
      * Suggested ratio of this and `beam_width` is 2:1.
      * On Linux, the default limit of `aio-max-nr` is 65536, so the product of `num_threads` and `aio_maxnr` should
