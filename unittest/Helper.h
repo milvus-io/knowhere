@@ -63,8 +63,8 @@ class ParamGenerator {
                 {knowhere::meta::TOPK, K},
                 {knowhere::meta::BUILD_INDEX_OMP_NUM, BUILD_INDEX_OMP_NUM},
                 {knowhere::meta::QUERY_OMP_NUM, QUERY_OMP_NUM},
-                {knowhere::indexparam::NLIST, 16},
-                {knowhere::indexparam::NPROBE, 8},
+                // {knowhere::indexparam::NLIST, 16},
+                // {knowhere::indexparam::NPROBE, 8},
         };
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_IDMAP) {
             return knowhere::Config{
@@ -83,8 +83,8 @@ class ParamGenerator {
                 {knowhere::meta::DEVICE_ID, DEVICE_ID},
                 {knowhere::meta::BUILD_INDEX_OMP_NUM, BUILD_INDEX_OMP_NUM},
                 {knowhere::meta::QUERY_OMP_NUM, QUERY_OMP_NUM},
-                {knowhere::indexparam::NLIST, 16},
-                {knowhere::indexparam::NPROBE, 8},
+                // {knowhere::indexparam::NLIST, 16},
+                // {knowhere::indexparam::NPROBE, 8},
             };
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFPQ) {
             return knowhere::Config{
@@ -94,10 +94,10 @@ class ParamGenerator {
                 {knowhere::meta::DEVICE_ID, DEVICE_ID},
                 {knowhere::meta::BUILD_INDEX_OMP_NUM, BUILD_INDEX_OMP_NUM},
                 {knowhere::meta::QUERY_OMP_NUM, QUERY_OMP_NUM},
-                {knowhere::indexparam::NLIST, 16},
-                {knowhere::indexparam::NPROBE, 8},
-                {knowhere::indexparam::M, 4},
-                {knowhere::indexparam::NBITS, 8},
+                // {knowhere::indexparam::NLIST, 16},
+                // {knowhere::indexparam::NPROBE, 8},
+                // {knowhere::indexparam::M, 4},
+                // {knowhere::indexparam::NBITS, 8},
             };
         } else if (type == knowhere::IndexEnum::INDEX_FAISS_IVFSQ8) {
             return knowhere::Config{
@@ -107,9 +107,9 @@ class ParamGenerator {
                 {knowhere::meta::DEVICE_ID, DEVICE_ID},
                 {knowhere::meta::BUILD_INDEX_OMP_NUM, BUILD_INDEX_OMP_NUM},
                 {knowhere::meta::QUERY_OMP_NUM, QUERY_OMP_NUM},
-                {knowhere::indexparam::NLIST, 16},
-                {knowhere::indexparam::NPROBE, 8},
-                {knowhere::indexparam::NBITS, 8},
+                // {knowhere::indexparam::NLIST, 16},
+                // {knowhere::indexparam::NPROBE, 8},
+                // {knowhere::indexparam::NBITS, 8},
             };
         } else if (type == knowhere::IndexEnum::INDEX_HNSW) {
             return knowhere::Config {
@@ -118,9 +118,9 @@ class ParamGenerator {
                 {knowhere::meta::TOPK, K},
                 {knowhere::meta::BUILD_INDEX_OMP_NUM, BUILD_INDEX_OMP_NUM},
                 {knowhere::meta::QUERY_OMP_NUM, QUERY_OMP_NUM},
-                {knowhere::indexparam::HNSW_M, 16},
-                {knowhere::indexparam::EFCONSTRUCTION, 200},
-                {knowhere::indexparam::EF, 200},
+                // {knowhere::indexparam::HNSW_M, 16},
+                // {knowhere::indexparam::EFCONSTRUCTION, 200},
+                // {knowhere::indexparam::EF, 200},
             };
         } else if (type == knowhere::IndexEnum::INDEX_ANNOY) {
             return knowhere::Config {

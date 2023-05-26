@@ -48,7 +48,8 @@ static const std::vector<MetricType> default_binary_metric_array{metric::HAMMING
 inline void
 CheckIntegerRange(const Config& cfg, const std::string& key, int64_t min, int64_t max) {
     if (!cfg.contains(key)) {
-        KNOWHERE_THROW_FORMAT("Param '%s' not exist", key.data());
+        // when key not exist, default value will be used, skip check
+        return;
     }
     if (!cfg[key].is_number_integer()) {
         KNOWHERE_THROW_FORMAT("Param '%s' should be an integer", key.data());
@@ -62,7 +63,8 @@ CheckIntegerRange(const Config& cfg, const std::string& key, int64_t min, int64_
 inline void
 CheckFloatRange(const Config& cfg, const std::string& key, float min, float max) {
     if (!cfg.contains(key)) {
-        KNOWHERE_THROW_FORMAT("Param '%s' not exist", key.data());
+        // when key not exist, default value will be used, skip check
+        return;
     }
     if (!cfg[key].is_number_float()) {
         KNOWHERE_THROW_FORMAT("Param '%s' should be a float", key.data());
