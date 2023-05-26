@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-20.04, macos-11, centos7]
+        os: [ubuntu-20.04]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -32,11 +32,13 @@ jobs:
         env:
           ARTIFACT_NAME: ${{ env.RELEASE_NAME }}-${{ matrix.os }}
         run: |
-          mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_UT=OFF -DWITH_DISKANN=ON \
-          && cd .. && find src -type f | grep -E "\.cc$" | xargs /usr/lib/llvm-10/share/clang/run-clang-tidy.py -quiet -p=./build
-          mkdir -p artifacts && mv build artifacts/${{ env.ARTIFACT_NAME }}
-          rm -rf artifacts/${{ env.ARTIFACT_NAME }}/share
-          rm -rf artifacts/${{ env.ARTIFACT_NAME }}/lib/pkgconfig
+          mkdir build && cd build \
+          && conan install .. --build=missing -s build_type=Release -o with_diskann=True \
+          && conan build .. \
+          && cd ..
+          mkdir -p artifacts/${{ env.ARTIFACT_NAME }}/lib
+          mv build/Release/*.a artifacts/${{ env.ARTIFACT_NAME }}/lib
+          mv build/Release/*.so artifacts/${{ env.ARTIFACT_NAME }}/lib
           cd artifacts && tar -zcvf ${{ env.ARTIFACT_NAME }}.tar.gz ${{ env.ARTIFACT_NAME }}/
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
@@ -68,51 +70,51 @@ jobs:
           name: ${{ env.RELEASE_NAME }}
           commit: '${{ github.ref_name }}'
 
-  Conan:
-    name: Upload to jfrog for ${{ matrix.os }}
-    runs-on: ubuntu-22.04
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Ubuntu 20.04
-            os: ubuntu20.04
-          - name: Centos7
-            os: centos7
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Cache Conan Packages
-        uses: pat-s/always-upload-cache@v3
-        with:
-          path: .docker/conan-cache/data
-          key: conan-${{ matrix.os }}-${{ hashFiles('conanfile.*') }}
-      - name: Prepare
-        run: |
-          mkdir -p .docker/conan-cache
-          uid=$(id -u)
-          gid=$(id -g)
-          [ "$uid" -lt 500 ] && uid=501
-          [ "$gid" -lt 500 ] && gid=$uid
-          echo "UID=$uid" >> $GITHUB_ENV
-          echo "GID=$gid" >> $GITHUB_ENV
-          echo "VERSION=$(git describe --tags --always --dirty="-dev" | cut -c 2-)" >> $GITHUB_ENV
-      - name: Build
-        run: |
-          cat << EOF > build.sh
-          #!/usr/bin/env bash
-
-          conan remote add default-conan-local https://milvus01.jfrog.io/artifactory/api/conan/default-conan-local
-
-          if [[ `gcc -v 2>&1 | sed -n 's/.*\(--with-default-libstdcxx-abi\)=\(\w*\).*/\2/p'` == "gcc4" ]]; then
-            conan create . knowhere/${{ github.event.inputs.tag }}@milvus/dev --build=missing
-          else
-            conan create . knowhere/${{ github.event.inputs.tag }}@milvus/dev --build=missing -s compiler.libcxx=libstdc++11
-          fi
-          EOF
-          chmod +x build.sh
-          docker run -u ${{env.UID}}:${{env.GID}} -e CONAN_REVISIONS_ENABLED=1 -v $(pwd)/.docker/conan-cache:/home/milvus/.conan:delegated -v $(pwd):/work:delegated -w /work milvusdb/milvus-env:amd64-${{ matrix.os }}-20230215-5351fee bash -c /work/build.sh
-      - name: Upload
-        run: |
-          docker run -u ${{env.UID}}:${{env.GID}} -e CONAN_REVISIONS_ENABLED=1 -v $(pwd)/.docker/conan-cache:/home/milvus/.conan:delegated milvusdb/milvus-env:amd64-${{ matrix.os }}-20230215-5351fee conan user -p ${{ secrets.JFROG_PASSWORD }} -r default-conan-local ${{ secrets.JFROG_USERNAME }}
-          docker run -u ${{env.UID}}:${{env.GID}} -e CONAN_REVISIONS_ENABLED=1 -v $(pwd)/.docker/conan-cache:/home/milvus/.conan:delegated milvusdb/milvus-env:amd64-${{ matrix.os }}-20230215-5351fee conan upload knowhere/${{ github.event.inputs.tag }}@milvus/dev -r default-conan-local --all
+#  Conan:
+#    name: Upload to jfrog for ${{ matrix.os }}
+#    runs-on: ubuntu-22.04
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        include:
+#          - name: Ubuntu 20.04
+#            os: ubuntu20.04
+#          - name: Centos7
+#            os: centos7
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#      - name: Cache Conan Packages
+#        uses: pat-s/always-upload-cache@v3
+#        with:
+#          path: .docker/conan-cache/data
+#          key: conan-${{ matrix.os }}-${{ hashFiles('conanfile.*') }}
+#      - name: Prepare
+#        run: |
+#          mkdir -p .docker/conan-cache
+#          uid=$(id -u)
+#          gid=$(id -g)
+#          [ "$uid" -lt 500 ] && uid=501
+#          [ "$gid" -lt 500 ] && gid=$uid
+#          echo "UID=$uid" >> $GITHUB_ENV
+#          echo "GID=$gid" >> $GITHUB_ENV
+#          echo "VERSION=$(git describe --tags --always --dirty="-dev" | cut -c 2-)" >> $GITHUB_ENV
+#      - name: Build
+#        run: |
+#          cat << EOF > build.sh
+#          #!/usr/bin/env bash
+#
+#          conan remote add default-conan-local https://milvus01.jfrog.io/artifactory/api/conan/default-conan-local
+#
+#          if [[ `gcc -v 2>&1 | sed -n 's/.*\(--with-default-libstdcxx-abi\)=\(\w*\).*/\2/p'` == "gcc4" ]]; then
+#            conan create . knowhere/${{ github.event.inputs.tag }}@milvus/dev --build=missing
+#          else
+#            conan create . knowhere/${{ github.event.inputs.tag }}@milvus/dev --build=missing -s compiler.libcxx=libstdc++11
+#          fi
+#          EOF
+#          chmod +x build.sh
+#          docker run -u ${{env.UID}}:${{env.GID}} -e CONAN_REVISIONS_ENABLED=1 -v $(pwd)/.docker/conan-cache:/home/milvus/.conan:delegated -v $(pwd):/work:delegated -w /work milvusdb/milvus-env:amd64-${{ matrix.os }}-20230215-5351fee bash -c /work/build.sh
+#      - name: Upload
+#        run: |
+#          docker run -u ${{env.UID}}:${{env.GID}} -e CONAN_REVISIONS_ENABLED=1 -v $(pwd)/.docker/conan-cache:/home/milvus/.conan:delegated milvusdb/milvus-env:amd64-${{ matrix.os }}-20230215-5351fee conan user -p ${{ secrets.JFROG_PASSWORD }} -r default-conan-local ${{ secrets.JFROG_USERNAME }}
+#          docker run -u ${{env.UID}}:${{env.GID}} -e CONAN_REVISIONS_ENABLED=1 -v $(pwd)/.docker/conan-cache:/home/milvus/.conan:delegated milvusdb/milvus-env:amd64-${{ matrix.os }}-20230215-5351fee conan upload knowhere/${{ github.event.inputs.tag }}@milvus/dev -r default-conan-local --all
