@@ -117,10 +117,6 @@ class HnswIndexNode : public IndexNode {
             LOG_KNOWHERE_ERROR_ << "ef should be in range: [topk, max(65536, topk * 2)]";
             return unexpected(Status::invalid_args);
         }
-        if (k > hnsw_cfg.ef) {
-            LOG_KNOWHERE_ERROR_ << "k should be smaller or equal than ef";
-            return unexpected(Status::invalid_args);
-        }
         feder::hnsw::FederResultUniq feder_result;
         if (hnsw_cfg.trace_visit) {
             if (nq != 1) {
