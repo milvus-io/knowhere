@@ -471,6 +471,13 @@ TEST_P(DiskANNTest, search_without_search_list_size) {
     query_cfg["k"] = 32;
     search_list_size = knowhere::DiskANNQueryConfig::Get(cfg).search_list_size;
     EXPECT_EQ(search_list_size, 32);
+
+    knowhere::DiskANNQueryConfig tmp_config;
+    tmp_config.k = 10;
+    cfg.clear();
+    knowhere::DiskANNQueryConfig::Set(cfg, tmp_config);
+    search_list_size = knowhere::DiskANNQueryConfig::Get(cfg).search_list_size;
+    EXPECT_EQ(search_list_size, 16);
 }
 
 TEST_P(DiskANNTest, knn_search_test) {
@@ -719,9 +726,6 @@ TEST_P(DiskANNTest, config_test) {
 
     // query config
     knowhere::DiskANNQueryConfig query_conf_to_test = query_conf;
-    query_conf_to_test.k = 10;
-    query_conf_to_test.search_list_size = 9;
-    CheckConfigError<knowhere::DiskANNQueryConfig>(query_conf_to_test);
 
     query_conf_to_test = query_conf;
     query_conf_to_test.beamwidth = 0;
