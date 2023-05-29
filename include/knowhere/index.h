@@ -16,6 +16,11 @@
 #include "knowhere/index_node.h"
 #include "knowhere/log.h"
 
+#ifdef NOT_COMPILE_FOR_SWIG
+#include "knowhere/comp/time_recorder.h"
+#include "knowhere/prometheus_client.h"
+#endif
+
 namespace knowhere {
 
 template <typename T1>
@@ -117,90 +122,84 @@ class Index {
     Build(const DataSet& dataset, const Json& json) {
         Json json_(json);
         auto cfg = this->node->CreateConfig();
-        {
-            auto res = Config::FormatAndCheck(*cfg, json_);
-            LOG_KNOWHERE_DEBUG_ << "Build config dump: " << json_.dump();
-            if (res != Status::success) {
-                return res;
-            }
-        }
-        auto res = Config::Load(*cfg, json_, knowhere::TRAIN);
-        if (res != Status::success) {
-            return res;
-        }
-        return this->node->Build(dataset, *cfg);
+        KNOWHERE_CHECK_STATUS(Config::FormatAndCheck(*cfg, json_));
+        LOG_KNOWHERE_DEBUG_ << "Build config dump: " << json_.dump();
+        KNOWHERE_CHECK_STATUS(Config::Load(*cfg, json_, knowhere::TRAIN));
+
+#ifdef NOT_COMPILE_FOR_SWIG
+        TimeRecorder rc("Build");
+        KNOWHERE_CHECK_STATUS(this->node->Build(dataset, *cfg));
+        auto span = rc.ElapseFromBegin("done");
+        span *= 0.000001;  // convert to s
+        kw_build_latency.Observe(span);
+#else
+        KNOWHERE_CHECK_STATUS(this->node->Build(dataset, *cfg));
+#endif
+        return Status::success;
     }
 
     Status
     Train(const DataSet& dataset, const Json& json) {
         Json json_(json);
         auto cfg = this->node->CreateConfig();
-        {
-            auto res = Config::FormatAndCheck(*cfg, json_);
-            LOG_KNOWHERE_DEBUG_ << "Train config dump: " << json_.dump();
-            if (res != Status::success) {
-                return res;
-            }
-        }
-        auto res = Config::Load(*cfg, json_, knowhere::TRAIN);
-        if (res != Status::success) {
-            return res;
-        }
-        return this->node->Train(dataset, *cfg);
+        KNOWHERE_CHECK_STATUS(Config::FormatAndCheck(*cfg, json_));
+        LOG_KNOWHERE_DEBUG_ << "Train config dump: " << json_.dump();
+        KNOWHERE_CHECK_STATUS(Config::Load(*cfg, json_, knowhere::TRAIN));
+
+        KNOWHERE_CHECK_STATUS(this->node->Train(dataset, *cfg));
+        return Status::success;
     }
 
     Status
     Add(const DataSet& dataset, const Json& json) {
         Json json_(json);
         auto cfg = this->node->CreateConfig();
-        {
-            auto res = Config::FormatAndCheck(*cfg, json_);
-            LOG_KNOWHERE_DEBUG_ << "Add config dump: " << json_.dump();
-            if (res != Status::success) {
-                return res;
-            }
-        }
-        auto res = Config::Load(*cfg, json_, knowhere::TRAIN);
-        if (res != Status::success) {
-            return res;
-        }
-        return this->node->Add(dataset, *cfg);
+        KNOWHERE_CHECK_STATUS(Config::FormatAndCheck(*cfg, json_));
+        LOG_KNOWHERE_DEBUG_ << "Add config dump: " << json_.dump();
+        KNOWHERE_CHECK_STATUS(Config::Load(*cfg, json_, knowhere::TRAIN));
+
+        KNOWHERE_CHECK_STATUS(this->node->Add(dataset, *cfg));
+        return Status::success;
     }
 
     expected<DataSetPtr, Status>
     Search(const DataSet& dataset, const Json& json, const BitsetView& bitset) const {
         Json json_(json);
         auto cfg = this->node->CreateConfig();
-        {
-            auto res = Config::FormatAndCheck(*cfg, json_);
-            LOG_KNOWHERE_DEBUG_ << "Search config dump: " << json_.dump();
-            if (res != Status::success) {
-                return unexpected(res);
-            }
-        }
-        auto res = Config::Load(*cfg, json_, knowhere::SEARCH);
-        if (res != Status::success) {
-            return unexpected(res);
-        }
-        return this->node->Search(dataset, *cfg, bitset);
+        KNOWHERE_CHECK_EXPECTED(Config::FormatAndCheck(*cfg, json_));
+        LOG_KNOWHERE_DEBUG_ << "Search config dump: " << json_.dump();
+        KNOWHERE_CHECK_EXPECTED(Config::Load(*cfg, json_, knowhere::SEARCH));
+
+#ifdef NOT_COMPILE_FOR_SWIG
+        TimeRecorder rc("Search");
+        auto res = this->node->Search(dataset, *cfg, bitset);
+        auto span = rc.ElapseFromBegin("done");
+        span *= 0.001;  // convert to ms
+        kw_search_latency.Observe(span);
+#else
+        auto res = this->node->Search(dataset, *cfg, bitset);
+#endif
+        return res;
     }
 
     expected<DataSetPtr, Status>
     RangeSearch(const DataSet& dataset, const Json& json, const BitsetView& bitset) const {
         Json json_(json);
         auto cfg = this->node->CreateConfig();
-        {
-            auto res = Config::FormatAndCheck(*cfg, json_);
-            LOG_KNOWHERE_DEBUG_ << "RangeSearch config dump: " << json_.dump();
-            if (res != Status::success) {
-                return unexpected(res);
-            }
-        }
-        auto res = Config::Load(*cfg, json_, knowhere::RANGE_SEARCH);
-        if (res != Status::success) {
-            return unexpected(res);
-        }
-        return this->node->RangeSearch(dataset, *cfg, bitset);
+        KNOWHERE_CHECK_EXPECTED(Config::FormatAndCheck(*cfg, json_));
+        LOG_KNOWHERE_DEBUG_ << "RangeSearch config dump: " << json_.dump();
+        KNOWHERE_CHECK_EXPECTED(Config::Load(*cfg, json_, knowhere::RANGE_SEARCH));
+
+#ifdef NOT_COMPILE_FOR_SWIG
+        TimeRecorder rc("Range Search");
+        auto res = this->node->RangeSearch(dataset, *cfg, bitset);
+        auto span = rc.ElapseFromBegin("done");
+        span *= 0.001;  // convert to ms
+        kw_range_search_latency.Observe(span);
+#else
+        auto res = this->node->RangeSearch(dataset, *cfg, bitset);
+#endif
+        return res;
     }
 
     expected<DataSetPtr, Status>
@@ -217,17 +216,10 @@ class Index {
     GetIndexMeta(const Json& json) const {
         Json json_(json);
         auto cfg = this->node->CreateConfig();
-        {
-            auto res = Config::FormatAndCheck(*cfg, json_);
-            LOG_KNOWHERE_DEBUG_ << "GetIndexMeta config dump: " << json_.dump();
-            if (res != Status::success) {
-                return unexpected(res);
-            }
-        }
-        auto res = Config::Load(*cfg, json_, knowhere::FEDER);
-        if (res != Status::success) {
-            return unexpected(res);
-        }
+        KNOWHERE_CHECK_EXPECTED(Config::FormatAndCheck(*cfg, json_));
+        LOG_KNOWHERE_DEBUG_ << "GetIndexMeta config dump: " << json_.dump();
+        KNOWHERE_CHECK_EXPECTED(Config::Load(*cfg, json_, knowhere::FEDER));
+
         return this->node->GetIndexMeta(*cfg);
     }
 
