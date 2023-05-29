@@ -48,7 +48,6 @@ constexpr const char* NPROBE = "nprobe";
 constexpr const char* NLIST = "nlist";
 constexpr const char* NBITS = "nbits";  // PQ/SQ
 constexpr const char* M = "m";          // PQ param for IVFPQ
-constexpr const char* PQ_M = "PQM";     // PQ param for RHNSWPQ
 // HNSW Params
 constexpr const char* EFCONSTRUCTION = "efConstruction";
 constexpr const char* HNSW_M = "M";
@@ -84,6 +83,16 @@ GetValueFromConfig(const Config& cfg, const std::string& key) {
 }
 
 template <typename T>
+inline T
+GetValueFromConfigWithDefaultValue(const Config& cfg, const std::string& key, const T default_value) {
+    if (CheckKeyInConfig(cfg, key)) {
+        return cfg.at(key).get<T>();
+    } else {
+        return default_value;
+    }
+}
+
+template <typename T>
 inline void
 SetValueToConfig(Config& cfg, const std::string& key, const T value) {
     cfg[key] = value;
@@ -92,6 +101,11 @@ SetValueToConfig(Config& cfg, const std::string& key, const T value) {
 #define DEFINE_CONFIG_GETTER(func_name, key, T) \
     inline T func_name(const Config& cfg) {     \
         return GetValueFromConfig<T>(cfg, key); \
+    }
+
+#define DEFINE_CONFIG_GETTER_WITH_DEFAULT_VALUE(func_name, key, value, T) \
+    inline T func_name(const Config& cfg) {                               \
+        return GetValueFromConfigWithDefaultValue<T>(cfg, key, value);    \
     }
 
 #define DEFINE_CONFIG_SETTER(func_name, key, T)    \
@@ -133,32 +147,36 @@ DEFINE_CONFIG_SETTER(SetMetaTraceVisit, meta::TRACE_VISIT, bool)
 
 ///////////////////////////////////////////////////////////////////////////////
 // APIs to access indexparam
+static const int64_t DEFAULT_NPROBE = 8;
+static const int64_t DEFAULT_NLIST = 128;
+static const int64_t DEFAULT_PQ_M = 4;
+static const int64_t DEFAULT_PQ_NBITS = 8;
+static const int64_t DEFAULT_HNSW_EFCONSTRUCTION = 360;
+static const int64_t DEFAULT_HNSW_M = 30;
+static const int64_t DEFAULT_HNSW_EF = 16;
 
-DEFINE_CONFIG_GETTER(GetIndexParamNprobe, indexparam::NPROBE, int64_t)
+DEFINE_CONFIG_GETTER_WITH_DEFAULT_VALUE(GetIndexParamNprobe, indexparam::NPROBE, DEFAULT_NPROBE, int64_t)
 DEFINE_CONFIG_SETTER(SetIndexParamNprobe, indexparam::NPROBE, int64_t)
 
-DEFINE_CONFIG_GETTER(GetIndexParamNlist, indexparam::NLIST, int64_t)
+DEFINE_CONFIG_GETTER_WITH_DEFAULT_VALUE(GetIndexParamNlist, indexparam::NLIST, DEFAULT_NLIST, int64_t)
 DEFINE_CONFIG_SETTER(SetIndexParamNlist, indexparam::NLIST, int64_t)
 
-DEFINE_CONFIG_GETTER(GetIndexParamNbits, indexparam::NBITS, int64_t)
+DEFINE_CONFIG_GETTER_WITH_DEFAULT_VALUE(GetIndexParamNbits, indexparam::NBITS, DEFAULT_PQ_NBITS, int64_t)
 DEFINE_CONFIG_SETTER(SetIndexParamNbits, indexparam::NBITS, int64_t)
 
 // PQ param for IVFPQ
-DEFINE_CONFIG_GETTER(GetIndexParamM, indexparam::M, int64_t)
+DEFINE_CONFIG_GETTER_WITH_DEFAULT_VALUE(GetIndexParamM, indexparam::M, DEFAULT_PQ_M, int64_t)
 DEFINE_CONFIG_SETTER(SetIndexParamM, indexparam::M, int64_t)
 
-// PQ param for RHNSWPQ
-DEFINE_CONFIG_GETTER(GetIndexParamPQM, indexparam::PQ_M, int64_t)
-DEFINE_CONFIG_SETTER(SetIndexParamPQM, indexparam::PQ_M, int64_t)
-
 // HNSW Params
-DEFINE_CONFIG_GETTER(GetIndexParamEfConstruction, indexparam::EFCONSTRUCTION, int64_t)
+DEFINE_CONFIG_GETTER_WITH_DEFAULT_VALUE(GetIndexParamEfConstruction, indexparam::EFCONSTRUCTION,
+                                        DEFAULT_HNSW_EFCONSTRUCTION, int64_t)
 DEFINE_CONFIG_SETTER(SetIndexParamEfConstruction, indexparam::EFCONSTRUCTION, int64_t)
 
-DEFINE_CONFIG_GETTER(GetIndexParamHNSWM, indexparam::HNSW_M, int64_t)
+DEFINE_CONFIG_GETTER_WITH_DEFAULT_VALUE(GetIndexParamHNSWM, indexparam::HNSW_M, DEFAULT_HNSW_M, int64_t)
 DEFINE_CONFIG_SETTER(SetIndexParamHNSWM, indexparam::HNSW_M, int64_t)
 
-DEFINE_CONFIG_GETTER(GetIndexParamEf, indexparam::EF, int64_t)
+DEFINE_CONFIG_GETTER_WITH_DEFAULT_VALUE(GetIndexParamEf, indexparam::EF, DEFAULT_HNSW_EF, int64_t)
 DEFINE_CONFIG_SETTER(SetIndexParamEf, indexparam::EF, int64_t)
 
 DEFINE_CONFIG_GETTER(GetIndexParamOverviewLevels, indexparam::OVERVIEW_LEVELS, int64_t)
