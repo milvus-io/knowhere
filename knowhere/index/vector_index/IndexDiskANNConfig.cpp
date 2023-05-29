@@ -219,13 +219,15 @@ to_json(Config& config, const DiskANNQueryConfig& query_conf) {
 void
 from_json(const Config& config, DiskANNQueryConfig& query_conf) {
     CheckNumericParamAndSet<uint64_t>(config, kK, kKMinValue, kKMaxValue, query_conf.k);
-    if (config.contains(kSearchListSize)) {
+    auto search_list_threshold = query_conf.k < kKThreshold ? kKThreshold : query_conf.k;
+    if (config.contains(kSearchListSize) && config[kSearchListSize].get<uint32_t>() >= search_list_threshold) {
         // The search_list_size should be no less than the k.
         CheckNumericParamAndSet<uint32_t>(config, kSearchListSize, query_conf.k,
                                         std::max(kSearchListSizeMaxValue, static_cast<uint32_t>(10 * query_conf.k)),
                                         query_conf.search_list_size);
     } else {
-        query_conf.search_list_size = query_conf.k < kKThreshold ? kKThreshold : query_conf.k;
+        // if search_list_size not set (==0), not in json string or smaller than k, modify the value.
+        query_conf.search_list_size = search_list_threshold;
     }
     CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, kBeamwidthMinValue, kBeamwidthMaxValue, query_conf.beamwidth);
     if (config.contains(kFilterThreshold)) {
