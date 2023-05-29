@@ -64,6 +64,7 @@ static constexpr uint32_t kBuildNumThreadsMaxValue = 128;
 static constexpr uint32_t kDiskPqBytesMinValue = 0;
 static constexpr std::optional<uint32_t> kDiskPqBytesMaxValue = std::nullopt;
 static constexpr uint32_t kSearchListSizeMaxValue = 200;
+static constexpr uint32_t kKThreshold = 16;
 static constexpr uint32_t kBeamwidthMinValue = 1;
 static constexpr uint32_t kBeamwidthMaxValue = 128;
 static constexpr float kFilterThresholdMinValue = -1;
@@ -218,10 +219,14 @@ to_json(Config& config, const DiskANNQueryConfig& query_conf) {
 void
 from_json(const Config& config, DiskANNQueryConfig& query_conf) {
     CheckNumericParamAndSet<uint64_t>(config, kK, kKMinValue, kKMaxValue, query_conf.k);
-    // The search_list_size should be no less than the k.
-    CheckNumericParamAndSet<uint32_t>(config, kSearchListSize, query_conf.k,
-                                      std::max(kSearchListSizeMaxValue, static_cast<uint32_t>(10 * query_conf.k)),
-                                      query_conf.search_list_size);
+    if (config.contains(kSearchListSize)) {
+        // The search_list_size should be no less than the k.
+        CheckNumericParamAndSet<uint32_t>(config, kSearchListSize, query_conf.k,
+                                        std::max(kSearchListSizeMaxValue, static_cast<uint32_t>(10 * query_conf.k)),
+                                        query_conf.search_list_size);
+    } else {
+        query_conf.search_list_size = query_conf.k < kKThreshold ? kKThreshold : query_conf.k;
+    }
     CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, kBeamwidthMinValue, kBeamwidthMaxValue, query_conf.beamwidth);
     if (config.contains(kFilterThreshold)) {
         CheckNumericParamAndSet<float>(config, kFilterThreshold, kFilterThresholdMinValue, kFilterThresholdMaxValue,
