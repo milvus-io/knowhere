@@ -55,11 +55,11 @@ class IvfIndexNode : public IndexNode {
     Train(const DataSet& dataset, const Config& cfg) override;
     Status
     Add(const DataSet& dataset, const Config& cfg) override;
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     GetVectorByIds(const DataSet& dataset) const override;
     bool
     HasRawData(const std::string& metric_type) const override {
@@ -79,9 +79,9 @@ class IvfIndexNode : public IndexNode {
             return true;
         }
     }
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     GetIndexMeta(const Config& cfg) const override {
-        return unexpected(Status::not_implemented);
+        return Status::not_implemented;
     }
     Status
     Serialize(BinarySet& binset) const override;
@@ -197,12 +197,8 @@ IvfIndexNode<T>::Build(const DataSet& dataset, const Config& cfg) {
     const BaseConfig& base_cfg = static_cast<const IvfConfig&>(cfg);
     auto build_thread_num = base_cfg.get_build_thread_num();
     ThreadPool::ScopedOmpSetter setter(build_thread_num);
-    auto err = Train(dataset, cfg);
-    if (err != Status::success) {
-        return err;
-    }
-    err = Add(dataset, cfg);
-    return err;
+    RETURN_IF_ERROR(Train(dataset, cfg));
+    return Add(dataset, cfg);
 }
 
 inline int64_t
@@ -254,6 +250,7 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
         LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << base_cfg.metric_type;
         return Status::invalid_metric_type;
     }
+
     auto rows = dataset.GetRows();
     auto dim = dataset.GetDim();
     auto data = dataset.GetTensor();
@@ -362,15 +359,15 @@ IvfIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
 }
 
 template <typename T>
-expected<DataSetPtr, Status>
+expected<DataSetPtr>
 IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
     if (!this->index_) {
         LOG_KNOWHERE_WARNING_ << "search on empty index";
-        return unexpected(Status::empty_index);
+        return Status::empty_index;
     }
     if (!this->index_->is_trained) {
         LOG_KNOWHERE_WARNING_ << "index not trained";
-        return unexpected(Status::index_not_trained);
+        return Status::index_not_trained;
     }
 
     auto dim = dataset.GetDim();
@@ -428,7 +425,7 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
         delete[] ids;
         delete[] distances;
         LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
-        return unexpected(Status::faiss_inner_error);
+        return Status::faiss_inner_error;
     }
 
     auto res = GenResultDataSet(rows, ivf_cfg.k, ids, distances);
@@ -436,15 +433,15 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
 }
 
 template <typename T>
-expected<DataSetPtr, Status>
+expected<DataSetPtr>
 IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
     if (!this->index_) {
         LOG_KNOWHERE_WARNING_ << "range search on empty index";
-        return unexpected(Status::empty_index);
+        return Status::empty_index;
     }
     if (!this->index_->is_trained) {
         LOG_KNOWHERE_WARNING_ << "index not trained";
-        return unexpected(Status::index_not_trained);
+        return Status::index_not_trained;
     }
 
     auto nq = dataset.GetRows();
@@ -518,20 +515,20 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
         GetRangeSearchResult(result_dist_array, result_id_array, is_ip, nq, radius, range_filter, distances, ids, lims);
     } catch (const std::exception& e) {
         LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
-        return unexpected(Status::faiss_inner_error);
+        return Status::faiss_inner_error;
     }
 
     return GenResultDataSet(nq, ids, distances, lims);
 }
 
 template <typename T>
-expected<DataSetPtr, Status>
+expected<DataSetPtr>
 IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset) const {
     if (!this->index_) {
-        return unexpected(Status::empty_index);
+        return Status::empty_index;
     }
     if (!this->index_->is_trained) {
-        return unexpected(Status::index_not_trained);
+        return Status::index_not_trained;
     }
     if constexpr (std::is_same<T, faiss::IndexBinaryIVF>::value) {
         auto dim = Dim();
@@ -551,7 +548,7 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset) const {
         } catch (const std::exception& e) {
             std::unique_ptr<uint8_t[]> auto_del(data);
             LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
-            return unexpected(Status::faiss_inner_error);
+            return Status::faiss_inner_error;
         }
     } else if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
         auto dim = Dim();
@@ -571,7 +568,7 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset) const {
         } catch (const std::exception& e) {
             std::unique_ptr<float[]> auto_del(data);
             LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
-            return unexpected(Status::faiss_inner_error);
+            return Status::faiss_inner_error;
         }
     } else if constexpr (std::is_same<T, faiss::IndexIVFFlatCC>::value) {
         auto dim = Dim();
@@ -591,19 +588,19 @@ IvfIndexNode<T>::GetVectorByIds(const DataSet& dataset) const {
         } catch (const std::exception& e) {
             std::unique_ptr<float[]> auto_del(data);
             LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
-            return unexpected(Status::faiss_inner_error);
+            return Status::faiss_inner_error;
         }
     } else {
-        return unexpected(Status::not_implemented);
+        return Status::not_implemented;
     }
 }
 
 template <>
-expected<DataSetPtr, Status>
+expected<DataSetPtr>
 IvfIndexNode<faiss::IndexIVFFlat>::GetIndexMeta(const Config& config) const {
     if (!index_) {
         LOG_KNOWHERE_WARNING_ << "get index meta on empty index";
-        return unexpected(Status::empty_index);
+        return Status::empty_index;
     }
 
     auto ivf_index = dynamic_cast<faiss::IndexIVF*>(index_.get());

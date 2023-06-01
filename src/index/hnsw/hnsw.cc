@@ -38,12 +38,8 @@ class HnswIndexNode : public IndexNode {
 
     Status
     Build(const DataSet& dataset, const Config& cfg) override {
-        auto res = this->Train(dataset, cfg);
-        if (res != Status::success) {
-            return res;
-        }
-        res = Add(dataset, cfg);
-        return res;
+        RETURN_IF_ERROR(Train(dataset, cfg));
+        return Add(dataset, cfg);
     }
 
     Status
@@ -101,11 +97,11 @@ class HnswIndexNode : public IndexNode {
         return Status::success;
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
             LOG_KNOWHERE_WARNING_ << "search on empty index";
-            return unexpected(Status::empty_index);
+            return Status::empty_index;
         }
         auto nq = dataset.GetRows();
         auto dim = dataset.GetDim();
@@ -117,7 +113,7 @@ class HnswIndexNode : public IndexNode {
         feder::hnsw::FederResultUniq feder_result;
         if (hnsw_cfg.trace_visit) {
             if (nq != 1) {
-                return unexpected(Status::invalid_args);
+                return Status::invalid_args;
             }
             feder_result = std::make_unique<feder::hnsw::FederResult>();
         }
@@ -166,11 +162,11 @@ class HnswIndexNode : public IndexNode {
         return res;
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
             LOG_KNOWHERE_WARNING_ << "range search on empty index";
-            return unexpected(Status::empty_index);
+            return Status::empty_index;
         }
 
         auto nq = dataset.GetRows();
@@ -186,7 +182,7 @@ class HnswIndexNode : public IndexNode {
         feder::hnsw::FederResultUniq feder_result;
         if (hnsw_cfg.trace_visit) {
             if (nq != 1) {
-                return unexpected(Status::invalid_args);
+                return Status::invalid_args;
             }
             feder_result = std::make_unique<feder::hnsw::FederResult>();
         }
@@ -243,10 +239,10 @@ class HnswIndexNode : public IndexNode {
         return res;
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     GetVectorByIds(const DataSet& dataset) const override {
         if (!index_) {
-            return unexpected(Status::empty_index);
+            return Status::empty_index;
         }
 
         auto dim = Dim();
@@ -265,7 +261,7 @@ class HnswIndexNode : public IndexNode {
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "hnsw inner error: " << e.what();
             std::unique_ptr<float> auto_del(data);
-            return unexpected(Status::hnsw_inner_error);
+            return Status::hnsw_inner_error;
         }
     }
 
@@ -274,11 +270,11 @@ class HnswIndexNode : public IndexNode {
         return true;
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     GetIndexMeta(const Config& cfg) const override {
         if (!index_) {
             LOG_KNOWHERE_WARNING_ << "get index meta on empty index";
-            return unexpected(Status::empty_index);
+            return Status::empty_index;
         }
 
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);

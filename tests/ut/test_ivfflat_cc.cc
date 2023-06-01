@@ -234,8 +234,8 @@ TEST_CASE("Test Build Search Concurrency", "[Concurrency]") {
 
         for (int i = 1; i <= times; i++) {
             std::vector<std::future<knowhere::Status>> add_task_list;
-            std::vector<std::future<knowhere::expected<knowhere::DataSetPtr, knowhere::Status>>> search_task_list;
-            std::vector<std::future<knowhere::expected<knowhere::DataSetPtr, knowhere::Status>>> range_search_task_list;
+            std::vector<std::future<knowhere::expected<knowhere::DataSetPtr>>> search_task_list;
+            std::vector<std::future<knowhere::expected<knowhere::DataSetPtr>>> range_search_task_list;
             for (int j = 0; j < build_task_num; j++) {
                 add_task_list.push_back(
                     std::async(std::launch::async, [&idx, &build_ds, &json] { return idx.Add(*build_ds, json); }));

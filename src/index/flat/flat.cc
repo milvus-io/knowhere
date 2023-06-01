@@ -34,12 +34,8 @@ class FlatIndexNode : public IndexNode {
 
     Status
     Build(const DataSet& dataset, const Config& cfg) override {
-        auto err = Train(dataset, cfg);
-        if (err != Status::success) {
-            return err;
-        }
-        err = Add(dataset, cfg);
-        return err;
+        RETURN_IF_ERROR(Train(dataset, cfg));
+        return Add(dataset, cfg);
     }
 
     Status
@@ -73,11 +69,11 @@ class FlatIndexNode : public IndexNode {
         return Status::success;
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
             LOG_KNOWHERE_WARNING_ << "search on empty index";
-            return unexpected(Status::empty_index);
+            return Status::empty_index;
         }
 
         DataSetPtr results = std::make_shared<DataSet>();
@@ -127,17 +123,17 @@ class FlatIndexNode : public IndexNode {
             std::unique_ptr<int64_t[]> auto_delete_ids(ids);
             std::unique_ptr<float[]> auto_delete_dis(distances);
             LOG_KNOWHERE_WARNING_ << "error inner faiss: " << e.what();
-            return unexpected(Status::faiss_inner_error);
+            return Status::faiss_inner_error;
         }
 
         return GenResultDataSet(nq, k, ids, distances);
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
             LOG_KNOWHERE_WARNING_ << "range search on empty index";
-            return unexpected(Status::empty_index);
+            return Status::empty_index;
         }
 
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
@@ -195,13 +191,13 @@ class FlatIndexNode : public IndexNode {
                                  lims);
         } catch (const std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "error inner faiss: " << e.what();
-            return unexpected(Status::faiss_inner_error);
+            return Status::faiss_inner_error;
         }
 
         return GenResultDataSet(nq, ids, distances, lims);
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     GetVectorByIds(const DataSet& dataset) const override {
         auto dim = Dim();
         auto rows = dataset.GetRows();
@@ -217,7 +213,7 @@ class FlatIndexNode : public IndexNode {
             } catch (const std::exception& e) {
                 std::unique_ptr<float[]> auto_del(data);
                 LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
-                return unexpected(Status::faiss_inner_error);
+                return Status::faiss_inner_error;
             }
         }
         if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
@@ -231,7 +227,7 @@ class FlatIndexNode : public IndexNode {
             } catch (const std::exception& e) {
                 std::unique_ptr<uint8_t[]> auto_del(data);
                 LOG_KNOWHERE_WARNING_ << "error inner faiss: " << e.what();
-                return unexpected(Status::faiss_inner_error);
+                return Status::faiss_inner_error;
             }
         }
     }
@@ -246,9 +242,9 @@ class FlatIndexNode : public IndexNode {
         }
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     GetIndexMeta(const Config& cfg) const override {
-        return unexpected(Status::not_implemented);
+        return Status::not_implemented;
     }
 
     Status

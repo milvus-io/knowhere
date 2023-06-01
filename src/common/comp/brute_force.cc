@@ -29,7 +29,7 @@ namespace knowhere {
 
 class BruteForceConfig : public BaseConfig {};
 
-expected<DataSetPtr, Status>
+expected<DataSetPtr>
 BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset, const Json& config,
                    const BitsetView& bitset) {
     std::string metric_str = config[meta::METRIC_TYPE].get<std::string>();
@@ -46,21 +46,14 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
     auto nq = query_dataset->GetRows();
 
     BruteForceConfig cfg;
-    auto load_res = Config::Load(cfg, config, knowhere::SEARCH);
-    if (load_res != Status::success) {
-        return unexpected(load_res);
-    }
+    RETURN_IF_ERROR(Config::Load(cfg, config, knowhere::SEARCH));
 
-    auto metric_type = Str2FaissMetricType(cfg.metric_type);
-    if (!metric_type.has_value()) {
-        return unexpected(Status::invalid_metric_type);
-    }
+    ASSIGN_OR_RETURN(faiss::MetricType, faiss_metric_type, Str2FaissMetricType(cfg.metric_type));
 
     int topk = cfg.k;
     auto labels = new int64_t[nq * topk];
     auto distances = new float[nq * topk];
 
-    auto faiss_metric_type = metric_type.value();
     auto pool = ThreadPool::GetGlobalThreadPool();
     std::vector<std::future<Status>> futs;
     futs.reserve(nq);
@@ -127,10 +120,7 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
         }));
     }
     for (auto& fut : futs) {
-        auto ret = fut.get();
-        if (ret != Status::success) {
-            return unexpected(ret);
-        }
+        RETURN_IF_ERROR(fut.get());
     }
     return GenResultDataSet(nq, cfg.k, labels, distances);
 }
@@ -152,10 +142,7 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
     auto nq = query_dataset->GetRows();
 
     BruteForceConfig cfg;
-    auto load_res = Config::Load(cfg, config, knowhere::SEARCH);
-    if (load_res != Status::success) {
-        return load_res;
-    }
+    RETURN_IF_ERROR(Config::Load(cfg, config, knowhere::SEARCH));
 
     auto metric_type = Str2FaissMetricType(cfg.metric_type);
     if (!metric_type.has_value()) {
@@ -168,6 +155,7 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
     auto distances = dis;
 
     auto faiss_metric_type = metric_type.value();
+
     auto pool = ThreadPool::GetGlobalThreadPool();
     std::vector<std::future<Status>> futs;
     futs.reserve(nq);
@@ -234,17 +222,14 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
         }));
     }
     for (auto& fut : futs) {
-        auto ret = fut.get();
-        if (ret != Status::success) {
-            return ret;
-        }
+        RETURN_IF_ERROR(fut.get());
     }
     return Status::success;
 }
 
 /** knowhere wrapper API to call faiss brute force range search for all metric types
  */
-expected<DataSetPtr, Status>
+expected<DataSetPtr>
 BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_dataset, const Json& config,
                         const BitsetView& bitset) {
     std::string metric_str = config[meta::METRIC_TYPE].get<std::string>();
@@ -261,21 +246,13 @@ BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_da
     auto nq = query_dataset->GetRows();
 
     BruteForceConfig cfg;
-    auto load_res = Config::Load(cfg, config, knowhere::RANGE_SEARCH);
-    if (load_res != Status::success) {
-        return unexpected(load_res);
-    }
-
-    auto metric_type = Str2FaissMetricType(cfg.metric_type);
-    if (!metric_type.has_value()) {
-        return unexpected(Status::invalid_metric_type);
-    }
+    RETURN_IF_ERROR(Config::Load(cfg, config, knowhere::RANGE_SEARCH));
 
     auto radius = cfg.radius;
     bool is_ip = false;
     float range_filter = cfg.range_filter;
 
-    auto faiss_metric_type = metric_type.value();
+    ASSIGN_OR_RETURN(faiss::MetricType, faiss_metric_type, Str2FaissMetricType(cfg.metric_type));
     auto pool = ThreadPool::GetGlobalThreadPool();
 
     std::vector<std::vector<int64_t>> result_id_array(nq);
@@ -343,10 +320,7 @@ BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_da
         }));
     }
     for (auto& fut : futs) {
-        auto ret = fut.get();
-        if (ret != Status::success) {
-            return unexpected(ret);
-        }
+        RETURN_IF_ERROR(fut.get());
     }
 
     int64_t* ids = nullptr;

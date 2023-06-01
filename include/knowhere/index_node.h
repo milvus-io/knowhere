@@ -32,19 +32,19 @@ class IndexNode : public Object {
     virtual Status
     Add(const DataSet& dataset, const Config& cfg) = 0;
 
-    virtual expected<DataSetPtr, Status>
+    virtual expected<DataSetPtr>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const = 0;
 
-    virtual expected<DataSetPtr, Status>
+    virtual expected<DataSetPtr>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const = 0;
 
-    virtual expected<DataSetPtr, Status>
+    virtual expected<DataSetPtr>
     GetVectorByIds(const DataSet& dataset) const = 0;
 
     virtual bool
     HasRawData(const std::string& metric_type) const = 0;
 
-    virtual expected<DataSetPtr, Status>
+    virtual expected<DataSetPtr>
     GetIndexMeta(const Config& cfg) const = 0;
 
     virtual Status
