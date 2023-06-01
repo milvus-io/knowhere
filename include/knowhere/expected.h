@@ -112,4 +112,20 @@ class expected {
 
 }  // namespace knowhere
 
+#define KNOWHERE_CHECK_STATUS(X)                \
+    do {                                        \
+        auto res = (X);                         \
+        if (res != knowhere::Status::success) { \
+            return res;                         \
+        }                                       \
+    } while (false)
+
+#define KNOWHERE_CHECK_EXPECTED(X)              \
+    do {                                        \
+        auto res = (X);                         \
+        if (res != knowhere::Status::success) { \
+            return knowhere::unexpected(res);   \
+        }                                       \
+    } while (false)
+
 #endif /* EXPECTED_H */
