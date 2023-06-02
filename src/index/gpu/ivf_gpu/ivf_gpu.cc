@@ -26,6 +26,7 @@
 #include "io/FaissIO.h"
 #include "knowhere/comp/index_param.h"
 #include "knowhere/factory.h"
+#include "knowhere/log.h"
 
 namespace knowhere {
 
@@ -118,9 +119,11 @@ class GpuIvfIndexNode : public IndexNode {
     virtual Status
     Add(const DataSet& dataset, const Config& cfg) override {
         if (!index_) {
+            LOG_KNOWHERE_ERROR_ << "Can not add data to empty GpuIvfIndex.";
             return Status::empty_index;
         }
         if (!index_->is_trained) {
+            LOG_KNOWHERE_ERROR_ << "Can not add data to not trained GpuIvfIndex.";
             return Status::index_not_trained;
         }
         auto rows = dataset.GetRows();
@@ -182,9 +185,11 @@ class GpuIvfIndexNode : public IndexNode {
     virtual Status
     Serialize(BinarySet& binset) const override {
         if (!index_) {
+            LOG_KNOWHERE_ERROR_ << "Can not serialize empty GpuIvfIndex.";
             return Status::empty_index;
         }
         if (!index_->is_trained) {
+            LOG_KNOWHERE_ERROR_ << "Can not serialize not trained GpuIvfIndex.";
             return Status::index_not_trained;
         }
 
@@ -209,6 +214,7 @@ class GpuIvfIndexNode : public IndexNode {
     Deserialize(const BinarySet& binset) override {
         auto binary = binset.GetByName(Type());
         if (binary == nullptr) {
+            LOG_KNOWHERE_ERROR_ << "invalid binary set.";
             return Status::invalid_binary_set;
         }
         MemoryIOReader reader;
@@ -231,6 +237,7 @@ class GpuIvfIndexNode : public IndexNode {
 
     Status
     DeserializeFromFile(const std::string& filename, const LoadConfig& config) override {
+        LOG_KNOWHERE_ERROR_ << "GpuIvfIndex doesn't support Deserialization from file.";
         return Status::not_implemented;
     }
 

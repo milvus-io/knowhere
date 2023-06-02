@@ -23,6 +23,7 @@
 #include "knowhere/factory.h"
 #include "knowhere/feder/IVFFlat.h"
 #include "knowhere/index_node_thread_pool_wrapper.h"
+#include "knowhere/log.h"
 #include "knowhere/utils.h"
 
 namespace knowhere {
@@ -250,6 +251,7 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
 
     auto metric = Str2FaissMetricType(base_cfg.metric_type);
     if (!metric.has_value()) {
+        LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << base_cfg.metric_type;
         return Status::invalid_metric_type;
     }
     auto rows = dataset.GetRows();
@@ -317,6 +319,7 @@ template <typename T>
 Status
 IvfIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
     if (!this->index_) {
+        LOG_KNOWHERE_ERROR_ << "Can not add data to empty IVF index.";
         return Status::empty_index;
     }
     auto data = dataset.GetTensor();
@@ -663,6 +666,7 @@ IvfIndexNode<T>::Deserialize(const BinarySet& binset) {
                                       Type()};
     auto binary = binset.GetByNames(names);
     if (binary == nullptr) {
+        LOG_KNOWHERE_ERROR_ << "Invalid binary set.";
         return Status::invalid_binary_set;
     }
 
@@ -709,6 +713,7 @@ IvfIndexNode<faiss::IndexIVFFlat>::Deserialize(const BinarySet& binset) {
                                       Type()};
     auto binary = binset.GetByNames(names);
     if (binary == nullptr) {
+        LOG_KNOWHERE_ERROR_ << "Invalid binary set.";
         return Status::invalid_binary_set;
     }
 
@@ -721,6 +726,7 @@ IvfIndexNode<faiss::IndexIVFFlat>::Deserialize(const BinarySet& binset) {
         // Construct arranged data from original data
         auto binary = binset.GetByName("RAW_DATA");
         if (binary == nullptr) {
+            LOG_KNOWHERE_ERROR_ << "Invalid binary set.";
             return Status::invalid_binary_set;
         }
         auto invlists = index_->invlists;

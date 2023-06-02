@@ -17,6 +17,7 @@
 #include "index/gpu/gpu_res_mgr.h"
 #include "io/FaissIO.h"
 #include "knowhere/factory.h"
+#include "knowhere/log.h"
 
 namespace knowhere {
 
@@ -141,6 +142,7 @@ class GpuFlatIndexNode : public IndexNode {
     Deserialize(const BinarySet& binset) override {
         auto binary = binset.GetByName(Type());
         if (binary == nullptr) {
+            LOG_KNOWHERE_ERROR_ << "Invalid binary set.";
             return Status::invalid_binary_set;
         }
         MemoryIOReader reader;
@@ -164,6 +166,7 @@ class GpuFlatIndexNode : public IndexNode {
 
     Status
     DeserializeFromFile(const std::string& filename, const LoadConfig& config) override {
+        LOG_KNOWHERE_ERROR_ << "GpuFlatIndex doesn't support Deserialization from file.";
         return Status::not_implemented;
     }
 

@@ -85,6 +85,7 @@ class DiskANNIndexNode : public IndexNode {
 
     Status
     DeserializeFromFile(const std::string& filename, const LoadConfig& config) override {
+        LOG_KNOWHERE_ERROR_ << "DiskANN doesn't support Deserialization from file.";
         return Status::not_implemented;
     }
 
@@ -96,6 +97,7 @@ class DiskANNIndexNode : public IndexNode {
     Status
     SetFileManager(std::shared_ptr<FileManager> file_manager) {
         if (file_manager == nullptr) {
+            LOG_KNOWHERE_ERROR_ << "Malloc error, file_manager = nullptr.";
             return Status::malloc_error;
         }
         file_manager_ = file_manager;
@@ -105,7 +107,7 @@ class DiskANNIndexNode : public IndexNode {
     int64_t
     Dim() const override {
         if (dim_.load() == -1) {
-            LOG_KNOWHERE_ERROR_ << "index is not ready yet.";
+            LOG_KNOWHERE_ERROR_ << "Dim() function is not supported when index is not ready yet.";
             return 0;
         }
         return dim_.load();
@@ -120,7 +122,7 @@ class DiskANNIndexNode : public IndexNode {
     int64_t
     Count() const override {
         if (count_.load() == -1) {
-            LOG_KNOWHERE_ERROR_ << "index is not ready yet.";
+            LOG_KNOWHERE_ERROR_ << "Count() function is not supported when index is not ready yet.";
             return 0;
         }
         return count_.load();
@@ -254,6 +256,7 @@ DiskANNIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
     std::lock_guard<std::mutex> lock(preparation_lock_);
     auto build_conf = static_cast<const DiskANNConfig&>(cfg);
     if (!CheckMetric(build_conf.metric_type)) {
+        LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << build_conf.metric_type;
         return Status::invalid_metric_type;
     }
     if (AnyIndexFileExist(build_conf.index_prefix)) {
@@ -292,6 +295,7 @@ DiskANNIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
     if (!build_stat.has_value()) {
         return build_stat.error();
     } else if (build_stat.value() != 0) {
+        LOG_KNOWHERE_ERROR_ << "Diskann inner error.";
         return Status::diskann_inner_error;
     }
 
