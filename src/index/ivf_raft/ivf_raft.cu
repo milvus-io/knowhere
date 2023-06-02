@@ -18,24 +18,30 @@
 #include "knowhere/factory.h"
 #include "knowhere/index_node_thread_pool_wrapper.h"
 
+constexpr uint32_t cuda_concurrent_size = 16;
+
 namespace knowhere {
 KNOWHERE_REGISTER_GLOBAL(GPU_RAFT_IVF_FLAT, [](const Object& object) {
     return Index<IndexNodeThreadPoolWrapper>::Create(
-        std::make_unique<RaftIvfIndexNode<detail::raft_ivf_flat_index>>(object));
+        std::make_unique<RaftIvfIndexNode<detail::raft_ivf_flat_index>>(object),
+        std::make_shared<ThreadPool>(cuda_concurrent_size));
 });
 
 KNOWHERE_REGISTER_GLOBAL(GPU_RAFT_IVF_PQ, [](const Object& object) {
     return Index<IndexNodeThreadPoolWrapper>::Create(
-        std::make_unique<RaftIvfIndexNode<detail::raft_ivf_pq_index>>(object));
+        std::make_unique<RaftIvfIndexNode<detail::raft_ivf_pq_index>>(object),
+        std::make_shared<ThreadPool>(cuda_concurrent_size));
 });
 
 KNOWHERE_REGISTER_GLOBAL(GPU_IVF_FLAT, [](const Object& object) {
     return Index<IndexNodeThreadPoolWrapper>::Create(
-        std::make_unique<RaftIvfIndexNode<detail::raft_ivf_flat_index>>(object));
+        std::make_unique<RaftIvfIndexNode<detail::raft_ivf_flat_index>>(object),
+        std::make_shared<ThreadPool>(cuda_concurrent_size));
 });
 
 KNOWHERE_REGISTER_GLOBAL(GPU_IVF_PQ, [](const Object& object) {
     return Index<IndexNodeThreadPoolWrapper>::Create(
-        std::make_unique<RaftIvfIndexNode<detail::raft_ivf_pq_index>>(object));
+        std::make_unique<RaftIvfIndexNode<detail::raft_ivf_pq_index>>(object),
+        std::make_shared<ThreadPool>(cuda_concurrent_size));
 });
 }  // namespace knowhere
