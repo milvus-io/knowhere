@@ -24,7 +24,7 @@
 #include <unordered_set>
 #include <variant>
 
-#include "expected.h"
+#include "knowhere/expected.h"
 #include "knowhere/log.h"
 #include "nlohmann/json.hpp"
 
@@ -270,7 +270,7 @@ class Config {
                     continue;
                 }
                 if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
-                    LOG_KNOWHERE_ERROR_ << "invalid param [" << it.first << "] in json.";
+                    LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
@@ -305,6 +305,7 @@ class Config {
                     continue;
                 }
                 if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
+                    LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
@@ -339,7 +340,7 @@ class Config {
                     continue;
                 }
                 if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
-                    LOG_KNOWHERE_ERROR_ << "invalid param [" << it.first << "] in json.";
+                    LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
@@ -358,7 +359,7 @@ class Config {
                     continue;
                 }
                 if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
-                    LOG_KNOWHERE_ERROR_ << "invalid param [" << it.first << "] in json.";
+                    LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
@@ -377,7 +378,7 @@ class Config {
                     continue;
                 }
                 if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
-                    LOG_KNOWHERE_ERROR_ << "invalid param [" << it.first << "] in json.";
+                    LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {

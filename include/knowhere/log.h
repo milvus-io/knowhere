@@ -90,36 +90,6 @@ GetThreadName() {
     return thread_name;
 }
 
-inline void
-log_trace_(const std::string& s) {
-    LOG_KNOWHERE_TRACE_ << s;
-}
-
-inline void
-log_debug_(const std::string& s) {
-    LOG_KNOWHERE_DEBUG_ << s;
-}
-
-inline void
-log_info_(const std::string& s) {
-    LOG_KNOWHERE_INFO_ << s;
-}
-
-inline void
-log_warning_(const std::string& s) {
-    LOG_KNOWHERE_WARNING_ << s;
-}
-
-inline void
-log_error_(const std::string& s) {
-    LOG_KNOWHERE_ERROR_ << s;
-}
-
-inline void
-log_fatal_(const std::string& s) {
-    LOG_KNOWHERE_FATAL_ << s;
-}
-
 /*
  * Please use LOG_MODULE_LEVEL_C macro in member function of class
  * and LOG_MODULE_LEVEL_ macro in other functions.
