@@ -222,7 +222,7 @@ from_json(const Config& config, DiskANNQueryConfig& query_conf) {
     auto search_list_threshold = query_conf.k < kKThreshold ? kKThreshold : query_conf.k;
     if (config.contains(kSearchListSize) && config[kSearchListSize].get<uint32_t>() >= search_list_threshold) {
         // The search_list_size should be no less than the k.
-        CheckNumericParamAndSet<uint32_t>(config, kSearchListSize, query_conf.k,
+        CheckNumericParamAndSet<uint32_t>(config, kSearchListSize, 0,
                                         std::max(kSearchListSizeMaxValue, static_cast<uint32_t>(10 * query_conf.k)),
                                         query_conf.search_list_size);
     } else {
