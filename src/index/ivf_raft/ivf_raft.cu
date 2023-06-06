@@ -21,27 +21,29 @@
 constexpr uint32_t cuda_concurrent_size = 16;
 
 namespace knowhere {
+
+static std::shared_ptr<ThreadPool>
+GlobalThreadPoolRaft() {
+    static std::shared_ptr<ThreadPool> pool = std::make_shared<ThreadPool>(cuda_concurrent_size);
+    return pool;
+}
 KNOWHERE_REGISTER_GLOBAL(GPU_RAFT_IVF_FLAT, [](const Object& object) {
     return Index<IndexNodeThreadPoolWrapper>::Create(
-        std::make_unique<RaftIvfIndexNode<detail::raft_ivf_flat_index>>(object),
-        std::make_shared<ThreadPool>(cuda_concurrent_size));
+        std::make_unique<RaftIvfIndexNode<detail::raft_ivf_flat_index>>(object), GlobalThreadPoolRaft());
 });
 
 KNOWHERE_REGISTER_GLOBAL(GPU_RAFT_IVF_PQ, [](const Object& object) {
     return Index<IndexNodeThreadPoolWrapper>::Create(
-        std::make_unique<RaftIvfIndexNode<detail::raft_ivf_pq_index>>(object),
-        std::make_shared<ThreadPool>(cuda_concurrent_size));
+        std::make_unique<RaftIvfIndexNode<detail::raft_ivf_pq_index>>(object), GlobalThreadPoolRaft());
 });
 
 KNOWHERE_REGISTER_GLOBAL(GPU_IVF_FLAT, [](const Object& object) {
     return Index<IndexNodeThreadPoolWrapper>::Create(
-        std::make_unique<RaftIvfIndexNode<detail::raft_ivf_flat_index>>(object),
-        std::make_shared<ThreadPool>(cuda_concurrent_size));
+        std::make_unique<RaftIvfIndexNode<detail::raft_ivf_flat_index>>(object), GlobalThreadPoolRaft());
 });
 
 KNOWHERE_REGISTER_GLOBAL(GPU_IVF_PQ, [](const Object& object) {
     return Index<IndexNodeThreadPoolWrapper>::Create(
-        std::make_unique<RaftIvfIndexNode<detail::raft_ivf_pq_index>>(object),
-        std::make_shared<ThreadPool>(cuda_concurrent_size));
+        std::make_unique<RaftIvfIndexNode<detail::raft_ivf_pq_index>>(object), GlobalThreadPoolRaft());
 });
 }  // namespace knowhere
