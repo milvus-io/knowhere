@@ -489,7 +489,7 @@ class RaftIvfIndexNode : public IndexNode {
             if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
                 auto search_params = raft::neighbors::ivf_flat::search_params{};
                 search_params.n_probes = std::min<uint32_t>(ivf_raft_cfg.nprobe, gpu_index_->n_lists());
-                if (bitset.empty()) {
+                if (bitset.empty() || bitset.count() == 0) {
                     raft::neighbors::ivf_flat::search<float, std::int64_t>(*res_, search_params, *gpu_index_,
                                                                            raft::make_const_mdspan(data_gpu.view()),
                                                                            ids_gpu.view(), dis_gpu.view());
@@ -568,7 +568,7 @@ class RaftIvfIndexNode : public IndexNode {
                 }
                 search_params.internal_distance_dtype = internal_distance_dtype.value();
                 search_params.preferred_shmem_carveout = search_params.preferred_shmem_carveout;
-                if (bitset.empty()) {
+                if (bitset.empty() || bitset.count() == 0) {
                     raft::neighbors::ivf_pq::search<float, std::int64_t>(*res_, search_params, *gpu_index_,
                                                                          raft::make_const_mdspan(data_gpu.view()),
                                                                          ids_gpu.view(), dis_gpu.view());
