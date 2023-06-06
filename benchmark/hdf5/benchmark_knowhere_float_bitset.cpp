@@ -19,6 +19,8 @@
 #include "knowhere/comp/local_file_manager.h"
 #include "knowhere/dataset.h"
 
+const int32_t GPU_DEVICE_ID = 0;
+
 namespace fs = std::filesystem;
 std::string kDir = fs::current_path().string() + "/diskann_test";
 std::string kRawDataPath = kDir + "/raw_data";
@@ -42,7 +44,7 @@ WriteRawDataToDisk(const std::string data_path, const float* raw_data, const uin
     writer.close();
 }
 
-class Benchmark_knowhere_float : public Benchmark_knowhere, public ::testing::Test {
+class Benchmark_knowhere_float_bitset : public Benchmark_knowhere, public ::testing::Test {
  public:
     void
     test_idmap(const knowhere::Json& cfg) {
@@ -68,21 +70,23 @@ class Benchmark_knowhere_float : public Benchmark_knowhere, public ::testing::Te
     void
     test_ivf(const knowhere::Json& cfg) {
         auto conf = cfg;
-        auto nlist = conf[knowhere::indexparam::NLIST].get<int64_t>();
 
-        printf("\n[%0.3f s] %s | %s | nlist=%ld\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(),
-               nlist);
+        printf("\n[%0.3f s] %s | %s \n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
         printf("================================================================================\n");
-        for (auto nprobe : NPROBEs_) {
-            conf[knowhere::indexparam::NPROBE] = nprobe;
+        for (auto per : PERCENTs_) {
+            auto bitset_data = GenRandomBitset(nb_, nb_ * per / 100);
+            knowhere::BitsetView bitset(bitset_data.data(), nb_);
+
             for (auto nq : NQs_) {
                 auto ds_ptr = knowhere::GenDataSet(nq, dim_, xq_);
                 for (auto k : TOPKs_) {
                     conf[knowhere::meta::TOPK] = k;
-                    CALC_TIME_SPAN(auto result = index_.Search(*ds_ptr, conf, nullptr));
+                    auto g_result = golden_index_.Search(*ds_ptr, conf, bitset);
+                    auto g_ids = g_result.value()->GetIds();
+                    CALC_TIME_SPAN(auto result = index_.Search(*ds_ptr, conf, bitset));
                     auto ids = result.value()->GetIds();
-                    float recall = CalcRecall(ids, nq, k);
-                    printf("  nprobe = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", nprobe, nq, k, t_diff,
+                    float recall = CalcRecall(g_ids, ids, nq, k);
+                    printf("  bitset_per = %3d%%, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", per, nq, k, t_diff,
                            recall);
                     std::fflush(stdout);
                 }
@@ -95,22 +99,24 @@ class Benchmark_knowhere_float : public Benchmark_knowhere, public ::testing::Te
     void
     test_hnsw(const knowhere::Json& cfg) {
         auto conf = cfg;
-        auto M = conf[knowhere::indexparam::HNSW_M].get<int64_t>();
-        auto efConstruction = conf[knowhere::indexparam::EFCONSTRUCTION].get<int64_t>();
 
-        printf("\n[%0.3f s] %s | %s | M=%ld | efConstruction=%ld\n", get_time_diff(), ann_test_name_.c_str(),
-               index_type_.c_str(), M, efConstruction);
+        printf("\n[%0.3f s] %s | %s \n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
         printf("================================================================================\n");
-        for (auto ef : EFs_) {
-            conf[knowhere::indexparam::EF] = ef;
+        for (auto per : PERCENTs_) {
+            auto bitset_data = GenRandomBitset(nb_, nb_ * per / 100);
+            knowhere::BitsetView bitset(bitset_data.data(), nb_);
+
             for (auto nq : NQs_) {
                 auto ds_ptr = knowhere::GenDataSet(nq, dim_, xq_);
                 for (auto k : TOPKs_) {
                     conf[knowhere::meta::TOPK] = k;
-                    CALC_TIME_SPAN(auto result = index_.Search(*ds_ptr, conf, nullptr));
+                    auto g_result = golden_index_.Search(*ds_ptr, conf, bitset);
+                    auto g_ids = g_result.value()->GetIds();
+                    CALC_TIME_SPAN(auto result = index_.Search(*ds_ptr, conf, bitset));
                     auto ids = result.value()->GetIds();
-                    float recall = CalcRecall(ids, nq, k);
-                    printf("  ef = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", ef, nq, k, t_diff, recall);
+                    float recall = CalcRecall(g_ids, ids, nq, k);
+                    printf("  bitset_per = %3d%%, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", per, nq, k, t_diff,
+                           recall);
                     std::fflush(stdout);
                 }
             }
@@ -123,9 +129,6 @@ class Benchmark_knowhere_float : public Benchmark_knowhere, public ::testing::Te
     test_diskann(const knowhere::Json& cfg) {
         auto conf = cfg;
         conf["index_prefix"] = (metric_type_ == knowhere::metric::L2 ? kL2IndexPrefix : kIPIndexPrefix);
-        conf["num_threads"] = 8;
-        conf["search_cache_budget_gb"] = 0;
-        conf["beamwidth"] = 8;
 
         printf("\n[%0.3f s] %s | %s \n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
         printf("================================================================================\n");
@@ -158,6 +161,8 @@ class Benchmark_knowhere_float : public Benchmark_knowhere, public ::testing::Te
         cfg_[knowhere::meta::METRIC_TYPE] = metric_type_;
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX2);
         printf("faiss::distance_compute_blas_threshold: %ld\n", knowhere::KnowhereConfig::GetBlasThreshold());
+
+        create_golden_index(cfg_);
     }
 
     void
@@ -168,22 +173,23 @@ class Benchmark_knowhere_float : public Benchmark_knowhere, public ::testing::Te
  protected:
     const std::vector<int32_t> NQs_ = {10000};
     const std::vector<int32_t> TOPKs_ = {100};
+    const std::vector<int32_t> PERCENTs_ = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
 
     // IVF index params
-    const std::vector<int32_t> NLISTs_ = {1024};
-    const std::vector<int32_t> NPROBEs_ = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512};
+    // const std::vector<int32_t> NLISTs_ = {1024};
+    // const std::vector<int32_t> NPROBEs_ = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512};
 
     // IVFPQ index params
-    const std::vector<int32_t> Ms_ = {8, 16, 32};
-    const int32_t NBITS_ = 8;
+    // const std::vector<int32_t> Ms_ = {8, 16, 32};
+    // const int32_t NBITS_ = 8;
 
     // HNSW index params
-    const std::vector<int32_t> HNSW_Ms_ = {16};
-    const std::vector<int32_t> EFCONs_ = {200};
-    const std::vector<int32_t> EFs_ = {128, 256, 512};
+    // const std::vector<int32_t> HNSW_Ms_ = {16};
+    // const std::vector<int32_t> EFCONs_ = {200};
+    // const std::vector<int32_t> EFs_ = {128, 256, 512};
 };
 
-TEST_F(Benchmark_knowhere_float, TEST_IDMAP) {
+TEST_F(Benchmark_knowhere_float_bitset, TEST_IDMAP) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IDMAP;
 
     knowhere::Json conf = cfg_;
@@ -192,7 +198,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IDMAP) {
     test_idmap(conf);
 }
 
-TEST_F(Benchmark_knowhere_float, TEST_IVF_FLAT_NM) {
+TEST_F(Benchmark_knowhere_float_bitset, TEST_IVF_FLAT_NM) {
 #ifdef KNOWHERE_WITH_RAFT
     index_type_ = knowhere::IndexEnum::INDEX_RAFT_IVFFLAT;
 #else
@@ -200,27 +206,21 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_FLAT_NM) {
 #endif
 
     knowhere::Json conf = cfg_;
-    for (auto nlist : NLISTs_) {
-        conf[knowhere::indexparam::NLIST] = nlist;
-        std::string index_file_name = get_index_name({nlist});
-        create_index(index_file_name, conf);
-        test_ivf(conf);
-    }
+    std::string index_file_name = get_index_name({});
+    create_index(index_file_name, conf);
+    test_ivf(conf);
 }
 
-TEST_F(Benchmark_knowhere_float, TEST_IVF_SQ8) {
+TEST_F(Benchmark_knowhere_float_bitset, TEST_IVF_SQ8) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFSQ8;
 
     knowhere::Json conf = cfg_;
-    for (auto nlist : NLISTs_) {
-        conf[knowhere::indexparam::NLIST] = nlist;
-        std::string index_file_name = get_index_name({nlist});
-        create_index(index_file_name, conf);
-        test_ivf(conf);
-    }
+    std::string index_file_name = get_index_name({});
+    create_index(index_file_name, conf);
+    test_ivf(conf);
 }
 
-TEST_F(Benchmark_knowhere_float, TEST_IVF_PQ) {
+TEST_F(Benchmark_knowhere_float_bitset, TEST_IVF_PQ) {
 #ifdef KNOWHERE_WITH_RAFT
     index_type_ = knowhere::IndexEnum::INDEX_RAFT_IVFPQ;
 #else
@@ -228,45 +228,29 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_PQ) {
 #endif
 
     knowhere::Json conf = cfg_;
-    conf[knowhere::indexparam::NBITS] = NBITS_;
-    for (auto m : Ms_) {
-        conf[knowhere::indexparam::M] = m;
-        for (auto nlist : NLISTs_) {
-            conf[knowhere::indexparam::NLIST] = nlist;
-            std::string index_file_name = get_index_name({nlist, m});
-            create_index(index_file_name, conf);
-            test_ivf(conf);
-        }
-    }
+    std::string index_file_name = get_index_name({});
+    create_index(index_file_name, conf);
+    test_ivf(conf);
 }
 
-TEST_F(Benchmark_knowhere_float, TEST_HNSW) {
+TEST_F(Benchmark_knowhere_float_bitset, TEST_HNSW) {
     index_type_ = knowhere::IndexEnum::INDEX_HNSW;
 
     knowhere::Json conf = cfg_;
-    for (auto M : HNSW_Ms_) {
-        conf[knowhere::indexparam::HNSW_M] = M;
-        for (auto efc : EFCONs_) {
-            conf[knowhere::indexparam::EFCONSTRUCTION] = efc;
-            std::string index_file_name = get_index_name({M, efc});
-            create_index(index_file_name, conf);
-            test_hnsw(conf);
-        }
-    }
+    std::string index_file_name = get_index_name({});
+    create_index(index_file_name, conf);
+    test_hnsw(conf);
 }
 
-TEST_F(Benchmark_knowhere_float, TEST_DISKANN) {
+TEST_F(Benchmark_knowhere_float_bitset, TEST_DISKANN) {
     index_type_ = knowhere::IndexEnum::INDEX_DISKANN;
 
     knowhere::Json conf = cfg_;
 
     conf["index_prefix"] = (metric_type_ == knowhere::metric::L2 ? kL2IndexPrefix : kIPIndexPrefix);
     conf["data_path"] = kRawDataPath;
-    conf["max_degree"] = 56;
-    conf["search_list_size"] = 128;
     conf["pq_code_budget_gb"] = sizeof(float) * kDim * kNumRows * 0.125 / (1024 * 1024 * 1024);
     conf["build_dram_budget_gb"] = 32.0;
-    conf["num_threads"] = 8;
 
     fs::create_directory(kDir);
     fs::create_directory(kL2IndexDir);

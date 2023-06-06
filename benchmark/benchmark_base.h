@@ -87,6 +87,21 @@ class Benchmark_base {
     }
 
     float
+    CalcRecall(const int64_t* g_ids, const int64_t* ids, int32_t nq, int32_t k) {
+        int32_t hit = 0;
+        for (int32_t i = 0; i < nq; i++) {
+            std::unordered_set<int32_t> ground(g_ids + i * k, g_ids + (i + 1) * k);
+            for (int32_t j = 0; j < k; j++) {
+                auto id = ids[i * k + j];
+                if (ground.count(id) > 0) {
+                    hit++;
+                }
+            }
+        }
+        return (hit * 1.0f / (nq * k));
+    }
+
+    float
     CalcRecall(const int64_t* ids, int32_t nq_start, int32_t step, int32_t k) {
         assert(nq_start + step <= 10000);
         int32_t min_k = std::min(gt_k_, k);

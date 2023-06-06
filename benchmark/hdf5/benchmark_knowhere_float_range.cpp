@@ -188,8 +188,6 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IDMAP) {
     knowhere::Json conf = cfg_;
     std::string index_file_name = get_index_name({});
     create_index(index_file_name, conf);
-    index_.Deserialize(binary_set_);
-    binary_set_.clear();
     test_idmap(conf);
 }
 
@@ -199,18 +197,8 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IVF_FLAT_NM) {
     knowhere::Json conf = cfg_;
     for (auto nlist : NLISTs_) {
         conf[knowhere::indexparam::NLIST] = nlist;
-
         std::string index_file_name = get_index_name({nlist});
         create_index(index_file_name, conf);
-
-        // IVFFLAT_NM should load raw data
-        knowhere::BinaryPtr bin = std::make_shared<knowhere::Binary>();
-        bin->data = std::shared_ptr<uint8_t[]>((uint8_t*)xb_, [&](uint8_t*) {});
-        bin->size = dim_ * nb_ * sizeof(float);
-        binary_set_.Append("RAW_DATA", bin);
-
-        index_.Deserialize(binary_set_);
-        binary_set_.clear();
         test_ivf(conf);
     }
 }
@@ -221,11 +209,8 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IVF_SQ8) {
     knowhere::Json conf = cfg_;
     for (auto nlist : NLISTs_) {
         conf[knowhere::indexparam::NLIST] = nlist;
-
         std::string index_file_name = get_index_name({nlist});
         create_index(index_file_name, conf);
-        index_.Deserialize(binary_set_);
-        binary_set_.clear();
         test_ivf(conf);
     }
 }
@@ -239,11 +224,8 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IVF_PQ) {
         conf[knowhere::indexparam::M] = m;
         for (auto nlist : NLISTs_) {
             conf[knowhere::indexparam::NLIST] = nlist;
-
             std::string index_file_name = get_index_name({nlist, m});
             create_index(index_file_name, conf);
-            index_.Deserialize(binary_set_);
-            binary_set_.clear();
             test_ivf(conf);
         }
     }
@@ -257,11 +239,8 @@ TEST_F(Benchmark_knowhere_float_range, TEST_HNSW) {
         conf[knowhere::indexparam::HNSW_M] = M;
         for (auto efc : EFCONs_) {
             conf[knowhere::indexparam::EFCONSTRUCTION] = efc;
-
             std::string index_file_name = get_index_name({M, efc});
             create_index(index_file_name, conf);
-            index_.Deserialize(binary_set_);
-            binary_set_.clear();
             test_hnsw(conf);
         }
     }

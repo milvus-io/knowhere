@@ -14,6 +14,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -64,3 +65,20 @@ struct FileIOReader {
         return len;
     }
 };
+
+// Return a n-bits bitset data with random t bits set to true
+inline std::vector<uint8_t>
+GenRandomBitset(size_t n, size_t t) {
+    assert(t >= 0 && t <= n);
+    std::vector<bool> bits_shuffle(n, false);
+    for (size_t i = 0; i < t; ++i) bits_shuffle[i] = true;
+    std::mt19937 g(42);
+    std::shuffle(bits_shuffle.begin(), bits_shuffle.end(), g);
+    std::vector<uint8_t> data((n + 8 - 1) / 8, 0);
+    for (size_t i = 0; i < n; ++i) {
+        if (bits_shuffle[i]) {
+            data[i >> 3] |= (0x1 << (i & 0x7));
+        }
+    }
+    return data;
+}
