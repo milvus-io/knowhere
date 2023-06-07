@@ -21,9 +21,9 @@ namespace knowhere {
 
 struct DeviceBitsetView {
     __device__ __host__
-    DeviceBitsetView() = default;
-    __device__ __host__ ~DeviceBitsetView() = default;
-
+    DeviceBitsetView(const DeviceBitsetView& other)
+        : bits_{other.data()}, num_bits_{other.size()} {
+    }
     __device__ __host__
     DeviceBitsetView(const uint8_t* data, size_t num_bits = size_t{})
         : bits_{data}, num_bits_{num_bits} {
