@@ -24,13 +24,13 @@
 class Benchmark_knowhere : public Benchmark_hdf5 {
  public:
     void
-    write_index(const std::string& filename, const knowhere::Json& conf) {
-        binary_set_.clear();
-
+    write_index(knowhere::Index<knowhere::IndexNode>& index, const std::string& filename, const knowhere::Json& conf) {
         FileIOWriter writer(filename);
-        index_.Serialize(binary_set_);
 
-        const auto& m = binary_set_.binary_map_;
+        knowhere::BinarySet binary_set;
+        index.Serialize(binary_set);
+
+        const auto& m = binary_set.binary_map_;
         for (auto it = m.begin(); it != m.end(); ++it) {
             const std::string& name = it->first;
             size_t name_size = name.length();
@@ -45,15 +45,14 @@ class Benchmark_knowhere : public Benchmark_hdf5 {
     }
 
     void
-    read_index(const std::string& filename) {
-        binary_set_.clear();
-
+    read_index(knowhere::Index<knowhere::IndexNode>& index, const std::string& filename) {
         FileIOReader reader(filename);
         int64_t file_size = reader.size();
         if (file_size < 0) {
             throw std::exception();
         }
 
+        knowhere::BinarySet binary_set;
         int64_t offset = 0;
         while (offset < file_size) {
             size_t name_size, data_size;
@@ -71,8 +70,16 @@ class Benchmark_knowhere : public Benchmark_hdf5 {
             offset += data_size;
 
             std::shared_ptr<uint8_t[]> data_ptr(data);
-            binary_set_.Append(name, data_ptr, data_size);
+            binary_set.Append(name, data_ptr, data_size);
         }
+
+        // IVFFLAT_NM should load raw data
+        knowhere::BinaryPtr bin = std::make_shared<knowhere::Binary>();
+        bin->data = std::shared_ptr<uint8_t[]>((uint8_t*)xb_, [&](uint8_t*) {});
+        bin->size = dim_ * nb_ * sizeof(float);
+        binary_set.Append("RAW_DATA", bin);
+
+        index.Deserialize(binary_set);
     }
 
     std::string
@@ -91,22 +98,48 @@ class Benchmark_knowhere : public Benchmark_hdf5 {
 
         try {
             printf("[%.3f s] Reading index file: %s\n", get_time_diff(), index_file_name.c_str());
-            read_index(index_file_name);
+            read_index(index_, index_file_name);
         } catch (...) {
             printf("[%.3f s] Building all on %d vectors\n", get_time_diff(), nb_);
             knowhere::DataSetPtr ds_ptr = knowhere::GenDataSet(nb_, dim_, xb_);
             index_.Build(*ds_ptr, conf);
 
             printf("[%.3f s] Writing index file: %s\n", get_time_diff(), index_file_name.c_str());
-            write_index(index_file_name, conf);
+            write_index(index_, index_file_name, conf);
         }
         return index_;
     }
 
+    knowhere::Index<knowhere::IndexNode>
+    create_golden_index(const knowhere::Json& conf) {
+        golden_index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
+
+        std::string golden_index_file_name = ann_test_name_ + "_" + golden_index_type_ + "_GOLDEN" + ".index";
+        printf("[%.3f s] Creating golden index \"%s\"\n", get_time_diff(), golden_index_type_.c_str());
+        golden_index_ = knowhere::IndexFactory::Instance().Create(golden_index_type_);
+
+        try {
+            printf("[%.3f s] Reading golden index file: %s\n", get_time_diff(), golden_index_file_name.c_str());
+            read_index(golden_index_, golden_index_file_name);
+        } catch (...) {
+            printf("[%.3f s] Building golden index on %d vectors\n", get_time_diff(), nb_);
+            knowhere::DataSetPtr ds_ptr = knowhere::GenDataSet(nb_, dim_, xb_);
+            golden_index_.Build(*ds_ptr, conf);
+
+            printf("[%.3f s] Writing golden index file: %s\n", get_time_diff(), golden_index_file_name.c_str());
+            write_index(golden_index_, golden_index_file_name, conf);
+        }
+        return golden_index_;
+    }
+
  protected:
     std::string metric_type_;
+
     std::string index_type_;
-    knowhere::BinarySet binary_set_;
     knowhere::Json cfg_;
     knowhere::Index<knowhere::IndexNode> index_;
+
+    std::string golden_index_type_;
+    knowhere::Json golden_cfg_;
+    knowhere::Index<knowhere::IndexNode> golden_index_;
 };

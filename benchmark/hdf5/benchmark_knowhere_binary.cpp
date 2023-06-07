@@ -149,8 +149,6 @@ TEST_F(Benchmark_knowhere_binary, TEST_BINARY_IDMAP) {
     knowhere::Json conf = cfg_;
     std::string index_file_name = get_index_name({});
     create_index(index_file_name, conf);
-    index_.Deserialize(binary_set_);
-    binary_set_.clear();
     test_binary_idmap(conf);
 }
 
@@ -160,11 +158,8 @@ TEST_F(Benchmark_knowhere_binary, TEST_BINARY_IVF_FLAT) {
     knowhere::Json conf = cfg_;
     for (auto nlist : NLISTs_) {
         conf[knowhere::indexparam::NLIST] = nlist;
-
         std::string index_file_name = get_index_name({nlist});
         create_index(index_file_name, conf);
-        index_.Deserialize(binary_set_);
-        binary_set_.clear();
         test_binary_ivf(conf);
     }
 }
