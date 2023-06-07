@@ -50,19 +50,28 @@ namespace knowhere {
 __global__ void
 postprocess_device_results(bool* enough_valid, int64_t* ids, float* dists, int64_t rows, int k, int target_k,
                            DeviceBitsetView bitset) {
+    __shared__ int invalid_count[1];
     for (auto row_index = blockIdx.x; row_index < rows; row_index += gridDim.x) {
+        if (threadIdx.x == 0) {
+            invalid_count[0] = 0;
+        }
+        __syncthreads();
         // First, replace all invalid IDs with -1
         for (auto col_index = threadIdx.x; col_index < k; col_index += blockDim.x) {
             auto elem_index = row_index * k + col_index;
             auto cur_id = ids[elem_index];
-            auto invalid_id = (bitset.test(cur_id) || cur_id == std::numeric_limits<int64_t>::max());
+            auto invalid_id = bitset.test(cur_id);
+            if (invalid_id) {  // TODO(wphicks): assuming the branch is worth it here;
+                               // should analyze perf.
+                __atomicAdd_block(invalid_count, 1);
+            }
+            invalid_id |= cur_id == std::numeric_limits<int64_t>::max();
             ids[elem_index] = int(invalid_id) * -1 + int(!invalid_id) * ids[elem_index];
         }
         __syncthreads();
 
         // Now move all valid results to the front of the row
         auto cur_valid_index = 0;
-        auto invalid_count = 0;
         for (auto col_index = 0; col_index < k; ++col_index) {
             auto elem_index = row_index * k + col_index;
             // Just do one row per block for now; can improve this later
@@ -74,18 +83,13 @@ postprocess_device_results(bool* enough_valid, int64_t* ids, float* dists, int64
                     // Only count elements invalidated by the bitset. These are the
                     // elements that will require a swap as opposed to just appearing at
                     // the end of the row
-                    // TODO(wphicks): This way of counting invalid values is
-                    // incorrect! Does not take into account ids at the end of the valid
-                    // range which were invalidated by the bitset. We need to track it
-                    // as we test against the bitset
-                    ++invalid_count;
                 }
                 dists[cur_valid_index++] = dists[elem_index];
             }
         }
         // Check if we have enough valid results
         if (threadIdx.x == 0) {
-            valid_counts[row_index] = (k - invalid_count >= target_k);
+            valid_counts[row_index] = (k - invalid_count[0] >= target_k);
         }
     }
 }
