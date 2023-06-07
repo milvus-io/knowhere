@@ -74,8 +74,8 @@ extern const std::unique_ptr<PrometheusClient> prometheusClient;
 #define DECLARE_PROMETHEUS_COUNTER(name_counter) extern prometheus::Counter& name_counter;
 #define DECLARE_PROMETHEUS_HISTOGRAM(name_histogram) extern prometheus::Histogram& name_histogram;
 
-// DECLARE_PROMETHEUS_GAUGE(kw_search_gauge);
-// DECLARE_PROMETHEUS_COUNTER(kw_search_counter);
-// DECLARE_PROMETHEUS_HISTOGRAM(kw_search_histogram);
+DECLARE_PROMETHEUS_HISTOGRAM(kw_build_latency);
+DECLARE_PROMETHEUS_HISTOGRAM(kw_search_latency);
+DECLARE_PROMETHEUS_HISTOGRAM(kw_range_search_latency);
 
 }  // namespace knowhere

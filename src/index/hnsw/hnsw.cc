@@ -79,6 +79,7 @@ class HnswIndexNode : public IndexNode {
     Status
     Add(const DataSet& dataset, const Config& cfg) override {
         if (!index_) {
+            LOG_KNOWHERE_ERROR_ << "Can not add data to empty HNSW index.";
             return Status::empty_index;
         }
 
@@ -309,6 +310,7 @@ class HnswIndexNode : public IndexNode {
     Status
     Serialize(BinarySet& binset) const override {
         if (!index_) {
+            LOG_KNOWHERE_ERROR_ << "Can not serialize empty HNSW index.";
             return Status::empty_index;
         }
         try {
@@ -331,6 +333,7 @@ class HnswIndexNode : public IndexNode {
         try {
             auto binary = binset.GetByName(Type());
             if (binary == nullptr) {
+                LOG_KNOWHERE_ERROR_ << "Invalid binary set.";
                 return Status::invalid_binary_set;
             }
 

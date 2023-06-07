@@ -123,18 +123,6 @@ KnowhereConfig::SetClusteringType(const ClusteringType clustering_type) {
 }
 
 void
-KnowhereConfig::SetStatisticsLevel(const int32_t stat_level) {
-    LOG_KNOWHERE_INFO_ << "Set knowhere::STATISTICS_LEVEL to " << stat_level;
-}
-
-void
-KnowhereConfig::SetLogHandler() {
-    faiss::LOG_ERROR_ = [](const std::string& msg) { LOG_KNOWHERE_ERROR_ << msg; };
-    faiss::LOG_WARNING_ = [](const std::string& msg) { LOG_KNOWHERE_WARNING_ << msg; };
-    faiss::LOG_INFO_ = [](const std::string& msg) { LOG_KNOWHERE_INFO_ << msg; };
-}
-
-void
 KnowhereConfig::SetAioContextPool(size_t num_ctx, size_t max_events) {
 #ifdef KNOWHERE_WITH_DISKANN
     AioContextPool::InitGlobalAioPool(num_ctx, max_events);

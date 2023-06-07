@@ -100,7 +100,8 @@ Config::FormatAndCheck(const Config& cfg, Json& json) {
                 }
             }
         }
-    } catch (std::exception&) {
+    } catch (std::exception& e) {
+        LOG_KNOWHERE_ERROR_ << "Invalid value in json: " << e.what();
         return Status::invalid_value_in_json;
     }
     return Status::success;

@@ -15,6 +15,7 @@
 #include <omp.h>
 
 #include <iostream>
+#include <limits>
 #include <list>
 #include <optional>
 #include <sstream>
@@ -23,7 +24,8 @@
 #include <unordered_set>
 #include <variant>
 
-#include "expected.h"
+#include "knowhere/expected.h"
+#include "knowhere/log.h"
 #include "nlohmann/json.hpp"
 
 namespace knowhere {
@@ -268,6 +270,7 @@ class Config {
                     continue;
                 }
                 if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
+                    LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
@@ -275,15 +278,21 @@ class Config {
                     continue;
                 }
                 if (!json[it.first].is_number_integer()) {
+                    LOG_KNOWHERE_ERROR_ << "Type conflict in json: param [" << it.first << "] should be integer.";
                     return Status::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
-                    if (json[it.first].get<long>() > std::numeric_limits<CFG_INT>::max())
+                    if (json[it.first].get<long>() > std::numeric_limits<CFG_INT>::max()) {
+                        LOG_KNOWHERE_ERROR_ << "Arithmetic overflow: param [" << it.first << "] should be at most "
+                                            << std::numeric_limits<CFG_INT>::max();
                         return Status::arithmetic_overflow;
+                    }
                     CFG_INT v = json[it.first];
                     if (ptr->range.value().first <= v && v <= ptr->range.value().second) {
                         *ptr->val = v;
                     } else {
+                        LOG_KNOWHERE_ERROR_ << "Out of range in json: param [" << it.first << "] should be in ["
+                                            << ptr->range.value().first << ", " << ptr->range.value().second << "].";
                         return Status::out_of_range_in_json;
                     }
                 } else {
@@ -296,6 +305,7 @@ class Config {
                     continue;
                 }
                 if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
+                    LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
@@ -303,15 +313,21 @@ class Config {
                     continue;
                 }
                 if (!json[it.first].is_number()) {
+                    LOG_KNOWHERE_ERROR_ << "Type conflict in json: param [" << it.first << "] should be a number.";
                     return Status::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
-                    if (json[it.first].get<double>() > std::numeric_limits<CFG_FLOAT>::max())
+                    if (json[it.first].get<double>() > std::numeric_limits<CFG_FLOAT>::max()) {
+                        LOG_KNOWHERE_ERROR_ << "Arithmetic overflow: param [" << it.first << "] should be at most "
+                                            << std::numeric_limits<CFG_FLOAT>::max();
                         return Status::arithmetic_overflow;
+                    }
                     CFG_FLOAT v = json[it.first];
                     if (ptr->range.value().first <= v && v <= ptr->range.value().second) {
                         *ptr->val = v;
                     } else {
+                        LOG_KNOWHERE_ERROR_ << "Out of range in json: param [" << it.first << "] should be in ["
+                                            << ptr->range.value().first << ", " << ptr->range.value().second << "].";
                         return Status::out_of_range_in_json;
                     }
                 } else {
@@ -324,6 +340,7 @@ class Config {
                     continue;
                 }
                 if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
+                    LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
@@ -331,6 +348,7 @@ class Config {
                     continue;
                 }
                 if (!json[it.first].is_string()) {
+                    LOG_KNOWHERE_ERROR_ << "Type conflict in json: param [" << it.first << "] should be a string.";
                     return Status::type_conflict_in_json;
                 }
                 *ptr->val = json[it.first];
@@ -341,6 +359,7 @@ class Config {
                     continue;
                 }
                 if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
+                    LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
@@ -348,6 +367,7 @@ class Config {
                     continue;
                 }
                 if (!json[it.first].is_array()) {
+                    LOG_KNOWHERE_ERROR_ << "Type conflict in json: param [" << it.first << "] should be an array.";
                     return Status::type_conflict_in_json;
                 }
                 for (auto&& i : json[it.first]) ptr->val->push_back(i);
@@ -358,6 +378,7 @@ class Config {
                     continue;
                 }
                 if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
+                    LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
@@ -365,6 +386,7 @@ class Config {
                     continue;
                 }
                 if (!json[it.first].is_boolean()) {
+                    LOG_KNOWHERE_ERROR_ << "Type conflict in json: param [" << it.first << "] should be a boolean.";
                     return Status::type_conflict_in_json;
                 }
                 *ptr->val = json[it.first];

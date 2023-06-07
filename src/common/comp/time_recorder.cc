@@ -30,6 +30,11 @@ TimeRecorder::GetTimeSpanStr(double span) {
 
 void
 TimeRecorder::PrintTimeRecord(const std::string& msg, double span) {
+    // for TRACE / DEBUG level, print nothing
+    if (log_level_ < 2) {
+        return;
+    }
+
     std::string str_log;
     if (!header_.empty()) {
         str_log += header_ + ": ";
@@ -40,8 +45,17 @@ TimeRecorder::PrintTimeRecord(const std::string& msg, double span) {
     str_log += ")";
 
     switch (log_level_) {
-        case 0:
-            std::cout << str_log << std::endl;
+        case 2:
+            LOG_KNOWHERE_INFO_ << str_log;
+            break;
+        case 3:
+            LOG_KNOWHERE_WARNING_ << str_log;
+            break;
+        case 4:
+            LOG_KNOWHERE_ERROR_ << str_log;
+            break;
+        case 5:
+            LOG_KNOWHERE_FATAL_ << str_log;
             break;
         default:
             LOG_KNOWHERE_INFO_ << str_log;
