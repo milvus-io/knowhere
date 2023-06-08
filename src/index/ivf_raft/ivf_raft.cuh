@@ -51,7 +51,9 @@ namespace knowhere {
 
 namespace raft_detail {
 struct raft_results {
-    raft_results(raft::device_resources& res, std::int64_t rows = std::int64_t{}, std::int64_t k = std::int64_t{})
+    raft_results() : ids_{}, dists_{} {
+    }
+    raft_results(raft::device_resources& res, std::int64_t rows, std::int64_t k)
         : ids_{raft::make_device_matrix<std::int64_t, std::int64_t>(res, rows, k)},
           dists_{raft::make_device_matrix<float, std::int64_t>(res, rows, k)} {
     }
@@ -463,7 +465,7 @@ class RaftIvfIndexNode : public IndexNode {
             auto data_gpu = raft::make_device_matrix<float, std::int64_t>(*res_, rows, dim);
             raft::copy(data_gpu.data_handle(), data, data_gpu.size(), res_->get_stream());
 
-            auto gpu_results = raft_detail::raft_results{*res_};
+            auto gpu_results = raft_detail::raft_results{};
             auto gpu_bitset = DeviceBitset{*res_, bitset};
 
             if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
@@ -506,23 +508,20 @@ class RaftIvfIndexNode : public IndexNode {
                 static_assert(std::is_same_v<detail::raft_ivf_flat_index, T>);
             }
 
-            /* for (auto row_index = 0; row_index < gpu_results.ids().extent(0); ++row_index) {
+            for (auto row_index = 0; row_index < gpu_results.ids().extent(0); ++row_index) {
                 auto begin =
-                  thrust::device_pointer_cast(gpu_results.ids_data() +
-                                                         gpu_results.ids().extent(1) * row_index);
+                    thrust::device_pointer_cast(gpu_results.ids_data() + gpu_results.ids().extent(1) * row_index);
                 auto end = thrust::device_pointer_cast(gpu_results.ids_data() +
                                                        gpu_results.ids().extent(1) * row_index + ivf_raft_cfg.k);
                 thrust::copy(thrust::device.on(res_->get_stream().value()), begin, end,
                              ids.get() + row_index * ivf_raft_cfg.k);
                 auto dists_begin =
-                  thrust::device_pointer_cast(gpu_results.dists_data() +
-                                                               gpu_results.dists().extent(1) * row_index);
-                auto dists_end =
-                  thrust::device_pointer_cast(gpu_results.dists_data() +
-                                                             gpu_results.dists().extent(1) * row_index +
-            ivf_raft_cfg.k); thrust::copy(thrust::device.on(res_->get_stream().value()), dists_begin, dists_end,
+                    thrust::device_pointer_cast(gpu_results.dists_data() + gpu_results.dists().extent(1) * row_index);
+                auto dists_end = thrust::device_pointer_cast(
+                    gpu_results.dists_data() + gpu_results.dists().extent(1) * row_index + ivf_raft_cfg.k);
+                thrust::copy(thrust::device.on(res_->get_stream().value()), dists_begin, dists_end,
                              dis.get() + row_index * ivf_raft_cfg.k);
-            } */
+            }
 
             res_->sync_stream();
 
@@ -697,7 +696,6 @@ class RaftIvfIndexNode : public IndexNode {
         }
         auto enough_valid = raft::make_device_vector<bool>(res, queries.extent(0));
 
-        std::cout << blocks << ", " << threads << "\n";
         raft_detail::postprocess_device_results<<<blocks, threads, 0, res.get_stream().value()>>>(
             enough_valid.data_handle(), result.ids_data(), result.dists_data(), queries.extent(0), k, target_k, bitset);
 
