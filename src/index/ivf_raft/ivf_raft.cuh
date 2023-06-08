@@ -141,7 +141,7 @@ postprocess_device_results(bool* enough_valid, int64_t* ids, float* dists, int64
 
 template <typename T, typename IndexT>
 __global__ void
-slice(T* out, T* in, IndexT out_rows, IndexT out_cols, IndexT in_rows, IndexT in_cols, ) {
+slice(T* out, T* in, IndexT out_rows, IndexT out_cols, IndexT in_rows, IndexT in_cols) {
     for (auto i = blockIdx.x * blockDim.x + threadIdx.x; i < out_rows * out_cols; ++i) {
         auto row_index = i / out_cols;
         auto col_index = i % out_cols;
@@ -540,7 +540,7 @@ class RaftIvfIndexNode : public IndexNode {
 
             if (gpu_results.k() != ivf_raft_cfg.k) {
                 auto new_gpu_results = raft_detail::raft_results{*res_, gpu_results.rows(), ivf_raft_cfg.k};
-                raft_detail::slice<<<1024, 256, 0, res_->get_stream.value()>>>(
+                raft_detail::slice<<<1024, 256, 0, res_->get_stream().value()>>>(
                     new_gpu_results.ids_data(), gpu_results.ids_data(), new_gpu_results.rows(), new_gpu_results.k(),
                     gpu_results.rows(), gpu_results.k());
                 res_->sync_stream();
