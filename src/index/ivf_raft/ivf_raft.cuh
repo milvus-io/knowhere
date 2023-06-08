@@ -76,10 +76,21 @@ struct raft_results {
         return dists_.data_handle();
     }
 
+    auto
+    rows() const {
+        return ids_.extent(0);
+    }
+    auto
+    k() const {
+        return ids_.extent(1);
+    }
+
  private:
     raft::device_matrix<std::int64_t, std::int64_t> ids_;
     raft::device_matrix<float, std::int64_t> dists_;
 };
+
+auto constexpr static const MAX_IVF_FLAT_K = 256;
 
 __global__ void
 postprocess_device_results(bool* enough_valid, int64_t* ids, float* dists, int64_t rows, int k, int target_k,
@@ -127,6 +138,21 @@ postprocess_device_results(bool* enough_valid, int64_t* ids, float* dists, int64
         }
     }
 }
+
+template <typename T, typename IndexT>
+__global__ void
+slice(T* out, T* in, IndexT out_rows, IndexT out_cols, IndexT in_rows, IndexT in_cols, ) {
+    for (auto i = blockIdx.x * blockDim.x + threadIdx.x; i < out_rows * out_cols; ++i) {
+        auto row_index = i / out_cols;
+        auto col_index = i % out_cols;
+        if (row_index < in_rows && col_index < in_cols) {
+            out[row_index * out_cols + col_index] = in[row_index * in_cols + col_index];
+        } else {
+            out[row_index * out_cols + col_index] = -1;
+        }
+    }
+}
+
 }  // namespace raft_detail
 
 namespace raft_res_pool {
@@ -473,8 +499,10 @@ class RaftIvfIndexNode : public IndexNode {
             if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
                 auto search_params = raft::neighbors::ivf_flat::search_params{};
                 search_params.n_probes = std::min<uint32_t>(ivf_raft_cfg.nprobe, gpu_index_->n_lists());
-                gpu_results = RawSearch(*res_, raft::make_const_mdspan(data_gpu.view()), search_params,
-                                        std::min(ivf_raft_cfg.k + bitset.count(), static_cast<uint64_t>(counts_)),
+                auto search_k = std::min(
+                    ivf_raft_cfg.k + (bitset.count() * ivf_raft_cfg.k / counts_),
+                    std::min(static_cast<uint64_t>(counts_), static_cast<uint64_t>(raft_detail::MAX_IVF_FLAT_K)));
+                gpu_results = RawSearch(*res_, raft::make_const_mdspan(data_gpu.view()), search_params, search_k,
                                         ivf_raft_cfg.k, gpu_bitset.view());
             } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
                 auto search_params = raft::neighbors::ivf_pq::search_params{};
@@ -510,23 +538,16 @@ class RaftIvfIndexNode : public IndexNode {
                 static_assert(std::is_same_v<detail::raft_ivf_flat_index, T>);
             }
 
-            for (auto row_index = 0; row_index < gpu_results.ids().extent(0); ++row_index) {
-                raft::copy(
-                    ids.get() + row_index * ivf_raft_cfg.k,
-                    gpu_results.ids_data() + gpu_results.ids().extent(1) *
-                    row_index,
-                    ivf_raft_cfg.k,
-                    res_->get_stream()
-                );
-                raft::copy(
-                    dis.get() + row_index * ivf_raft_cfg.k,
-                    gpu_results.dists_data() + gpu_results.dists().extent(1) *
-                    row_index,
-                    ivf_raft_cfg.k,
-                    res_->get_stream()
-                );
+            if (gpu_results.k() != ivf_raft_cfg.k) {
+                auto new_gpu_results = raft_detail::raft_results{*res_, gpu_results.rows(), ivf_raft_cfg.k};
+                raft_detail::slice<<<1024, 256, 0, res_->get_stream.value()>>>(
+                    new_gpu_results.ids_data(), gpu_results.ids_data(), new_gpu_results.rows(), new_gpu_results.k(),
+                    gpu_results.rows(), gpu_results.k());
+                res_->sync_stream();
+                gpu_results = new_gpu_results;
             }
-
+            raft::copy(ids.get(), gpu_results.ids_data(), output_size, res_->get_stream());
+            raft::copy(dis.get(), gpu_results.dists_data(), output_size, res_->get_stream());
             res_->sync_stream();
 
         } catch (std::exception& e) {
@@ -681,6 +702,11 @@ class RaftIvfIndexNode : public IndexNode {
     raft_detail::raft_results
     RawSearch(raft::device_resources& res, raft::device_matrix_view<const float, std::int64_t> queries,
               raft_search_params_t const& search_params, int k, int target_k, DeviceBitsetView const& bitset) const {
+        auto max_k = counts_;
+        if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
+            k = std::min(k, raft_detail::MAX_IVF_FLAT_K);
+            max_k = std::min(max_k, int64_t{raft_detail::MAX_IVF_FLAT_K});
+        }
         auto result = raft_detail::raft_results{res, queries.extent(0), k};
         if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
             raft::neighbors::ivf_flat::search<float, std::int64_t>(res, search_params, *gpu_index_, queries,
@@ -703,9 +729,9 @@ class RaftIvfIndexNode : public IndexNode {
         raft_detail::postprocess_device_results<<<blocks, threads, 0, res.get_stream().value()>>>(
             enough_valid.data_handle(), result.ids_data(), result.dists_data(), queries.extent(0), k, target_k, bitset);
 
-        if (k < counts_ && !thrust::all_of(thrust::device.on(res.get_stream().value()), enough_valid.data_handle(),
-                                           enough_valid.data_handle() + queries.extent(0), thrust::identity<bool>())) {
-            result = RawSearch(res, queries, search_params, std::min(int64_t{k * 2}, counts_), target_k, bitset);
+        if (k < max_k && !thrust::all_of(thrust::device.on(res.get_stream().value()), enough_valid.data_handle(),
+                                         enough_valid.data_handle() + queries.extent(0), thrust::identity<bool>())) {
+            result = RawSearch(res, queries, search_params, std::min(int64_t{k * 2}, max_k), target_k, bitset);
         }
         return result;
     }
