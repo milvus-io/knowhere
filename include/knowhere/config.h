@@ -60,6 +60,7 @@ enum PARAM_TYPE {
     SEARCH = 0x2,
     RANGE_SEARCH = 0x4,
     FEDER = 0x8,
+    DESERIALIZE = 0x10,
 };
 
 template <>
@@ -223,7 +224,13 @@ class EntryAccess {
     }
 
     EntryAccess&
-    for_all() {
+    for_deserialize() {
+        entry->type |= PARAM_TYPE::DESERIALIZE;
+        return *this;
+    }
+
+    EntryAccess&
+    for_train_and_search() {
         entry->type |= PARAM_TYPE::TRAIN;
         entry->type |= PARAM_TYPE::SEARCH;
         entry->type |= PARAM_TYPE::RANGE_SEARCH;
@@ -422,7 +429,7 @@ class BaseConfig : public Config {
     CFG_FLOAT range_filter;
     CFG_BOOL trace_visit;
     KNOHWERE_DECLARE_CONFIG(BaseConfig) {
-        KNOWHERE_CONFIG_DECLARE_FIELD(metric_type).set_default("L2").description("metric type").for_all();
+        KNOWHERE_CONFIG_DECLARE_FIELD(metric_type).set_default("L2").description("metric type").for_train_and_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(k)
             .set_default(10)
             .description("search for top k similar vector.")

@@ -326,7 +326,7 @@ class HnswIndexNode : public IndexNode {
     }
 
     Status
-    Deserialize(const BinarySet& binset) override {
+    Deserialize(const BinarySet& binset, const Config& config) override {
         if (index_) {
             delete index_;
         }

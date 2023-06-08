@@ -51,7 +51,7 @@ class IndexNode : public Object {
     Serialize(BinarySet& binset) const = 0;
 
     virtual Status
-    Deserialize(const BinarySet& binset) = 0;
+    Deserialize(const BinarySet& binset, const Config& config) = 0;
 
     virtual Status
     DeserializeFromFile(const std::string& filename, const LoadConfig& config) = 0;
