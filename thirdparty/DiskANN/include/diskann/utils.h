@@ -997,6 +997,11 @@ namespace diskann {
       const std::string& disk_index_filename) {
     return disk_index_filename + "_max_base_norm.bin";
   }
+
+  inline std::string get_cached_nodes_file(
+      const std::string& disk_index_filename) {
+    return disk_index_filename + "_cached_nodes.bin";
+  }
 };  // namespace diskann
 
 struct PivotContainer {

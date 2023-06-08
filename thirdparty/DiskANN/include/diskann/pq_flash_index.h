@@ -120,10 +120,9 @@ namespace diskann {
     // Note that when metric type is IP, the vector is reconstructed and is
     // approximate since the base vector base has been modified in the
     // build stage
-    DISKANN_DLLEXPORT void get_vector_by_sector(const _u64 sector_offset,
-                                                const std::vector<_u64> &ids_idx,
-                                                const int64_t *ids,
-                                                T *output_data);
+    DISKANN_DLLEXPORT void get_vector_by_sector(
+        const _u64 sector_offset, const std::vector<_u64> &ids_idx,
+        const int64_t *ids, T *output_data);
 
     std::shared_ptr<AlignedFileReader> reader;
 
@@ -170,8 +169,8 @@ namespace diskann {
     // The beam width is adjusted in the function.
     void brute_force_beam_search(
         ThreadData<T> &data, const float query_norm, const _u64 k_search,
-        _s64 *indices, float *distances, const _u64 beam_width_param, IOContext &ctx,
-        QueryStats                                      *stats,
+        _s64 *indices, float *distances, const _u64 beam_width_param,
+        IOContext &ctx, QueryStats *stats,
         const knowhere::feder::diskann::FederResultUniq &feder,
         knowhere::BitsetView                             bitset_view);
 

@@ -95,14 +95,14 @@ namespace diskann {
    public:
     // Constructor for Bulk operations and for creating the index object solely
     // for loading a prexisting index.
-    DISKANN_DLLEXPORT Index(Metric m, bool ip_prepared, const size_t dim, const size_t max_points,
-                            const bool dynamic_index,
+    DISKANN_DLLEXPORT Index(Metric m, bool ip_prepared, const size_t dim,
+                            const size_t max_points, const bool dynamic_index,
                             const bool enable_tags = false,
                             const bool support_eager_delete = false);
 
     // Constructor for incremental index
-    DISKANN_DLLEXPORT Index(Metric m, bool ip_prepared, const size_t dim, const size_t max_points,
-                            const bool        dynamic_index,
+    DISKANN_DLLEXPORT Index(Metric m, bool ip_prepared, const size_t dim,
+                            const size_t max_points, const bool dynamic_index,
                             const Parameters &indexParameters,
                             const Parameters &searchParameters,
                             const bool        enable_tags = false,
@@ -206,6 +206,11 @@ namespace diskann {
     const std::vector<std::vector<unsigned>> *get_graph() const {
       return &this->_final_graph;
     }
+
+    DISKANN_DLLEXPORT unsigned get_entry_point() {
+      return _ep;
+    }
+
     T                                        *get_data();
     const std::unordered_map<unsigned, TagT> *get_tags() const {
       return &this->_location_to_tag;
@@ -360,11 +365,11 @@ namespace diskann {
     size_t     _num_frozen_pts = 0;
     bool       _has_built = false;
     DISTFUN<T> _func = nullptr;
-    std::function<T(const T*, const T*, size_t)> _distance;
-    unsigned   _width = 0;
-    unsigned   _ep = 0;
-    size_t     _max_range_of_loaded_graph = 0;
-    bool       _saturate_graph = false;
+    std::function<T(const T *, const T *, size_t)> _distance;
+    unsigned                                       _width = 0;
+    unsigned                                       _ep = 0;
+    size_t _max_range_of_loaded_graph = 0;
+    bool   _saturate_graph = false;
     bool _save_as_one_file = false;  // plan to support in next version to avoid
                                      // too many files per index
     bool _dynamic_index = false;

@@ -111,8 +111,7 @@ class DiskANNConfig : public BaseConfig {
             .description("the size of cached nodes in GB.")
             .set_default(0)
             .set_range(0, std::numeric_limits<CFG_FLOAT>::max())
-            .for_search()
-            .for_range_search();
+            .for_all();
         KNOWHERE_CONFIG_DECLARE_FIELD(warm_up)
             .description("should do warm up before search.")
             .set_default(false)

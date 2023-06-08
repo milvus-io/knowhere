@@ -220,6 +220,7 @@ GetOptionalFilenames(const std::string& prefix) {
     auto disk_index_filename = diskann::get_disk_index_filename(prefix);
     filenames.push_back(diskann::get_disk_index_centroids_filename(disk_index_filename));
     filenames.push_back(diskann::get_disk_index_medoids_filename(disk_index_filename));
+    filenames.push_back(diskann::get_cached_nodes_file(disk_index_filename));
     return filenames;
 }
 
@@ -290,6 +291,7 @@ DiskANNIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
             return diskann::Metric::INNER_PRODUCT;
         }
     }();
+    auto num_nodes_to_cache = GetCachedNodeNum(build_conf.search_cache_budget_gb, dim, build_conf.max_degree);
     diskann::BuildConfig diskann_internal_build_config{data_path,
                                                        index_prefix_,
                                                        diskann_metric,
@@ -299,7 +301,8 @@ DiskANNIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
                                                        static_cast<double>(build_conf.build_dram_budget_gb),
                                                        static_cast<uint32_t>(build_conf.disk_pq_dims),
                                                        false,
-                                                       build_conf.accelerate_build};
+                                                       build_conf.accelerate_build,
+                                                       static_cast<uint32_t>(num_nodes_to_cache)};
     auto build_stat =
         TryDiskANNCall<int>([&]() -> int { return diskann::build_disk_index<T>(diskann_internal_build_config); });
 
@@ -400,39 +403,57 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
 
     std::string warmup_query_file = diskann::get_sample_data_filename(index_prefix_);
     // load cache
-    auto num_nodes_to_cache = GetCachedNodeNum(prep_conf.search_cache_budget_gb, pq_flash_index_->get_data_dim(),
-                                               pq_flash_index_->get_max_degree());
-    if (num_nodes_to_cache > pq_flash_index_->get_num_points() / 3) {
-        LOG_KNOWHERE_ERROR_ << "Failed to generate cache, num_nodes_to_cache(" << num_nodes_to_cache
-                            << ") is larger than 1/3 of the total data number.";
-        return false;
-    }
-    if (num_nodes_to_cache > 0) {
-        std::vector<uint32_t> node_list;
-        LOG_KNOWHERE_INFO_ << "Caching " << num_nodes_to_cache << " sample nodes around medoid(s).";
-        if (prep_conf.use_bfs_cache) {
-            auto gen_cache_expect = TryDiskANNCall<bool>([&]() -> bool {
-                pq_flash_index_->cache_bfs_levels(num_nodes_to_cache, node_list);
-                return true;
-            });
+    auto cached_nodes_file = diskann::get_cached_nodes_file(index_prefix_);
+    std::vector<uint32_t> node_list;
+    if (file_exists(cached_nodes_file)) {
+        LOG_KNOWHERE_INFO_ << "Reading cached nodes from file.";
+        size_t num_nodes, nodes_id_dim;
+        uint32_t* cached_nodes_ids = nullptr;
+        diskann::load_bin<uint32_t>(cached_nodes_file, cached_nodes_ids, num_nodes, nodes_id_dim);
+        node_list.assign(cached_nodes_ids, cached_nodes_ids + num_nodes);
+        if (cached_nodes_ids != nullptr) {
+            delete[] cached_nodes_ids;
+        }
+    } else {
+        auto num_nodes_to_cache = GetCachedNodeNum(prep_conf.search_cache_budget_gb, pq_flash_index_->get_data_dim(),
+                                                   pq_flash_index_->get_max_degree());
+        if (num_nodes_to_cache > pq_flash_index_->get_num_points() / 3) {
+            LOG_KNOWHERE_ERROR_ << "Failed to generate cache, num_nodes_to_cache(" << num_nodes_to_cache
+                                << ") is larger than 1/3 of the total data number.";
+            return false;
+        }
+        if (num_nodes_to_cache > 0) {
+            LOG_KNOWHERE_INFO_ << "Caching " << num_nodes_to_cache << " sample nodes around medoid(s).";
+            if (prep_conf.use_bfs_cache) {
+                LOG_KNOWHERE_INFO_ << "Use bfs to generate cache list";
+                auto gen_cache_expect = TryDiskANNCall<bool>([&]() -> bool {
+                    pq_flash_index_->cache_bfs_levels(num_nodes_to_cache, node_list);
+                    return true;
+                });
 
-            if (!gen_cache_expect.has_value()) {
-                LOG_KNOWHERE_ERROR_ << "Failed to generate bfs cache for DiskANN.";
-                return false;
-            }
+                if (!gen_cache_expect.has_value()) {
+                    LOG_KNOWHERE_ERROR_ << "Failed to generate bfs cache for DiskANN.";
+                    return false;
+                }
 
-        } else {
-            auto gen_cache_expect = TryDiskANNCall<bool>([&]() -> bool {
-                pq_flash_index_->generate_cache_list_from_sample_queries(warmup_query_file, 15, 6, num_nodes_to_cache,
-                                                                         node_list);
-                return true;
-            });
+            } else {
+                LOG_KNOWHERE_INFO_ << "Use sample_queries to generate cache list";
+                auto gen_cache_expect = TryDiskANNCall<bool>([&]() -> bool {
+                    pq_flash_index_->generate_cache_list_from_sample_queries(warmup_query_file, 15, 6,
+                                                                             num_nodes_to_cache, node_list);
+                    return true;
+                });
 
-            if (!gen_cache_expect.has_value()) {
-                LOG_KNOWHERE_ERROR_ << "Failed to generate cache from sample queries for DiskANN.";
-                return false;
+                if (!gen_cache_expect.has_value()) {
+                    LOG_KNOWHERE_ERROR_ << "Failed to generate cache from sample queries for DiskANN.";
+                    return false;
+                }
             }
         }
+        LOG_KNOWHERE_INFO_ << "End of preparing diskann index.";
+    }
+
+    if (node_list.size() > 0) {
         auto load_cache_expect = TryDiskANNCall<bool>([&]() -> bool {
             pq_flash_index_->load_cache_list(node_list);
             return true;
