@@ -275,7 +275,7 @@ class FlatIndexNode : public IndexNode {
     }
 
     Status
-    Deserialize(const BinarySet& binset) override {
+    Deserialize(const BinarySet& binset, const Config& config) override {
         std::vector<std::string> names = {"IVF",        // compatible with knowhere-1.x
                                           "BinaryIVF",  // compatible with knowhere-1.x
                                           Type()};

@@ -73,8 +73,8 @@ class IndexNodeThreadPoolWrapper : public IndexNode {
     }
 
     Status
-    Deserialize(const BinarySet& binset) {
-        return index_node_->Deserialize(binset);
+    Deserialize(const BinarySet& binset, const Config& config) {
+        return index_node_->Deserialize(binset, config);
     }
 
     Status

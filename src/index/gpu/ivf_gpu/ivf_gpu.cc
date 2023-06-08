@@ -211,7 +211,7 @@ class GpuIvfIndexNode : public IndexNode {
     }
 
     virtual Status
-    Deserialize(const BinarySet& binset) override {
+    Deserialize(const BinarySet& binset, const Config& config) override {
         auto binary = binset.GetByName(Type());
         if (binary == nullptr) {
             LOG_KNOWHERE_ERROR_ << "invalid binary set.";

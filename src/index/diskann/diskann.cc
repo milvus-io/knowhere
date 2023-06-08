@@ -79,10 +79,7 @@ class DiskANNIndexNode : public IndexNode {
     }
 
     Status
-    Deserialize(const BinarySet& binset) override {
-        LOG_KNOWHERE_ERROR_ << "DiskANN doesn't support Deserialization.";
-        return Status::not_implemented;
-    }
+    Deserialize(const BinarySet& binset, const Config& cfg) override;
 
     Status
     DeserializeFromFile(const std::string& filename, const LoadConfig& config) override {
@@ -152,9 +149,6 @@ class DiskANNIndexNode : public IndexNode {
         }
         return true;
     }
-
-    bool
-    Prepare(const Config& cfg);
 
     uint64_t
     GetCachedNodeNum(const float cache_dram_budget, const uint64_t data_dim, const uint64_t max_degree);
@@ -329,15 +323,15 @@ DiskANNIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
 }
 
 template <typename T>
-bool
-DiskANNIndexNode<T>::Prepare(const Config& cfg) {
+Status
+DiskANNIndexNode<T>::Deserialize(const BinarySet& binset, const Config& cfg) {
     std::lock_guard<std::mutex> lock(preparation_lock_);
     auto prep_conf = static_cast<const DiskANNConfig&>(cfg);
     if (!CheckMetric(prep_conf.metric_type)) {
-        return false;
+        return Status::invalid_metric_type;
     }
     if (is_prepared_.load()) {
-        return true;
+        return Status::success;
     }
     index_prefix_ = prep_conf.index_prefix;
     bool is_ip = IsMetricType(prep_conf.metric_type, knowhere::metric::IP);
@@ -358,17 +352,17 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
          GetNecessaryFilenames(index_prefix_, need_norm,
                                prep_conf.search_cache_budget_gb > 0 && !prep_conf.use_bfs_cache, prep_conf.warm_up)) {
         if (!LoadFile(filename)) {
-            return false;
+            return Status::diskann_file_error;
         }
     }
     for (auto& filename : GetOptionalFilenames(index_prefix_)) {
         auto is_exist_op = file_manager_->IsExisted(filename);
         if (!is_exist_op.has_value()) {
             LOG_KNOWHERE_ERROR_ << "Failed to check existence of file " << filename << ".";
-            return false;
+            return Status::diskann_file_error;
         }
         if (is_exist_op.value() && !LoadFile(filename)) {
-            return false;
+            return Status::diskann_file_error;
         }
     }
 
@@ -387,7 +381,7 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
 
     if (!load_expect.has_value() || load_expect.value() != 0) {
         LOG_KNOWHERE_ERROR_ << "Failed to load DiskANN.";
-        return false;
+        return Status::diskann_inner_error;
     }
 
     count_.store(pq_flash_index_->get_num_points());
@@ -405,7 +399,7 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
     if (num_nodes_to_cache > pq_flash_index_->get_num_points() / 3) {
         LOG_KNOWHERE_ERROR_ << "Failed to generate cache, num_nodes_to_cache(" << num_nodes_to_cache
                             << ") is larger than 1/3 of the total data number.";
-        return false;
+        return Status::diskann_inner_error;
     }
     if (num_nodes_to_cache > 0) {
         std::vector<uint32_t> node_list;
@@ -418,7 +412,7 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
 
             if (!gen_cache_expect.has_value()) {
                 LOG_KNOWHERE_ERROR_ << "Failed to generate bfs cache for DiskANN.";
-                return false;
+                return Status::diskann_inner_error;
             }
 
         } else {
@@ -430,7 +424,7 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
 
             if (!gen_cache_expect.has_value()) {
                 LOG_KNOWHERE_ERROR_ << "Failed to generate cache from sample queries for DiskANN.";
-                return false;
+                return Status::diskann_inner_error;
             }
         }
         auto load_cache_expect = TryDiskANNCall<bool>([&]() -> bool {
@@ -440,7 +434,7 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
 
         if (!load_cache_expect.has_value()) {
             LOG_KNOWHERE_ERROR_ << "Failed to load cache for DiskANN.";
-            return false;
+            return Status::diskann_inner_error;
         }
     }
 
@@ -458,7 +452,7 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
         });
         if (!load_nodes_expect.has_value()) {
             LOG_KNOWHERE_ERROR_ << "Failed to load warmup file for DiskANN.";
-            return false;
+            return Status::diskann_file_error;
         }
         std::vector<int64_t> warmup_result_ids_64(warmup_num, 0);
         std::vector<float> warmup_result_dists(warmup_num, 0);
@@ -489,20 +483,17 @@ DiskANNIndexNode<T>::Prepare(const Config& cfg) {
 
         if (!all_searches_are_good) {
             LOG_KNOWHERE_ERROR_ << "Failed to do search on warmup file for DiskANN.";
-            return false;
+            return Status::diskann_inner_error;
         }
     }
 
     is_prepared_.store(true);
-    return true;
+    return Status::success;
 }
 
 template <typename T>
 expected<DataSetPtr, Status>
 DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
-    if (!is_prepared_.load()) {
-        const_cast<DiskANNIndexNode<T>*>(this)->Prepare(cfg);
-    }
     if (!is_prepared_.load() || !pq_flash_index_) {
         LOG_KNOWHERE_ERROR_ << "Failed to load diskann.";
         return unexpected(Status::empty_index);
@@ -578,9 +569,6 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
 template <typename T>
 expected<DataSetPtr, Status>
 DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
-    if (!is_prepared_.load()) {
-        const_cast<DiskANNIndexNode<T>*>(this)->Prepare(cfg);
-    }
     if (!is_prepared_.load() || !pq_flash_index_) {
         LOG_KNOWHERE_ERROR_ << "Failed to load diskann.";
         return unexpected(Status::empty_index);
