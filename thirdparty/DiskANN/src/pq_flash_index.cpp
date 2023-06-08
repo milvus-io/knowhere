@@ -20,6 +20,7 @@
 #include "diskann/distance.h"
 #include "diskann/exceptions.h"
 #include "diskann/parameters.h"
+#include "diskann/aux_utils.h"
 #include "diskann/timer.h"
 #include "diskann/utils.h"
 #include "knowhere/heap.h"
@@ -53,49 +54,12 @@
   ((((_u64) (id)) % nvecs_per_sector) * data_dim * sizeof(float))
 
 namespace {
-  void aggregate_coords(const unsigned *ids, const _u64 n_ids,
-                        const _u8 *all_coords, const _u64 ndims, _u8 *out) {
-    for (_u64 i = 0; i < n_ids; i++) {
-      memcpy(out + i * ndims, all_coords + ids[i] * ndims, ndims * sizeof(_u8));
-    }
-  }
-
-  void pq_dist_lookup(const _u8 *pq_ids, const _u64 n_pts,
-                      const _u64 pq_nchunks, const float *pq_dists,
-                      float *dists_out) {
-#if defined(__ARM_NEON__) || defined(__aarch64__)
-    __builtin_prefetch((char *) dists_out, 1, 3);
-    __builtin_prefetch((char *) pq_ids, 0, 3);
-    __builtin_prefetch((char *) (pq_ids + 64), 0, 3);
-    __builtin_prefetch((char *) (pq_ids + 128), 0, 3);
-#else
-    _mm_prefetch((char *) dists_out, _MM_HINT_T0);
-    _mm_prefetch((char *) pq_ids, _MM_HINT_T0);
-    _mm_prefetch((char *) (pq_ids + 64), _MM_HINT_T0);
-    _mm_prefetch((char *) (pq_ids + 128), _MM_HINT_T0);
-#endif
-    memset(dists_out, 0, n_pts * sizeof(float));
-    for (_u64 chunk = 0; chunk < pq_nchunks; chunk++) {
-      const float *chunk_dists = pq_dists + 256 * chunk;
-      if (chunk < pq_nchunks - 1) {
-#if defined(__ARM_NEON__) || defined(__aarch64__)
-        __builtin_prefetch((char *) (chunk_dists + 256), 0, 3);
-#else
-        _mm_prefetch((char *) (chunk_dists + 256), _MM_HINT_T0);
-#endif
-      }
-      for (_u64 idx = 0; idx < n_pts; idx++) {
-        _u8 pq_centerid = pq_ids[pq_nchunks * idx + chunk];
-        dists_out[idx] += chunk_dists[pq_centerid];
-      }
-    }
-  }
   constexpr _u64 kRefineBeamWidthFactor = 2;
   constexpr _u64 kBruteForceTopkRefineExpansionFactor = 2;
-  auto calcFilterThreshold = [](const auto topk) -> const float {
+  auto           calcFilterThreshold = [](const auto topk) -> const float {
     return std::max(-0.04570166137874405f * log2(topk + 58.96422392240403) +
-                        1.1982775974217197,
-                    0.5);
+                                  1.1982775974217197,
+                              0.5);
   };
 }  // namespace
 
@@ -213,15 +177,9 @@ namespace diskann {
 
   template<typename T>
   void PQFlashIndex<T>::load_cache_list(std::vector<uint32_t> &node_list) {
-    LOG_KNOWHERE_DEBUG_ << "Loading the cache list into memory...";
     _u64 num_cached_nodes = node_list.size();
-
-    // borrow thread data
-    ThreadData<T> this_thread_data = this->thread_data.pop();
-    while (this_thread_data.scratch.sector_scratch == nullptr) {
-      this->thread_data.wait_for_push_notify();
-      this_thread_data = this->thread_data.pop();
-    }
+    LOG_KNOWHERE_DEBUG_ << "Loading the cache list(" << num_cached_nodes
+                        << " points) into memory...";
 
     auto ctx = this->reader->get_ctx();
 
@@ -233,7 +191,7 @@ namespace diskann {
                            coord_cache_buf_len * sizeof(T), 8 * sizeof(T));
     memset(coord_cache_buf, 0, coord_cache_buf_len * sizeof(T));
 
-    size_t BLOCK_SIZE = 8;
+    size_t BLOCK_SIZE = 32;
     size_t num_blocks = DIV_ROUND_UP(num_cached_nodes, BLOCK_SIZE);
 
     for (_u64 block = 0; block < num_blocks; block++) {
@@ -284,9 +242,6 @@ namespace diskann {
         node_idx++;
       }
     }
-    // return thread data
-    this->thread_data.push(this_thread_data);
-    this->thread_data.push_notify_all();
     this->reader->put_ctx(ctx);
     LOG_KNOWHERE_DEBUG_ << "done.";
   }
@@ -876,12 +831,13 @@ namespace diskann {
   template<typename T>
   void PQFlashIndex<T>::brute_force_beam_search(
       ThreadData<T> &data, const float query_norm, const _u64 k_search,
-      _s64 *indices, float *distances, const _u64 beam_width_param, IOContext &ctx,
-      QueryStats *stats, const knowhere::feder::diskann::FederResultUniq &feder,
-      knowhere::BitsetView bitset_view) {
-    auto     query_scratch = &(data.scratch);
-    const T *query = data.scratch.aligned_query_T;
-    auto beam_width = beam_width_param * kRefineBeamWidthFactor;
+      _s64 *indices, float *distances, const _u64 beam_width_param,
+      IOContext &ctx, QueryStats *stats,
+      const knowhere::feder::diskann::FederResultUniq &feder,
+      knowhere::BitsetView                             bitset_view) {
+    auto         query_scratch = &(data.scratch);
+    const T     *query = data.scratch.aligned_query_T;
+    auto         beam_width = beam_width_param * kRefineBeamWidthFactor;
     const float *query_float = data.scratch.aligned_query_float;
     float       *pq_dists = query_scratch->aligned_pqtable_dist_scratch;
     pq_table.populate_chunk_distances(query_float, pq_dists);
@@ -892,7 +848,7 @@ namespace diskann {
     pq_batch_ids.reserve(pq_batch_size);
     const _u64 pq_topk = k_search * kBruteForceTopkRefineExpansionFactor;
     knowhere::ResultMaxHeap<float, int64_t> pq_max_heap(pq_topk);
-    T   *data_buf = query_scratch->coord_scratch;
+    T *data_buf = query_scratch->coord_scratch;
     std::unordered_map<_u64, std::vector<_u64>> nodes_in_sectors_to_visit;
     std::vector<AlignedRead>                    frontier_read_reqs;
     frontier_read_reqs.reserve(beam_width);
@@ -949,7 +905,7 @@ namespace diskann {
         stats->n_ios++;
       }
 
-    // perform I/Os and calculate exact distances
+      // perform I/Os and calculate exact distances
       if (frontier_read_reqs.size() == beam_width ||
           it == nodes_in_sectors_to_visit.cend()) {
         io_timer.reset();
@@ -1031,18 +987,17 @@ namespace diskann {
     }
     auto query_norm_opt = init_thread_data(data, query1);
     if (!query_norm_opt.has_value()) {
-        // return an empty answer when calcu a zero point
-        this->thread_data.push(data);
-        this->thread_data.push_notify_all();
-        return;
+      // return an empty answer when calcu a zero point
+      this->thread_data.push(data);
+      this->thread_data.push_notify_all();
+      return;
     }
     float query_norm = query_norm_opt.value();
-    auto ctx = this->reader->get_ctx();
+    auto  ctx = this->reader->get_ctx();
 
     if (!bitset_view.empty()) {
-      const auto filter_threshold = filter_ratio_in < 0
-                                        ? calcFilterThreshold(k_search)
-                                        : filter_ratio_in;
+      const auto filter_threshold =
+          filter_ratio_in < 0 ? calcFilterThreshold(k_search) : filter_ratio_in;
       const auto bv_cnt = bitset_view.count();
       if (bitset_view.size() == bv_cnt) {
         for (_u64 i = 0; i < k_search; i++) {
@@ -1064,7 +1019,7 @@ namespace diskann {
       }
     }
 
-    auto query_scratch = &(data.scratch);
+    auto         query_scratch = &(data.scratch);
     const T     *query = data.scratch.aligned_query_T;
     const float *query_float = data.scratch.aligned_query_float;
 
@@ -1099,10 +1054,10 @@ namespace diskann {
     auto compute_dists = [this, pq_coord_scratch, pq_dists](const unsigned *ids,
                                                             const _u64 n_ids,
                                                             float *dists_out) {
-      ::aggregate_coords(ids, n_ids, this->data, this->n_chunks,
-                         pq_coord_scratch);
-      ::pq_dist_lookup(pq_coord_scratch, n_ids, this->n_chunks, pq_dists,
-                       dists_out);
+      aggregate_coords(ids, n_ids, this->data, this->n_chunks,
+                       pq_coord_scratch);
+      pq_dist_lookup(pq_coord_scratch, n_ids, this->n_chunks, pq_dists,
+                     dists_out);
     };
     Timer                 cpu_timer;
     std::vector<Neighbor> retset(l_search + 1);
@@ -1433,7 +1388,7 @@ namespace diskann {
 #ifdef USE_BING_INFRA
       reader->read(vec_read_reqs, ctx, false);  // sync reader windows.
 #else
-      reader->read(vec_read_reqs, ctx);  // synchronous IO linux
+      reader->read(vec_read_reqs, ctx);     // synchronous IO linux
 #endif
       if (stats != nullptr) {
         stats->io_us += io_timer.elapsed();
@@ -1540,8 +1495,8 @@ namespace diskann {
   }
 
   template<typename T>
-  inline void
-  PQFlashIndex<T>::copy_vec_base_data(T* des, const int64_t des_idx, void* src) {
+  inline void PQFlashIndex<T>::copy_vec_base_data(T *des, const int64_t des_idx,
+                                                  void *src) {
     if (metric == Metric::INNER_PRODUCT) {
       assert(max_base_norm != 0);
       const auto original_dim = data_dim - 1;
@@ -1556,7 +1511,8 @@ namespace diskann {
 
   template<typename T>
   std::unordered_map<_u64, std::vector<_u64>>
-  PQFlashIndex<T>::get_sectors_layout_and_write_data_from_cache(const int64_t* ids, int64_t n, T* output_data) {
+  PQFlashIndex<T>::get_sectors_layout_and_write_data_from_cache(
+      const int64_t *ids, int64_t n, T *output_data) {
     std::unordered_map<_u64, std::vector<_u64>> sectors_to_visit;
     for (int64_t i = 0; i < n; ++i) {
       _u64 id = ids[i];
@@ -1573,15 +1529,16 @@ namespace diskann {
   template<typename T>
   void PQFlashIndex<T>::get_vector_by_sector(const _u64 sector_offset,
                                              const std::vector<_u64> &ids_idx,
-                                             const int64_t *ids, T *output_data) {
+                                             const int64_t           *ids,
+                                             T *output_data) {
     ThreadData<T> data = this->thread_data.pop();
     while (data.scratch.sector_scratch == nullptr) {
       this->thread_data.wait_for_push_notify();
       data = this->thread_data.pop();
     }
-    auto  ctx = this->reader->get_ctx();
-    char *sector_scratch = data.scratch.sector_scratch;
-    _u64 &sector_scratch_idx = data.scratch.sector_idx;
+    auto                     ctx = this->reader->get_ctx();
+    char                    *sector_scratch = data.scratch.sector_scratch;
+    _u64                    &sector_scratch_idx = data.scratch.sector_idx;
     std::vector<AlignedRead> frontier_read_reqs;
 
     char *sector_buf = sector_scratch + sector_scratch_idx * read_len_for_node;

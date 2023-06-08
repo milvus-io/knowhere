@@ -471,6 +471,12 @@ namespace diskann {
       LOG(WARNING) << "Save index in a single file currently not supported. "
                       "Not saving the index.";
     }
+    if (disk_index) {
+      if (_data != nullptr) {
+        aligned_free(_data);
+        _data = nullptr;
+      }
+    }
 
     reposition_frozen_point_to_end();
 
