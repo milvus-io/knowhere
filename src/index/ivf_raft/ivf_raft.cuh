@@ -511,18 +511,20 @@ class RaftIvfIndexNode : public IndexNode {
             }
 
             for (auto row_index = 0; row_index < gpu_results.ids().extent(0); ++row_index) {
-                auto begin =
-                    thrust::device_pointer_cast(gpu_results.ids_data() + gpu_results.ids().extent(1) * row_index);
-                auto end = thrust::device_pointer_cast(gpu_results.ids_data() +
-                                                       gpu_results.ids().extent(1) * row_index + ivf_raft_cfg.k);
-                thrust::copy(thrust::device.on(res_->get_stream().value()), begin, end,
-                             ids.get() + row_index * ivf_raft_cfg.k);
-                auto dists_begin =
-                    thrust::device_pointer_cast(gpu_results.dists_data() + gpu_results.dists().extent(1) * row_index);
-                auto dists_end = thrust::device_pointer_cast(
-                    gpu_results.dists_data() + gpu_results.dists().extent(1) * row_index + ivf_raft_cfg.k);
-                thrust::copy(thrust::device.on(res_->get_stream().value()), dists_begin, dists_end,
-                             dis.get() + row_index * ivf_raft_cfg.k);
+                raft::copy(
+                    ids.get() + row_index * ivf_raft_cfg.k,
+                    gpu_results.ids_data() + gpu_results.ids().extent(1) *
+                    row_index,
+                    ivf_raft_cfg.k,
+                    res_->get_stream()
+                );
+                raft::copy(
+                    dis.get() + row_index * ivf_raft_cfg.k,
+                    gpu_results.dists_data() + gpu_results.dists().extent(1) *
+                    row_index,
+                    ivf_raft_cfg.k,
+                    res_->get_stream()
+                );
             }
 
             res_->sync_stream();
