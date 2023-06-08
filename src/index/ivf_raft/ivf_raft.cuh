@@ -51,7 +51,9 @@ namespace knowhere {
 
 namespace raft_detail {
 struct raft_results {
-    raft_results() : ids_{}, dists_{} {
+    raft_results(raft::device_resources& res)
+        : ids_{raft::make_device_matrix<std::int64_t, std::int64_t>(res, 0, 0)},
+          dists_{raft::make_device_matrix<float, std::int64_t>(res, 0, 0)} {
     }
     raft_results(raft::device_resources& res, std::int64_t rows, std::int64_t k)
         : ids_{raft::make_device_matrix<std::int64_t, std::int64_t>(res, rows, k)},
@@ -465,7 +467,7 @@ class RaftIvfIndexNode : public IndexNode {
             auto data_gpu = raft::make_device_matrix<float, std::int64_t>(*res_, rows, dim);
             raft::copy(data_gpu.data_handle(), data, data_gpu.size(), res_->get_stream());
 
-            auto gpu_results = raft_detail::raft_results{};
+            auto gpu_results = raft_detail::raft_results{*res_};
             auto gpu_bitset = DeviceBitset{*res_, bitset};
 
             if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
