@@ -52,7 +52,7 @@ struct DeviceBitsetView {
     __device__ bool
     test(int64_t index) const {
         auto result = false;
-        if (index <= num_bits_) {
+        if (index < num_bits_) {
             result = bits_[index >> 3] & (0x1 << (index & 0x7));
         }
         return result;
