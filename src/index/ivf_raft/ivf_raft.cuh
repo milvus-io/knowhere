@@ -447,7 +447,7 @@ class RaftIvfIndexNode : public IndexNode {
                                               cudaMemcpyDefault, stream.value()));
 
                 auto indices = rmm::device_uvector<std::int64_t>(rows, stream);
-                thrust::sequence(thrust::device.on(stream.value()), indices.begin(), indices.end(), gpu_index_->size());
+                thrust::sequence(res_->get_thrust_policy(), indices.begin(), indices.end(), gpu_index_->size());
 
                 if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
                     raft::neighbors::ivf_flat::extend<float, std::int64_t>(
@@ -729,7 +729,7 @@ class RaftIvfIndexNode : public IndexNode {
         raft_detail::postprocess_device_results<<<blocks, threads, 0, res.get_stream().value()>>>(
             enough_valid.data_handle(), result.ids_data(), result.dists_data(), queries.extent(0), k, target_k, bitset);
 
-        if (k < max_k && !thrust::all_of(thrust::device.on(res.get_stream().value()), enough_valid.data_handle(),
+        if (k < max_k && !thrust::all_of(res.get_thrust_policy(), enough_valid.data_handle(),
                                          enough_valid.data_handle() + queries.extent(0), thrust::identity<bool>())) {
             result = RawSearch(res, queries, search_params, std::min(int64_t{k * 2}, max_k), target_k, bitset);
         }
