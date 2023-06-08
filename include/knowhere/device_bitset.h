@@ -51,7 +51,11 @@ struct DeviceBitsetView {
 
     __device__ bool
     test(int64_t index) const {
-        return bits_[index >> 3] & (0x1 << (index & 0x7));
+        auto result = false;
+        if (index <= num_bits_) {
+            result = bits_[index >> 3] & (0x1 << (index & 0x7));
+        }
+        return result;
     }
 
  private:
@@ -63,7 +67,9 @@ struct DeviceBitset {
     DeviceBitset(raft::device_resources& res, BitsetView const& other)
         : storage_{[&res, &other]() {
               auto result = raft::make_device_vector<uint8_t, uint32_t>(res, other.byte_size());
-              raft::copy(result.data_handle(), other.data(), other.byte_size(), res.get_stream());
+              if (!other.empty()) {
+                  raft::copy(result.data_handle(), other.data(), other.byte_size(), res.get_stream());
+              }
               return result;
           }()},
           num_bits_{other.size()} {
