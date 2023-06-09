@@ -146,9 +146,9 @@ slice(T* out, T* in, IndexT out_rows, IndexT out_cols, IndexT in_rows, IndexT in
         auto row_index = i / out_cols;
         auto col_index = i % out_cols;
         if (row_index < in_rows && col_index < in_cols) {
-            out[row_index * out_cols + col_index] = in[row_index * in_cols + col_index];
+            out[i] = in[row_index * in_cols + col_index];
         } else {
-            out[row_index * out_cols + col_index] = -1;
+            out[i] = -1;
         }
     }
 }
