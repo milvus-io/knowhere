@@ -12,6 +12,7 @@
 #include "catch2/catch_approx.hpp"
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/generators/catch_generators.hpp"
+#include "knowhere/comp/brute_force.h"
 #include "knowhere/comp/index_param.h"
 #include "knowhere/comp/knowhere_config.h"
 #include "knowhere/factory.h"
@@ -46,7 +47,7 @@ TEST_CASE("Test All GPU Index", "[search]") {
 
     auto ivfpq_gen = [&ivfflat_gen]() {
         knowhere::Json json = ivfflat_gen();
-        json[knowhere::indexparam::M] = 4;
+        json[knowhere::indexparam::M] = 0;
         json[knowhere::indexparam::NBITS] = 8;
         return json;
     };
@@ -82,6 +83,84 @@ TEST_CASE("Test All GPU Index", "[search]") {
         auto ids = results.value()->GetIds();
         for (int i = 0; i < nq; ++i) {
             CHECK(ids[i] == i);
+        }
+    }
+
+    SECTION("Test Gpu Index Search With Bitset") {
+        using std::make_tuple;
+        auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
+            // GPU_FLAT cannot run this test is because its Train() and Add() actually run in CPU,
+            // "res_" in gpu_index_ is not set correctly
+            // make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IDMAP, gpu_flat_gen),
+            // make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IVFFLAT, ivfflat_gen),
+            // make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IVFPQ, ivfpq_gen),
+            // make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IVFSQ8, ivfsq_gen),
+            make_tuple(knowhere::IndexEnum::INDEX_RAFT_IVFFLAT, ivfflat_gen),
+            make_tuple(knowhere::IndexEnum::INDEX_RAFT_IVFPQ, ivfpq_gen),
+        }));
+        auto idx = knowhere::IndexFactory::Instance().Create(name);
+        auto cfg_json = gen().dump();
+        CAPTURE(name, cfg_json);
+        knowhere::Json json = knowhere::Json::parse(cfg_json);
+        auto train_ds = GenDataSet(nb, dim, seed);
+        auto query_ds = GenDataSet(nq, dim, seed);
+        REQUIRE(idx.Type() == name);
+        auto res = idx.Build(*train_ds, json);
+        REQUIRE(res == knowhere::Status::success);
+
+        std::vector<std::function<std::vector<uint8_t>(size_t, size_t)>> gen_bitset_funcs = {
+            GenerateBitsetWithFirstTbitsSet, GenerateBitsetWithRandomTbitsSet};
+        const auto bitset_percentages = {0.4f, 0.98f};
+        for (const float percentage : bitset_percentages) {
+            for (const auto& gen_func : gen_bitset_funcs) {
+                auto bitset_data = gen_func(nb, percentage * nb);
+                knowhere::BitsetView bitset(bitset_data.data(), nb);
+                auto results = idx.Search(*query_ds, json, bitset);
+                REQUIRE(results.has_value());
+                auto gt = knowhere::BruteForce::Search(train_ds, query_ds, json, bitset);
+                float recall = GetKNNRecall(*gt.value(), *results.value());
+                if (percentage == 0.98f) {
+                    REQUIRE(recall > 0.4f);
+                } else {
+                    REQUIRE(recall > 0.8f);
+                }
+            }
+        }
+    }
+
+    SECTION("Test Gpu Index Search TopK") {
+        using std::make_tuple;
+        auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
+            // GPU_FLAT cannot run this test is because its Train() and Add() actually run in CPU,
+            // "res_" in gpu_index_ is not set correctly
+            // make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IDMAP, gpu_flat_gen),
+            // make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IVFFLAT, ivfflat_gen),
+            // make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IVFPQ, ivfpq_gen),
+            // make_tuple(knowhere::IndexEnum::INDEX_FAISS_GPU_IVFSQ8, ivfsq_gen),
+            make_tuple(knowhere::IndexEnum::INDEX_RAFT_IVFFLAT, ivfflat_gen),
+            make_tuple(knowhere::IndexEnum::INDEX_RAFT_IVFPQ, ivfpq_gen),
+        }));
+        auto idx = knowhere::IndexFactory::Instance().Create(name);
+        auto cfg_json = gen().dump();
+        CAPTURE(name, cfg_json);
+        knowhere::Json json = knowhere::Json::parse(cfg_json);
+        auto train_ds = GenDataSet(nb, dim, seed);
+        auto query_ds = GenDataSet(nq, dim, seed);
+        REQUIRE(idx.Type() == name);
+        auto res = idx.Build(*train_ds, json);
+        REQUIRE(res == knowhere::Status::success);
+        const auto topk_values = { // Tuple with [TopKValue, Threshold]
+            make_tuple(5, 0.85f),
+            make_tuple(25, 0.85f),
+            make_tuple(100, 0.85f)};
+
+        for (const auto& topKTuple : topk_values) {
+            json[knowhere::meta::TOPK] = std::get<0>(topKTuple);
+            auto results = idx.Search(*query_ds, json, nullptr);
+            REQUIRE(results.has_value());
+            auto gt = knowhere::BruteForce::Search(train_ds, query_ds, json, nullptr);
+            float recall = GetKNNRecall(*gt.value(), *results.value());
+            REQUIRE(recall >= std::get<1>(topKTuple));
         }
     }
 
