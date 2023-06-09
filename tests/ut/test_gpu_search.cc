@@ -196,5 +196,32 @@ TEST_CASE("Test All GPU Index", "[search]") {
             CHECK(ids[i] == i);
         }
     }
+
+    SECTION("Test Gpu Index Search Simple Bitset") {
+        using std::make_tuple;
+        auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
+            make_tuple(knowhere::IndexEnum::INDEX_RAFT_IVFFLAT, ivfflat_gen),
+            make_tuple(knowhere::IndexEnum::INDEX_RAFT_IVFPQ, ivfpq_gen),
+        }));
+        auto rows = 16;
+        auto idx = knowhere::IndexFactory::Instance().Create(name);
+        auto cfg_json = gen().dump();
+        CAPTURE(name, cfg_json);
+        knowhere::Json json = knowhere::Json::parse(cfg_json);
+        auto train_ds = GenDataSet(rows, dim, seed);
+        REQUIRE(idx.Type() == name);
+        auto res = idx.Build(*train_ds, json);
+        REQUIRE(res == knowhere::Status::success);
+
+        std::vector<uint8_t> bitset_data(2);
+        bitset_data[0] = 0b10100010;
+        bitset_data[1] = 0b00100011;
+        knowhere::BitsetView bitset(bitset_data.data(), rows);
+        auto results = idx.Search(*train_ds, json, bitset);
+        REQUIRE(results.has_value());
+        auto gt = knowhere::BruteForce::Search(train_ds, train_ds, json, bitset);
+        float recall = GetKNNRecall(*gt.value(), *results.value());
+        REQUIRE(recall == 1.0f);
+    }
 }
 #endif
