@@ -477,7 +477,7 @@ TEST_P(DiskANNTest, search_without_search_list_size) {
     cfg.clear();
     knowhere::DiskANNQueryConfig::Set(cfg, tmp_config);
     search_list_size = knowhere::DiskANNQueryConfig::Get(cfg).search_list_size;
-    EXPECT_EQ(search_list_size, 16);
+    EXPECT_EQ(search_list_size, 128);
 }
 
 TEST_P(DiskANNTest, knn_search_test) {

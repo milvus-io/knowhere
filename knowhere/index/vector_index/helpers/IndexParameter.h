@@ -176,7 +176,7 @@ DEFINE_CONFIG_SETTER(SetIndexParamEfConstruction, indexparam::EFCONSTRUCTION, in
 DEFINE_CONFIG_GETTER_WITH_DEFAULT_VALUE(GetIndexParamHNSWM, indexparam::HNSW_M, DEFAULT_HNSW_M, int64_t)
 DEFINE_CONFIG_SETTER(SetIndexParamHNSWM, indexparam::HNSW_M, int64_t)
 
-DEFINE_CONFIG_GETTER_WITH_DEFAULT_VALUE(GetIndexParamEf, indexparam::EF, DEFAULT_HNSW_EF, int64_t)
+DEFINE_CONFIG_GETTER(GetIndexParamEf, indexparam::EF, int64_t)
 DEFINE_CONFIG_SETTER(SetIndexParamEf, indexparam::EF, int64_t)
 
 DEFINE_CONFIG_GETTER(GetIndexParamOverviewLevels, indexparam::OVERVIEW_LEVELS, int64_t)
