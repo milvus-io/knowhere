@@ -142,7 +142,7 @@ postprocess_device_results(bool* enough_valid, int64_t* ids, float* dists, int64
 template <typename T, typename IndexT>
 __global__ void
 slice(T* out, T* in, IndexT out_rows, IndexT out_cols, IndexT in_rows, IndexT in_cols) {
-    for (auto i = blockIdx.x * blockDim.x + threadIdx.x; i < out_rows * out_cols; ++i) {
+    for (auto i = blockIdx.x * blockDim.x + threadIdx.x; i < out_rows * out_cols; i += blockDim.x * gridDim.x) {
         auto row_index = i / out_cols;
         auto col_index = i % out_cols;
         if (row_index < in_rows && col_index < in_cols) {
