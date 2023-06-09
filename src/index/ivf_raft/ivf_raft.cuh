@@ -20,7 +20,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -139,6 +138,12 @@ postprocess_device_results(bool* enough_valid, int64_t* ids, float* dists, int64
     }
 }
 
+/* The following kernel is used to copy data from one row-major 2D array to
+ * another. If the input array has more columns than the output array, the
+ * rows will be truncated to the length of the output array. Similarly, the
+ * number of rows will be truncated if the output has fewer rows. If the output
+ * array has more rows/columns than the input, the output will be padded with
+ * entries of -1. */
 template <typename T, typename IndexT>
 __global__ void
 slice(T* out, T* in, IndexT out_rows, IndexT out_cols, IndexT in_rows, IndexT in_cols) {
