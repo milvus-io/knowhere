@@ -108,6 +108,11 @@ SetValueToConfig(Config& cfg, const std::string& key, const T value) {
         return GetValueFromConfigWithDefaultValue<T>(cfg, key, value);    \
     }
 
+#define DEFINE_CONFIG_GETTER_WITH_CUSTOMIZED_DEFAULT_VALUE(func_name, key, T) \
+    inline T func_name(const Config& cfg, T value) {                               \
+        return GetValueFromConfigWithDefaultValue<T>(cfg, key, value);    \
+    }
+
 #define DEFINE_CONFIG_SETTER(func_name, key, T)    \
     inline void func_name(Config& cfg, T value) {  \
         SetValueToConfig<T>(cfg, key, (T)(value)); \
@@ -153,7 +158,6 @@ static const int64_t DEFAULT_PQ_M = 4;
 static const int64_t DEFAULT_PQ_NBITS = 8;
 static const int64_t DEFAULT_HNSW_EFCONSTRUCTION = 360;
 static const int64_t DEFAULT_HNSW_M = 30;
-static const int64_t DEFAULT_HNSW_EF = 16;
 
 DEFINE_CONFIG_GETTER_WITH_DEFAULT_VALUE(GetIndexParamNprobe, indexparam::NPROBE, DEFAULT_NPROBE, int64_t)
 DEFINE_CONFIG_SETTER(SetIndexParamNprobe, indexparam::NPROBE, int64_t)
@@ -176,7 +180,7 @@ DEFINE_CONFIG_SETTER(SetIndexParamEfConstruction, indexparam::EFCONSTRUCTION, in
 DEFINE_CONFIG_GETTER_WITH_DEFAULT_VALUE(GetIndexParamHNSWM, indexparam::HNSW_M, DEFAULT_HNSW_M, int64_t)
 DEFINE_CONFIG_SETTER(SetIndexParamHNSWM, indexparam::HNSW_M, int64_t)
 
-DEFINE_CONFIG_GETTER(GetIndexParamEf, indexparam::EF, int64_t)
+DEFINE_CONFIG_GETTER_WITH_CUSTOMIZED_DEFAULT_VALUE(GetIndexParamEf, indexparam::EF, int64_t)
 DEFINE_CONFIG_SETTER(SetIndexParamEf, indexparam::EF, int64_t)
 
 DEFINE_CONFIG_GETTER(GetIndexParamOverviewLevels, indexparam::OVERVIEW_LEVELS, int64_t)

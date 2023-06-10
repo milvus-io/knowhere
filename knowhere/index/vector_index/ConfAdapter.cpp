@@ -39,7 +39,6 @@ static const int64_t HNSW_MIN_EFCONSTRUCTION = 8;
 static const int64_t HNSW_MAX_EFCONSTRUCTION = 512;
 static const int64_t HNSW_MIN_M = 4;
 static const int64_t HNSW_MAX_M = 64;
-static const int64_t HNSW_MAX_EF = 32768;
 
 static const std::vector<MetricType> default_metric_array{metric::L2, metric::IP};
 static const std::vector<MetricType> default_binary_metric_array{metric::HAMMING, metric::JACCARD, metric::TANIMOTO,
@@ -237,14 +236,7 @@ HNSWConfAdapter::CheckTrain(Config& cfg, const IndexMode mode) {
 
 bool
 HNSWConfAdapter::CheckSearch(Config& cfg, const IndexType type, const IndexMode mode) {
-    auto topk = GetMetaTopk(cfg);
-    if (topk < HNSW_MAX_EF) {
-        // normal case if topk is not large
-        CheckIntegerRange(cfg, indexparam::EF, GetMetaTopk(cfg), HNSW_MAX_EF);
-    } else {
-        // if topk is large
-        CheckIntegerRange(cfg, indexparam::EF, topk, topk * 2);
-    }
+    CheckIntegerRange(cfg, indexparam::EF, GetMetaTopk(cfg), std::numeric_limits<int64_t>::max());
     return ConfAdapter::CheckSearch(cfg, type, mode);
 }
 
