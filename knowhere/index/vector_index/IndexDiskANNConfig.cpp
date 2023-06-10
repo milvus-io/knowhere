@@ -12,6 +12,7 @@
 #include "knowhere/index/vector_index/IndexDiskANNConfig.h"
 
 #include <algorithm>
+#include <iostream>
 #include <limits>
 #include <optional>
 #include <sstream>
@@ -63,8 +64,9 @@ static constexpr uint32_t kBuildNumThreadsMinValue = 1;
 static constexpr uint32_t kBuildNumThreadsMaxValue = 128;
 static constexpr uint32_t kDiskPqBytesMinValue = 0;
 static constexpr std::optional<uint32_t> kDiskPqBytesMaxValue = std::nullopt;
-static constexpr uint32_t kSearchListSizeMaxValue = 200;
-static constexpr uint32_t kKThreshold = 16;
+static constexpr std::optional<uint32_t> kSearchListSizeMaxValue = std::nullopt;
+static constexpr uint32_t kDefaultSearchListSizeDivider = 16;
+static constexpr uint32_t kInvalideSearchListSize = 0;
 static constexpr uint32_t kBeamwidthMinValue = 1;
 static constexpr uint32_t kBeamwidthMaxValue = 128;
 static constexpr float kFilterThresholdMinValue = -1;
@@ -142,6 +144,17 @@ CheckNumericParamAndSet(const Config& config, const std::string& key, std::optio
     config.at(key).get_to(to_be_set);
 }
 
+template <typename T>
+void
+CheckNumericParamAndSetWithDefault(const Config& config, const std::string& key, std::optional<T> min_o,
+                                   std::optional<T> max_o, T default_value, T& to_be_set) {
+    if (!config.contains(key)) {
+        to_be_set = default_value;
+        return;
+    }
+    CheckNumericParamAndSet(config, key, min_o, max_o, to_be_set);
+}
+
 /**
  * @brief Check the non-numeric param's existence and type, and allocate it to the config.
  */
@@ -196,11 +209,8 @@ to_json(Config& config, const DiskANNPrepareConfig& prep_conf) {
 
 void
 from_json(const Config& config, DiskANNPrepareConfig& prep_conf) {
-    if (config.contains(kAioMaxnr)) {
-        CheckNumericParamAndSet<uint64_t>(config, kAioMaxnr, kAioMaxnrMinValue, kAioMaxnrMaxValue, prep_conf.aio_maxnr);
-    } else {
-        prep_conf.aio_maxnr = kAioMaxnrDefaultValue;
-    }
+    CheckNumericParamAndSetWithDefault<uint64_t>(config, kAioMaxnr, kAioMaxnrMinValue, kAioMaxnrMaxValue,
+                                                 kAioMaxnrDefaultValue, prep_conf.aio_maxnr);
 
     CheckNumericParamAndSet<float>(config, kCacheDramBudgetGb, kCacheDramBudgetGbMinValue, kCacheDramBudgetGbMaxValue,
                                    prep_conf.search_cache_budget_gb);
@@ -219,23 +229,21 @@ to_json(Config& config, const DiskANNQueryConfig& query_conf) {
 void
 from_json(const Config& config, DiskANNQueryConfig& query_conf) {
     CheckNumericParamAndSet<uint64_t>(config, kK, kKMinValue, kKMaxValue, query_conf.k);
-    auto search_list_threshold = query_conf.k < kKThreshold ? kKThreshold : query_conf.k;
-    if (config.contains(kSearchListSize)) {
-        // The search_list_size should be no less than the k.
-        CheckNumericParamAndSet<uint32_t>(config, kSearchListSize, query_conf.k,
-                                        std::max(kSearchListSizeMaxValue, static_cast<uint32_t>(10 * query_conf.k)),
-                                        query_conf.search_list_size);
+    uint32_t default_search_list_size =
+        query_conf.k <= kDefaultSearchListSizeDivider ? kDefaultSearchListSizeDivider : query_conf.k;
+
+    if (config.contains(kSearchListSize) &&
+        kInvalideSearchListSize == GetValueFromConfig<uint32_t>(config, kSearchListSize)) { // Exist but invalid
+        query_conf.search_list_size = default_search_list_size;
     } else {
-        // if search_list_size not set (==0), not in json string, modify the value.
-        query_conf.search_list_size = search_list_threshold;
+        CheckNumericParamAndSetWithDefault<uint32_t>(config, kSearchListSize, query_conf.k, kSearchListSizeMaxValue,
+                                                     default_search_list_size, query_conf.search_list_size);
     }
+
     CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, kBeamwidthMinValue, kBeamwidthMaxValue, query_conf.beamwidth);
-    if (config.contains(kFilterThreshold)) {
-        CheckNumericParamAndSet<float>(config, kFilterThreshold, kFilterThresholdMinValue, kFilterThresholdMaxValue,
-                                       query_conf.filter_threshold);
-    } else {
-        query_conf.filter_threshold = kFilterThresholdMinValue;
-    }
+    CheckNumericParamAndSetWithDefault<float>(config, kFilterThreshold, kFilterThresholdMinValue,
+                                              kFilterThresholdMaxValue, kFilterThresholdMinValue,
+                                              query_conf.filter_threshold);
 }
 
 void
@@ -261,12 +269,9 @@ from_json(const Config& config, DiskANNQueryByRangeConfig& query_conf) {
     CheckNumericParamAndSet<uint64_t>(config, kMinK, kMinKMinValue, kMinKMaxValue, query_conf.min_k);
     CheckNumericParamAndSet<uint64_t>(config, kMaxK, query_conf.min_k, kMaxKMaxValue, query_conf.max_k);
     CheckNumericParamAndSet<uint32_t>(config, kBeamwidth, kBeamwidthMinValue, kBeamwidthMaxValue, query_conf.beamwidth);
-    if (config.contains(kSearchListAndKRatio)) {
-        CheckNumericParamAndSet<float>(config, kSearchListAndKRatio, kSearchListAndKRatioMinValue,
-                                       kSearchListAndKRatioMaxValue, query_conf.search_list_and_k_ratio);
-    } else {
-        query_conf.search_list_and_k_ratio = kSearchListAndKRatioDefaultValue;
-    }
+    CheckNumericParamAndSetWithDefault<float>(config, kSearchListAndKRatio, kSearchListAndKRatioMinValue,
+                                              kSearchListAndKRatioMaxValue, kSearchListAndKRatioDefaultValue,
+                                              query_conf.search_list_and_k_ratio);
 }
 
 DiskANNBuildConfig
@@ -309,10 +314,11 @@ DiskANNQueryByRangeConfig::Set(Config& config, const DiskANNQueryByRangeConfig& 
     config[kDiskANNQueryByRangeConfig] = query_conf;
 }
 
-const DiskANNPrepareConfig kSanityCheckDiskANNPrepareConfig; // use default
+const DiskANNPrepareConfig kSanityCheckDiskANNPrepareConfig;  // use default
 const DiskANNQueryConfig kSanityCheckDiskANNQueryConfig{kSanityCheckMinTopK, kSanityCheckMinTopK};
 
-Config GenSanityCheckDiskANNConfig(const Config& build_config) {
+Config
+GenSanityCheckDiskANNConfig(const Config& build_config) {
     Config config = build_config;
     DiskANNPrepareConfig::Set(config, kSanityCheckDiskANNPrepareConfig);
     DiskANNQueryConfig::Set(config, kSanityCheckDiskANNQueryConfig);

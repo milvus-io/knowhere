@@ -85,8 +85,9 @@ struct DiskANNPrepareConfig {
 struct DiskANNQueryConfig {
     uint64_t k;
     // A list of search_list sizes to perform searches with. Larger parameters will result in slower latencies, but
-    // higher accuracies. Must be at least the value of k.
-    uint32_t search_list_size = 128;
+    // higher accuracies. Must be at least the value of k. Default to 0, meaning Knowhere need to take care of the
+    // default value
+    uint32_t search_list_size = 0;
     // The beamwidth to be used for search. This is the maximum number of IO requests each query will issue per
     // iteration of search code. Larger beamwidth will result in fewer IO round-trips per query but might result in
     // slightly higher total number of IO requests to SSD per query. For the highest query throughput with a fixed SSD
@@ -125,5 +126,6 @@ struct DiskANNQueryByRangeConfig {
     Set(Config& config, const DiskANNQueryByRangeConfig& query_conf);
 };
 
-Config GenSanityCheckDiskANNConfig(const Config& build_config);
+Config
+GenSanityCheckDiskANNConfig(const Config& build_config);
 }  // namespace knowhere
