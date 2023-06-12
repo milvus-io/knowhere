@@ -86,7 +86,7 @@ class IvfIndexNode : public IndexNode {
     Status
     Serialize(BinarySet& binset) const override;
     Status
-    Deserialize(const BinarySet& binset) override;
+    Deserialize(const BinarySet& binset, const Config& config) override;
     Status
     DeserializeFromFile(const std::string& filename, const LoadConfig& config) override;
     std::unique_ptr<BaseConfig>
@@ -660,7 +660,7 @@ IvfIndexNode<T>::Serialize(BinarySet& binset) const {
 
 template <typename T>
 Status
-IvfIndexNode<T>::Deserialize(const BinarySet& binset) {
+IvfIndexNode<T>::Deserialize(const BinarySet& binset, const Config& config) {
     std::vector<std::string> names = {"IVF",        // compatible with knowhere-1.x
                                       "BinaryIVF",  // compatible with knowhere-1.x
                                       Type()};
@@ -708,7 +708,7 @@ IvfIndexNode<T>::DeserializeFromFile(const std::string& filename, const LoadConf
 
 template <>
 Status
-IvfIndexNode<faiss::IndexIVFFlat>::Deserialize(const BinarySet& binset) {
+IvfIndexNode<faiss::IndexIVFFlat>::Deserialize(const BinarySet& binset, const Config& config) {
     std::vector<std::string> names = {"IVF",  // compatible with knowhere-1.x
                                       Type()};
     auto binary = binset.GetByNames(names);

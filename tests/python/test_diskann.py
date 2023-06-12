@@ -50,12 +50,14 @@ def test_index(gen_data, faiss_ans, recall, error):
         "search_config": {
             "dim":128,
             "metric_type":"L2",
-            "index_prefix": index_path,
             "k":10,
             "search_list_size": 100,
-            "num_threads":8,
-            "search_cache_budget_gb": pq_code_size,
             "beamwidth":8
+        },
+        "deserialize_config": {
+            "metric_type":"L2",
+            "index_prefix": index_path,
+            "search_cache_budget_gb": pq_code_size,
         }
     }
 
@@ -66,6 +68,7 @@ def test_index(gen_data, faiss_ans, recall, error):
         json.dumps(diskann_config["build_config"]),
     )
     assert knowhere.Status(build_status) == knowhere.Status.success
+    diskann.Deserialize(knowhere.GetBinarySet(), json.dumps(diskann_config["deserialize_config"]))
     ans, _ = diskann.Search(
         knowhere.ArrayToDataSet(xq),
         json.dumps(diskann_config["search_config"]),

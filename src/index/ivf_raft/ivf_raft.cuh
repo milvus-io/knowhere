@@ -691,7 +691,7 @@ class RaftIvfIndexNode : public IndexNode {
     }
 
     virtual Status
-    Deserialize(const BinarySet& binset) override {
+    Deserialize(const BinarySet& binset, const Config& config) override {
         std::stringbuf buf;
         auto binary = binset.GetByName(this->Type());
         if (binary == nullptr) {
