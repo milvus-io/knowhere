@@ -149,10 +149,8 @@ TEST_CASE("Test All GPU Index", "[search]") {
         REQUIRE(idx.Type() == name);
         auto res = idx.Build(*train_ds, json);
         REQUIRE(res == knowhere::Status::success);
-        const auto topk_values = { // Tuple with [TopKValue, Threshold]
-            make_tuple(5, 0.85f),
-            make_tuple(25, 0.85f),
-            make_tuple(100, 0.85f)};
+        const auto topk_values = {// Tuple with [TopKValue, Threshold]
+                                  make_tuple(5, 0.85f), make_tuple(25, 0.85f), make_tuple(100, 0.85f)};
 
         for (const auto& topKTuple : topk_values) {
             json[knowhere::meta::TOPK] = std::get<0>(topKTuple);
