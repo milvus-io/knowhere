@@ -56,11 +56,12 @@ template <typename T>
 struct Entry {};
 
 enum PARAM_TYPE {
-    TRAIN = 0x1,
-    SEARCH = 0x2,
-    RANGE_SEARCH = 0x4,
-    FEDER = 0x8,
-    DESERIALIZE = 0x10,
+    TRAIN = 1 << 0,
+    SEARCH = 1 << 1,
+    RANGE_SEARCH = 1 << 2,
+    FEDER = 1 << 3,
+    DESERIALIZE = 1 << 4,
+    DESERIALIZE_FROM_FILE = 1 << 5,
 };
 
 template <>
@@ -226,6 +227,12 @@ class EntryAccess {
     EntryAccess&
     for_deserialize() {
         entry->type |= PARAM_TYPE::DESERIALIZE;
+        return *this;
+    }
+
+    EntryAccess&
+    for_deserialize_from_file() {
+        entry->type |= PARAM_TYPE::DESERIALIZE_FROM_FILE;
         return *this;
     }
 
@@ -428,6 +435,7 @@ class BaseConfig : public Config {
     CFG_FLOAT radius;
     CFG_FLOAT range_filter;
     CFG_BOOL trace_visit;
+    CFG_BOOL enable_mmap;
     KNOHWERE_DECLARE_CONFIG(BaseConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(metric_type).set_default("L2").description("metric type").for_train_and_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(k)
@@ -452,6 +460,10 @@ class BaseConfig : public Config {
             .description("trace visit for feder")
             .for_search()
             .for_range_search();
+        KNOWHERE_CONFIG_DECLARE_FIELD(enable_mmap)
+            .set_default(false)
+            .description("enable mmap for load index")
+            .for_deserialize_from_file();
     }
 
     int
@@ -462,12 +474,6 @@ class BaseConfig : public Config {
         return omp_get_max_threads();
     }
 };
-
-struct LoadConfig {
-    // load with mmap
-    bool enable_mmap{false};
-};
-
 }  // namespace knowhere
 
 #endif /* CONFIG_H */

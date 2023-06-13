@@ -247,7 +247,7 @@ class Index {
     }
 
     Status
-    DeserializeFromFile(const std::string& filename, const LoadConfig& config = {}) {
+    DeserializeFromFile(const std::string& filename, const Config& config = {}) {
         return this->node->Deserialize(filename, config);
     }
 
