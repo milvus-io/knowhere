@@ -45,6 +45,8 @@ enum Metric {
     L2 = 0,
     INNER_PRODUCT = 1,
     COSINE = 2,
+    HAMMING = 10,
+    JACCARD = 11,
     UNKNOWN = 100,
 };
 
@@ -72,6 +74,10 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             metric_type_ = Metric::INNER_PRODUCT;
         } else if (auto x = dynamic_cast<CosineSpace*>(s)) {
             metric_type_ = Metric::COSINE;
+        } else if (auto x = dynamic_cast<HammingSpace*>(s)) {
+            metric_type_ = Metric::HAMMING;
+        } else if (auto x = dynamic_cast<JaccardSpace*>(s)) {
+            metric_type_ = Metric::JACCARD;
         } else {
             metric_type_ = Metric::UNKNOWN;
         }
@@ -642,6 +648,10 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             space_ = new hnswlib::InnerProductSpace(dim);
         } else if (metric_type_ == Metric::COSINE) {
             space_ = new hnswlib::CosineSpace(dim);
+        } else if (metric_type_ == Metric::HAMMING) {
+            space_ = new hnswlib::HammingSpace(dim);
+        } else if (metric_type_ == Metric::JACCARD) {
+            space_ = new hnswlib::JaccardSpace(dim);
         } else {
             throw std::runtime_error("Invalid metric type " + std::to_string(metric_type_));
         }
@@ -778,6 +788,10 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             space_ = new hnswlib::InnerProductSpace(dim);
         } else if (metric_type_ == Metric::COSINE) {
             space_ = new hnswlib::CosineSpace(dim);
+        } else if (metric_type_ == Metric::HAMMING) {
+            space_ = new hnswlib::HammingSpace(dim);
+        } else if (metric_type_ == Metric::JACCARD) {
+            space_ = new hnswlib::JaccardSpace(dim);
         } else {
             throw std::runtime_error("Invalid metric type " + std::to_string(metric_type_));
         }
@@ -1145,7 +1159,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         tableint currObj = enterpoint_node_;
         auto vec_hash = knowhere::hash_vec((const float*)query_data, *(size_t*)dist_func_param_);
         // for tuning, do not use cache
-        if (param->for_tuning || !lru_cache.try_get(vec_hash, currObj)) {
+        // if (param->for_tuning || !lru_cache.try_get(vec_hash, currObj)) {
             dist_t curdist = calcDistance(query_data, enterpoint_node_);
 
             for (int level = maxlevel_; level > 0; level--) {
@@ -1186,7 +1200,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                     }
                 }
             }
-        }
+        // }
         std::vector<std::pair<dist_t, tableint>> top_candidates;
         size_t ef = param ? param->ef_ : this->ef_;
         if (!bitset.empty()) {
@@ -1200,9 +1214,9 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         for (int i = 0; i < len; ++i) {
             result.emplace_back(top_candidates[i].first, (labeltype)top_candidates[i].second);
         }
-        if (len > 0) {
-            lru_cache.put(vec_hash, result[0].second);
-        }
+        // if (len > 0) {
+        //     lru_cache.put(vec_hash, result[0].second);
+        // }
         return result;
     };
 

@@ -48,6 +48,10 @@ class HnswIndexNode : public IndexNode {
             space = new (std::nothrow) hnswlib::InnerProductSpace(dim);
         } else if (IsMetricType(hnsw_cfg.metric_type.value(), metric::COSINE)) {
             space = new (std::nothrow) hnswlib::CosineSpace(dim);
+        } else if (IsMetricType(hnsw_cfg.metric_type.value(), metric::HAMMING)) {
+            space = new (std::nothrow) hnswlib::HammingSpace(dim);
+        } else if (IsMetricType(hnsw_cfg.metric_type.value(), metric::JACCARD)) {
+            space = new (std::nothrow) hnswlib::JaccardSpace(dim);
         } else {
             LOG_KNOWHERE_WARNING_ << "metric type not support in hnsw: " << hnsw_cfg.metric_type.value();
             return Status::invalid_metric_type;
@@ -75,14 +79,13 @@ class HnswIndexNode : public IndexNode {
 
         knowhere::TimeRecorder build_time("Building HNSW cost");
         auto rows = dataset.GetRows();
-        auto dim = dataset.GetDim();
         auto tensor = dataset.GetTensor();
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
         index_->addPoint(tensor, 0);
 
 #pragma omp parallel for
         for (int i = 1; i < rows; ++i) {
-            index_->addPoint((static_cast<const float*>(tensor) + dim * i), i);
+            index_->addPoint(((const char*)tensor + index_->data_size_ * i), i);
         }
         build_time.RecordSection("");
         LOG_KNOWHERE_INFO_ << "HNSW built with #points num:" << index_->max_elements_ << " #M:" << index_->M_
@@ -98,8 +101,7 @@ class HnswIndexNode : public IndexNode {
             return Status::empty_index;
         }
         auto nq = dataset.GetRows();
-        auto dim = dataset.GetDim();
-        const float* xq = static_cast<const float*>(dataset.GetTensor());
+        auto xq = dataset.GetTensor();
 
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
         auto k = hnsw_cfg.k.value();
@@ -122,12 +124,12 @@ class HnswIndexNode : public IndexNode {
         std::vector<std::future<void>> futures;
         futures.reserve(nq);
         for (int i = 0; i < nq; ++i) {
-            futures.push_back(pool_->push([&, index = i]() {
-                auto single_query = xq + index * dim;
+            futures.push_back(pool_->push([&, idx = i]() {
+                auto single_query = (const char*)xq + idx * index_->data_size_;
                 auto rst = index_->searchKnn((void*)single_query, k, bitset, &param, feder_result);
                 size_t rst_size = rst.size();
-                auto p_single_dis = p_dist + index * k;
-                auto p_single_id = p_id + index * k;
+                auto p_single_dis = p_dist + idx * k;
+                auto p_single_id = p_id + idx * k;
                 for (size_t idx = 0; idx < rst_size; ++idx) {
                     const auto& [dist, id] = rst[idx];
                     p_single_dis[idx] = transform ? (-dist) : dist;
@@ -164,8 +166,7 @@ class HnswIndexNode : public IndexNode {
         }
 
         auto nq = dataset.GetRows();
-        auto dim = dataset.GetDim();
-        const float* xq = static_cast<const float*>(dataset.GetTensor());
+        auto xq = dataset.GetTensor();
 
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
         bool is_ip =
@@ -195,20 +196,20 @@ class HnswIndexNode : public IndexNode {
         std::vector<std::future<void>> futures;
         futures.reserve(nq);
         for (int64_t i = 0; i < nq; ++i) {
-            futures.push_back(pool_->push([&, index = i]() {
-                auto single_query = xq + index * dim;
+            futures.push_back(pool_->push([&, idx = i]() {
+                auto single_query = (const char*)xq + idx * index_->data_size_;
                 auto rst = index_->searchRange((void*)single_query, radius, bitset, &param, feder_result);
                 auto elem_cnt = rst.size();
-                result_dist_array[index].resize(elem_cnt);
-                result_id_array[index].resize(elem_cnt);
+                result_dist_array[idx].resize(elem_cnt);
+                result_id_array[idx].resize(elem_cnt);
                 for (size_t j = 0; j < elem_cnt; j++) {
                     auto& p = rst[j];
-                    result_dist_array[index][j] = (is_ip ? (-p.first) : p.first);
-                    result_id_array[index][j] = p.second;
+                    result_dist_array[idx][j] = (is_ip ? (-p.first) : p.first);
+                    result_id_array[idx][j] = p.second;
                 }
-                result_size[index] = rst.size();
+                result_size[idx] = rst.size();
                 if (hnsw_cfg.range_filter.value() != defaultRangeFilter) {
-                    FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, radius,
+                    FilterRangeSearchResultForOneNq(result_dist_array[idx], result_id_array[idx], is_ip, radius,
                                                     range_filter);
                 }
             }));
@@ -243,18 +244,18 @@ class HnswIndexNode : public IndexNode {
         auto rows = dataset.GetRows();
         auto ids = dataset.GetIds();
 
-        float* data = nullptr;
+        char* data = nullptr;
         try {
-            data = new float[dim * rows];
+            data = new char[index_->data_size_ * rows];
             for (int64_t i = 0; i < rows; i++) {
                 int64_t id = ids[i];
                 assert(id >= 0 && id < (int64_t)index_->cur_element_count);
-                std::copy_n((float*)index_->getDataByInternalId(id), dim, data + i * dim);
+                std::copy_n(index_->getDataByInternalId(id), index_->data_size_, data + i * index_->data_size_);
             }
             return GenResultDataSet(rows, dim, data);
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "hnsw inner error: " << e.what();
-            std::unique_ptr<float> auto_del(data);
+            std::unique_ptr<char> auto_del(data);
             return Status::hnsw_inner_error;
         }
     }

@@ -40,6 +40,14 @@ TEST_CASE("Test Binary Get Vector By Ids", "[Binary GetVectorByIds]") {
         return json;
     };
 
+    auto bin_hnsw_gen = [&base_bin_gen]() {
+        knowhere::Json json = base_bin_gen();
+        json[knowhere::indexparam::HNSW_M] = 128;
+        json[knowhere::indexparam::EFCONSTRUCTION] = 200;
+        json[knowhere::indexparam::EF] = 64;
+        return json;
+    };
+
     auto bin_flat_gen = base_bin_gen;
 
     SECTION("Test binary index") {
@@ -47,6 +55,7 @@ TEST_CASE("Test Binary Get Vector By Ids", "[Binary GetVectorByIds]") {
         auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP, bin_flat_gen),
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_BIN_IVFFLAT, bin_ivfflat_gen),
+            make_tuple(knowhere::IndexEnum::INDEX_HNSW, bin_hnsw_gen),
         }));
         auto idx = knowhere::IndexFactory::Instance().Create(name);
         if (!idx.HasRawData(metric_type)) {

@@ -265,6 +265,14 @@ TEST_CASE("Test Mem Index With Binary Vector", "[binary vector]") {
         return json;
     };
 
+    auto hnsw_gen = [&base_gen]() {
+        knowhere::Json json = base_gen();
+        json[knowhere::indexparam::HNSW_M] = 128;
+        json[knowhere::indexparam::EFCONSTRUCTION] = 200;
+        json[knowhere::indexparam::EF] = 64;
+        return json;
+    };
+
     const auto train_ds = GenBinDataSet(nb, dim);
     const auto query_ds = GenBinDataSet(nq, dim);
     const knowhere::Json conf = {
@@ -278,6 +286,7 @@ TEST_CASE("Test Mem Index With Binary Vector", "[binary vector]") {
         auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP, flat_gen),
             make_tuple(knowhere::IndexEnum::INDEX_FAISS_BIN_IVFFLAT, ivfflat_gen),
+            make_tuple(knowhere::IndexEnum::INDEX_HNSW, hnsw_gen),
         }));
         auto idx = knowhere::IndexFactory::Instance().Create(name);
         auto cfg_json = gen().dump();
