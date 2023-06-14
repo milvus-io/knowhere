@@ -88,6 +88,11 @@ del redo
 del Enum
 %}
 
+// use a empty json string as json default value
+%typemap(default) std::string& json %{
+   std::string default_json_str(knowhere::Json::object().dump());
+   $1 = &default_json_str;
+%}
 
 %inline %{
 
