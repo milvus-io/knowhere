@@ -38,7 +38,8 @@
 namespace hnswlib {
 typedef unsigned int tableint;
 typedef unsigned int linklistsizeint;
-constexpr float kHnswBruteForceFilterRate = 0.93f;
+constexpr float kHnswSearchKnnBFThreshold = 0.93f;
+constexpr float kHnswSearchRangeBFThreshold = 0.97f;
 
 enum Metric {
     L2 = 0,
@@ -1136,7 +1137,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         if (!bitset.empty()) {
             const auto bs_cnt = bitset.count();
             if (bs_cnt == cur_element_count) return {};
-            if (bs_cnt >= (cur_element_count * kHnswBruteForceFilterRate)) {
+            if (bs_cnt >= (cur_element_count * kHnswSearchKnnBFThreshold)) {
                 return searchKnnBF(query_data, k, bitset);
             }
         }
@@ -1234,7 +1235,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         if (!bitset.empty()) {
             const auto bs_cnt = bitset.count();
             if (bs_cnt == cur_element_count) return {};
-            if (bs_cnt >= (cur_element_count * kHnswBruteForceFilterRate)) {
+            if (bs_cnt >= (cur_element_count * kHnswSearchRangeBFThreshold)) {
                 return searchRangeBF(query_data, radius, bitset);
             }
         }

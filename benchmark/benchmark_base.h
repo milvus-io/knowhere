@@ -134,6 +134,20 @@ class Benchmark_base {
     }
 
     int32_t
+    CalcHits(const int64_t* g_ids, const size_t* g_lims, const int64_t* ids, const size_t* lims, int32_t nq) {
+        int32_t hit = 0;
+        for (int32_t i = 0; i < nq; i++) {
+            std::unordered_set<int64_t> gt_ids_set(g_ids + g_lims[i], g_ids + g_lims[i + 1]);
+            for (auto j = lims[i]; j < lims[i + 1]; j++) {
+                if (gt_ids_set.count(ids[j]) > 0) {
+                    hit++;
+                }
+            }
+        }
+        return hit;
+    }
+
+    int32_t
     CalcHits(const int64_t* ids, const size_t* lims, int32_t start, int32_t num) {
         int32_t hit = 0;
         for (int32_t i = 0; i < num; i++) {
@@ -156,6 +170,18 @@ class Benchmark_base {
     float
     CalcAccuracy(const int64_t* ids, const size_t* lims, int32_t nq) {
         int32_t hit = CalcHits(ids, lims, nq);
+        return (hit * 1.0f / lims[nq]);
+    }
+
+    float
+    CalcRecall(const int64_t* g_ids, const size_t* g_lims, const int64_t* ids, const size_t* lims, int32_t nq) {
+        int32_t hit = CalcHits(g_ids, g_lims, ids, lims, nq);
+        return (hit * 1.0f / g_lims[nq]);
+    }
+
+    float
+    CalcAccuracy(const int64_t* g_ids, const size_t* g_lims, const int64_t* ids, const size_t* lims, int32_t nq) {
+        int32_t hit = CalcHits(g_ids, g_lims, ids, lims, nq);
         return (hit * 1.0f / lims[nq]);
     }
 
