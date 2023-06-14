@@ -9,6 +9,8 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
+#include <string>
+
 #include "catch2/catch_approx.hpp"
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/generators/catch_generators.hpp"
@@ -16,6 +18,7 @@
 #include "index/diskann/diskann_config.h"
 #include "knowhere/comp/brute_force.h"
 #include "knowhere/comp/local_file_manager.h"
+#include "knowhere/expected.h"
 #include "knowhere/factory.h"
 #include "utils.h"
 #if __has_include(<filesystem>)
@@ -40,6 +43,7 @@ std::string kIPIndexPrefix = kIPIndexDir + "/ip";
 constexpr uint32_t kNumRows = 10000;
 constexpr uint32_t kNumQueries = 100;
 constexpr uint32_t kDim = 128;
+constexpr uint32_t kLargeDim = 1536;
 constexpr uint32_t kK = 10;
 constexpr float kL2KnnRecall = 0.8;
 constexpr float kL2RangeAp = 0.7;
@@ -267,26 +271,78 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
             float standard_ap = metric_str == knowhere::metric::L2 ? kL2RangeAp : kIpRangeAp;
             REQUIRE(ap > standard_ap);
         }
-        // test get vector by ids
+    }
+    fs::remove_all(kDir);
+    fs::remove(kDir);
+}
+
+// This test case only check L2
+TEST_CASE("Test DiskANN GetVectorByIds", "[diskann]") {
+    for (const uint32_t dim : {kDim, kLargeDim}) {
+        fs::remove_all(kDir);
+        fs::remove(kDir);
+        REQUIRE_NOTHROW(fs::create_directories(kL2IndexDir));
+
+        auto base_gen = [&] {
+            knowhere::Json json;
+            json["dim"] = dim;
+            json["metric_type"] = knowhere::metric::L2;
+            json["k"] = kK;
+            return json;
+        };
+
+        auto build_gen = [&]() {
+            knowhere::Json json = base_gen();
+            json["index_prefix"] = kL2IndexPrefix;
+            json["data_path"] = kRawDataPath;
+            json["max_degree"] = 5;
+            json["search_list_size"] = kK;
+            json["pq_code_budget_gb"] = sizeof(float) * dim * kNumRows * 0.03125 / (1024 * 1024 * 1024);
+            json["build_dram_budget_gb"] = 32.0;
+            return json;
+        };
+
+        auto query_ds = GenDataSet(kNumQueries, dim, 42);
+        auto base_ds = GenDataSet(kNumRows, dim, 30);
+        auto base_ptr = static_cast<const float*>(base_ds->GetTensor());
+        WriteRawDataToDisk(kRawDataPath, base_ptr, kNumRows, dim);
+
+        std::shared_ptr<knowhere::FileManager> file_manager = std::make_shared<knowhere::LocalFileManager>();
+        auto diskann_index_pack = knowhere::Pack(file_manager);
+
+        knowhere::DataSet* ds_ptr = nullptr;
+        auto diskann = knowhere::IndexFactory::Instance().Create("DISKANN", diskann_index_pack);
+        auto build_json = build_gen().dump();
+        knowhere::Json json = knowhere::Json::parse(build_json);
+        diskann.Build(*ds_ptr, json);
+        knowhere::BinarySet binset;
         {
-            auto diskann = knowhere::IndexFactory::Instance().Create("DISKANN", diskann_index_pack);
-            diskann.Deserialize(binset, deserialize_json);
-            auto knn_search_json = knn_search_gen().dump();
-            knowhere::Json knn_json = knowhere::Json::parse(knn_search_json);
-            auto res = diskann.Search(*query_ds, knn_json, nullptr);
-            REQUIRE(res.has_value());
-            auto ids_ds = GenIdsDataSet(kNumRows, kDim);
-            auto results = diskann.GetVectorByIds(*ids_ds);
-            REQUIRE(results.has_value());
-            auto xb = (float*)base_ds->GetTensor();
-            auto data = (float*)results.value()->GetTensor();
-            for (size_t i = 0; i < kNumRows; ++i) {
-                auto id = ids_ds->GetIds()[i];
-                for (size_t j = 0; j < kDim; ++j) {
-                    if (metric_str == knowhere::metric::IP) {
-                        REQUIRE(Catch::Approx(data[i * kDim + j]) == xb[id * kDim + j]);
-                    } else {
-                        REQUIRE(data[i * kDim + j] == xb[id * kDim + j]);
+            std::vector<double> cache_sizes = {0, 1.0f * sizeof(float) * dim * kNumRows * 0.125 / (1024 * 1024 * 1024)};
+            for (const auto cache_size : cache_sizes) {
+                auto deserialize_gen = [&base_gen, cache = cache_size]() {
+                    knowhere::Json json = base_gen();
+                    json["index_prefix"] = kL2IndexPrefix;
+                    json["search_cache_budget_gb"] = cache;
+                    return json;
+                };
+                knowhere::Json deserialize_json = knowhere::Json::parse(deserialize_gen().dump());
+                auto index = knowhere::IndexFactory::Instance().Create("DISKANN", diskann_index_pack);
+                auto ret = index.Deserialize(binset, deserialize_json);
+                REQUIRE(ret == knowhere::Status::success);
+                std::vector<double> ids_sizes = {1, kNumRows * 0.2, kNumRows * 0.7, kNumRows};
+                for (const auto ids_size : ids_sizes) {
+                    std::cout << "Testing dim = " << dim << ", cache_size = " << cache_size
+                              << ", ids_size = " << ids_size << std::endl;
+                    auto ids_ds = GenIdsDataSet(ids_size);
+                    auto results = index.GetVectorByIds(*ids_ds);
+                    REQUIRE(results.has_value());
+                    auto xb = (float*)base_ds->GetTensor();
+                    auto data = (float*)results.value()->GetTensor();
+                    for (size_t i = 0; i < ids_size; ++i) {
+                        auto id = ids_ds->GetIds()[i];
+                        for (size_t j = 0; j < dim; ++j) {
+                            REQUIRE(data[i * dim + j] == xb[id * dim + j]);
+                        }
                     }
                 }
             }
