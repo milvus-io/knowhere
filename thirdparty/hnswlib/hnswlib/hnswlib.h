@@ -201,8 +201,14 @@ class AlgorithmInterface {
     addPoint(const void* datapoint, labeltype label) = 0;
 
     virtual std::vector<std::pair<dist_t, labeltype>>
+    searchKnnBF(void*, size_t, const knowhere::BitsetView) const = 0;
+
+    virtual std::vector<std::pair<dist_t, labeltype>>
     searchKnn(void*, size_t, const knowhere::BitsetView, const SearchParam*,
               const knowhere::feder::hnsw::FederResultUniq&) const = 0;
+
+    virtual std::vector<std::pair<dist_t, labeltype>>
+    searchRangeBF(void*, float, const knowhere::BitsetView) const = 0;
 
     virtual std::vector<std::pair<dist_t, labeltype>>
     searchRange(void*, float, const knowhere::BitsetView, const SearchParam*,
