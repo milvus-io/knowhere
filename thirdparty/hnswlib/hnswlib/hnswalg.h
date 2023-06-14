@@ -1104,6 +1104,24 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     };
 
     std::vector<std::pair<dist_t, labeltype>>
+    searchKnnBF(void* query_data, size_t k, const knowhere::BitsetView bitset) const {
+        knowhere::ResultMaxHeap<dist_t, labeltype> max_heap(k);
+        for (labeltype id = 0; id < cur_element_count; ++id) {
+            if (!bitset.test(id)) {
+                dist_t dist = calcDistance(query_data, id);
+                max_heap.Push(dist, id);
+            }
+        }
+        const size_t len = std::min(max_heap.Size(), k);
+        std::vector<std::pair<dist_t, labeltype>> result(len);
+        for (int64_t i = len - 1; i >= 0; --i) {
+            const auto op = max_heap.Pop();
+            result[i] = op.value();
+        }
+        return result;
+    }
+
+    std::vector<std::pair<dist_t, labeltype>>
     searchKnn(void* query_data, size_t k, const knowhere::BitsetView bitset, const SearchParam* param = nullptr,
               const knowhere::feder::hnsw::FederResultUniq& feder_result = nullptr) const {
         if (cur_element_count == 0)
@@ -1114,25 +1132,12 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             knowhere::NormalizeVec((float*)query_data, *((size_t*)dist_func_param_));
         }
 
+        // do bruteforce search when delete rate high
         if (!bitset.empty()) {
             const auto bs_cnt = bitset.count();
             if (bs_cnt == cur_element_count) return {};
             if (bs_cnt >= (cur_element_count * kHnswBruteForceFilterRate)) {
-                assert(cur_element_count == bitset.size());
-                knowhere::ResultMaxHeap<dist_t, labeltype> max_heap(k);
-                for (labeltype id = 0; id < cur_element_count; ++id) {
-                    if (!bitset.test(id)) {
-                        dist_t dist = calcDistance(query_data, id);
-                        max_heap.Push(dist, id);
-                    }
-                }
-                const size_t len = std::min(max_heap.Size(), k);
-                std::vector<std::pair<dist_t, labeltype>> result(len);
-                for (int64_t i = len - 1; i >= 0; --i) {
-                    const auto op = max_heap.Pop();
-                    result[i] = op.value();
-                }
-                return result;
+                return searchKnnBF(query_data, k, bitset);
             }
         }
 
@@ -1200,6 +1205,20 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     };
 
     std::vector<std::pair<dist_t, labeltype>>
+    searchRangeBF(void* query_data, float radius, const knowhere::BitsetView bitset) const {
+        std::vector<std::pair<dist_t, labeltype>> result;
+        for (labeltype id = 0; id < cur_element_count; ++id) {
+            if (!bitset.test(id)) {
+                dist_t dist = calcDistance(query_data, id);
+                if (dist < radius) {
+                    result.emplace_back(dist, id);
+                }
+            }
+        }
+        return result;
+    }
+
+    std::vector<std::pair<dist_t, labeltype>>
     searchRange(void* query_data, float radius, const knowhere::BitsetView bitset, const SearchParam* param = nullptr,
                 const knowhere::feder::hnsw::FederResultUniq& feder_result = nullptr) const {
         if (cur_element_count == 0) {
@@ -1209,6 +1228,15 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         // do normalize for COSINE metric type
         if (metric_type_ == Metric::COSINE) {
             knowhere::NormalizeVec((float*)query_data, *((size_t*)dist_func_param_));
+        }
+
+        // do bruteforce range search when delete rate high
+        if (!bitset.empty()) {
+            const auto bs_cnt = bitset.count();
+            if (bs_cnt == cur_element_count) return {};
+            if (bs_cnt >= (cur_element_count * kHnswBruteForceFilterRate)) {
+                return searchRangeBF(query_data, radius, bitset);
+            }
         }
 
         tableint currObj = enterpoint_node_;
