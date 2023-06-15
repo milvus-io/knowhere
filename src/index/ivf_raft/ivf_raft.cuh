@@ -20,12 +20,14 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <optional>
 
 #include "common/raft_metric.h"
 #include "index/ivf_raft/ivf_raft_config.h"
 #include "knowhere/comp/index_param.h"
+#include "knowhere/device_bitset.h"
 #include "knowhere/factory.h"
 #include "knowhere/index_node_thread_pool_wrapper.h"
 #include "knowhere/log.h"
@@ -37,6 +39,7 @@
 #include "raft/neighbors/ivf_pq_types.hpp"
 #include "set_pool.h"
 #include "thrust/execution_policy.h"
+#include "thrust/logical.h"
 #include "thrust/sequence.h"
 
 #ifdef RAFT_COMPILED
@@ -45,103 +48,117 @@
 
 namespace knowhere {
 
+namespace raft_detail {
+struct raft_results {
+    raft_results(raft::device_resources& res)
+        : ids_{raft::make_device_matrix<std::int64_t, std::int64_t>(res, 0, 0)},
+          dists_{raft::make_device_matrix<float, std::int64_t>(res, 0, 0)} {
+    }
+    raft_results(raft::device_resources& res, std::int64_t rows, std::int64_t k)
+        : ids_{raft::make_device_matrix<std::int64_t, std::int64_t>(res, rows, k)},
+          dists_{raft::make_device_matrix<float, std::int64_t>(res, rows, k)} {
+    }
+    auto
+    ids() {
+        return ids_.view();
+    }
+    auto
+    dists() {
+        return dists_.view();
+    }
+    auto
+    ids_data() {
+        return ids_.data_handle();
+    }
+    auto
+    dists_data() {
+        return dists_.data_handle();
+    }
+
+    auto
+    rows() const {
+        return ids_.extent(0);
+    }
+    auto
+    k() const {
+        return ids_.extent(1);
+    }
+
+ private:
+    raft::device_matrix<std::int64_t, std::int64_t> ids_;
+    raft::device_matrix<float, std::int64_t> dists_;
+};
+
+auto constexpr static const MAX_IVF_FLAT_K = 256;
+
 __global__ void
-filter(const uint8_t* bs, const int64_t* ids_before, int32_t* ids_block, int len) {
-    int tx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (tx >= len)
-        return;
-    __shared__ int64_t ids_before_s[1024];
-    __shared__ int32_t ids_block_s[1024];
-
-    ids_before_s[threadIdx.x] = ids_before[tx];
-    int64_t i = ids_before_s[threadIdx.x];
-    if (i != -1)
-        ids_block_s[threadIdx.x] = 1 - (bs[i >> 3] && (0x1 << (i & 0x7)));
-    else
-        ids_block_s[threadIdx.x] = 1;
-
-    ids_block[tx] = ids_block_s[threadIdx.x];
-}
-
-__global__ void
-prescan(int32_t* g_odata, int32_t* g_idata, int n) {
-    extern __shared__ int32_t temp[];
-    int tx = blockIdx.x * blockDim.x + threadIdx.x;
-    int ty = blockIdx.y * blockDim.y + threadIdx.y;
-    int offset = 1;
-    temp[2 * tx] = g_idata[2 * tx + ty * n];
-    temp[2 * tx + 1] = g_idata[2 * tx + 1 + ty * n];
-    for (int d = n >> 1; d > 0; d >>= 1) {
+postprocess_device_results(bool* enough_valid, int64_t* ids, float* dists, int64_t rows, int k, int target_k,
+                           DeviceBitsetView bitset) {
+    __shared__ int invalid_count[1];
+    for (auto row_index = blockIdx.x; row_index < rows; row_index += gridDim.x) {
+        if (threadIdx.x == 0) {
+            invalid_count[0] = 0;
+        }
         __syncthreads();
-        if (tx < d) {
-            int ai = offset * (2 * tx + 1) - 1;
-            int bi = offset * (2 * tx + 2) - 1;
-            temp[bi] += temp[ai];
+        // First, replace all invalid IDs with -1
+        for (auto col_index = threadIdx.x; col_index < k; col_index += blockDim.x) {
+            auto elem_index = row_index * k + col_index;
+            auto cur_id = ids[elem_index];
+            auto invalid_id = bitset.test(cur_id);
+            if (invalid_id) {  // TODO(wphicks): assuming the branch is worth it here;
+                               // should analyze perf.
+                atomicAdd_block(invalid_count, 1);
+            }
+            invalid_id |= cur_id == std::numeric_limits<int64_t>::max();
+            ids[elem_index] = int(invalid_id) * -1 + int(!invalid_id) * ids[elem_index];
         }
-        offset *= 2;
-    }
-    if (tx == 0) {
-        temp[n - 1] = 0;
-    }
-    for (int d = 1; d < n; d *= 2) {
-        offset >>= 1;
         __syncthreads();
-        if (tx < d) {
-            int ai = offset * (2 * tx + 1) - 1;
-            int bi = offset * (2 * tx + 2) - 1;
-            int32_t t = temp[ai];
-            temp[ai] = temp[bi];
-            temp[bi] += t;
+
+        // Now move all valid results to the front of the row
+        auto cur_valid_index = row_index * k;
+        for (auto col_index = 0; col_index < k; ++col_index) {
+            auto elem_index = row_index * k + col_index;
+            // Just do one row per block for now; can improve this later
+            if (ids[elem_index] != -1 && threadIdx.x == 0) {
+                // Swap valid id to an earlier place in the row
+                ids[cur_valid_index] = ids[elem_index];
+                if (elem_index != cur_valid_index) {
+                    ids[elem_index] = -1;
+                    // Only count elements invalidated by the bitset. These are the
+                    // elements that will require a swap as opposed to just appearing at
+                    // the end of the row
+                }
+                dists[cur_valid_index++] = dists[elem_index];
+            }
+        }
+        // Check if we have enough valid results
+        if (threadIdx.x == 0) {
+            enough_valid[row_index] = (k - invalid_count[0] >= target_k);
         }
     }
-    __syncthreads();
-    g_odata[2 * tx + ty * n] += temp[2 * tx];
-    g_odata[2 * tx + 1 + ty * n] += temp[2 * tx + 1];
 }
 
+/* The following kernel is used to copy data from one row-major 2D array to
+ * another. If the input array has more columns than the output array, the
+ * rows will be truncated to the length of the output array. Similarly, the
+ * number of rows will be truncated if the output has fewer rows. If the output
+ * array has more rows/columns than the input, the output will be padded with
+ * entries of -1. */
+template <typename T, typename IndexT>
 __global__ void
-write_back(const int32_t* pre_ids_block, int64_t* ids_before, float* dis_before, int64_t* ids_after, float* dis_after,
-           int k1, int k2) {
-    int tx = blockIdx.x * blockDim.x + threadIdx.x;
-    int ty = blockIdx.y * blockDim.y + threadIdx.y;
-
-    extern __shared__ int32_t temp[];
-    for (int i = tx; i < k2; i += k1) {
-        temp[i] = pre_ids_block[ty * k2 + i];
-    }
-    __syncthreads();
-    int left = 0;
-    int right = k2;
-    while (left < right) {
-        int mid = (left + right) / 2;
-        if (temp[mid] == tx + 1) {
-            right = mid;
-        } else if (temp[mid] > tx + 1) {
-            right = mid;
-        } else if (temp[mid] < tx + 1) {
-            left = mid + 1;
+slice(T* out, T* in, IndexT out_rows, IndexT out_cols, IndexT in_rows, IndexT in_cols) {
+    for (auto i = blockIdx.x * blockDim.x + threadIdx.x; i < out_rows * out_cols; i += blockDim.x * gridDim.x) {
+        auto row_index = i / out_cols;
+        auto col_index = i % out_cols;
+        if (row_index < in_rows && col_index < in_cols) {
+            out[i] = in[row_index * in_cols + col_index];
+        } else {
+            out[i] = -1;
         }
     }
-    if (left < k2) {
-        ids_after[ty * k1 + tx] = ids_before[ty * k2 + left];
-        dis_after[ty * k1 + tx] = dis_before[ty * k2 + left];
-    } else {
-        ids_after[ty * k1 + tx] = -1;
-        dis_after[ty * k1 + tx] = 1.0f / 0.0f;
-        ids_before[0] = -2;  // destory old ans;
-    }
 }
 
-__global__ void
-ids_flush(int64_t* ids, int len) {
-    int tx = blockIdx.x * blockDim.x + threadIdx.x;
-    __shared__ int64_t cache[1024];
-    if (tx >= len)
-        return;
-    cache[threadIdx.x] = ids[tx];
-    cache[threadIdx.x] = cache[threadIdx.x] == 9223372036854775807 ? -1 : cache[threadIdx.x];
-    ids[tx] = cache[threadIdx.x];
-}
+}  // namespace raft_detail
 
 namespace raft_res_pool {
 
@@ -435,7 +452,7 @@ class RaftIvfIndexNode : public IndexNode {
                                               cudaMemcpyDefault, stream.value()));
 
                 auto indices = rmm::device_uvector<std::int64_t>(rows, stream);
-                thrust::sequence(thrust::device, indices.begin(), indices.end(), gpu_index_->size());
+                thrust::sequence(res_->get_thrust_policy(), indices.begin(), indices.end(), gpu_index_->size());
 
                 if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
                     raft::neighbors::ivf_flat::extend<float, std::int64_t>(
@@ -476,70 +493,22 @@ class RaftIvfIndexNode : public IndexNode {
             auto scoped_device = detail::device_setter{devs_[0]};
             auto* res_ = &raft_res_pool::get_context().resources_;
 
-            auto stream = res_->get_stream();
             // TODO(wphicks): Clean up transfer with raft
             // buffer objects when available
             auto data_gpu = raft::make_device_matrix<float, std::int64_t>(*res_, rows, dim);
-            RAFT_CUDA_TRY(cudaMemcpyAsync(data_gpu.data_handle(), data, data_gpu.size() * sizeof(float),
-                                          cudaMemcpyDefault, stream.value()));
+            raft::copy(data_gpu.data_handle(), data, data_gpu.size(), res_->get_stream());
 
-            auto ids_gpu = raft::make_device_matrix<std::int64_t, std::int64_t>(*res_, rows, ivf_raft_cfg.k);
-            auto dis_gpu = raft::make_device_matrix<float, std::int64_t>(*res_, rows, ivf_raft_cfg.k);
+            auto gpu_results = raft_detail::raft_results{*res_};
+            auto gpu_bitset = DeviceBitset{*res_, bitset};
 
             if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
                 auto search_params = raft::neighbors::ivf_flat::search_params{};
                 search_params.n_probes = std::min<uint32_t>(ivf_raft_cfg.nprobe, gpu_index_->n_lists());
-                if (bitset.empty() || bitset.count() == 0) {
-                    raft::neighbors::ivf_flat::search<float, std::int64_t>(*res_, search_params, *gpu_index_,
-                                                                           raft::make_const_mdspan(data_gpu.view()),
-                                                                           ids_gpu.view(), dis_gpu.view());
-                    ids_flush<<<(output_size + 1023) / 1024, 1024, 0, stream.value()>>>(ids_gpu.data_handle(),
-                                                                                        output_size);
-                } else {
-                    auto k1 = ivf_raft_cfg.k;
-                    auto k2 = k1;
-                    k2 |= k2 >> 1;
-                    k2 |= k2 >> 2;
-                    k2 |= k2 >> 4;
-                    k2 |= k2 >> 8;
-                    k2 |= k2 >> 14;
-                    k2 += 1;
-                    auto bs_gpu = raft::make_device_vector<uint8_t, std::int64_t>(*res_, bitset.byte_size());
-                    RAFT_CUDA_TRY(cudaMemcpyAsync(bs_gpu.data_handle(), bitset.data(), bitset.byte_size(),
-                                                  cudaMemcpyDefault, stream.value()));
-                    while (k2 <= (1 << 14) && k2 <= counts_) {
-                        auto ids_gpu_before = raft::make_device_matrix<std::int64_t, std::int64_t>(*res_, rows, k2);
-                        auto dis_gpu_before = raft::make_device_matrix<float, std::int64_t>(*res_, rows, k2);
-
-                        raft::neighbors::ivf_flat::search<float, std::int64_t>(
-                            *res_, search_params, *gpu_index_, raft::make_const_mdspan(data_gpu.view()),
-                            ids_gpu_before.view(), dis_gpu_before.view());
-
-                        ids_flush<<<(rows * k2 + 1023) / 1024, 1024, 0, stream.value()>>>(ids_gpu_before.data_handle(),
-                                                                                          rows * k2);
-
-                        auto ids_block = raft::make_device_vector<int32_t, std::int64_t>(*res_, rows * k2);
-                        filter<<<(rows * k2 + 1023) / 1024, 1024, 0, stream.value()>>>(
-                            bs_gpu.data_handle(), ids_gpu_before.data_handle(), ids_block.data_handle(), rows * k2);
-                        auto pre_ids_block = raft::make_device_vector<int32_t, std::int64_t>(*res_, rows * k2);
-                        RAFT_CUDA_TRY(cudaMemcpyAsync(pre_ids_block.data_handle(), ids_block.data_handle(),
-                                                      rows * k2 * sizeof(int32_t), cudaMemcpyDefault, stream.value()));
-                        prescan<<<dim3(1, rows), k2 / 2, sizeof(int32_t) * k2, stream.value()>>>(
-                            pre_ids_block.data_handle(), ids_block.data_handle(), k2);
-
-                        write_back<<<dim3(1, rows), k1, sizeof(int32_t) * k2, stream.value()>>>(
-                            pre_ids_block.data_handle(), ids_gpu_before.data_handle(), dis_gpu_before.data_handle(),
-                            ids_gpu.data_handle(), dis_gpu.data_handle(), k1, k2);
-
-                        std::int64_t is_fine = 0;
-                        RAFT_CUDA_TRY(cudaMemcpyAsync(&is_fine, ids_gpu_before.data_handle(), sizeof(std::int64_t),
-                                                      cudaMemcpyDefault, stream.value()));
-                        stream.synchronize();
-                        if (is_fine != -2)
-                            break;
-                        k2 = k2 << 1;
-                    }
-                }
+                auto search_k = std::min(
+                    ivf_raft_cfg.k + (bitset.count() * ivf_raft_cfg.k / counts_),
+                    std::min(static_cast<uint64_t>(counts_), static_cast<uint64_t>(raft_detail::MAX_IVF_FLAT_K)));
+                gpu_results = RawSearch(*res_, raft::make_const_mdspan(data_gpu.view()), search_params, search_k,
+                                        ivf_raft_cfg.k, gpu_bitset.view());
             } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
                 auto search_params = raft::neighbors::ivf_pq::search_params{};
                 search_params.n_probes = std::min<uint32_t>(ivf_raft_cfg.nprobe, gpu_index_->n_lists());
@@ -568,63 +537,24 @@ class RaftIvfIndexNode : public IndexNode {
                 }
                 search_params.internal_distance_dtype = internal_distance_dtype.value();
                 search_params.preferred_shmem_carveout = search_params.preferred_shmem_carveout;
-                if (bitset.empty() || bitset.count() == 0) {
-                    raft::neighbors::ivf_pq::search<float, std::int64_t>(*res_, search_params, *gpu_index_,
-                                                                         raft::make_const_mdspan(data_gpu.view()),
-                                                                         ids_gpu.view(), dis_gpu.view());
-                    ids_flush<<<(output_size + 1023) / 1024, 1024, 0, stream.value()>>>(ids_gpu.data_handle(),
-                                                                                        output_size);
-
-                } else {
-                    auto k1 = ivf_raft_cfg.k;
-                    auto k2 = k1;
-                    k2 |= k2 >> 1;
-                    k2 |= k2 >> 2;
-                    k2 |= k2 >> 4;
-                    k2 |= k2 >> 8;
-                    k2 |= k2 >> 14;
-                    k2 += 1;
-                    auto bs_gpu = raft::make_device_vector<uint8_t, std::int64_t>(*res_, bitset.byte_size());
-                    RAFT_CUDA_TRY(cudaMemcpyAsync(bs_gpu.data_handle(), bitset.data(), bitset.byte_size(),
-                                                  cudaMemcpyDefault, stream.value()));
-                    while (k2 <= (1 << 14) && k2 <= counts_) {
-                        auto ids_gpu_before = raft::make_device_matrix<std::int64_t, std::int64_t>(*res_, rows, k2);
-                        auto dis_gpu_before = raft::make_device_matrix<float, std::int64_t>(*res_, rows, k2);
-                        raft::neighbors::ivf_pq::search<float, std::int64_t>(
-                            *res_, search_params, *gpu_index_, raft::make_const_mdspan(data_gpu.view()),
-                            ids_gpu_before.view(), dis_gpu_before.view());
-
-                        ids_flush<<<(rows * k2 + 1023) / 1024, 1024, 0, stream.value()>>>(ids_gpu_before.data_handle(),
-                                                                                          rows * k2);
-                        auto ids_block = raft::make_device_vector<int32_t, std::int64_t>(*res_, rows * k2);
-                        filter<<<(rows * k2 + 1023) / 1024, 1024, 0, stream.value()>>>(
-                            bs_gpu.data_handle(), ids_gpu_before.data_handle(), ids_block.data_handle(), rows * k2);
-                        auto pre_ids_block = raft::make_device_vector<int32_t, std::int64_t>(*res_, rows * k2);
-                        RAFT_CUDA_TRY(cudaMemcpyAsync(pre_ids_block.data_handle(), ids_block.data_handle(),
-                                                      rows * k2 * sizeof(int32_t), cudaMemcpyDefault, stream.value()));
-                        prescan<<<dim3(1, rows), k2 / 2, sizeof(int32_t) * k2, stream.value()>>>(
-                            pre_ids_block.data_handle(), ids_block.data_handle(), k2);
-                        write_back<<<dim3(1, rows), k1, sizeof(int32_t) * k2, stream.value()>>>(
-                            pre_ids_block.data_handle(), ids_gpu_before.data_handle(), dis_gpu_before.data_handle(),
-                            ids_gpu.data_handle(), dis_gpu.data_handle(), k1, k2);
-
-                        std::int64_t is_fine = 0;
-                        RAFT_CUDA_TRY(cudaMemcpyAsync(&is_fine, ids_gpu_before.data_handle(), sizeof(std::int64_t),
-                                                      cudaMemcpyDefault, stream.value()));
-                        stream.synchronize();
-                        if (is_fine != -2)
-                            break;
-                        k2 = k2 << 1;
-                    }
-                }
+                gpu_results = RawSearch(*res_, raft::make_const_mdspan(data_gpu.view()), search_params, ivf_raft_cfg.k,
+                                        ivf_raft_cfg.k, gpu_bitset.view());
             } else {
                 static_assert(std::is_same_v<detail::raft_ivf_flat_index, T>);
             }
-            RAFT_CUDA_TRY(cudaMemcpyAsync(ids.get(), ids_gpu.data_handle(), ids_gpu.size() * sizeof(std::int64_t),
-                                          cudaMemcpyDefault, stream.value()));
-            RAFT_CUDA_TRY(cudaMemcpyAsync(dis.get(), dis_gpu.data_handle(), dis_gpu.size() * sizeof(float),
-                                          cudaMemcpyDefault, stream.value()));
-            stream.synchronize();
+
+            if (gpu_results.k() != ivf_raft_cfg.k) {
+                auto new_gpu_results = raft_detail::raft_results{*res_, gpu_results.rows(), ivf_raft_cfg.k};
+                raft_detail::slice<<<1024, 256, 0, res_->get_stream().value()>>>(
+                    new_gpu_results.ids_data(), gpu_results.ids_data(), new_gpu_results.rows(), new_gpu_results.k(),
+                    gpu_results.rows(), gpu_results.k());
+                res_->sync_stream();
+                gpu_results = new_gpu_results;
+            }
+            raft::copy(ids.get(), gpu_results.ids_data(), output_size, res_->get_stream());
+            raft::copy(dis.get(), gpu_results.dists_data(), output_size, res_->get_stream());
+            res_->sync_stream();
+
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "RAFT inner error, " << e.what();
             return unexpected(Status::raft_inner_error);
@@ -772,6 +702,44 @@ class RaftIvfIndexNode : public IndexNode {
     int64_t dim_ = 0;
     int64_t counts_ = 0;
     std::optional<T> gpu_index_;
+
+    template <typename raft_search_params_t>
+    raft_detail::raft_results
+    RawSearch(raft::device_resources& res, raft::device_matrix_view<const float, std::int64_t> queries,
+              raft_search_params_t const& search_params, int k, int target_k, DeviceBitsetView const& bitset) const {
+        auto max_k = counts_;
+        if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
+            k = std::min(k, raft_detail::MAX_IVF_FLAT_K);
+            max_k = std::min(max_k, int64_t{raft_detail::MAX_IVF_FLAT_K});
+        }
+        auto result = raft_detail::raft_results{res, queries.extent(0), k};
+        if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
+            raft::neighbors::ivf_flat::search<float, std::int64_t>(res, search_params, *gpu_index_, queries,
+                                                                   result.ids(), result.dists());
+        } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
+            raft::neighbors::ivf_pq::search<float, std::int64_t>(res, search_params, *gpu_index_, queries, result.ids(),
+                                                                 result.dists());
+        } else {
+            static_assert(std::is_same_v<detail::raft_ivf_flat_index, T>);
+        }
+
+        auto blocks = std::min(queries.extent(0), int64_t{1024});
+        auto threads = std::min(k, 256);
+        auto warp_remainder = threads % 32;
+        if (warp_remainder != 0) {
+            threads += (32 - warp_remainder);
+        }
+        auto enough_valid = raft::make_device_vector<bool>(res, queries.extent(0));
+
+        raft_detail::postprocess_device_results<<<blocks, threads, 0, res.get_stream().value()>>>(
+            enough_valid.data_handle(), result.ids_data(), result.dists_data(), queries.extent(0), k, target_k, bitset);
+
+        if (k < max_k && !thrust::all_of(res.get_thrust_policy(), enough_valid.data_handle(),
+                                         enough_valid.data_handle() + queries.extent(0), thrust::identity<bool>())) {
+            result = RawSearch(res, queries, search_params, std::min(int64_t{k * 2}, max_k), target_k, bitset);
+        }
+        return result;
+    }
 };
 
 void
