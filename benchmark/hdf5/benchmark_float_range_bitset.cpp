@@ -44,13 +44,15 @@ WriteRawDataToDisk(const std::string data_path, const float* raw_data, const uin
     writer.close();
 }
 
-class Benchmark_knowhere_float_bitset : public Benchmark_knowhere, public ::testing::Test {
+class Benchmark_float_range_bitset : public Benchmark_knowhere, public ::testing::Test {
  public:
     void
     test_ivf(const knowhere::Json& cfg) {
         auto conf = cfg;
+        auto radius = conf[knowhere::meta::RADIUS].get<float>();
 
-        printf("\n[%0.3f s] %s | %s \n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+        printf("\n[%0.3f s] %s | %s | radius=.3f\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(),
+               radius);
         printf("================================================================================\n");
         for (auto per : PERCENTs_) {
             auto bitset_data = GenRandomBitset(nb_, nb_ * per / 100);
@@ -58,17 +60,17 @@ class Benchmark_knowhere_float_bitset : public Benchmark_knowhere, public ::test
 
             for (auto nq : NQs_) {
                 auto ds_ptr = knowhere::GenDataSet(nq, dim_, xq_);
-                for (auto k : TOPKs_) {
-                    conf[knowhere::meta::TOPK] = k;
-                    auto g_result = golden_index_.Search(*ds_ptr, conf, bitset);
-                    auto g_ids = g_result.value()->GetIds();
-                    CALC_TIME_SPAN(auto result = index_.Search(*ds_ptr, conf, bitset));
-                    auto ids = result.value()->GetIds();
-                    float recall = CalcRecall(g_ids, ids, nq, k);
-                    printf("  bitset_per = %3d%%, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", per, nq, k, t_diff,
-                           recall);
-                    std::fflush(stdout);
-                }
+                auto g_result = golden_index_.RangeSearch(*ds_ptr, conf, bitset);
+                auto g_ids = g_result.value()->GetIds();
+                auto g_lims = g_result.value()->GetLims();
+                CALC_TIME_SPAN(auto result = index_.RangeSearch(*ds_ptr, conf, bitset));
+                auto ids = result.value()->GetIds();
+                auto lims = result.value()->GetLims();
+                float recall = CalcRecall(g_ids, g_lims, ids, lims, nq);
+                float accuracy = CalcAccuracy(g_ids, g_lims, ids, lims, nq);
+                printf("  bitset_per = %3d%%, nq = %4d, elapse = %6.3fs, R@ = %.4f, A@ = %.4f\n", per, nq, t_diff,
+                       recall, accuracy);
+                std::fflush(stdout);
             }
         }
         printf("================================================================================\n");
@@ -78,8 +80,10 @@ class Benchmark_knowhere_float_bitset : public Benchmark_knowhere, public ::test
     void
     test_hnsw(const knowhere::Json& cfg) {
         auto conf = cfg;
+        auto radius = conf[knowhere::meta::RADIUS].get<float>();
 
-        printf("\n[%0.3f s] %s | %s \n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+        printf("\n[%0.3f s] %s | %s | radius=%.3f\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(),
+               radius);
         printf("================================================================================\n");
         for (auto per : PERCENTs_) {
             auto bitset_data = GenRandomBitset(nb_, nb_ * per / 100);
@@ -87,17 +91,17 @@ class Benchmark_knowhere_float_bitset : public Benchmark_knowhere, public ::test
 
             for (auto nq : NQs_) {
                 auto ds_ptr = knowhere::GenDataSet(nq, dim_, xq_);
-                for (auto k : TOPKs_) {
-                    conf[knowhere::meta::TOPK] = k;
-                    auto g_result = golden_index_.Search(*ds_ptr, conf, bitset);
-                    auto g_ids = g_result.value()->GetIds();
-                    CALC_TIME_SPAN(auto result = index_.Search(*ds_ptr, conf, bitset));
-                    auto ids = result.value()->GetIds();
-                    float recall = CalcRecall(g_ids, ids, nq, k);
-                    printf("  bitset_per = %3d%%, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", per, nq, k, t_diff,
-                           recall);
-                    std::fflush(stdout);
-                }
+                auto g_result = golden_index_.RangeSearch(*ds_ptr, conf, bitset);
+                auto g_ids = g_result.value()->GetIds();
+                auto g_lims = g_result.value()->GetLims();
+                CALC_TIME_SPAN(auto result = index_.RangeSearch(*ds_ptr, conf, bitset));
+                auto ids = result.value()->GetIds();
+                auto lims = result.value()->GetLims();
+                float recall = CalcRecall(g_ids, g_lims, ids, lims, nq);
+                float accuracy = CalcAccuracy(g_ids, g_lims, ids, lims, nq);
+                printf("  bitset_per = %3d%%, nq = %4d, elapse = %6.3fs, R@ = %.4f, A@ = %.4f\n", per, nq, t_diff,
+                       recall, accuracy);
+                std::fflush(stdout);
             }
         }
         printf("================================================================================\n");
@@ -107,24 +111,28 @@ class Benchmark_knowhere_float_bitset : public Benchmark_knowhere, public ::test
     void
     test_diskann(const knowhere::Json& cfg) {
         auto conf = cfg;
+        auto radius = conf[knowhere::meta::RADIUS].get<float>();
         conf["index_prefix"] = (metric_type_ == knowhere::metric::L2 ? kL2IndexPrefix : kIPIndexPrefix);
 
-        printf("\n[%0.3f s] %s | %s \n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+        printf("\n[%0.3f s] %s | %s | radius=%.3f\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(),
+               radius);
         printf("================================================================================\n");
         for (auto per : PERCENTs_) {
             auto bitset_data = GenRandomBitset(nb_, nb_ * per / 100);
             knowhere::BitsetView bitset(bitset_data.data(), nb_);
             for (auto nq : NQs_) {
                 auto ds_ptr = knowhere::GenDataSet(nq, dim_, xq_);
-                for (auto k : TOPKs_) {
-                    conf[knowhere::meta::TOPK] = k;
-                    CALC_TIME_SPAN(auto result = index_.Search(*ds_ptr, conf, bitset));
-                    auto ids = result.value()->GetIds();
-                    float recall = CalcRecall(ids, nq, k);
-                    printf("  bitset_per = %3d%%, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", per, nq, k, t_diff,
-                           recall);
-                    std::fflush(stdout);
-                }
+                auto g_result = golden_index_.RangeSearch(*ds_ptr, conf, bitset);
+                auto g_ids = g_result.value()->GetIds();
+                auto g_lims = g_result.value()->GetLims();
+                CALC_TIME_SPAN(auto result = index_.RangeSearch(*ds_ptr, conf, bitset));
+                auto ids = result.value()->GetIds();
+                auto lims = result.value()->GetLims();
+                float recall = CalcRecall(g_ids, g_lims, ids, lims, nq);
+                float accuracy = CalcAccuracy(g_ids, g_lims, ids, lims, nq);
+                printf("  bitset_per = %3d%%, nq = %4d, elapse = %6.3fs, R@ = %.4f, A@ = %.4f\n", per, nq, t_diff,
+                       recall, accuracy);
+                std::fflush(stdout);
             }
         }
         printf("================================================================================\n");
@@ -135,13 +143,14 @@ class Benchmark_knowhere_float_bitset : public Benchmark_knowhere, public ::test
     void
     SetUp() override {
         T0_ = elapsed();
-        set_ann_test_name("sift-128-euclidean");
-        parse_ann_test_name();
-        load_hdf5_data<false>();
+        set_ann_test_name("sift-128-euclidean-range");
+        parse_ann_test_name_with_range();
+        load_hdf5_data_range<false>();
 
         assert(metric_str_ == METRIC_IP_STR || metric_str_ == METRIC_L2_STR);
         metric_type_ = (metric_str_ == METRIC_IP_STR) ? "IP" : "L2";
         cfg_[knowhere::meta::METRIC_TYPE] = metric_type_;
+        cfg_[knowhere::meta::RADIUS] = *gt_radius_;
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX2);
         printf("faiss::distance_compute_blas_threshold: %ld\n", knowhere::KnowhereConfig::GetBlasThreshold());
 
@@ -172,12 +181,8 @@ class Benchmark_knowhere_float_bitset : public Benchmark_knowhere, public ::test
     // const std::vector<int32_t> EFs_ = {128, 256, 512};
 };
 
-TEST_F(Benchmark_knowhere_float_bitset, TEST_IVF_FLAT_NM) {
-#ifdef KNOWHERE_WITH_RAFT
-    index_type_ = knowhere::IndexEnum::INDEX_RAFT_IVFFLAT;
-#else
+TEST_F(Benchmark_float_range_bitset, TEST_IVF_FLAT) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
-#endif
 
     knowhere::Json conf = cfg_;
     std::string index_file_name = get_index_name({});
@@ -185,7 +190,7 @@ TEST_F(Benchmark_knowhere_float_bitset, TEST_IVF_FLAT_NM) {
     test_ivf(conf);
 }
 
-TEST_F(Benchmark_knowhere_float_bitset, TEST_IVF_SQ8) {
+TEST_F(Benchmark_float_range_bitset, TEST_IVF_SQ8) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFSQ8;
 
     knowhere::Json conf = cfg_;
@@ -194,12 +199,8 @@ TEST_F(Benchmark_knowhere_float_bitset, TEST_IVF_SQ8) {
     test_ivf(conf);
 }
 
-TEST_F(Benchmark_knowhere_float_bitset, TEST_IVF_PQ) {
-#ifdef KNOWHERE_WITH_RAFT
-    index_type_ = knowhere::IndexEnum::INDEX_RAFT_IVFPQ;
-#else
+TEST_F(Benchmark_float_range_bitset, TEST_IVF_PQ) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFPQ;
-#endif
 
     knowhere::Json conf = cfg_;
     std::string index_file_name = get_index_name({});
@@ -207,7 +208,7 @@ TEST_F(Benchmark_knowhere_float_bitset, TEST_IVF_PQ) {
     test_ivf(conf);
 }
 
-TEST_F(Benchmark_knowhere_float_bitset, TEST_HNSW) {
+TEST_F(Benchmark_float_range_bitset, TEST_HNSW) {
     index_type_ = knowhere::IndexEnum::INDEX_HNSW;
 
     knowhere::Json conf = cfg_;
@@ -216,7 +217,7 @@ TEST_F(Benchmark_knowhere_float_bitset, TEST_HNSW) {
     test_hnsw(conf);
 }
 
-TEST_F(Benchmark_knowhere_float_bitset, TEST_DISKANN) {
+TEST_F(Benchmark_float_range_bitset, TEST_DISKANN) {
     index_type_ = knowhere::IndexEnum::INDEX_DISKANN;
 
     knowhere::Json conf = cfg_;

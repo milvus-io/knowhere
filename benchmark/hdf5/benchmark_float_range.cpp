@@ -17,7 +17,7 @@
 #include "knowhere/comp/knowhere_config.h"
 #include "knowhere/dataset.h"
 
-class Benchmark_knowhere_float_range : public Benchmark_knowhere, public ::testing::Test {
+class Benchmark_float_range : public Benchmark_knowhere, public ::testing::Test {
  public:
     void
     test_idmap(const knowhere::Json& cfg) {
@@ -152,7 +152,7 @@ class Benchmark_knowhere_float_range : public Benchmark_knowhere, public ::testi
 //   6. specify the hdf5 file name to generate
 //   7. run this testcase
 #if 0
-TEST_F(Benchmark_knowhere_float_range, TEST_CREATE_HDF5) {
+TEST_F(Benchmark_float_range, TEST_CREATE_HDF5) {
     // set this radius to get about 1M result dataset for 10k nq
     const float radius = 186.0 * 186.0;
     const float range_filter = 0.0;
@@ -182,7 +182,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_CREATE_HDF5) {
 }
 #endif
 
-TEST_F(Benchmark_knowhere_float_range, TEST_IDMAP) {
+TEST_F(Benchmark_float_range, TEST_IDMAP) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IDMAP;
 
     knowhere::Json conf = cfg_;
@@ -191,7 +191,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IDMAP) {
     test_idmap(conf);
 }
 
-TEST_F(Benchmark_knowhere_float_range, TEST_IVF_FLAT_NM) {
+TEST_F(Benchmark_float_range, TEST_IVF_FLAT) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
 
     knowhere::Json conf = cfg_;
@@ -203,7 +203,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IVF_FLAT_NM) {
     }
 }
 
-TEST_F(Benchmark_knowhere_float_range, TEST_IVF_SQ8) {
+TEST_F(Benchmark_float_range, TEST_IVF_SQ8) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFSQ8;
 
     knowhere::Json conf = cfg_;
@@ -215,7 +215,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IVF_SQ8) {
     }
 }
 
-TEST_F(Benchmark_knowhere_float_range, TEST_IVF_PQ) {
+TEST_F(Benchmark_float_range, TEST_IVF_PQ) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFPQ;
 
     knowhere::Json conf = cfg_;
@@ -231,7 +231,7 @@ TEST_F(Benchmark_knowhere_float_range, TEST_IVF_PQ) {
     }
 }
 
-TEST_F(Benchmark_knowhere_float_range, TEST_HNSW) {
+TEST_F(Benchmark_float_range, TEST_HNSW) {
     index_type_ = knowhere::IndexEnum::INDEX_HNSW;
 
     knowhere::Json conf = cfg_;

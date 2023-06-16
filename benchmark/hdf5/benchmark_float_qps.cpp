@@ -21,7 +21,7 @@
 
 const int32_t GPU_DEVICE_ID = 0;
 
-class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing::Test {
+class Benchmark_float_qps : public Benchmark_knowhere, public ::testing::Test {
  public:
     void
     test_ivf(const knowhere::Json& cfg) {
@@ -193,7 +193,7 @@ class Benchmark_knowhere_float_qps : public Benchmark_knowhere, public ::testing
     const std::vector<int32_t> EFCONs_ = {100};
 };
 
-TEST_F(Benchmark_knowhere_float_qps, TEST_IVF_FLAT_NM) {
+TEST_F(Benchmark_float_qps, TEST_IVF_FLAT) {
 #ifdef KNOWHERE_WITH_GPU
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_GPU_IVFFLAT;
 #elif KNOWHERE_WITH_RAFT
@@ -211,7 +211,7 @@ TEST_F(Benchmark_knowhere_float_qps, TEST_IVF_FLAT_NM) {
     }
 }
 
-TEST_F(Benchmark_knowhere_float_qps, TEST_IVF_SQ8) {
+TEST_F(Benchmark_float_qps, TEST_IVF_SQ8) {
 #ifdef KNOWHERE_WITH_GPU
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_GPU_IVFSQ8;
 #else
@@ -227,7 +227,7 @@ TEST_F(Benchmark_knowhere_float_qps, TEST_IVF_SQ8) {
     }
 }
 
-TEST_F(Benchmark_knowhere_float_qps, TEST_IVF_PQ) {
+TEST_F(Benchmark_float_qps, TEST_IVF_PQ) {
 #ifdef KNOWHERE_WITH_GPU
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_GPU_IVFPQ;
 #elif KNOWHERE_WITH_RAFT
@@ -249,7 +249,7 @@ TEST_F(Benchmark_knowhere_float_qps, TEST_IVF_PQ) {
     }
 }
 
-TEST_F(Benchmark_knowhere_float_qps, TEST_HNSW) {
+TEST_F(Benchmark_float_qps, TEST_HNSW) {
     index_type_ = knowhere::IndexEnum::INDEX_HNSW;
 
     knowhere::Json conf = cfg_;

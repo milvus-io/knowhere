@@ -42,7 +42,7 @@ WriteRawDataToDisk(const std::string data_path, const float* raw_data, const uin
     writer.close();
 }
 
-class Benchmark_knowhere_float : public Benchmark_knowhere, public ::testing::Test {
+class Benchmark_float : public Benchmark_knowhere, public ::testing::Test {
  public:
     void
     test_idmap(const knowhere::Json& cfg) {
@@ -183,7 +183,7 @@ class Benchmark_knowhere_float : public Benchmark_knowhere, public ::testing::Te
     const std::vector<int32_t> EFs_ = {128, 256, 512};
 };
 
-TEST_F(Benchmark_knowhere_float, TEST_IDMAP) {
+TEST_F(Benchmark_float, TEST_IDMAP) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IDMAP;
 
     knowhere::Json conf = cfg_;
@@ -192,7 +192,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IDMAP) {
     test_idmap(conf);
 }
 
-TEST_F(Benchmark_knowhere_float, TEST_IVF_FLAT_NM) {
+TEST_F(Benchmark_float, TEST_IVF_FLAT) {
 #ifdef KNOWHERE_WITH_RAFT
     index_type_ = knowhere::IndexEnum::INDEX_RAFT_IVFFLAT;
 #else
@@ -208,7 +208,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_FLAT_NM) {
     }
 }
 
-TEST_F(Benchmark_knowhere_float, TEST_IVF_SQ8) {
+TEST_F(Benchmark_float, TEST_IVF_SQ8) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFSQ8;
 
     knowhere::Json conf = cfg_;
@@ -220,7 +220,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_SQ8) {
     }
 }
 
-TEST_F(Benchmark_knowhere_float, TEST_IVF_PQ) {
+TEST_F(Benchmark_float, TEST_IVF_PQ) {
 #ifdef KNOWHERE_WITH_RAFT
     index_type_ = knowhere::IndexEnum::INDEX_RAFT_IVFPQ;
 #else
@@ -240,7 +240,7 @@ TEST_F(Benchmark_knowhere_float, TEST_IVF_PQ) {
     }
 }
 
-TEST_F(Benchmark_knowhere_float, TEST_HNSW) {
+TEST_F(Benchmark_float, TEST_HNSW) {
     index_type_ = knowhere::IndexEnum::INDEX_HNSW;
 
     knowhere::Json conf = cfg_;
@@ -255,7 +255,7 @@ TEST_F(Benchmark_knowhere_float, TEST_HNSW) {
     }
 }
 
-TEST_F(Benchmark_knowhere_float, TEST_DISKANN) {
+TEST_F(Benchmark_float, TEST_DISKANN) {
     index_type_ = knowhere::IndexEnum::INDEX_DISKANN;
 
     knowhere::Json conf = cfg_;
