@@ -436,6 +436,7 @@ class BaseConfig : public Config {
     CFG_FLOAT range_filter;
     CFG_BOOL trace_visit;
     CFG_BOOL enable_mmap;
+    CFG_BOOL for_tuning;
     KNOHWERE_DECLARE_CONFIG(BaseConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(metric_type).set_default("L2").description("metric type").for_train_and_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(k)
@@ -464,6 +465,7 @@ class BaseConfig : public Config {
             .set_default(false)
             .description("enable mmap for load index")
             .for_deserialize_from_file();
+        KNOWHERE_CONFIG_DECLARE_FIELD(for_tuning).set_default(false).description("for tuning").for_search();
     }
 
     int

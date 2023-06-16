@@ -192,6 +192,7 @@ class SpaceInterface {
 
 struct SearchParam {
     size_t ef_;
+    bool for_tuning;
 };
 
 template <typename dist_t>

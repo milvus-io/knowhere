@@ -130,7 +130,7 @@ class HnswIndexNode : public IndexNode {
         auto p_id = new int64_t[k * nq];
         auto p_dist = new float[k * nq];
 
-        hnswlib::SearchParam param{(size_t)hnsw_cfg.ef};
+        hnswlib::SearchParam param{(size_t)hnsw_cfg.ef, hnsw_cfg.for_tuning};
         bool transform =
             (index_->metric_type_ == hnswlib::Metric::INNER_PRODUCT || index_->metric_type_ == hnswlib::Metric::COSINE);
 
