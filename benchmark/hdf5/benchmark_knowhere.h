@@ -112,7 +112,7 @@ class Benchmark_knowhere : public Benchmark_hdf5 {
 
     knowhere::Index<knowhere::IndexNode>
     create_golden_index(const knowhere::Json& conf) {
-        golden_index_type_ = knowhere::IndexEnum::INDEX_FAISS_IVFFLAT;
+        golden_index_type_ = knowhere::IndexEnum::INDEX_FAISS_IDMAP;
 
         std::string golden_index_file_name = ann_test_name_ + "_" + golden_index_type_ + "_GOLDEN" + ".index";
         printf("[%.3f s] Creating golden index \"%s\"\n", get_time_diff(), golden_index_type_.c_str());
