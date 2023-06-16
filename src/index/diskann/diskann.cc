@@ -215,7 +215,7 @@ GetOptionalFilenames(const std::string& prefix) {
     auto disk_index_filename = diskann::get_disk_index_filename(prefix);
     filenames.push_back(diskann::get_disk_index_centroids_filename(disk_index_filename));
     filenames.push_back(diskann::get_disk_index_medoids_filename(disk_index_filename));
-    filenames.push_back(diskann::get_cached_nodes_file(disk_index_filename));
+    filenames.push_back(diskann::get_cached_nodes_file(prefix));
     return filenames;
 }
 
