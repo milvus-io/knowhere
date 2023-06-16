@@ -169,6 +169,7 @@ namespace knowhere {
 namespace {
 static constexpr float kCacheExpansionRate = 1.2;
 static constexpr int kSearchListSizeMaxValue = 200;
+static constexpr int64_t kGetVectorBatchSize = 32;
 template <typename T>
 expected<T, Status>
 TryDiskANNCall(std::function<T()>&& diskann_call) {
@@ -667,20 +668,20 @@ DiskANNIndexNode<T>::GetVectorByIds(const DataSet& dataset) const {
     auto dim = Dim();
     auto rows = dataset.GetRows();
     auto ids = dataset.GetIds();
-
     float* data = new float[dim * rows];
     if (data == nullptr) {
         LOG_KNOWHERE_ERROR_ << "Failed to allocate memory for data.";
         return unexpected(Status::malloc_error);
     }
 
-    auto sectors_id_idx = pq_flash_index_->get_sectors_layout_and_write_data_from_cache(ids, rows, data);
+    auto batch_num = (rows + kGetVectorBatchSize - 1) / kGetVectorBatchSize;
     std::vector<std::future<void>> futures;
-    const size_t sectors_size = sectors_id_idx.size();
-    futures.reserve(sectors_size);
+    futures.reserve(batch_num);
     bool all_good = true;
-    for (const auto& e : sectors_id_idx) {
-        futures.push_back(pool_->push([&]() { pq_flash_index_->get_vector_by_sector(e.first, e.second, ids, data); }));
+    for (int64_t i = 0; i < batch_num; ++i) {
+        auto idx = i * kGetVectorBatchSize;
+        auto len = std::min(kGetVectorBatchSize, rows - idx);
+        futures.push_back(pool_->push([=]() { pq_flash_index_->get_vector_by_ids(ids + idx, len, data + idx * dim); }));
     }
     for (auto& future : futures) {
         auto one_search_res = TryDiskANNCall<bool>([&]() {
@@ -692,7 +693,7 @@ DiskANNIndexNode<T>::GetVectorByIds(const DataSet& dataset) const {
         }
     }
     if (!all_good) {
-        std::unique_ptr<float> auto_del(data);
+        delete[] data;
         return unexpected(Status::diskann_inner_error);
     }
     return GenResultDataSet(rows, dim, data);

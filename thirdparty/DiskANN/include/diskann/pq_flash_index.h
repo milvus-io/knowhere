@@ -110,19 +110,10 @@ namespace diskann {
         const float l_k_ratio, knowhere::BitsetView bitset_view = nullptr,
         QueryStats *stats = nullptr);
 
-    // Assign the index of ids to its corresponding sector and if it is in
-    // cache, write to the output_data
-    DISKANN_DLLEXPORT std::unordered_map<_u64, std::vector<_u64>>
-    get_sectors_layout_and_write_data_from_cache(const int64_t *ids, int64_t n,
-                                                 T *output_data);
 
-    // Perform I/O and write to the output_data
-    // Note that when metric type is IP, the vector is reconstructed and is
-    // approximate since the base vector base has been modified in the
-    // build stage
-    DISKANN_DLLEXPORT void get_vector_by_sector(
-        const _u64 sector_offset, const std::vector<_u64> &ids_idx,
-        const int64_t *ids, T *output_data);
+    DISKANN_DLLEXPORT void get_vector_by_ids(const int64_t *ids,
+                                             const int64_t n,
+                                                T *output_data);
 
     std::shared_ptr<AlignedFileReader> reader;
 
@@ -173,6 +164,12 @@ namespace diskann {
         IOContext &ctx, QueryStats *stats,
         const knowhere::feder::diskann::FederResultUniq &feder,
         knowhere::BitsetView                             bitset_view);
+
+    // Assign the index of ids to its corresponding sector and if it is in
+    // cache, write to the output_data
+    std::unordered_map<_u64, std::vector<_u64>>
+    get_sectors_layout_and_write_data_from_cache(const int64_t *ids, int64_t n,
+                                                 T *output_data);
 
     // index info
     // nhood of node `i` is in sector: [i / nnodes_per_sector]
