@@ -18,7 +18,7 @@
 #include "knowhere/comp/knowhere_config.h"
 #include "knowhere/dataset.h"
 
-class Benchmark_knowhere_binary : public Benchmark_knowhere, public ::testing::Test {
+class Benchmark_binary : public Benchmark_knowhere, public ::testing::Test {
  public:
     void
     test_binary_idmap(const knowhere::Json& cfg) {
@@ -108,7 +108,7 @@ class Benchmark_knowhere_binary : public Benchmark_knowhere, public ::testing::T
 //   4. specify the hdf5 file name to generate
 //   5. run this testcase
 #if 0
-TEST_F(Benchmark_knowhere_binary, TEST_CREATE_BINARY_HDF5) {
+TEST_F(Benchmark_binary, TEST_CREATE_BINARY_HDF5) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP;
 
     knowhere::Config conf = cfg_;
@@ -143,7 +143,7 @@ TEST_F(Benchmark_knowhere_binary, TEST_CREATE_BINARY_HDF5) {
 }
 #endif
 
-TEST_F(Benchmark_knowhere_binary, TEST_BINARY_IDMAP) {
+TEST_F(Benchmark_binary, TEST_BINARY_IDMAP) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP;
 
     knowhere::Json conf = cfg_;
@@ -152,7 +152,7 @@ TEST_F(Benchmark_knowhere_binary, TEST_BINARY_IDMAP) {
     test_binary_idmap(conf);
 }
 
-TEST_F(Benchmark_knowhere_binary, TEST_BINARY_IVF_FLAT) {
+TEST_F(Benchmark_binary, TEST_BINARY_IVF_FLAT) {
     index_type_ = knowhere::IndexEnum::INDEX_FAISS_BIN_IVFFLAT;
 
     knowhere::Json conf = cfg_;
