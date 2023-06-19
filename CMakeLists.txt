@@ -92,7 +92,7 @@ if(WITH_COVERAGE)
 endif()
 
 knowhere_file_glob(GLOB_RECURSE KNOWHERE_SRCS src/common/*.cc src/index/*.cc
-                   src/io/*.cc src/index/*.cu)
+                   src/io/*.cc src/api/*.cc src/index/*.cu)
 
 set(KNOWHERE_LINKER_LIBS "")
 
