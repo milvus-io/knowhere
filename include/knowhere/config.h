@@ -477,7 +477,12 @@ class BaseConfig : public Config {
     }
 
     virtual Status
-    CheckAndAdjustConfig() {
+    CheckAndAdjustConfigForSearch() {
+        return Status::success;
+    }
+
+    virtual Status
+    CheckAndAdjustConfigForRangeSearch() {
         return Status::success;
     }
 };
