@@ -12,12 +12,7 @@
 #ifndef HNSW_CONFIG_H
 #define HNSW_CONFIG_H
 
-#include "knowhere/comp/index_param.h"
 #include "knowhere/config.h"
-
-// This is not a valid EF value for HNSW
-// This value is used to tell if HnswConfig.ef is coming from user or not
-const int64_t kDefaultHnswEfPlaceholder = -1;
 
 namespace knowhere {
 class HnswConfig : public BaseConfig {
@@ -35,7 +30,7 @@ class HnswConfig : public BaseConfig {
             .for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(ef)
             .description("hnsw ef")
-            .set_default(kDefaultHnswEfPlaceholder)
+            .set_default(16)
             .set_range(1, std::numeric_limits<CFG_INT>::max())
             .for_search()
             .for_range_search();
@@ -44,27 +39,6 @@ class HnswConfig : public BaseConfig {
             .set_default(3)
             .set_range(1, 5)
             .for_feder();
-    }
-
-    Status
-    CheckAndAdjustConfig() override {
-        auto& hnsw_cfg = static_cast<HnswConfig&>(*this);
-        auto maxef = std::max(65536, hnsw_cfg.k * 2);
-        if (hnsw_cfg.ef > maxef) {
-            LOG_KNOWHERE_ERROR_ << "ef should be in range: [topk, max(65536, topk * 2)]";
-            return Status::out_of_range_in_json;
-        }
-        if (hnsw_cfg.ef < hnsw_cfg.k) {
-            if (hnsw_cfg.ef == kDefaultHnswEfPlaceholder) {
-                // ef is set by default value, set ef to k
-                hnsw_cfg.ef = hnsw_cfg.k;
-            } else {
-                // ef is set by user
-                LOG_KNOWHERE_ERROR_ << "ef should be in range: [topk, max(65536, topk * 2)]";
-                return Status::out_of_range_in_json;
-            }
-        }
-        return Status::success;
     }
 };
 

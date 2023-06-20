@@ -475,11 +475,6 @@ class BaseConfig : public Config {
         }
         return omp_get_max_threads();
     }
-
-    virtual Status
-    CheckAndAdjustConfig() {
-        return Status::success;
-    }
 };
 }  // namespace knowhere
 

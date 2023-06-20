@@ -169,7 +169,6 @@ class Index {
         KNOWHERE_CHECK_EXPECTED(Config::FormatAndCheck(*cfg, json_));
         LOG_KNOWHERE_DEBUG_ << "Search config dump: " << json_.dump();
         KNOWHERE_CHECK_EXPECTED(Config::Load(*cfg, json_, knowhere::SEARCH));
-        KNOWHERE_CHECK_EXPECTED(cfg->CheckAndAdjustConfig());
 
 #ifdef NOT_COMPILE_FOR_SWIG
         TimeRecorder rc("Search");
