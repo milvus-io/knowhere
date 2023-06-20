@@ -42,17 +42,17 @@ class IndexNodeThreadPoolWrapper : public IndexNode {
         return index_node_->Add(dataset, cfg);
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
         return thread_pool_->push([&]() { return this->index_node_->Search(dataset, cfg, bitset); }).get();
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
         return thread_pool_->push([&]() { return this->index_node_->RangeSearch(dataset, cfg, bitset); }).get();
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     GetVectorByIds(const DataSet& dataset) const {
         return index_node_->GetVectorByIds(dataset);
     }
@@ -62,7 +62,7 @@ class IndexNodeThreadPoolWrapper : public IndexNode {
         return index_node_->HasRawData(metric_type);
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     GetIndexMeta(const Config& cfg) const {
         return index_node_->GetIndexMeta(cfg);
     }

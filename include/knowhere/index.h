@@ -120,56 +120,40 @@ class Index {
 
     Status
     Build(const DataSet& dataset, const Json& json) {
-        Json json_(json);
         auto cfg = this->node->CreateConfig();
-        KNOWHERE_CHECK_STATUS(Config::FormatAndCheck(*cfg, json_));
-        LOG_KNOWHERE_DEBUG_ << "Build config dump: " << json_.dump();
-        KNOWHERE_CHECK_STATUS(Config::Load(*cfg, json_, knowhere::TRAIN));
+        RETURN_IF_ERROR(LoadConfig(cfg.get(), json, knowhere::TRAIN, "Build"));
 
 #ifdef NOT_COMPILE_FOR_SWIG
         TimeRecorder rc("Build");
-        KNOWHERE_CHECK_STATUS(this->node->Build(dataset, *cfg));
+        RETURN_IF_ERROR(this->node->Build(dataset, *cfg));
         auto span = rc.ElapseFromBegin("done");
         span *= 0.000001;  // convert to s
         kw_build_latency.Observe(span);
 #else
-        KNOWHERE_CHECK_STATUS(this->node->Build(dataset, *cfg));
+        RETURN_IF_ERROR(this->node->Build(dataset, *cfg));
 #endif
         return Status::success;
     }
 
     Status
     Train(const DataSet& dataset, const Json& json) {
-        Json json_(json);
         auto cfg = this->node->CreateConfig();
-        KNOWHERE_CHECK_STATUS(Config::FormatAndCheck(*cfg, json_));
-        LOG_KNOWHERE_DEBUG_ << "Train config dump: " << json_.dump();
-        KNOWHERE_CHECK_STATUS(Config::Load(*cfg, json_, knowhere::TRAIN));
-
-        KNOWHERE_CHECK_STATUS(this->node->Train(dataset, *cfg));
-        return Status::success;
+        RETURN_IF_ERROR(LoadConfig(cfg.get(), json, knowhere::TRAIN, "Train"));
+        return this->node->Train(dataset, *cfg);
     }
 
     Status
     Add(const DataSet& dataset, const Json& json) {
-        Json json_(json);
         auto cfg = this->node->CreateConfig();
-        KNOWHERE_CHECK_STATUS(Config::FormatAndCheck(*cfg, json_));
-        LOG_KNOWHERE_DEBUG_ << "Add config dump: " << json_.dump();
-        KNOWHERE_CHECK_STATUS(Config::Load(*cfg, json_, knowhere::TRAIN));
-
-        KNOWHERE_CHECK_STATUS(this->node->Add(dataset, *cfg));
-        return Status::success;
+        RETURN_IF_ERROR(LoadConfig(cfg.get(), json, knowhere::TRAIN, "Add"));
+        return this->node->Add(dataset, *cfg);
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     Search(const DataSet& dataset, const Json& json, const BitsetView& bitset) const {
-        Json json_(json);
         auto cfg = this->node->CreateConfig();
-        KNOWHERE_CHECK_EXPECTED(Config::FormatAndCheck(*cfg, json_));
-        LOG_KNOWHERE_DEBUG_ << "Search config dump: " << json_.dump();
-        KNOWHERE_CHECK_EXPECTED(Config::Load(*cfg, json_, knowhere::SEARCH));
-        KNOWHERE_CHECK_EXPECTED(cfg->CheckAndAdjustConfig());
+        RETURN_IF_ERROR(LoadConfig(cfg.get(), json, knowhere::SEARCH, "Search"));
+        RETURN_IF_ERROR(cfg->CheckAndAdjustConfig());
 
 #ifdef NOT_COMPILE_FOR_SWIG
         TimeRecorder rc("Search");
@@ -183,13 +167,10 @@ class Index {
         return res;
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     RangeSearch(const DataSet& dataset, const Json& json, const BitsetView& bitset) const {
-        Json json_(json);
         auto cfg = this->node->CreateConfig();
-        KNOWHERE_CHECK_EXPECTED(Config::FormatAndCheck(*cfg, json_));
-        LOG_KNOWHERE_DEBUG_ << "RangeSearch config dump: " << json_.dump();
-        KNOWHERE_CHECK_EXPECTED(Config::Load(*cfg, json_, knowhere::RANGE_SEARCH));
+        RETURN_IF_ERROR(LoadConfig(cfg.get(), json, knowhere::RANGE_SEARCH, "RangeSearch"));
 
 #ifdef NOT_COMPILE_FOR_SWIG
         TimeRecorder rc("Range Search");
@@ -203,7 +184,7 @@ class Index {
         return res;
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     GetVectorByIds(const DataSet& dataset) const {
         return this->node->GetVectorByIds(dataset);
     }
@@ -213,14 +194,10 @@ class Index {
         return this->node->HasRawData(metric_type);
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     GetIndexMeta(const Json& json) const {
-        Json json_(json);
         auto cfg = this->node->CreateConfig();
-        KNOWHERE_CHECK_EXPECTED(Config::FormatAndCheck(*cfg, json_));
-        LOG_KNOWHERE_DEBUG_ << "GetIndexMeta config dump: " << json_.dump();
-        KNOWHERE_CHECK_EXPECTED(Config::Load(*cfg, json_, knowhere::FEDER));
-
+        RETURN_IF_ERROR(LoadConfig(cfg.get(), json, knowhere::FEDER, "GetIndexMeta"));
         return this->node->GetIndexMeta(*cfg);
     }
 
@@ -283,6 +260,15 @@ class Index {
  private:
     Index(T1* node) : node(node) {
         static_assert(std::is_base_of<IndexNode, T1>::value);
+    }
+
+    Status
+    LoadConfig(BaseConfig* cfg, const Json& json, knowhere::PARAM_TYPE param_type, const std::string& method) const {
+        Json json_(json);
+        auto res = Config::FormatAndCheck(*cfg, json_);
+        LOG_KNOWHERE_DEBUG_ << method << " config dump: " << json_.dump();
+        RETURN_IF_ERROR(res);
+        return Config::Load(*cfg, json_, param_type);
     }
 
     T1* node;

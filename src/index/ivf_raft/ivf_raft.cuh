@@ -182,7 +182,7 @@ auto static constexpr const PER_SUBSPACE = "PER_SUBSPACE";
 auto static constexpr const PER_CLUSTER = "PER_CLUSTER";
 }  // namespace codebook
 
-inline expected<raft::neighbors::ivf_pq::codebook_gen, Status>
+inline expected<raft::neighbors::ivf_pq::codebook_gen>
 str_to_codebook_gen(std::string const& str) {
     static const std::unordered_map<std::string, raft::neighbors::ivf_pq::codebook_gen> name_map = {
         {codebook::PER_SUBSPACE, raft::neighbors::ivf_pq::codebook_gen::PER_SUBSPACE},
@@ -191,7 +191,7 @@ str_to_codebook_gen(std::string const& str) {
 
     auto it = name_map.find(str);
     if (it == name_map.end())
-        return unexpected(Status::invalid_args);
+        return Status::invalid_args;
     return it->second;
 }
 
@@ -214,7 +214,7 @@ auto static constexpr const CUDA_R_8F_E4M3 = "CUDA_R_8F_E4M3";
 auto static constexpr const CUDA_R_8F_E5M2 = "CUDA_R_8F_E5M2";
 }  // namespace cuda_type
 
-inline expected<cudaDataType_t, Status>
+inline expected<cudaDataType_t>
 str_to_cuda_dtype(std::string const& str) {
     static const std::unordered_map<std::string, cudaDataType_t> name_map = {
         {cuda_type::CUDA_R_16F, CUDA_R_16F},   {cuda_type::CUDA_C_16F, CUDA_C_16F},
@@ -231,7 +231,7 @@ str_to_cuda_dtype(std::string const& str) {
 
     auto it = name_map.find(str);
     if (it == name_map.end())
-        return unexpected(Status::invalid_args);
+        return Status::invalid_args;
     return it->second;
 }
 
@@ -257,9 +257,7 @@ class RaftIvfIndexNode : public IndexNode {
 
     virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
-        auto err = Train(dataset, cfg);
-        if (err != Status::success)
-            return err;
+        RETURN_IF_ERROR(Train(dataset, cfg));
         return Add(dataset, cfg);
     }
 
@@ -390,7 +388,7 @@ class RaftIvfIndexNode : public IndexNode {
         return result;
     }
 
-    virtual expected<DataSetPtr, Status>
+    virtual expected<DataSetPtr>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         auto ivf_raft_cfg = static_cast<const typename KnowhereConfigType<T>::Type&>(cfg);
         auto rows = dataset.GetRows();
@@ -422,28 +420,27 @@ class RaftIvfIndexNode : public IndexNode {
             } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
                 auto search_params = raft::neighbors::ivf_pq::search_params{};
                 search_params.n_probes = std::min<uint32_t>(ivf_raft_cfg.nprobe, gpu_index_->n_lists());
-
                 auto lut_dtype = detail::str_to_cuda_dtype(ivf_raft_cfg.lut_dtype);
                 if (!lut_dtype.has_value()) {
                     LOG_KNOWHERE_WARNING_ << "please check lookup dtype: " << ivf_raft_cfg.lut_dtype;
-                    return unexpected(lut_dtype.error());
+                    return lut_dtype.error();
                 }
                 if (lut_dtype.value() != CUDA_R_32F && lut_dtype.value() != CUDA_R_16F &&
                     lut_dtype.value() != CUDA_R_8U) {
                     LOG_KNOWHERE_WARNING_ << "selected lookup dtype not supported: " << ivf_raft_cfg.lut_dtype;
-                    return unexpected(Status::invalid_args);
+                    return Status::invalid_args;
                 }
                 search_params.lut_dtype = lut_dtype.value();
                 auto internal_distance_dtype = detail::str_to_cuda_dtype(ivf_raft_cfg.internal_distance_dtype);
                 if (!internal_distance_dtype.has_value()) {
                     LOG_KNOWHERE_WARNING_ << "please check internal distance dtype: "
                                           << ivf_raft_cfg.internal_distance_dtype;
-                    return unexpected(internal_distance_dtype.error());
+                    return internal_distance_dtype.error();
                 }
                 if (internal_distance_dtype.value() != CUDA_R_32F && internal_distance_dtype.value() != CUDA_R_16F) {
                     LOG_KNOWHERE_WARNING_ << "selected internal distance dtype not supported: "
                                           << ivf_raft_cfg.internal_distance_dtype;
-                    return unexpected(Status::invalid_args);
+                    return Status::invalid_args;
                 }
                 search_params.internal_distance_dtype = internal_distance_dtype.value();
                 search_params.preferred_shmem_carveout = search_params.preferred_shmem_carveout;
@@ -467,20 +464,20 @@ class RaftIvfIndexNode : public IndexNode {
 
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "RAFT inner error, " << e.what();
-            return unexpected(Status::raft_inner_error);
+            return Status::raft_inner_error;
         }
 
         return GenResultDataSet(rows, ivf_raft_cfg.k, ids.release(), dis.release());
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
-        return unexpected(Status::not_implemented);
+        return Status::not_implemented;
     }
 
-    virtual expected<DataSetPtr, Status>
+    virtual expected<DataSetPtr>
     GetVectorByIds(const DataSet& dataset) const override {
-        return unexpected(Status::not_implemented);
+        return Status::not_implemented;
     }
 
     virtual bool
@@ -493,9 +490,9 @@ class RaftIvfIndexNode : public IndexNode {
         }
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     GetIndexMeta(const Config& cfg) const override {
-        return unexpected(Status::not_implemented);
+        return Status::not_implemented;
     }
 
     virtual Status

@@ -55,13 +55,13 @@ class DiskANNIndexNode : public IndexNode {
     Status
     Add(const DataSet& dataset, const Config& cfg) override;
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     GetVectorByIds(const DataSet& dataset) const override;
 
     bool
@@ -69,7 +69,7 @@ class DiskANNIndexNode : public IndexNode {
         return IsMetricType(metric_type, metric::L2) || IsMetricType(metric_type, metric::COSINE);
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     GetIndexMeta(const Config& cfg) const override;
 
     Status
@@ -170,20 +170,20 @@ namespace {
 static constexpr float kCacheExpansionRate = 1.2;
 static constexpr int kSearchListSizeMaxValue = 200;
 static constexpr int64_t kGetVectorBatchSize = 32;
-template <typename T>
-expected<T, Status>
-TryDiskANNCall(std::function<T()>&& diskann_call) {
+Status
+TryDiskANNCall(std::function<void()>&& diskann_call) {
     try {
-        return diskann_call();
+        diskann_call();
+        return Status::success;
     } catch (const diskann::FileException& e) {
         LOG_KNOWHERE_ERROR_ << "DiskANN File Exception: " << e.what();
-        return unexpected(Status::diskann_file_error);
+        return Status::diskann_file_error;
     } catch (const diskann::ANNException& e) {
         LOG_KNOWHERE_ERROR_ << "DiskANN Exception: " << e.what();
-        return unexpected(Status::diskann_inner_error);
+        return Status::diskann_inner_error;
     } catch (const std::exception& e) {
         LOG_KNOWHERE_ERROR_ << "DiskANN Other Exception: " << e.what();
-        return unexpected(Status::diskann_inner_error);
+        return Status::diskann_inner_error;
     }
 }
 
@@ -298,15 +298,12 @@ DiskANNIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
                                                        false,
                                                        build_conf.accelerate_build,
                                                        static_cast<uint32_t>(num_nodes_to_cache)};
-    auto build_stat =
-        TryDiskANNCall<int>([&]() -> int { return diskann::build_disk_index<T>(diskann_internal_build_config); });
-
-    if (!build_stat.has_value()) {
-        return build_stat.error();
-    } else if (build_stat.value() != 0) {
-        LOG_KNOWHERE_ERROR_ << "Diskann inner error.";
-        return Status::diskann_inner_error;
-    }
+    RETURN_IF_ERROR(TryDiskANNCall([&]() {
+        int res = diskann::build_disk_index<T>(diskann_internal_build_config);
+        if (res != 0)
+            throw diskann::ANNException("diskann::build_disk_index returned non-zero value: " + std::to_string(res),
+                                        -1);
+    }));
 
     // Add file to the file manager
     for (auto& filename : GetNecessaryFilenames(index_prefix_, need_norm, true, true)) {
@@ -379,11 +376,13 @@ DiskANNIndexNode<T>::Deserialize(const BinarySet& binset, const Config& cfg) {
     reader.reset(new LinuxAlignedFileReader());
 
     pq_flash_index_ = std::make_unique<diskann::PQFlashIndex<T>>(reader, diskann_metric);
-
-    auto load_expect =
-        TryDiskANNCall<int>([&]() -> int { return pq_flash_index_->load(pool_->size(), index_prefix_.c_str()); });
-
-    if (!load_expect.has_value() || load_expect.value() != 0) {
+    auto disk_ann_call = [&]() {
+        int res = pq_flash_index_->load(pool_->size(), index_prefix_.c_str());
+        if (res != 0) {
+            throw diskann::ANNException("pq_flash_index_->load returned non-zero value: " + std::to_string(res), -1);
+        }
+    };
+    if (TryDiskANNCall(disk_ann_call) != Status::success) {
         LOG_KNOWHERE_ERROR_ << "Failed to load DiskANN.";
         return Status::diskann_inner_error;
     }
@@ -421,25 +420,17 @@ DiskANNIndexNode<T>::Deserialize(const BinarySet& binset, const Config& cfg) {
             LOG_KNOWHERE_INFO_ << "Caching " << num_nodes_to_cache << " sample nodes around medoid(s).";
             if (prep_conf.use_bfs_cache) {
                 LOG_KNOWHERE_INFO_ << "Use bfs to generate cache list";
-                auto gen_cache_expect = TryDiskANNCall<bool>([&]() -> bool {
-                    pq_flash_index_->cache_bfs_levels(num_nodes_to_cache, node_list);
-                    return true;
-                });
-
-                if (!gen_cache_expect.has_value()) {
+                if (TryDiskANNCall([&]() { pq_flash_index_->cache_bfs_levels(num_nodes_to_cache, node_list); }) !=
+                    Status::success) {
                     LOG_KNOWHERE_ERROR_ << "Failed to generate bfs cache for DiskANN.";
                     return Status::diskann_inner_error;
                 }
-
             } else {
                 LOG_KNOWHERE_INFO_ << "Use sample_queries to generate cache list";
-                auto gen_cache_expect = TryDiskANNCall<bool>([&]() -> bool {
-                    pq_flash_index_->generate_cache_list_from_sample_queries(warmup_query_file, 15, 6,
-                                                                             num_nodes_to_cache, node_list);
-                    return true;
-                });
-
-                if (!gen_cache_expect.has_value()) {
+                if (TryDiskANNCall([&]() {
+                        pq_flash_index_->generate_cache_list_from_sample_queries(warmup_query_file, 15, 6,
+                                                                                 num_nodes_to_cache, node_list);
+                    }) != Status::success) {
                     LOG_KNOWHERE_ERROR_ << "Failed to generate cache from sample queries for DiskANN.";
                     return Status::diskann_inner_error;
                 }
@@ -449,12 +440,7 @@ DiskANNIndexNode<T>::Deserialize(const BinarySet& binset, const Config& cfg) {
     }
 
     if (node_list.size() > 0) {
-        auto load_cache_expect = TryDiskANNCall<bool>([&]() -> bool {
-            pq_flash_index_->load_cache_list(node_list);
-            return true;
-        });
-
-        if (!load_cache_expect.has_value()) {
+        if (TryDiskANNCall([&]() { pq_flash_index_->load_cache_list(node_list); }) != Status::success) {
             LOG_KNOWHERE_ERROR_ << "Failed to load cache for DiskANN.";
             return Status::diskann_inner_error;
         }
@@ -468,11 +454,9 @@ DiskANNIndexNode<T>::Deserialize(const BinarySet& binset, const Config& cfg) {
         uint64_t warmup_dim = 0;
         uint64_t warmup_aligned_dim = 0;
         T* warmup = nullptr;
-        auto load_nodes_expect = TryDiskANNCall<bool>([&]() -> bool {
-            diskann::load_aligned_bin<T>(warmup_query_file, warmup, warmup_num, warmup_dim, warmup_aligned_dim);
-            return true;
-        });
-        if (!load_nodes_expect.has_value()) {
+        if (TryDiskANNCall([&]() {
+                diskann::load_aligned_bin<T>(warmup_query_file, warmup, warmup_num, warmup_dim, warmup_aligned_dim);
+            }) != Status::success) {
             LOG_KNOWHERE_ERROR_ << "Failed to load warmup file for DiskANN.";
             return Status::diskann_file_error;
         }
@@ -491,11 +475,7 @@ DiskANNIndexNode<T>::Deserialize(const BinarySet& binset, const Config& cfg) {
             }));
         }
         for (auto& future : futures) {
-            auto one_search_res = TryDiskANNCall<bool>([&]() {
-                future.get();
-                return true;
-            });
-            if (!one_search_res.has_value()) {
+            if (TryDiskANNCall([&]() { future.get(); }) != Status::success) {
                 all_searches_are_good = false;
             }
         }
@@ -514,21 +494,21 @@ DiskANNIndexNode<T>::Deserialize(const BinarySet& binset, const Config& cfg) {
 }
 
 template <typename T>
-expected<DataSetPtr, Status>
+expected<DataSetPtr>
 DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
     if (!is_prepared_.load() || !pq_flash_index_) {
         LOG_KNOWHERE_ERROR_ << "Failed to load diskann.";
-        return unexpected(Status::empty_index);
+        return Status::empty_index;
     }
 
     auto search_conf = static_cast<const DiskANNConfig&>(cfg);
     if (!CheckMetric(search_conf.metric_type)) {
-        return unexpected(Status::invalid_metric_type);
+        return Status::invalid_metric_type;
     }
     auto max_search_list_size = std::max(kSearchListSizeMaxValue, search_conf.k * 10);
     if (search_conf.search_list_size > max_search_list_size || search_conf.search_list_size < search_conf.k) {
         LOG_KNOWHERE_ERROR_ << "search_list_size should be in range: [topk, max(200, topk * 10)]";
-        return unexpected(Status::invalid_args);
+        return Status::invalid_args;
     }
     auto k = static_cast<uint64_t>(search_conf.k);
     auto lsearch = static_cast<uint64_t>(search_conf.search_list_size);
@@ -543,7 +523,7 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
     feder::diskann::FederResultUniq feder_result;
     if (search_conf.trace_visit) {
         if (nq != 1) {
-            return unexpected(Status::invalid_args);
+            return Status::invalid_args;
         }
         feder_result = std::make_unique<feder::diskann::FederResult>();
         feder_result->visit_info_.SetQueryConfig(search_conf.k, search_conf.beamwidth, search_conf.search_list_size);
@@ -563,17 +543,13 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
         }));
     }
     for (auto& future : futures) {
-        auto one_search_res = TryDiskANNCall<bool>([&]() {
-            future.get();
-            return true;
-        });
-        if (!one_search_res.has_value()) {
+        if (TryDiskANNCall([&]() { future.get(); }) != Status::success) {
             all_searches_are_good = false;
         }
     }
 
     if (!all_searches_are_good) {
-        return unexpected(Status::diskann_inner_error);
+        return Status::diskann_inner_error;
     }
 
     auto res = GenResultDataSet(nq, k, p_id, p_dist);
@@ -590,20 +566,20 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
 }
 
 template <typename T>
-expected<DataSetPtr, Status>
+expected<DataSetPtr>
 DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
     if (!is_prepared_.load() || !pq_flash_index_) {
         LOG_KNOWHERE_ERROR_ << "Failed to load diskann.";
-        return unexpected(Status::empty_index);
+        return Status::empty_index;
     }
 
     auto search_conf = static_cast<const DiskANNConfig&>(cfg);
     if (!CheckMetric(search_conf.metric_type)) {
-        return unexpected(Status::invalid_metric_type);
+        return Status::invalid_metric_type;
     }
     if (search_conf.min_k > search_conf.max_k) {
         LOG_KNOWHERE_ERROR_ << "min_k should be smaller than max_k";
-        return unexpected(Status::invalid_args);
+        return Status::invalid_args;
     }
     auto beamwidth = static_cast<uint64_t>(search_conf.beamwidth);
     auto min_k = static_cast<uint64_t>(search_conf.min_k);
@@ -641,16 +617,12 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
         }));
     }
     for (auto& future : futures) {
-        auto one_search_res = TryDiskANNCall<bool>([&]() {
-            future.get();
-            return true;
-        });
-        if (!one_search_res.has_value()) {
+        if (TryDiskANNCall([&]() { future.get(); }) != Status::success) {
             all_searches_are_good = false;
         }
     }
     if (!all_searches_are_good) {
-        return unexpected(Status::diskann_inner_error);
+        return Status::diskann_inner_error;
     }
 
     GetRangeSearchResult(result_dist_array, result_id_array, is_ip, nq, radius, search_conf.range_filter, p_dist, p_id,
@@ -659,11 +631,11 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
 }
 
 template <typename T>
-expected<DataSetPtr, Status>
+expected<DataSetPtr>
 DiskANNIndexNode<T>::GetVectorByIds(const DataSet& dataset) const {
     if (!is_prepared_.load() || !pq_flash_index_) {
         LOG_KNOWHERE_ERROR_ << "Failed to load diskann.";
-        return unexpected(Status::empty_index);
+        return Status::empty_index;
     }
 
     auto dim = Dim();
@@ -672,7 +644,7 @@ DiskANNIndexNode<T>::GetVectorByIds(const DataSet& dataset) const {
     float* data = new float[dim * rows];
     if (data == nullptr) {
         LOG_KNOWHERE_ERROR_ << "Failed to allocate memory for data.";
-        return unexpected(Status::malloc_error);
+        return Status::malloc_error;
     }
 
     auto batch_num = (rows + kGetVectorBatchSize - 1) / kGetVectorBatchSize;
@@ -685,23 +657,19 @@ DiskANNIndexNode<T>::GetVectorByIds(const DataSet& dataset) const {
         futures.push_back(pool_->push([=]() { pq_flash_index_->get_vector_by_ids(ids + idx, len, data + idx * dim); }));
     }
     for (auto& future : futures) {
-        auto one_search_res = TryDiskANNCall<bool>([&]() {
-            future.get();
-            return true;
-        });
-        if (!one_search_res.has_value()) {
+        if (TryDiskANNCall([&]() { future.get(); }) != Status::success) {
             all_good = false;
         }
     }
     if (!all_good) {
         delete[] data;
-        return unexpected(Status::diskann_inner_error);
+        return Status::diskann_inner_error;
     }
     return GenResultDataSet(rows, dim, data);
 }
 
 template <typename T>
-expected<DataSetPtr, Status>
+expected<DataSetPtr>
 DiskANNIndexNode<T>::GetIndexMeta(const Config& cfg) const {
     std::vector<int64_t> entry_points;
     for (size_t i = 0; i < pq_flash_index_->get_num_medoids(); i++) {

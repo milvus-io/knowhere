@@ -91,7 +91,7 @@ class CagraIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual expected<DataSetPtr, Status>
+    virtual expected<DataSetPtr>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         auto cagra_cfg = static_cast<const CagraConfig&>(cfg);
         auto rows = dataset.GetRows();
@@ -121,20 +121,20 @@ class CagraIndexNode : public IndexNode {
 
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "RAFT inner error, " << e.what();
-            return unexpected(Status::raft_inner_error);
+            return Status::raft_inner_error;
         }
-        return unexpected(Status::not_implemented);
+        return Status::not_implemented;
         //        return GenResultDataSet(rows, cagra_cfg.k, ids.release(), dis.release());
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
-        return unexpected(Status::not_implemented);
+        return Status::not_implemented;
     }
 
-    virtual expected<DataSetPtr, Status>
+    virtual expected<DataSetPtr>
     GetVectorByIds(const DataSet& dataset) const override {
-        return unexpected(Status::not_implemented);
+        return Status::not_implemented;
     }
 
     virtual bool
@@ -142,9 +142,9 @@ class CagraIndexNode : public IndexNode {
         return false;
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     GetIndexMeta(const Config& cfg) const override {
-        return unexpected(Status::not_implemented);
+        return Status::not_implemented;
     }
 
     virtual Status

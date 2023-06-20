@@ -22,7 +22,7 @@
 
 namespace knowhere {
 
-inline expected<faiss::MetricType, Status>
+inline expected<faiss::MetricType>
 Str2FaissMetricType(std::string metric) {
     static const std::unordered_map<std::string, faiss::MetricType> metric_map = {
         {metric::L2, faiss::MetricType::METRIC_L2},
@@ -38,7 +38,7 @@ Str2FaissMetricType(std::string metric) {
     std::transform(metric.begin(), metric.end(), metric.begin(), toupper);
     auto it = metric_map.find(metric);
     if (it == metric_map.end())
-        return unexpected(Status::invalid_metric_type);
+        return Status::invalid_metric_type;
     return it->second;
 }
 

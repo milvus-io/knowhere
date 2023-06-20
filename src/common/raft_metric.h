@@ -27,7 +27,7 @@
 
 namespace knowhere {
 
-inline expected<raft::distance::DistanceType, Status>
+inline expected<raft::distance::DistanceType>
 Str2RaftMetricType(std::string metric) {
     static const std::unordered_map<std::string, raft::distance::DistanceType> metric_map = {
         {metric::L2, raft::distance::DistanceType::L2Expanded},
@@ -39,7 +39,7 @@ Str2RaftMetricType(std::string metric) {
     std::transform(metric.begin(), metric.end(), metric.begin(), toupper);
     auto it = metric_map.find(metric);
     if (it == metric_map.end())
-        return unexpected(Status::invalid_metric_type);
+        return Status::invalid_metric_type;
     return it->second;
 }
 

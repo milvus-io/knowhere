@@ -28,11 +28,8 @@ class GpuFlatIndexNode : public IndexNode {
 
     virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
-        auto err = Train(dataset, cfg);
-        if (err != Status::success)
-            return err;
-        err = Add(dataset, cfg);
-        return err;
+        RETURN_IF_ERROR(Train(dataset, cfg));
+        return Add(dataset, cfg);
     }
 
     virtual Status
@@ -61,11 +58,11 @@ class GpuFlatIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual expected<DataSetPtr, Status>
+    virtual expected<DataSetPtr>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
             LOG_KNOWHERE_WARNING_ << "index not empty, deleted old index.";
-            return unexpected(Status::empty_index);
+            return Status::empty_index;
         }
 
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
@@ -84,18 +81,18 @@ class GpuFlatIndexNode : public IndexNode {
             std::unique_ptr<int64_t[]> auto_delete_ids(ids);
             std::unique_ptr<float[]> auto_delete_dis(dis);
             LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
-            return unexpected(Status::faiss_inner_error);
+            return Status::faiss_inner_error;
         }
 
         return GenResultDataSet(nq, f_cfg.k, ids, dis);
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
-        return unexpected(Status::not_implemented);
+        return Status::not_implemented;
     }
 
-    virtual expected<DataSetPtr, Status>
+    virtual expected<DataSetPtr>
     GetVectorByIds(const DataSet& dataset) const override {
         DataSetPtr results = std::make_shared<DataSet>();
         auto nq = dataset.GetRows();
@@ -110,13 +107,13 @@ class GpuFlatIndexNode : public IndexNode {
             return GenResultDataSet(xq);
         } catch (const std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
-            return unexpected(Status::faiss_inner_error);
+            return Status::faiss_inner_error;
         }
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     GetIndexMeta(const Config& cfg) const override {
-        return unexpected(Status::not_implemented);
+        return Status::not_implemented;
     }
 
     virtual Status

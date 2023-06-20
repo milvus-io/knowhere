@@ -56,10 +56,7 @@ class GpuIvfIndexNode : public IndexNode {
 
     virtual Status
     Build(const DataSet& dataset, const Config& cfg) override {
-        auto err = Train(dataset, cfg);
-        if (err != Status::success) {
-            return err;
-        }
+        RETURN_IF_ERROR(Train(dataset, cfg));
         return Add(dataset, cfg);
     }
 
@@ -138,7 +135,7 @@ class GpuIvfIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual expected<DataSetPtr, Status>
+    virtual expected<DataSetPtr>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         auto ivf_gpu_cfg = static_cast<const typename KnowhereConfigType<T>::Type&>(cfg);
 
@@ -161,25 +158,25 @@ class GpuIvfIndexNode : public IndexNode {
             std::unique_ptr<float> auto_delete_dis(dis);
             std::unique_ptr<int64_t> auto_delete_ids(ids);
             LOG_KNOWHERE_WARNING_ << "faiss inner error, " << e.what();
-            return unexpected(Status::faiss_inner_error);
+            return Status::faiss_inner_error;
         }
 
         return GenResultDataSet(rows, ivf_gpu_cfg.k, ids, dis);
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
-        return unexpected(Status::not_implemented);
+        return Status::not_implemented;
     }
 
-    virtual expected<DataSetPtr, Status>
+    virtual expected<DataSetPtr>
     GetVectorByIds(const DataSet& dataset) const override {
-        return unexpected(Status::not_implemented);
+        return Status::not_implemented;
     }
 
-    expected<DataSetPtr, Status>
+    expected<DataSetPtr>
     GetIndexMeta(const Config& cfg) const override {
-        return unexpected(Status::not_implemented);
+        return Status::not_implemented;
     }
 
     virtual Status
