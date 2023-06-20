@@ -73,21 +73,6 @@ GetRangeSearchResult(const faiss::RangeSearchResult& res, const bool is_ip, cons
     }
 }
 
-void
-GetRangeSearchResult(faiss::RangeSearchResult& res, const bool is_ip, const int64_t nq, const float radius,
-                     float*& distances, int64_t*& labels, size_t*& lims) {
-    distances = res.distances;
-    labels = res.labels;
-    lims = res.lims;
-
-    LOG_KNOWHERE_DEBUG_ << "Range search metric type: " << (is_ip ? "IP" : "L2") << ", radius " << radius
-                        << ", total result num " << lims[nq];
-
-    res.distances = nullptr;
-    res.labels = nullptr;
-    res.lims = nullptr;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // for HNSW and DiskANN
 void
