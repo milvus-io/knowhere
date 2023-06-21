@@ -13,6 +13,7 @@
 
 #include <memory>
 #include <unordered_set>
+#include <string>
 
 #include "hnswlib/hnswlib/hnswlib.h"
 #include "knowhere/common/Exception.h"
@@ -54,6 +55,11 @@ class IndexHNSW : public VecIndex {
 
     DatasetPtr
     GetVectorById(const DatasetPtr&, const Config&) override;
+
+    bool
+    HasRawData(const std::string& /*metric_type*/) const override {
+        return true;
+    }
 
     DatasetPtr
     Query(const DatasetPtr&, const Config&, const faiss::BitsetView) override;

@@ -13,6 +13,7 @@
 
 #include <memory>
 #include <utility>
+#include <string>
 
 #include "knowhere/index/vector_index/IndexIVF.h"
 
@@ -33,6 +34,11 @@ class IVFSQ : public IVF {
     DatasetPtr
     GetVectorById(const DatasetPtr& dataset, const Config& config) override {
         KNOWHERE_THROW_MSG("GetVectorById not supported yet");
+    }
+
+    bool
+    HasRawData(const std::string& /*metric_type*/) const override {
+        return false;
     }
 
     void

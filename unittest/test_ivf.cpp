@@ -91,6 +91,7 @@ TEST_P(IVFTest, ivf_basic) {
     EXPECT_EQ(index_->Dim(), dim);
     ASSERT_GT(index_->Size(), 0);
     if (index_mode_ == knowhere::IndexMode::MODE_CPU) {
+        ASSERT_FALSE(index_->HasRawData(knowhere::GetMetaMetricType(conf_)));
         ASSERT_ANY_THROW(index_->GetVectorById(id_dataset, conf_));
     }
 
