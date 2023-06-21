@@ -28,7 +28,7 @@
 
 #define MAX_GRAPH_DEGREE 512
 #define SECTOR_LEN (_u64) 4096
-#define MAX_N_SECTOR_READS 128
+#define MAX_N_SECTOR_READS 256
 
 #define FULL_PRECISION_REORDER_MULTIPLIER 3
 
@@ -111,10 +111,8 @@ namespace diskann {
         const float l_k_ratio, knowhere::BitsetView bitset_view = nullptr,
         QueryStats *stats = nullptr);
 
-
-    DISKANN_DLLEXPORT void get_vector_by_ids(const int64_t *ids,
-                                             const int64_t n,
-                                                T *output_data);
+    DISKANN_DLLEXPORT void get_vector_by_ids(
+        const int64_t *ids, const int64_t n, T *const output_data);
 
     std::shared_ptr<AlignedFileReader> reader;
 
@@ -168,7 +166,7 @@ namespace diskann {
 
     // Assign the index of ids to its corresponding sector and if it is in
     // cache, write to the output_data
-    std::unordered_map<_u64, std::vector<_u64>>
+    DISKANN_DLLEXPORT std::unordered_map<_u64, std::vector<_u64>>
     get_sectors_layout_and_write_data_from_cache(const int64_t *ids, int64_t n,
                                                  T *output_data);
 

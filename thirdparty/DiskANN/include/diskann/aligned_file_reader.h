@@ -95,4 +95,8 @@ class AlignedFileReader {
   // NOTE :: blocking call
   virtual void read(std::vector<AlignedRead>& read_reqs, IOContext& ctx,
                     bool async = false) = 0;
+
+  // async reads
+  virtual void get_submitted_req(io_context_t &ctx, size_t n_ops) = 0;
+  virtual void submit_req( io_context_t &ctx, std::vector<AlignedRead> &read_reqs) = 0;
 };
