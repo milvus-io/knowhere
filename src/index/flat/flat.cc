@@ -9,6 +9,7 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
+#include "common/half.hpp"
 #include "common/metric.h"
 #include "common/range_util.h"
 #include "faiss/IndexBinaryFlat.h"
@@ -20,6 +21,8 @@
 #include "knowhere/factory.h"
 #include "knowhere/log.h"
 #include "knowhere/utils.h"
+
+using half_float::half;
 
 namespace knowhere {
 
@@ -38,6 +41,13 @@ class FlatIndexNode : public IndexNode {
         return Add(dataset, cfg);
     }
 
+    std::vector<float>
+    converthalfToFloat32(const std::vector<half>& input) {
+        std::vector<float> output(input.size());
+        std::transform(input.begin(), input.end(), output.begin(), [](half f) { return static_cast<float>(f); });
+        return output;
+    }
+
     Status
     Train(const DataSet& dataset, const Config& cfg) override {
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
@@ -52,6 +62,14 @@ class FlatIndexNode : public IndexNode {
             LOG_KNOWHERE_WARNING_ << "please check metric type: " << f_cfg.metric_type;
             return metric.error();
         }
+
+        auto dim_data = dataset.GetDim();
+
+        // If dim_data is half, convert it to float32
+        if (typeid(dim_data[0]) == typeid(half)) {
+            dim_data = converthalfToFloat32(dim_data);
+        }
+
         index_ = std::make_unique<T>(dataset.GetDim(), metric.value());
         return Status::success;
     }
@@ -60,6 +78,12 @@ class FlatIndexNode : public IndexNode {
     Add(const DataSet& dataset, const Config& cfg) override {
         auto x = dataset.GetTensor();
         auto n = dataset.GetRows();
+
+        if (typeid(x[0]) == typeid(half)) {
+            std::vector<float> x_float32(x.begin(), x.end());
+            x = x_float32;
+        }
+
         if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
             index_->add(n, (const float*)x);
         }
@@ -88,6 +112,11 @@ class FlatIndexNode : public IndexNode {
         auto nq = dataset.GetRows();
         auto x = dataset.GetTensor();
         auto dim = dataset.GetDim();
+
+        // If x is half, convert it to float32
+        if (typeid(x[0]) == typeid(half)) {
+            x = converthalfToFloat32(x);
+        }
 
         auto len = k * nq;
         int64_t* ids = nullptr;
@@ -146,6 +175,11 @@ class FlatIndexNode : public IndexNode {
         auto nq = dataset.GetRows();
         auto xq = dataset.GetTensor();
         auto dim = dataset.GetDim();
+
+        // If xq is half, convert it to float32
+        if (typeid(xq[0]) == typeid(half)) {
+            xq = converthalfToFloat32(xq);
+        }
 
         int64_t* ids = nullptr;
         float* distances = nullptr;
@@ -209,7 +243,14 @@ class FlatIndexNode : public IndexNode {
                 for (int64_t i = 0; i < rows; i++) {
                     index_->reconstruct(ids[i], data + i * dim);
                 }
-                return GenResultDataSet(rows, dim, data);
+                // If original data was half, convert it back before returning
+                if (typeid(dataset.GetTensor()[0]) == typeid(half)) {
+                    auto data16 = convertFloat32Tohalf(data, rows * dim);
+                    delete[] data;
+                    return GenResultDataSet(rows, dim, data16);
+                } else {
+                    return GenResultDataSet(rows, dim, data);
+                }
             } catch (const std::exception& e) {
                 std::unique_ptr<float[]> auto_del(data);
                 LOG_KNOWHERE_WARNING_ << "faiss inner error: " << e.what();
