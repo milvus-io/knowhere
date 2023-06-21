@@ -14,6 +14,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <string>
 
 #include "knowhere/index/VecIndex.h"
 #include "knowhere/index/vector_index/FaissBaseBinaryIndex.h"
@@ -44,6 +45,11 @@ class BinaryIDMAP : public VecIndex, public FaissBaseBinaryIndex {
 
     DatasetPtr
     GetVectorById(const DatasetPtr&, const Config&) override;
+
+    bool
+    HasRawData(const std::string& /*metric_type*/) const override {
+        return true;
+    }
 
     DatasetPtr
     Query(const DatasetPtr&, const Config&, const faiss::BitsetView) override;

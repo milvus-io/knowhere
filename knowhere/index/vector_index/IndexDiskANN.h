@@ -70,6 +70,11 @@ class IndexDiskANN : public VecIndex {
         KNOWHERE_THROW_MSG("DiskANN doesn't support GetVectorById.");
     }
 
+    bool
+    HasRawData(const std::string& /*metric_type*/) const override {
+        return false;
+    }
+
     DatasetPtr
     Query(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
 

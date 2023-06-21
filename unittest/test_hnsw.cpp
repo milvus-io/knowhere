@@ -77,6 +77,7 @@ TEST_P(HNSWTest, HNSW_basic) {
 
     index_->Load(bs);
 
+    ASSERT_TRUE(index_->HasRawData(knowhere::GetMetaMetricType(conf_)));
     auto result = index_->GetVectorById(id_dataset, conf_);
     AssertVec(result, base_dataset, id_dataset, nq, dim);
 

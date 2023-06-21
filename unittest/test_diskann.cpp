@@ -9,6 +9,7 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
+#include <gtest/gtest-param-test.h>
 #include <gtest/gtest.h>
 
 #include <cmath>
@@ -504,6 +505,18 @@ TEST_P(DiskANNTest, knn_search_test) {
     EXPECT_GT(recall, 0.8);
 
     CheckDistanceError(raw_data_, query_data_, result, metric_, num_queries_, dim_, kK, num_rows_, is_large_dim_);
+}
+
+TEST_P(DiskANNTest, get_vector_by_id) {
+    knowhere::Config cfg;
+    cfg.clear();
+    knowhere::DiskANNPrepareConfig::Set(cfg, prep_conf);
+    EXPECT_TRUE(diskann->Prepare(cfg));
+    cfg.clear();
+    knowhere::DiskANNQueryConfig::Set(cfg, query_conf);
+
+    ASSERT_FALSE(diskann->HasRawData(metric_));
+    ASSERT_ANY_THROW(diskann->GetVectorById(nullptr, cfg));
 }
 
 TEST_P(DiskANNTest, knn_search_with_accelerate_build_test) {

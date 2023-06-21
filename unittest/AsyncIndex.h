@@ -104,6 +104,11 @@ class AsyncIndex : public VecIndex {
         return index_->Load(index_binary);
     }
 
+    bool
+    HasRawData(const std::string& metric_type) const override {
+        return false;
+    }
+
     void
     BuildAll(const DatasetPtr& dataset_ptr, const Config& config) override {
         index_->BuildAll(dataset_ptr, config);

@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <string>
 #include <memory>
 #include <utility>
 
@@ -61,6 +62,11 @@ class VecIndexThreadPoolWrapper : public VecIndex {
     DatasetPtr
     GetVectorById(const DatasetPtr& dataset, const Config& config) override {
         return index_->GetVectorById(dataset, config);
+    }
+
+    bool
+    HasRawData(const std::string& metric_type) const override {
+        return index_->HasRawData(metric_type);
     }
 
     DatasetPtr

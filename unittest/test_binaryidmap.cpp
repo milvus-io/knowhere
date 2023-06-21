@@ -71,6 +71,7 @@ TEST_P(BinaryIDMAPTest, binaryidmap_basic) {
     EXPECT_EQ(index_->Dim(), dim);
     ASSERT_GT(index_->Size(), 0);
 
+    ASSERT_TRUE(index_->HasRawData(knowhere::GetMetaMetricType(conf_)));
     auto result = index_->GetVectorById(id_dataset, conf_);
     AssertBinVec(result, base_dataset, id_dataset, nq, dim);
 

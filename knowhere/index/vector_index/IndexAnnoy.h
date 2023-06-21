@@ -46,6 +46,11 @@ class IndexAnnoy : public VecIndex {
     DatasetPtr
     GetVectorById(const DatasetPtr&, const Config&) override;
 
+    bool
+    HasRawData(const std::string& /*metric_type*/) const override {
+        return true;
+    }
+
     DatasetPtr
     Query(const DatasetPtr&, const Config&, const faiss::BitsetView) override;
 

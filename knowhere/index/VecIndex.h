@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 #include <climits>
+#include <string>
 
 #include "knowhere/common/Dataset.h"
 #include "knowhere/common/Exception.h"
@@ -83,6 +84,9 @@ class VecIndex : public Index {
     GetVectorById(const DatasetPtr& dataset, const Config& config) {
         KNOWHERE_THROW_MSG("GetVectorById not supported yet");
     }
+
+    virtual bool
+    HasRawData(const std::string& metric_type) const = 0;
 
     /**
      * @brief TopK Query. if the result size is smaller than K, this API will fill the return ids with -1 and distances
