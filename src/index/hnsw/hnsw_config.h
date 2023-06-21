@@ -47,7 +47,7 @@ class HnswConfig : public BaseConfig {
     }
 
     Status
-    CheckAndAdjustConfig() override {
+    CheckAndAdjustConfigForSearch() override {
         auto& hnsw_cfg = static_cast<HnswConfig&>(*this);
         auto maxef = std::max(65536, hnsw_cfg.k * 2);
         if (hnsw_cfg.ef > maxef) {
@@ -63,6 +63,16 @@ class HnswConfig : public BaseConfig {
                 LOG_KNOWHERE_ERROR_ << "ef should be in range: [topk, max(65536, topk * 2)]";
                 return Status::out_of_range_in_json;
             }
+        }
+        return Status::success;
+    }
+
+    Status
+    CheckAndAdjustConfigForRangeSearch() override {
+        auto& hnsw_cfg = static_cast<HnswConfig&>(*this);
+        if (hnsw_cfg.ef == kDefaultHnswEfPlaceholder) {
+            // if ef is not set by user, set it to default
+            hnsw_cfg.ef = 16;
         }
         return Status::success;
     }
