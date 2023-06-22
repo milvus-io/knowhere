@@ -15,6 +15,30 @@
 #include "knowhere/config.h"
 
 namespace knowhere {
+static constexpr const char* kSearchListSizeStr = "search_list_size";
+static constexpr const char* kKStr = "k";
+static constexpr CFG_INT kDefaultSearchListSizeDivider = 16;
+static constexpr CFG_INT kSearchListSizeMaxValue = 200;
+
+static Status
+CheckAndAdjustSearchParams(Json& json) {
+    if (!json.contains(kKStr)) {
+        LOG_KNOWHERE_ERROR_ << "Param [" << kKStr << "] not found in json.";
+        return Status::invalid_param_in_json;
+    }
+    CFG_INT topk_v = json[kKStr];
+    if (!json.contains(kSearchListSizeStr)) {
+        json[kSearchListSizeStr] = std::max(topk_v, kDefaultSearchListSizeDivider);
+    } else {
+        CFG_INT search_list_size_v = json[kSearchListSizeStr];
+        auto max_search_list_size = std::max(kSearchListSizeMaxValue, topk_v * 10);
+        if (search_list_size_v > max_search_list_size || search_list_size_v < topk_v) {
+            LOG_KNOWHERE_ERROR_ << "search_list_size should be in range: [topk, max(200, topk * 10)]";
+            return Status::invalid_args;
+        }
+    }
+    return Status::success;
+}
 
 class DiskANNConfig : public BaseConfig {
  public:
@@ -88,9 +112,9 @@ class DiskANNConfig : public BaseConfig {
             .set_range(1, 2048)
             .for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(search_list_size)
-            .description("the size of search list during the index build.")
+            .description("the size of search list during the index build or search.")
             .set_default(128)
-            .set_range(1, 65536)
+            .set_range(1, std::numeric_limits<CFG_INT>::max())
             .for_train()
             .for_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(pq_code_budget_gb)
@@ -149,6 +173,7 @@ class DiskANNConfig : public BaseConfig {
             .set_default(-1.0f)
             .set_range(-1.0f, 1.0f)
             .for_search();
+        KNOWHERE_DECLARE_PRE_CHECK_FUN(PARAM_TYPE::SEARCH, CheckAndAdjustSearchParams);
     }
 };
 }  // namespace knowhere

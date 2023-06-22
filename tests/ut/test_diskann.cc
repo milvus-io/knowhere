@@ -90,6 +90,25 @@ TEST_CASE("Invalid diskann params test", "[diskann]") {
     auto base_ptr = static_cast<const float*>(base_ds->GetTensor());
     WriteRawDataToDisk(kRawDataPath, base_ptr, kNumRows, kDim);
     // build process
+    SECTION("Default build params test") {
+        // use default max_degree and search list size to build diskann
+        auto tmp_index_prefix = kL2IndexPrefix + "_default";
+        auto default_build_params_gen = [&tmp_index_prefix]() {
+            knowhere::Json json;
+            json["dim"] = kDim;
+            json["metric_type"] = "L2";
+            json["index_prefix"] = tmp_index_prefix;
+            json["data_path"] = kRawDataPath;
+            json["build_dram_budget_gb"] = 32.0;
+            json["pq_code_budget_gb"] = sizeof(float) * kDim * kNumRows * 0.125 / (1024 * 1024 * 1024);
+            return json;
+        };
+        knowhere::DataSet* ds_ptr = nullptr;
+        auto diskann = knowhere::IndexFactory::Instance().Create("DISKANN", diskann_index_pack);
+        auto default_build_stat = diskann.Build(*ds_ptr, default_build_params_gen());
+        REQUIRE(default_build_stat == knowhere::Status::success);
+    }
+
     SECTION("Invalid build params test") {
         knowhere::DataSet* ds_ptr = nullptr;
         auto diskann = knowhere::IndexFactory::Instance().Create("DISKANN", diskann_index_pack);

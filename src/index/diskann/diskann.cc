@@ -168,7 +168,6 @@ class DiskANNIndexNode : public IndexNode {
 namespace knowhere {
 namespace {
 static constexpr float kCacheExpansionRate = 1.2;
-static constexpr int kSearchListSizeMaxValue = 200;
 static constexpr int64_t kGetVectorBatchSize = 32;
 Status
 TryDiskANNCall(std::function<void()>&& diskann_call) {
@@ -504,11 +503,6 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
     auto search_conf = static_cast<const DiskANNConfig&>(cfg);
     if (!CheckMetric(search_conf.metric_type)) {
         return Status::invalid_metric_type;
-    }
-    auto max_search_list_size = std::max(kSearchListSizeMaxValue, search_conf.k * 10);
-    if (search_conf.search_list_size > max_search_list_size || search_conf.search_list_size < search_conf.k) {
-        LOG_KNOWHERE_ERROR_ << "search_list_size should be in range: [topk, max(200, topk * 10)]";
-        return Status::invalid_args;
     }
     auto k = static_cast<uint64_t>(search_conf.k);
     auto lsearch = static_cast<uint64_t>(search_conf.search_list_size);

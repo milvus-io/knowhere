@@ -217,11 +217,26 @@ TEST_CASE("Test config json parse", "[config]") {
         CHECK(s == knowhere::Status::success);
         CHECK(train_cfg.metric_type == "L2");
 
-        knowhere::DiskANNConfig search_cfg;
-        s = knowhere::Config::Load(search_cfg, json, knowhere::SEARCH);
-        CHECK(s == knowhere::Status::success);
-        CHECK(search_cfg.metric_type == "L2");
-        CHECK(search_cfg.k == 100);
+        {
+            knowhere::DiskANNConfig search_cfg;
+            s = knowhere::Config::Load(search_cfg, json, knowhere::SEARCH);
+            CHECK(s == knowhere::Status::success);
+            CHECK(search_cfg.metric_type == "L2");
+            CHECK(search_cfg.k == 100);
+            CHECK(search_cfg.search_list_size == 100);
+
+            s = knowhere::Config::Load(search_cfg, json, knowhere::SEARCH);
+            CHECK(s == knowhere::Status::success);
+
+            json["k"] = 2;
+            s = knowhere::Config::Load(search_cfg, json, knowhere::SEARCH);
+            CHECK(s == knowhere::Status::success);
+            CHECK(search_cfg.search_list_size == 16);
+
+            json["search_list_size"] = 10000;
+            s = knowhere::Config::Load(search_cfg, json, knowhere::SEARCH);
+            CHECK(s == knowhere::Status::invalid_args);
+        }
 
         knowhere::DiskANNConfig range_cfg;
         s = knowhere::Config::Load(range_cfg, json, knowhere::RANGE_SEARCH);

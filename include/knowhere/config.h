@@ -275,7 +275,14 @@ class Config {
     FormatAndCheck(const Config& cfg, Json& json);
 
     static Status
-    Load(Config& cfg, const Json& json, PARAM_TYPE type) {
+    Load(Config& cfg, const Json& params_json, PARAM_TYPE type) {
+        auto json = params_json;
+        if (cfg.__PRE_CHECK__.find(type) != cfg.__PRE_CHECK__.end()) {
+            auto pre_check_status = cfg.__PRE_CHECK__[type](json);
+            if (pre_check_status != Status::success) {
+                return pre_check_status;
+            }
+        }
         for (const auto& it : cfg.__DICT__) {
             const auto& var = it.second;
 
@@ -284,7 +291,7 @@ class Config {
                     continue;
                 }
                 if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
-                    LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
+                    LOG_KNOWHERE_ERROR_ << "Param [" << it.first << "] not found in json.";
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
@@ -416,6 +423,7 @@ class Config {
     using VarEntry =
         std::variant<Entry<CFG_STRING>, Entry<CFG_FLOAT>, Entry<CFG_INT>, Entry<CFG_LIST>, Entry<CFG_BOOL>>;
     std::unordered_map<CFG_STRING, VarEntry> __DICT__;
+    std::unordered_map<PARAM_TYPE, std::function<Status(Json&)>> __PRE_CHECK__;
 };
 
 #define KNOHWERE_DECLARE_CONFIG(CONFIG) CONFIG()
@@ -424,6 +432,8 @@ class Config {
     __DICT__[#PARAM] = knowhere::Config::VarEntry(std::in_place_type<Entry<decltype(PARAM)>>, &PARAM);   \
     EntryAccess<decltype(PARAM)> PARAM##_access(std::get_if<Entry<decltype(PARAM)>>(&__DICT__[#PARAM])); \
     PARAM##_access
+
+#define KNOWHERE_DECLARE_PRE_CHECK_FUN(PARAM_TYPE, CHECK_FUN) __PRE_CHECK__[PARAM_TYPE] = CHECK_FUN
 
 const float defaultRangeFilter = 1.0f / 0.0;
 
