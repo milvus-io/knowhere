@@ -1,5 +1,5 @@
 #include "cagra_config.h"
-#include "common/raft/res_pool.cuh"
+#include "common/raft/raft_utils.cuh"
 #include "common/raft_metric.h"
 #include "knowhere/index_node.h"
 #include "knowhere/log.h"
@@ -11,25 +11,6 @@ using idx_type = uint32_t;
 
 using cagra_index = raft::neighbors::experimental::cagra::index<float, idx_type>;
 
-namespace detail {
-struct device_setter {
-    device_setter(int new_device)
-        : prev_device_{[]() {
-              auto result = int{};
-              RAFT_CUDA_TRY(cudaGetDevice(&result));
-              return result;
-          }()} {
-        RAFT_CUDA_TRY(cudaSetDevice(new_device));
-    }
-
-    ~device_setter() {
-        RAFT_CUDA_TRY_NO_THROW(cudaSetDevice(prev_device_));
-    }
-
- private:
-    int prev_device_;
-};
-}  // namespace detail
 class CagraIndexNode : public IndexNode {
  public:
     CagraIndexNode(const Object& object) : devs_{}, gpu_index_{} {
@@ -64,20 +45,18 @@ class CagraIndexNode : public IndexNode {
             return Status::invalid_metric_type;
         }
         devs_.insert(devs_.begin(), cagra_cfg.gpu_ids.begin(), cagra_cfg.gpu_ids.end());
-        auto scoped_device = detail::device_setter{*cagra_cfg.gpu_ids.begin()};
+        auto scoped_device = raft_utils::device_setter{*cagra_cfg.gpu_ids.begin()};
         auto build_params = raft::neighbors::experimental::cagra::index_params{};
         build_params.intermediate_graph_degree = cagra_cfg.intermediate_graph_degree;
         build_params.graph_degree = cagra_cfg.graph_degree;
         build_params.metric = metric.value();
-        thread_local rmm::cuda_stream stream;
-        thread_local rmm::mr::cuda_memory_resource mr;
-        thread_local raft::device_resources res(stream.view(), nullptr, &mr);
+        auto& res = raft_utils::get_raft_resources();
         auto rows = dataset.GetRows();
         auto dim = dataset.GetDim();
         auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
         auto data_gpu = raft::make_device_matrix<float, idx_type>(res, rows, dim);
         RAFT_CUDA_TRY(cudaMemcpyAsync(data_gpu.data_handle(), data, data_gpu.size() * sizeof(float), cudaMemcpyDefault,
-                                      stream.value()));
+                                      res.get_stream().value()));
         gpu_index_ = raft::neighbors::experimental::cagra::build(
             res, build_params,
             raft::make_device_matrix_view<const float, idx_type>((const float*)data_gpu.data_handle(), rows, dim));
@@ -101,23 +80,23 @@ class CagraIndexNode : public IndexNode {
         auto ids = std::unique_ptr<idx_type[]>(new idx_type[output_size]);
         auto dis = std::unique_ptr<float[]>(new float[output_size]);
         try {
-            auto scoped_device = detail::device_setter{devs_[0]};
-            auto* res_ = &raft_res_pool::get_context().resources_;
+            auto scoped_device = raft_utils::device_setter{devs_[0]};
+            auto& res_ = raft_utils::get_raft_resources();
 
-            auto data_gpu = raft::make_device_matrix<float, idx_type>(*res_, rows, dim);
-            raft::copy(data_gpu.data_handle(), data, data_gpu.size(), res_->get_stream());
+            auto data_gpu = raft::make_device_matrix<float, idx_type>(res_, rows, dim);
+            raft::copy(data_gpu.data_handle(), data, data_gpu.size(), res_.get_stream());
 
             auto search_params = raft::neighbors::experimental::cagra::search_params{};
             search_params.max_queries = cagra_cfg.max_queries;
-            auto ids_dev = raft::make_device_matrix<idx_type, idx_type>(*res_, rows, cagra_cfg.k);
-            auto dis_dev = raft::make_device_matrix<float, idx_type>(*res_, rows, cagra_cfg.k);
-            raft::neighbors::experimental::cagra::search(*res_, search_params, *gpu_index_,
+            auto ids_dev = raft::make_device_matrix<idx_type, idx_type>(res_, rows, cagra_cfg.k);
+            auto dis_dev = raft::make_device_matrix<float, idx_type>(res_, rows, cagra_cfg.k);
+            raft::neighbors::experimental::cagra::search(res_, search_params, *gpu_index_,
                                                          raft::make_const_mdspan(data_gpu.view()), ids_dev.view(),
                                                          dis_dev.view());
 
-            raft::copy(ids.get(), ids_dev.data_handle(), output_size, res_->get_stream());
-            raft::copy(dis.get(), dis_dev.data_handle(), output_size, res_->get_stream());
-            res_->sync_stream();
+            raft::copy(ids.get(), ids_dev.data_handle(), output_size, res_.get_stream());
+            raft::copy(dis.get(), dis_dev.data_handle(), output_size, res_.get_stream());
+            res_.sync_stream();
 
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "RAFT inner error, " << e.what();
@@ -159,7 +138,7 @@ class CagraIndexNode : public IndexNode {
         os.write((char*)(&this->counts_), sizeof(this->counts_));
         os.write((char*)(&this->devs_[0]), sizeof(this->devs_[0]));
 
-        auto scoped_device = detail::device_setter{devs_[0]};
+        auto scoped_device = raft_utils::device_setter{devs_[0]};
         rmm::mr::cuda_memory_resource mr;
         rmm::cuda_stream stm;
         raft::device_resources res(stm.view(), nullptr, &mr);
@@ -189,11 +168,9 @@ class CagraIndexNode : public IndexNode {
         is.read((char*)(&this->counts_), sizeof(this->counts_));
         this->devs_.resize(1);
         is.read((char*)(&this->devs_[0]), sizeof(this->devs_[0]));
-        auto scoped_device = detail::device_setter{devs_[0]};
+        auto scoped_device = raft_utils::device_setter{devs_[0]};
 
-        thread_local rmm::mr::cuda_memory_resource mr;
-        thread_local rmm::cuda_stream stream;
-        thread_local raft::device_resources res(stream.view(), nullptr, &mr);
+        auto& res = raft_utils::get_raft_resources();
 
         cagra_index index_ = raft::neighbors::experimental::cagra::deserialize<float, idx_type>(res, is);
         is.sync();
