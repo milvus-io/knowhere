@@ -43,17 +43,17 @@ class DiskANNIndexNode : public IndexNode {
     }
 
     Status
-    Build(const DataSet& dataset, const Config& cfg) override {
-        return Add(dataset, cfg);
-    }
+    Build(const DataSet& dataset, const Config& cfg) override;
 
     Status
     Train(const DataSet& dataset, const Config& cfg) override {
-        return Status::success;
+        return Status::not_implemented;
     }
 
     Status
-    Add(const DataSet& dataset, const Config& cfg) override;
+    Add(const DataSet& dataset, const Config& cfg) override {
+        return Status::not_implemented;
+    }
 
     expected<DataSetPtr>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
@@ -250,7 +250,7 @@ CheckMetric(const std::string& diskann_metric) {
 
 template <typename T>
 Status
-DiskANNIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
+DiskANNIndexNode<T>::Build(const DataSet& dataset, const Config& cfg) {
     assert(file_manager_ != nullptr);
     std::lock_guard<std::mutex> lock(preparation_lock_);
     auto build_conf = static_cast<const DiskANNConfig&>(cfg);

@@ -50,8 +50,6 @@ class IvfIndexNode : public IndexNode {
         pool_ = ThreadPool::GetGlobalThreadPool();
     }
     Status
-    Build(const DataSet& dataset, const Config& cfg) override;
-    Status
     Train(const DataSet& dataset, const Config& cfg) override;
     Status
     Add(const DataSet& dataset, const Config& cfg) override;
@@ -190,16 +188,6 @@ class IvfIndexNode : public IndexNode {
 }  // namespace knowhere
 
 namespace knowhere {
-
-template <typename T>
-Status
-IvfIndexNode<T>::Build(const DataSet& dataset, const Config& cfg) {
-    const BaseConfig& base_cfg = static_cast<const IvfConfig&>(cfg);
-    auto build_thread_num = base_cfg.get_build_thread_num();
-    ThreadPool::ScopedOmpSetter setter(build_thread_num);
-    RETURN_IF_ERROR(Train(dataset, cfg));
-    return Add(dataset, cfg);
-}
 
 inline int64_t
 MatchNlist(int64_t size, int64_t nlist) {

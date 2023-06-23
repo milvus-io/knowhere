@@ -33,12 +33,6 @@ class FlatIndexNode : public IndexNode {
     }
 
     Status
-    Build(const DataSet& dataset, const Config& cfg) override {
-        RETURN_IF_ERROR(Train(dataset, cfg));
-        return Add(dataset, cfg);
-    }
-
-    Status
     Train(const DataSet& dataset, const Config& cfg) override {
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
 

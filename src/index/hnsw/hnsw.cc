@@ -37,12 +37,6 @@ class HnswIndexNode : public IndexNode {
     }
 
     Status
-    Build(const DataSet& dataset, const Config& cfg) override {
-        RETURN_IF_ERROR(Train(dataset, cfg));
-        return Add(dataset, cfg);
-    }
-
-    Status
     Train(const DataSet& dataset, const Config& cfg) override {
         auto rows = dataset.GetRows();
         auto dim = dataset.GetDim();
