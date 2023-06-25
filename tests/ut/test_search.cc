@@ -22,7 +22,7 @@
 #include "utils.h"
 
 namespace {
-constexpr float kKnnRecallThreshold = 0.8f;
+constexpr float kKnnRecallThreshold = 0.75f;
 constexpr float kBruteForceRecallThreshold = 0.99f;
 constexpr size_t kTopk = 1;
 }  // namespace

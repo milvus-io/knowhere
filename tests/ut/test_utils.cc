@@ -14,6 +14,7 @@
 #include "catch2/catch_approx.hpp"
 #include "catch2/catch_test_macros.hpp"
 #include "knowhere/comp/time_recorder.h"
+#include "knowhere/heap.h"
 #include "knowhere/utils.h"
 #include "utils.h"
 
@@ -75,4 +76,35 @@ TEST_CASE("Test Bitset Generation", "[utils]") {
             }
         }
     }
+}
+
+namespace {
+constexpr size_t kHeapSize = 10;
+constexpr size_t kElementCount = 10000;
+}  // namespace
+
+TEST_CASE("ResultMaxHeap") {
+    knowhere::ResultMaxHeap<float, size_t> heap(kHeapSize);
+    auto pairs = GenerateRandomDistanceIdPair(kElementCount);
+    for (const auto& [dist, id] : pairs) {
+        heap.Push(dist, id);
+    }
+    REQUIRE(heap.Size() == kHeapSize);
+    std::sort(pairs.begin(), pairs.end());
+    for (int i = kHeapSize - 1; i >= 0; --i) {
+        auto op = heap.Pop();
+        REQUIRE(op.has_value());
+        REQUIRE(op.value().second == pairs[i].second);
+    }
+    REQUIRE(heap.Size() == 0);
+}
+
+TEST_CASE("Test Time Recorder") {
+    knowhere::TimeRecorder tr("test", 2);
+    int64_t sum = 0;
+    for (int i = 0; i < 10000; i++) {
+        sum += i * i;
+    }
+    auto span = tr.ElapseFromBegin("done");
+    REQUIRE(span > 0);
 }

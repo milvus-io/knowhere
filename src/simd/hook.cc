@@ -85,9 +85,7 @@ fvec_hook(std::string& simd_type) {
         fvec_madd_and_argmin = fvec_madd_and_argmin_sse;
 
         simd_type = "AVX512";
-        return;
-    }
-    if (use_avx2 && cpu_support_avx2()) {
+    } else if (use_avx2 && cpu_support_avx2()) {
         fvec_inner_product = fvec_inner_product_avx;
         fvec_L2sqr = fvec_L2sqr_avx;
         fvec_L1 = fvec_L1_avx;
@@ -100,9 +98,7 @@ fvec_hook(std::string& simd_type) {
         fvec_madd_and_argmin = fvec_madd_and_argmin_sse;
 
         simd_type = "AVX2";
-        return;
-    }
-    if (use_sse4_2 && cpu_support_sse4_2()) {
+    } else if (use_sse4_2 && cpu_support_sse4_2()) {
         fvec_inner_product = fvec_inner_product_sse;
         fvec_L2sqr = fvec_L2sqr_sse;
         fvec_L1 = fvec_L1_sse;
@@ -116,7 +112,6 @@ fvec_hook(std::string& simd_type) {
 
         simd_type = "SSE4_2";
     }
-
 #endif
 }
 
