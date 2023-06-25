@@ -30,10 +30,6 @@ GetRangeSearchResult(const faiss::RangeSearchResult& res, const bool is_ip, cons
                      const BitsetView& bitset);
 
 void
-GetRangeSearchResult(faiss::RangeSearchResult& res, const bool is_ip, const int64_t nq, const float radius,
-                     float*& distances, int64_t*& labels, size_t*& lims);
-
-void
 FilterRangeSearchResultForOneNq(std::vector<float>& distances, std::vector<int64_t>& labels, const bool is_ip,
                                 const float radius, const float range_filter);
 
