@@ -36,14 +36,6 @@ class CagraIndexNode : public IndexNode {
     }
 
     virtual Status
-    Build(const DataSet& dataset, const Config& cfg) override {
-        auto err = Train(dataset, cfg);
-        if (err != Status::success)
-            return err;
-        return Status::success;
-    }
-
-    virtual Status
     Train(const DataSet& dataset, const Config& cfg) override {
         auto cagra_cfg = static_cast<const knowhere::CagraConfig&>(cfg);
         if (gpu_index_) {

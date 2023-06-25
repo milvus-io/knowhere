@@ -55,12 +55,6 @@ class GpuIvfIndexNode : public IndexNode {
     }
 
     virtual Status
-    Build(const DataSet& dataset, const Config& cfg) override {
-        RETURN_IF_ERROR(Train(dataset, cfg));
-        return Add(dataset, cfg);
-    }
-
-    virtual Status
     Train(const DataSet& dataset, const Config& cfg) override {
         if (index_ && index_->is_trained) {
             LOG_KNOWHERE_WARNING_ << "index is already trained";

@@ -28,11 +28,6 @@ class IndexNodeThreadPoolWrapper : public IndexNode {
     }
 
     Status
-    Build(const DataSet& dataset, const Config& cfg) {
-        return index_node_->Build(dataset, cfg);
-    }
-
-    Status
     Train(const DataSet& dataset, const Config& cfg) {
         return index_node_->Train(dataset, cfg);
     }

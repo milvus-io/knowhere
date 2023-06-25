@@ -27,12 +27,6 @@ class GpuFlatIndexNode : public IndexNode {
     }
 
     virtual Status
-    Build(const DataSet& dataset, const Config& cfg) override {
-        RETURN_IF_ERROR(Train(dataset, cfg));
-        return Add(dataset, cfg);
-    }
-
-    virtual Status
     Train(const DataSet& dataset, const Config& cfg) override {
         const GpuFlatConfig& f_cfg = static_cast<const GpuFlatConfig&>(cfg);
         auto metric = Str2FaissMetricType(f_cfg.metric_type);
