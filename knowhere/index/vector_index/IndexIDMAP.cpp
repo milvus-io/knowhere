@@ -76,6 +76,7 @@ IDMAP::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
     }
 
     GET_DATA_WITH_IDS(dataset_ptr)
+    auto dim = Dim();
 
     float* p_x = nullptr;
     auto release_when_exception = [&]() {
@@ -92,7 +93,7 @@ IDMAP::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
             KNOWHERE_THROW_IF_NOT_FMT(id >= 0 && id < idmap_index->ntotal, "invalid id %ld", id);
             idmap_index->reconstruct(id, p_x + i * dim);
         }
-        return GenResultDataset(p_x);
+        return GenResultDataset(rows, dim, p_x);
     } catch (faiss::FaissException& e) {
         release_when_exception();
         KNOWHERE_THROW_MSG(e.what());

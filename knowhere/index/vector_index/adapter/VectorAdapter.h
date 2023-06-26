@@ -64,7 +64,6 @@ DEFINE_DATASET_SETTER(SetDatasetJsonIdSet, meta::JSON_ID_SET, const std::string)
 
 #define GET_DATA_WITH_IDS(ds_ptr)                     \
     auto rows = knowhere::GetDatasetRows(ds_ptr);     \
-    auto dim = knowhere::GetDatasetDim(ds_ptr);       \
     auto p_ids = knowhere::GetDatasetInputIDs(ds_ptr);
 
 #define GET_TENSOR_DATA(ds_ptr)                       \
@@ -82,7 +81,7 @@ extern DatasetPtr
 GenDatasetWithIds(const int64_t n, const int64_t dim, const int64_t* ids);
 
 extern DatasetPtr
-GenResultDataset(const void* tensor);
+GenResultDataset(const int64_t rows, const int64_t dim, const void* tensor);
 
 extern DatasetPtr
 GenResultDataset(const int64_t* ids, const float* distance);

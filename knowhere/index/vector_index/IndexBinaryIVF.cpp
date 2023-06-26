@@ -54,6 +54,7 @@ BinaryIVF::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
     }
 
     GET_DATA_WITH_IDS(dataset_ptr)
+    auto dim = Dim();
 
     uint8_t* p_x = nullptr;
     auto release_when_exception = [&]() {
@@ -71,7 +72,7 @@ BinaryIVF::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
             KNOWHERE_THROW_IF_NOT_FMT(id >= 0 && id < bin_ivf_index->ntotal, "invalid id %ld", id);
             bin_ivf_index->reconstruct(id, p_x + i * dim / 8);
         }
-        return GenResultDataset(p_x);
+        return GenResultDataset(rows, dim, p_x);
     } catch (faiss::FaissException& e) {
         release_when_exception();
         KNOWHERE_THROW_MSG(e.what());

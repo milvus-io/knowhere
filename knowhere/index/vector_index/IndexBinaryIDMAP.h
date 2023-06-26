@@ -48,7 +48,7 @@ class BinaryIDMAP : public VecIndex, public FaissBaseBinaryIndex {
 
     bool
     HasRawData(const std::string& /*metric_type*/) const override {
-        return true;
+        return false;
     }
 
     DatasetPtr

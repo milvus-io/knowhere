@@ -54,7 +54,7 @@ class IVF_NM : public VecIndex, public OffsetBaseIndex {
 
     bool
     HasRawData(const std::string& /*metric_type*/) const override {
-        return true;
+        return false;
     }
 
     DatasetPtr

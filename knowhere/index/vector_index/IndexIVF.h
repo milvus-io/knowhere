@@ -53,7 +53,7 @@ class IVF : public VecIndex, public FaissBaseIndex {
 
     bool
     HasRawData(const std::string& /*metric_type*/) const override {
-        return true;
+        return false;
     }
 
     DatasetPtr
