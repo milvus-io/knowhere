@@ -67,6 +67,19 @@ GenBinDataSet(int rows, int dim, int seed = 42) {
 }
 
 inline knowhere::DataSetPtr
+CopyBinDataSet(knowhere::DataSetPtr dataset) {
+    auto rows = dataset->GetRows();
+    auto dim = dataset->GetDim();
+    auto data = dataset->GetTensor();
+    int uint8_num = dim / 8;
+    uint8_t* ts = new uint8_t[rows * uint8_num];
+    memcpy(ts, data, rows * uint8_num * sizeof(uint8_t));
+    auto ds = knowhere::GenDataSet(rows, dim, ts);
+    ds->SetIsOwner(true);
+    return ds;
+}
+
+inline knowhere::DataSetPtr
 GenIdsDataSet(int rows, int64_t seed = 42) {
     std::mt19937 g(seed);
     int64_t* ids = new int64_t[rows];
