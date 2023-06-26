@@ -153,6 +153,7 @@ IVF_NM::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
     }
 
     GET_DATA_WITH_IDS(dataset_ptr)
+    auto dim = Dim();
 
     float* p_x = nullptr;
     auto release_when_exception = [&]() {
@@ -170,7 +171,7 @@ IVF_NM::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
             KNOWHERE_THROW_IF_NOT_FMT(id >= 0 && id < ivf_index->ntotal, "invalid id %ld", id);
             ivf_index->reconstruct_without_codes(id, p_x + i * dim);
         }
-        return GenResultDataset(p_x);
+        return GenResultDataset(rows, dim, p_x);
     } catch (faiss::FaissException& e) {
         release_when_exception();
         KNOWHERE_THROW_MSG(e.what());

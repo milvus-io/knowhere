@@ -123,6 +123,7 @@ IndexHNSW::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
     }
 
     GET_DATA_WITH_IDS(dataset_ptr)
+    auto dim = Dim();
 
     float* p_x = nullptr;
     try {
@@ -138,7 +139,7 @@ IndexHNSW::GetVectorById(const DatasetPtr& dataset_ptr, const Config& config) {
         }
         KNOWHERE_THROW_MSG(e.what());
     }
-    return GenResultDataset(p_x);
+    return GenResultDataset(rows, dim, p_x);
 }
 
 DatasetPtr

@@ -105,7 +105,7 @@ TEST_P(IVFNMTest, ivfnm_basic) {
     LoadRawData(index_, base_dataset, conf_);
     
     if (index_mode_ == knowhere::IndexMode::MODE_CPU) {
-        ASSERT_TRUE(index_->HasRawData(knowhere::GetMetaMetricType(conf_)));
+        ASSERT_FALSE(index_->HasRawData(knowhere::GetMetaMetricType(conf_)));
         auto result = index_->GetVectorById(id_dataset, conf_);
         AssertVec(result, base_dataset, id_dataset, nq, dim);
 
