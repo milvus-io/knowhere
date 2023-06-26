@@ -20,14 +20,15 @@
 TEST_CASE("Test Brute Force", "[float vector]") {
     using Catch::Approx;
 
-    int64_t nb = 1000;
-    int64_t dim = 128;
-    int64_t k = 5;
+    const int64_t nb = 1000;
+    const int64_t nq = 10;
+    const int64_t dim = 128;
+    const int64_t k = 5;
 
     auto metric = GENERATE(as<std::string>{}, knowhere::metric::L2, knowhere::metric::COSINE);
 
     const auto train_ds = GenDataSet(nb, dim);
-    const auto query_ds = CopyDataSet(train_ds);
+    const auto query_ds = CopyDataSet(train_ds, nq);
 
     const knowhere::Json conf = {
         {knowhere::meta::DIM, dim},
@@ -41,7 +42,7 @@ TEST_CASE("Test Brute Force", "[float vector]") {
         REQUIRE(res.has_value());
         auto ids = res.value()->GetIds();
         auto dist = res.value()->GetDistance();
-        for (int64_t i = 0; i < nb; i++) {
+        for (int64_t i = 0; i < nq; i++) {
             REQUIRE(ids[i * k] == i);
             if (metric == knowhere::metric::L2) {
                 REQUIRE(dist[i * k] == 0);
@@ -52,11 +53,11 @@ TEST_CASE("Test Brute Force", "[float vector]") {
     }
 
     SECTION("Test Search With Buf") {
-        auto ids = new int64_t[nb * k];
-        auto dist = new float[nb * k];
+        auto ids = new int64_t[nq * k];
+        auto dist = new float[nq * k];
         auto res = knowhere::BruteForce::SearchWithBuf(train_ds, query_ds, ids, dist, conf, nullptr);
         REQUIRE(res == knowhere::Status::success);
-        for (int64_t i = 0; i < nb; i++) {
+        for (int64_t i = 0; i < nq; i++) {
             REQUIRE(ids[i * k] == i);
             if (metric == knowhere::metric::L2) {
                 REQUIRE(dist[i * k] == 0);
@@ -74,7 +75,7 @@ TEST_CASE("Test Brute Force", "[float vector]") {
         auto ids = res.value()->GetIds();
         auto dist = res.value()->GetDistance();
         auto lims = res.value()->GetLims();
-        for (int64_t i = 0; i < nb; i++) {
+        for (int64_t i = 0; i < nq; i++) {
             REQUIRE(lims[i] == (size_t)i);
             REQUIRE(ids[i] == i);
             if (metric == knowhere::metric::L2) {
@@ -89,16 +90,17 @@ TEST_CASE("Test Brute Force", "[float vector]") {
 TEST_CASE("Test Brute Force", "[binary vector]") {
     using Catch::Approx;
 
-    int64_t nb = 1000;
-    int64_t dim = 1024;
-    int64_t k = 5;
+    const int64_t nb = 1000;
+    const int64_t nq = 10;
+    const int64_t dim = 1024;
+    const int64_t k = 5;
 
     auto metric =
         GENERATE(as<std::string>{}, knowhere::metric::HAMMING, knowhere::metric::JACCARD, knowhere::metric::TANIMOTO,
                  knowhere::metric::SUPERSTRUCTURE, knowhere::metric::SUBSTRUCTURE);
 
     const auto train_ds = GenBinDataSet(nb, dim);
-    const auto query_ds = CopyBinDataSet(train_ds);
+    const auto query_ds = CopyBinDataSet(train_ds, nq);
 
     std::unordered_map<std::string, float> radius_map = {
         {knowhere::metric::HAMMING, 1.0},
@@ -116,18 +118,18 @@ TEST_CASE("Test Brute Force", "[binary vector]") {
         REQUIRE(res.has_value());
         auto ids = res.value()->GetIds();
         auto dist = res.value()->GetDistance();
-        for (int64_t i = 0; i < nb; i++) {
+        for (int64_t i = 0; i < nq; i++) {
             REQUIRE(ids[i * k] == i);
             REQUIRE(dist[i * k] == 0);
         }
     }
 
     SECTION("Test Search With Buf") {
-        auto ids = new int64_t[nb * k];
-        auto dist = new float[nb * k];
+        auto ids = new int64_t[nq * k];
+        auto dist = new float[nq * k];
         auto res = knowhere::BruteForce::SearchWithBuf(train_ds, query_ds, ids, dist, conf, nullptr);
         REQUIRE(res == knowhere::Status::success);
-        for (int64_t i = 0; i < nb; i++) {
+        for (int64_t i = 0; i < nq; i++) {
             REQUIRE(ids[i * k] == i);
             REQUIRE(dist[i * k] == 0);
         }
@@ -149,7 +151,7 @@ TEST_CASE("Test Brute Force", "[binary vector]") {
         auto ids = res.value()->GetIds();
         auto dist = res.value()->GetDistance();
         auto lims = res.value()->GetLims();
-        for (int64_t i = 0; i < nb; i++) {
+        for (int64_t i = 0; i < nq; i++) {
             REQUIRE(lims[i] == (size_t)i);
             REQUIRE(ids[i] == i);
             REQUIRE(dist[i] == 0);

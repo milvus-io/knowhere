@@ -63,14 +63,12 @@ cpu_support_sse4_2() {
     InstructionSet& instruction_set_inst = InstructionSet::GetInstance();
     return (instruction_set_inst.SSE42());
 }
-
 #endif
 
 void
 fvec_hook(std::string& simd_type) {
     static std::mutex hook_mutex;
     std::lock_guard<std::mutex> lock(hook_mutex);
-    simd_type = "REF";
 #if defined(__x86_64__)
     if (use_avx512 && cpu_support_avx512()) {
         fvec_inner_product = fvec_inner_product_avx512;
@@ -111,6 +109,19 @@ fvec_hook(std::string& simd_type) {
         fvec_madd_and_argmin = fvec_madd_and_argmin_sse;
 
         simd_type = "SSE4_2";
+    } else {
+        fvec_inner_product = fvec_inner_product_ref;
+        fvec_L2sqr = fvec_L2sqr_ref;
+        fvec_L1 = fvec_L1_ref;
+        fvec_Linf = fvec_Linf_ref;
+
+        fvec_norm_L2sqr = fvec_norm_L2sqr_ref;
+        fvec_L2sqr_ny = fvec_L2sqr_ny_ref;
+        fvec_inner_products_ny = fvec_inner_products_ny_ref;
+        fvec_madd = fvec_madd_ref;
+        fvec_madd_and_argmin = fvec_madd_and_argmin_ref;
+
+        simd_type = "GENERIC";
     }
 #endif
 }
