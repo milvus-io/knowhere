@@ -50,7 +50,9 @@ class CagraIndexNode : public IndexNode {
         build_params.intermediate_graph_degree = cagra_cfg.intermediate_graph_degree;
         build_params.graph_degree = cagra_cfg.graph_degree;
         build_params.metric = metric.value();
-        auto& res = raft_utils::get_raft_resources();
+
+        raft_utils::init_gpu_resources();
+        auto& res = raft_utils::get_raft_resources_no_pool();
         auto rows = dataset.GetRows();
         auto dim = dataset.GetDim();
         auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
@@ -81,7 +83,7 @@ class CagraIndexNode : public IndexNode {
         auto dis = std::unique_ptr<float[]>(new float[output_size]);
         try {
             auto scoped_device = raft_utils::device_setter{devs_[0]};
-            auto& res_ = raft_utils::get_raft_resources();
+            auto& res_ = raft_utils::get_raft_resources_pool();
 
             auto data_gpu = raft::make_device_matrix<float, idx_type>(res_, rows, dim);
             raft::copy(data_gpu.data_handle(), data, data_gpu.size(), res_.get_stream());
@@ -139,9 +141,7 @@ class CagraIndexNode : public IndexNode {
         os.write((char*)(&this->devs_[0]), sizeof(this->devs_[0]));
 
         auto scoped_device = raft_utils::device_setter{devs_[0]};
-        rmm::mr::cuda_memory_resource mr;
-        rmm::cuda_stream stm;
-        raft::device_resources res(stm.view(), nullptr, &mr);
+        auto& res = raft_utils::get_raft_resources_no_pool();
 
         raft::neighbors::experimental::cagra::serialize<float, idx_type>(res, os, *gpu_index_);
 
@@ -170,7 +170,8 @@ class CagraIndexNode : public IndexNode {
         is.read((char*)(&this->devs_[0]), sizeof(this->devs_[0]));
         auto scoped_device = raft_utils::device_setter{devs_[0]};
 
-        auto& res = raft_utils::get_raft_resources();
+        raft_utils::init_gpu_resources();
+        auto& res = raft_utils::get_raft_resources_no_pool();
 
         cagra_index index_ = raft::neighbors::experimental::cagra::deserialize<float, idx_type>(res, is);
         is.sync();

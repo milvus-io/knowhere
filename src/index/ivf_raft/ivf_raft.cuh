@@ -265,7 +265,7 @@ class RaftIvfIndexNode : public IndexNode {
                     return Status::invalid_metric_type;
                 }
                 devs_.insert(devs_.begin(), ivf_raft_cfg.gpu_ids.begin(), ivf_raft_cfg.gpu_ids.end());
-                auto& res = raft_utils::get_raft_resources();
+                auto& res = raft_utils::get_raft_resources_no_pool();
 
                 auto rows = dataset.GetRows();
                 auto dim = dataset.GetDim();
@@ -331,7 +331,7 @@ class RaftIvfIndexNode : public IndexNode {
                 auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
 
                 raft_utils::init_gpu_resources();
-                auto& res = raft_utils::get_raft_resources();
+                auto& res = raft_utils::get_raft_resources_no_pool();
 
                 // TODO(wphicks): Clean up transfer with raft
                 // buffer objects when available
@@ -379,7 +379,7 @@ class RaftIvfIndexNode : public IndexNode {
         auto dis = std::unique_ptr<float[]>(new float[output_size]);
         try {
             auto scoped_device = raft_utils::device_setter{devs_[0]};
-            auto& res_ = raft_utils::get_raft_resources();
+            auto& res_ = raft_utils::get_raft_resources_pool();
 
             // TODO(wphicks): Clean up transfer with raft
             // buffer objects when available
@@ -490,7 +490,7 @@ class RaftIvfIndexNode : public IndexNode {
         os.write((char*)(&this->devs_[0]), sizeof(this->devs_[0]));
 
         auto scoped_device = raft_utils::device_setter{devs_[0]};
-        auto& res = raft_utils::get_raft_resources();
+        auto& res = raft_utils::get_raft_resources_no_pool();
 
         if constexpr (std::is_same_v<T, detail::raft_ivf_flat_index>) {
             raft::neighbors::ivf_flat::serialize<float, std::int64_t>(res, os, *gpu_index_);
@@ -526,7 +526,7 @@ class RaftIvfIndexNode : public IndexNode {
         auto scoped_device = raft_utils::device_setter{devs_[0]};
 
         raft_utils::init_gpu_resources();
-        auto& res = raft_utils::get_raft_resources();
+        auto& res = raft_utils::get_raft_resources_no_pool();
 
         if constexpr (std::is_same_v<T, detail::raft_ivf_flat_index>) {
             T index_ = raft::neighbors::ivf_flat::deserialize<float, std::int64_t>(res, is);

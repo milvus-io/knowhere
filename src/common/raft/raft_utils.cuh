@@ -1,3 +1,22 @@
+/**
+ * SPDX-FileCopyrightText: Copyright (c) 2023,NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#pragma once
+
 #include <atomic>
 #include <cstddef>
 #include <map>
@@ -15,7 +34,7 @@
 
 namespace raft_utils {
 
-auto
+inline auto
 get_current_device() {
     auto result = int{};
     RAFT_CUDA_TRY(cudaGetDevice(&result));
@@ -115,7 +134,7 @@ init_gpu_resources(std::size_t streams_per_device = std::size_t{1}, int device_i
 }
 
 inline auto&
-get_raft_resources(int device_id = get_current_device()) {
+get_raft_resources_pool(int device_id = get_current_device()) {
     thread_local auto all_resources = std::map<int, std::unique_ptr<raft::device_resources>>{};
 
     auto iter = all_resources.find(device_id);
@@ -125,6 +144,17 @@ get_raft_resources(int device_id = get_current_device()) {
             get_gpu_resources().get_stream_view(), nullptr, rmm::mr::get_current_device_resource());
     }
     return *all_resources[device_id];
+}
+
+inline auto&
+get_raft_resources_no_pool(int device_id = get_current_device()) {
+    thread_local auto simple_resources = std::map<int, std::unique_ptr<raft::device_resources>>{};
+    auto iter = simple_resources.find(device_id);
+    if (iter == simple_resources.end()) {
+        auto scoped_device = device_setter{device_id};
+        simple_resources[device_id] = std::make_unique<raft::device_resources>();
+    }
+    return *simple_resources[device_id];
 }
 
 };  // namespace raft_utils
