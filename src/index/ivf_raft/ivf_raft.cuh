@@ -261,21 +261,21 @@ class RaftIvfIndexNode : public IndexNode {
         if (gpu_index_) {
             LOG_KNOWHERE_WARNING_ << "index is already trained";
             return Status::index_already_trained;
-        } else if (ivf_raft_cfg.gpu_ids.size() == 1) {
+        } else if (ivf_raft_cfg.gpu_ids.value().size() == 1) {
             try {
-                auto metric = Str2RaftMetricType(ivf_raft_cfg.metric_type);
+                auto metric = Str2RaftMetricType(ivf_raft_cfg.metric_type.value());
                 if (!metric.has_value()) {
-                    LOG_KNOWHERE_WARNING_ << "please check metric value: " << ivf_raft_cfg.metric_type;
+                    LOG_KNOWHERE_WARNING_ << "please check metric value: " << ivf_raft_cfg.metric_type.value();
                     return metric.error();
                 }
                 if (metric.value() != raft::distance::DistanceType::L2Expanded &&
                     metric.value() != raft::distance::DistanceType::InnerProduct) {
                     LOG_KNOWHERE_WARNING_ << "selected metric not supported in RAFT IVF indexes: "
-                                          << ivf_raft_cfg.metric_type;
+                                          << ivf_raft_cfg.metric_type.value();
                     return Status::invalid_metric_type;
                 }
-                devs_.insert(devs_.begin(), ivf_raft_cfg.gpu_ids.begin(), ivf_raft_cfg.gpu_ids.end());
-                auto scoped_device = detail::device_setter{*ivf_raft_cfg.gpu_ids.begin()};
+                devs_.insert(devs_.begin(), ivf_raft_cfg.gpu_ids.value().begin(), ivf_raft_cfg.gpu_ids.value().end());
+                auto scoped_device = detail::device_setter{*ivf_raft_cfg.gpu_ids.value().begin()};
                 thread_local rmm::cuda_stream stream;
                 thread_local rmm::mr::cuda_memory_resource mr;
                 thread_local raft::device_resources res(stream.view(), nullptr, &mr);
@@ -290,27 +290,27 @@ class RaftIvfIndexNode : public IndexNode {
                 if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
                     auto build_params = raft::neighbors::ivf_flat::index_params{};
                     build_params.metric = metric.value();
-                    build_params.n_lists = ivf_raft_cfg.nlist;
-                    build_params.kmeans_n_iters = ivf_raft_cfg.kmeans_n_iters;
-                    build_params.kmeans_trainset_fraction = ivf_raft_cfg.kmeans_trainset_fraction;
-                    build_params.adaptive_centers = ivf_raft_cfg.adaptive_centers;
+                    build_params.n_lists = ivf_raft_cfg.nlist.value();
+                    build_params.kmeans_n_iters = ivf_raft_cfg.kmeans_n_iters.value();
+                    build_params.kmeans_trainset_fraction = ivf_raft_cfg.kmeans_trainset_fraction.value();
+                    build_params.adaptive_centers = ivf_raft_cfg.adaptive_centers.value();
                     gpu_index_ =
                         raft::neighbors::ivf_flat::build<float, std::int64_t>(res, build_params, data_gpu.view());
                 } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
                     auto build_params = raft::neighbors::ivf_pq::index_params{};
                     build_params.metric = metric.value();
-                    build_params.n_lists = ivf_raft_cfg.nlist;
-                    build_params.pq_bits = ivf_raft_cfg.nbits;
-                    build_params.kmeans_n_iters = ivf_raft_cfg.kmeans_n_iters;
-                    build_params.kmeans_trainset_fraction = ivf_raft_cfg.kmeans_trainset_fraction;
-                    build_params.pq_dim = ivf_raft_cfg.m;
-                    auto codebook_kind = detail::str_to_codebook_gen(ivf_raft_cfg.codebook_kind);
+                    build_params.n_lists = ivf_raft_cfg.nlist.value();
+                    build_params.pq_bits = ivf_raft_cfg.nbits.value();
+                    build_params.kmeans_n_iters = ivf_raft_cfg.kmeans_n_iters.value();
+                    build_params.kmeans_trainset_fraction = ivf_raft_cfg.kmeans_trainset_fraction.value();
+                    build_params.pq_dim = ivf_raft_cfg.m.value();
+                    auto codebook_kind = detail::str_to_codebook_gen(ivf_raft_cfg.codebook_kind.value());
                     if (!codebook_kind.has_value()) {
-                        LOG_KNOWHERE_WARNING_ << "please check codebook kind: " << ivf_raft_cfg.codebook_kind;
+                        LOG_KNOWHERE_WARNING_ << "please check codebook kind: " << ivf_raft_cfg.codebook_kind.value();
                         return codebook_kind.error();
                     }
                     build_params.codebook_kind = codebook_kind.value();
-                    build_params.force_random_rotation = ivf_raft_cfg.force_random_rotation;
+                    build_params.force_random_rotation = ivf_raft_cfg.force_random_rotation.value();
                     gpu_index_ =
                         raft::neighbors::ivf_pq::build<float, std::int64_t>(res, build_params, data_gpu.view());
                 } else {
@@ -388,7 +388,7 @@ class RaftIvfIndexNode : public IndexNode {
         auto rows = dataset.GetRows();
         auto dim = dataset.GetDim();
         auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
-        auto output_size = rows * ivf_raft_cfg.k;
+        auto output_size = rows * ivf_raft_cfg.k.value();
         auto ids = std::unique_ptr<std::int64_t[]>(new std::int64_t[output_size]);
         auto dis = std::unique_ptr<float[]>(new float[output_size]);
         try {
@@ -405,47 +405,47 @@ class RaftIvfIndexNode : public IndexNode {
 
             if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
                 auto search_params = raft::neighbors::ivf_flat::search_params{};
-                search_params.n_probes = std::min<uint32_t>(ivf_raft_cfg.nprobe, gpu_index_->n_lists());
+                search_params.n_probes = std::min<uint32_t>(ivf_raft_cfg.nprobe.value(), gpu_index_->n_lists());
                 auto search_k = std::min(
-                    ivf_raft_cfg.k + (bitset.count() * ivf_raft_cfg.k / counts_),
+                    ivf_raft_cfg.k.value() + (bitset.count() * ivf_raft_cfg.k.value() / counts_),
                     std::min(static_cast<uint64_t>(counts_), static_cast<uint64_t>(raft_detail::MAX_IVF_FLAT_K)));
                 gpu_results = RawSearch(*res_, raft::make_const_mdspan(data_gpu.view()), search_params, search_k,
-                                        ivf_raft_cfg.k, gpu_bitset.view());
+                                        ivf_raft_cfg.k.value(), gpu_bitset.view());
             } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
                 auto search_params = raft::neighbors::ivf_pq::search_params{};
-                search_params.n_probes = std::min<uint32_t>(ivf_raft_cfg.nprobe, gpu_index_->n_lists());
-                auto lut_dtype = detail::str_to_cuda_dtype(ivf_raft_cfg.lut_dtype);
+                search_params.n_probes = std::min<uint32_t>(ivf_raft_cfg.nprobe.value(), gpu_index_->n_lists());
+                auto lut_dtype = detail::str_to_cuda_dtype(ivf_raft_cfg.lut_dtype.value());
                 if (!lut_dtype.has_value()) {
-                    LOG_KNOWHERE_WARNING_ << "please check lookup dtype: " << ivf_raft_cfg.lut_dtype;
+                    LOG_KNOWHERE_WARNING_ << "please check lookup dtype: " << ivf_raft_cfg.lut_dtype.value();
                     return lut_dtype.error();
                 }
                 if (lut_dtype.value() != CUDA_R_32F && lut_dtype.value() != CUDA_R_16F &&
                     lut_dtype.value() != CUDA_R_8U) {
-                    LOG_KNOWHERE_WARNING_ << "selected lookup dtype not supported: " << ivf_raft_cfg.lut_dtype;
+                    LOG_KNOWHERE_WARNING_ << "selected lookup dtype not supported: " << ivf_raft_cfg.lut_dtype.value();
                     return Status::invalid_args;
                 }
                 search_params.lut_dtype = lut_dtype.value();
-                auto internal_distance_dtype = detail::str_to_cuda_dtype(ivf_raft_cfg.internal_distance_dtype);
+                auto internal_distance_dtype = detail::str_to_cuda_dtype(ivf_raft_cfg.internal_distance_dtype.value());
                 if (!internal_distance_dtype.has_value()) {
                     LOG_KNOWHERE_WARNING_ << "please check internal distance dtype: "
-                                          << ivf_raft_cfg.internal_distance_dtype;
+                                          << ivf_raft_cfg.internal_distance_dtype.value();
                     return internal_distance_dtype.error();
                 }
                 if (internal_distance_dtype.value() != CUDA_R_32F && internal_distance_dtype.value() != CUDA_R_16F) {
                     LOG_KNOWHERE_WARNING_ << "selected internal distance dtype not supported: "
-                                          << ivf_raft_cfg.internal_distance_dtype;
+                                          << ivf_raft_cfg.internal_distance_dtype.value();
                     return Status::invalid_args;
                 }
                 search_params.internal_distance_dtype = internal_distance_dtype.value();
                 search_params.preferred_shmem_carveout = search_params.preferred_shmem_carveout;
-                gpu_results = RawSearch(*res_, raft::make_const_mdspan(data_gpu.view()), search_params, ivf_raft_cfg.k,
-                                        ivf_raft_cfg.k, gpu_bitset.view());
+                gpu_results = RawSearch(*res_, raft::make_const_mdspan(data_gpu.view()), search_params,
+                                        ivf_raft_cfg.k.value(), ivf_raft_cfg.k.value(), gpu_bitset.view());
             } else {
                 static_assert(std::is_same_v<detail::raft_ivf_flat_index, T>);
             }
 
-            if (gpu_results.k() != ivf_raft_cfg.k) {
-                auto new_gpu_results = raft_detail::raft_results{*res_, gpu_results.rows(), ivf_raft_cfg.k};
+            if (gpu_results.k() != ivf_raft_cfg.k.value()) {
+                auto new_gpu_results = raft_detail::raft_results{*res_, gpu_results.rows(), ivf_raft_cfg.k.value()};
                 raft_detail::slice<<<1024, 256, 0, res_->get_stream().value()>>>(
                     new_gpu_results.ids_data(), gpu_results.ids_data(), new_gpu_results.rows(), new_gpu_results.k(),
                     gpu_results.rows(), gpu_results.k());
@@ -461,7 +461,7 @@ class RaftIvfIndexNode : public IndexNode {
             return Status::raft_inner_error;
         }
 
-        return GenResultDataSet(rows, ivf_raft_cfg.k, ids.release(), dis.release());
+        return GenResultDataSet(rows, ivf_raft_cfg.k.value(), ids.release(), dis.release());
     }
 
     expected<DataSetPtr>

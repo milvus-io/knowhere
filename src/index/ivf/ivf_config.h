@@ -17,8 +17,8 @@
 namespace knowhere {
 class IvfConfig : public BaseConfig {
  public:
-    int nlist;
-    int nprobe;
+    CFG_INT nlist;
+    CFG_INT nprobe;
     KNOHWERE_DECLARE_CONFIG(IvfConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(nlist)
             .set_default(128)
@@ -38,7 +38,7 @@ class IvfFlatConfig : public IvfConfig {};
 
 class IvfFlatCcConfig : public IvfFlatConfig {
  public:
-    int ssize;
+    CFG_INT ssize;
     KNOHWERE_DECLARE_CONFIG(IvfFlatCcConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(ssize)
             .description("segment size")
@@ -50,8 +50,8 @@ class IvfFlatCcConfig : public IvfFlatConfig {
 
 class IvfPqConfig : public IvfConfig {
  public:
-    int m;
-    int nbits;
+    CFG_INT m;
+    CFG_INT nbits;
     KNOHWERE_DECLARE_CONFIG(IvfPqConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(m).description("m").set_default(4).for_train().set_range(1, 65536);
         KNOWHERE_CONFIG_DECLARE_FIELD(nbits).description("nbits").set_default(8).for_train().set_range(1, 64);

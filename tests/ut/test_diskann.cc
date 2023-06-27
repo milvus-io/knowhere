@@ -153,11 +153,11 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
         json["metric_type"] = metric_str;
         json["k"] = kK;
         if (metric_str == knowhere::metric::L2) {
-            json["radius"] = CFG_FLOAT(200000);
-            json["range_filter"] = CFG_FLOAT(0);
+            json["radius"] = CFG_FLOAT::value_type(200000);
+            json["range_filter"] = CFG_FLOAT::value_type(0);
         } else {
-            json["radius"] = CFG_FLOAT(50000);
-            json["range_filter"] = std::numeric_limits<CFG_FLOAT>::max();
+            json["radius"] = CFG_FLOAT::value_type(50000);
+            json["range_filter"] = std::numeric_limits<CFG_FLOAT::value_type>::max();
         }
         return json;
     };

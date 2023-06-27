@@ -42,24 +42,24 @@ class CagraIndexNode : public IndexNode {
             LOG_KNOWHERE_WARNING_ << "index is already trained";
             return Status::index_already_trained;
         }
-        if (cagra_cfg.gpu_ids.size() != 1) {
+        if (cagra_cfg.gpu_ids.value().size() != 1) {
             LOG_KNOWHERE_WARNING_ << "Cagra implementation is single-GPU only" << std::endl;
             return Status::raft_inner_error;
         }
-        auto metric = Str2RaftMetricType(cagra_cfg.metric_type);
+        auto metric = Str2RaftMetricType(cagra_cfg.metric_type.value());
         if (!metric.has_value()) {
-            LOG_KNOWHERE_WARNING_ << "please check metric value: " << cagra_cfg.metric_type;
+            LOG_KNOWHERE_WARNING_ << "please check metric value: " << cagra_cfg.metric_type.value();
             return metric.error();
         }
         if (metric.value() != raft::distance::DistanceType::L2Expanded) {
             LOG_KNOWHERE_WARNING_ << "only support L2Expanded metric type";
             return Status::invalid_metric_type;
         }
-        devs_.insert(devs_.begin(), cagra_cfg.gpu_ids.begin(), cagra_cfg.gpu_ids.end());
-        auto scoped_device = detail::device_setter{*cagra_cfg.gpu_ids.begin()};
+        devs_.insert(devs_.begin(), cagra_cfg.gpu_ids.value().begin(), cagra_cfg.gpu_ids.value().end());
+        auto scoped_device = detail::device_setter{*cagra_cfg.gpu_ids.value().begin()};
         auto build_params = raft::neighbors::experimental::cagra::index_params{};
-        build_params.intermediate_graph_degree = cagra_cfg.intermediate_graph_degree;
-        build_params.graph_degree = cagra_cfg.graph_degree;
+        build_params.intermediate_graph_degree = cagra_cfg.intermediate_graph_degree.value();
+        build_params.graph_degree = cagra_cfg.graph_degree.value();
         build_params.metric = metric.value();
         thread_local rmm::cuda_stream stream;
         thread_local rmm::mr::cuda_memory_resource mr;
@@ -89,7 +89,7 @@ class CagraIndexNode : public IndexNode {
         auto rows = dataset.GetRows();
         auto dim = dataset.GetDim();
         auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
-        auto output_size = rows * cagra_cfg.k;
+        auto output_size = rows * cagra_cfg.k.value();
         auto ids = std::unique_ptr<idx_type[]>(new idx_type[output_size]);
         auto dis = std::unique_ptr<float[]>(new float[output_size]);
         try {
@@ -100,9 +100,9 @@ class CagraIndexNode : public IndexNode {
             raft::copy(data_gpu.data_handle(), data, data_gpu.size(), res_->get_stream());
 
             auto search_params = raft::neighbors::experimental::cagra::search_params{};
-            search_params.max_queries = cagra_cfg.max_queries;
-            auto ids_dev = raft::make_device_matrix<idx_type, idx_type>(*res_, rows, cagra_cfg.k);
-            auto dis_dev = raft::make_device_matrix<float, idx_type>(*res_, rows, cagra_cfg.k);
+            search_params.max_queries = cagra_cfg.max_queries.value();
+            auto ids_dev = raft::make_device_matrix<idx_type, idx_type>(*res_, rows, cagra_cfg.k.value());
+            auto dis_dev = raft::make_device_matrix<float, idx_type>(*res_, rows, cagra_cfg.k.value());
             raft::neighbors::experimental::cagra::search(*res_, search_params, *gpu_index_,
                                                          raft::make_const_mdspan(data_gpu.view()), ids_dev.view(),
                                                          dis_dev.view());
