@@ -251,7 +251,7 @@ class RaftIvfIndexNode : public IndexNode {
         } else if (ivf_raft_cfg.gpu_ids.size() == 1) {
             try {
                 auto scoped_device = raft_utils::device_setter{*ivf_raft_cfg.gpu_ids.begin()};
-                raft_utils::init_gpu_resources(std::size_t(ivf_raft_cfg.streams_per_device));
+                raft_utils::init_gpu_resources();
 
                 auto metric = Str2RaftMetricType(ivf_raft_cfg.metric_type);
                 if (!metric.has_value()) {

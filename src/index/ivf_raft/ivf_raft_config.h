@@ -26,7 +26,6 @@ namespace knowhere {
 class RaftIvfFlatConfig : public IvfFlatConfig {
  public:
     CFG_LIST gpu_ids;
-    CFG_INT streams_per_device;
     CFG_INT kmeans_n_iters;
     CFG_FLOAT kmeans_trainset_fraction;
     CFG_BOOL adaptive_centers;
@@ -42,10 +41,6 @@ class RaftIvfFlatConfig : public IvfFlatConfig {
             .set_default({
                 0,
             })
-            .for_train();
-        KNOWHERE_CONFIG_DECLARE_FIELD(streams_per_device)
-            .description("CUDA streams per GPU")
-            .set_default(1)
             .for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(kmeans_n_iters)
             .description("iterations to search for kmeans centers")
@@ -65,7 +60,6 @@ class RaftIvfFlatConfig : public IvfFlatConfig {
 class RaftIvfPqConfig : public IvfPqConfig {
  public:
     CFG_LIST gpu_ids;
-    CFG_INT streams_per_device;
     CFG_INT kmeans_n_iters;
     CFG_FLOAT kmeans_trainset_fraction;
     CFG_INT m;
@@ -87,10 +81,6 @@ class RaftIvfPqConfig : public IvfPqConfig {
             .set_default({
                 0,
             })
-            .for_train();
-        KNOWHERE_CONFIG_DECLARE_FIELD(streams_per_device)
-            .description("CUDA streams per GPU")
-            .set_default(1)
             .for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(kmeans_n_iters)
             .description("iterations to search for kmeans centers")

@@ -67,6 +67,17 @@ inline auto raft_mutex = std::mutex{};
 struct gpu_resources {
     gpu_resources(std::size_t streams_per_device = std::size_t{1})
         : streams_per_device_{streams_per_device}, stream_pools_{}, memory_resources_{}, upstream_mr_{} {
+        auto* env_str = getenv("KNOWHERE_GPU_STREAM_PER_DEVICE");
+        if (env_str != NULL) {
+            std::size_t env_spd = std::size_t{};
+            auto stat = sscanf(env_str, "%zu", &env_spd);
+            if (stat == 1) {
+                LOG_KNOWHERE_INFO_ << "Get Gpu stream per device: " << env_spd;
+                streams_per_device_ = env_spd;
+            } else {
+                LOG_KNOWHERE_WARNING_ << "Invalid env format for KNOWHERE_GPU_STREAM_PER_DEVICE";
+            }
+        }
     }
     ~gpu_resources() {
         memory_resources_.clear();
@@ -95,7 +106,7 @@ struct gpu_resources {
                     init_pool_size = init_pool_size_tmp << 20;
                     max_pool_size = max_pool_size_tmp << 20;
                 } else {
-                    LOG_KNOWHERE_WARNING_ << "please check env format";
+                    LOG_KNOWHERE_WARNING_ << "Invalid env format for KNOWHERE_GPU_MEM_POOL_SIZE";
                 }
             }
             memory_resources_[device_id] =
@@ -148,13 +159,16 @@ get_raft_resources_pool(int device_id = get_current_device()) {
 
 inline auto&
 get_raft_resources_no_pool(int device_id = get_current_device()) {
-    thread_local auto simple_resources = std::map<int, std::unique_ptr<raft::device_resources>>{};
-    auto iter = simple_resources.find(device_id);
-    if (iter == simple_resources.end()) {
+    thread_local auto raft_resources = std::map<int, std::unique_ptr<raft::device_resources>>{};
+    thread_local auto memory_resources = std::map<int, std::unique_ptr<rmm::mr::cuda_memory_resource>>{};
+    auto iter = raft_resources.find(device_id);
+    if (iter == raft_resources.end()) {
         auto scoped_device = device_setter{device_id};
-        simple_resources[device_id] = std::make_unique<raft::device_resources>();
+        memory_resources[device_id] = std::make_unique<rmm::mr::cuda_memory_resource>();
+        raft_resources[device_id] = std::make_unique<raft::device_resources>(rmm::cuda_stream_per_thread, nullptr,
+                                                                             memory_resources[device_id].get());
     }
-    return *simple_resources[device_id];
+    return *raft_resources[device_id];
 }
 
 };  // namespace raft_utils
