@@ -229,13 +229,13 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
     ThreadPool::ScopedOmpSetter setter(build_thread_num);
 
     // do normalize for COSINE metric type
-    if (IsMetricType(base_cfg.metric_type, knowhere::metric::COSINE)) {
+    if (IsMetricType(base_cfg.metric_type.value(), knowhere::metric::COSINE)) {
         Normalize(dataset);
     }
 
-    auto metric = Str2FaissMetricType(base_cfg.metric_type);
+    auto metric = Str2FaissMetricType(base_cfg.metric_type.value());
     if (!metric.has_value()) {
-        LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << base_cfg.metric_type;
+        LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << base_cfg.metric_type.value();
         return Status::invalid_metric_type;
     }
 
@@ -248,7 +248,7 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
     try {
         if constexpr (std::is_same<faiss::IndexIVFFlat, T>::value) {
             const IvfFlatConfig& ivf_flat_cfg = static_cast<const IvfFlatConfig&>(cfg);
-            auto nlist = MatchNlist(rows, ivf_flat_cfg.nlist);
+            auto nlist = MatchNlist(rows, ivf_flat_cfg.nlist.value());
             qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
             index = std::make_unique<faiss::IndexIVFFlat>(qzr, dim, nlist, metric.value());
             index->own_fields = true;
@@ -256,24 +256,25 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
         }
         if constexpr (std::is_same<faiss::IndexIVFFlatCC, T>::value) {
             const IvfFlatCcConfig& ivf_flat_cc_cfg = static_cast<const IvfFlatCcConfig&>(cfg);
-            auto nlist = MatchNlist(rows, ivf_flat_cc_cfg.nlist);
+            auto nlist = MatchNlist(rows, ivf_flat_cc_cfg.nlist.value());
             qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
-            index = std::make_unique<faiss::IndexIVFFlatCC>(qzr, dim, nlist, ivf_flat_cc_cfg.ssize, metric.value());
+            index =
+                std::make_unique<faiss::IndexIVFFlatCC>(qzr, dim, nlist, ivf_flat_cc_cfg.ssize.value(), metric.value());
             index->own_fields = true;
             index->train(rows, (const float*)data);
         }
         if constexpr (std::is_same<faiss::IndexIVFPQ, T>::value) {
             const IvfPqConfig& ivf_pq_cfg = static_cast<const IvfPqConfig&>(cfg);
-            auto nlist = MatchNlist(rows, ivf_pq_cfg.nlist);
-            auto nbits = MatchNbits(rows, ivf_pq_cfg.nbits);
+            auto nlist = MatchNlist(rows, ivf_pq_cfg.nlist.value());
+            auto nbits = MatchNbits(rows, ivf_pq_cfg.nbits.value());
             qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
-            index = std::make_unique<faiss::IndexIVFPQ>(qzr, dim, nlist, ivf_pq_cfg.m, nbits, metric.value());
+            index = std::make_unique<faiss::IndexIVFPQ>(qzr, dim, nlist, ivf_pq_cfg.m.value(), nbits, metric.value());
             index->own_fields = true;
             index->train(rows, (const float*)data);
         }
         if constexpr (std::is_same<faiss::IndexIVFScalarQuantizer, T>::value) {
             const IvfSqConfig& ivf_sq_cfg = static_cast<const IvfSqConfig&>(cfg);
-            auto nlist = MatchNlist(rows, ivf_sq_cfg.nlist);
+            auto nlist = MatchNlist(rows, ivf_sq_cfg.nlist.value());
             qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
             index = std::make_unique<faiss::IndexIVFScalarQuantizer>(qzr, dim, nlist, faiss::QuantizerType::QT_8bit,
                                                                      metric.value());
@@ -282,7 +283,7 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
         }
         if constexpr (std::is_same<faiss::IndexBinaryIVF, T>::value) {
             const IvfBinConfig& ivf_bin_cfg = static_cast<const IvfBinConfig&>(cfg);
-            auto nlist = MatchNlist(rows, ivf_bin_cfg.nlist);
+            auto nlist = MatchNlist(rows, ivf_bin_cfg.nlist.value());
             qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
             index = std::make_unique<faiss::IndexBinaryIVF>(qzr, dim, nlist, metric.value());
             index->own_fields = true;
@@ -365,12 +366,12 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
     const IvfConfig& ivf_cfg = static_cast<const IvfConfig&>(cfg);
 
     // do normalize for COSINE metric type
-    if (IsMetricType(ivf_cfg.metric_type, knowhere::metric::COSINE)) {
+    if (IsMetricType(ivf_cfg.metric_type.value(), knowhere::metric::COSINE)) {
         Normalize(dataset);
     }
 
-    auto k = ivf_cfg.k;
-    auto nprobe = ivf_cfg.nprobe;
+    auto k = ivf_cfg.k.value();
+    auto nprobe = ivf_cfg.nprobe.value();
 
     int parallel_mode = 0;
     if (nprobe > 1 && rows <= 4) {
@@ -416,7 +417,7 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
         return Status::faiss_inner_error;
     }
 
-    auto res = GenResultDataSet(rows, ivf_cfg.k, ids, distances);
+    auto res = GenResultDataSet(rows, ivf_cfg.k.value(), ids, distances);
     return res;
 }
 
@@ -439,19 +440,19 @@ IvfIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, const Bi
     const IvfConfig& ivf_cfg = static_cast<const IvfConfig&>(cfg);
 
     // do normalize for COSINE metric type
-    if (IsMetricType(ivf_cfg.metric_type, knowhere::metric::COSINE)) {
+    if (IsMetricType(ivf_cfg.metric_type.value(), knowhere::metric::COSINE)) {
         Normalize(dataset);
     }
 
-    auto nprobe = ivf_cfg.nprobe;
+    auto nprobe = ivf_cfg.nprobe.value();
 
     int parallel_mode = 0;
     if (nprobe > 1 && nq <= 4) {
         parallel_mode = 1;
     }
 
-    float radius = ivf_cfg.radius;
-    float range_filter = ivf_cfg.range_filter;
+    float radius = ivf_cfg.radius.value();
+    float range_filter = ivf_cfg.range_filter.value();
     bool is_ip = (index_->metric_type == faiss::METRIC_INNER_PRODUCT);
 
     int64_t* ids = nullptr;
@@ -677,7 +678,7 @@ IvfIndexNode<T>::DeserializeFromFile(const std::string& filename, const Config& 
     auto cfg = static_cast<const knowhere::BaseConfig&>(config);
 
     int io_flags = 0;
-    if (cfg.enable_mmap) {
+    if (cfg.enable_mmap.value()) {
         io_flags |= faiss::IO_FLAG_MMAP;
     }
     try {

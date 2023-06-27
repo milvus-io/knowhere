@@ -95,11 +95,11 @@ class DiskANNConfig : public BaseConfig {
             .for_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(pq_code_budget_gb)
             .description("the size of PQ compressed representation in GB.")
-            .set_range(0, std::numeric_limits<CFG_FLOAT>::max())
+            .set_range(0, std::numeric_limits<CFG_FLOAT::value_type>::max())
             .for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(build_dram_budget_gb)
             .description("limit on the memory allowed for building the index in GB.")
-            .set_range(0, std::numeric_limits<CFG_FLOAT>::max())
+            .set_range(0, std::numeric_limits<CFG_FLOAT::value_type>::max())
             .for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(disk_pq_dims)
             .description("the dimension of compressed vectors stored on the ssd, use 0 to store uncompressed data.")
@@ -112,7 +112,7 @@ class DiskANNConfig : public BaseConfig {
         KNOWHERE_CONFIG_DECLARE_FIELD(search_cache_budget_gb)
             .description("the size of cached nodes in GB.")
             .set_default(0)
-            .set_range(0, std::numeric_limits<CFG_FLOAT>::max())
+            .set_range(0, std::numeric_limits<CFG_FLOAT::value_type>::max())
             .for_train()
             .for_deserialize();
         KNOWHERE_CONFIG_DECLARE_FIELD(warm_up)
@@ -132,12 +132,12 @@ class DiskANNConfig : public BaseConfig {
         KNOWHERE_CONFIG_DECLARE_FIELD(min_k)
             .description("the min l_search size used in range search.")
             .set_default(100)
-            .set_range(1, std::numeric_limits<CFG_INT>::max())
+            .set_range(1, std::numeric_limits<CFG_INT::value_type>::max())
             .for_range_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(max_k)
             .description("the max l_search size used in range search.")
             .set_default(10000)
-            .set_range(1, std::numeric_limits<CFG_INT>::max())
+            .set_range(1, std::numeric_limits<CFG_INT::value_type>::max())
             .for_range_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(search_list_and_k_ratio)
             .description("the ratio of search list size and k.")

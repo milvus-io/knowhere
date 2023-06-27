@@ -48,9 +48,9 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
     BruteForceConfig cfg;
     RETURN_IF_ERROR(Config::Load(cfg, config, knowhere::SEARCH));
 
-    ASSIGN_OR_RETURN(faiss::MetricType, faiss_metric_type, Str2FaissMetricType(cfg.metric_type));
+    ASSIGN_OR_RETURN(faiss::MetricType, faiss_metric_type, Str2FaissMetricType(cfg.metric_type.value()));
 
-    int topk = cfg.k;
+    int topk = cfg.k.value();
     auto labels = new int64_t[nq * topk];
     auto distances = new float[nq * topk];
 
@@ -112,7 +112,7 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
                     break;
                 }
                 default: {
-                    LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << cfg.metric_type;
+                    LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << cfg.metric_type.value();
                     return Status::invalid_metric_type;
                 }
             }
@@ -122,7 +122,7 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
     for (auto& fut : futs) {
         RETURN_IF_ERROR(fut.get());
     }
-    return GenResultDataSet(nq, cfg.k, labels, distances);
+    return GenResultDataSet(nq, cfg.k.value(), labels, distances);
 }
 
 Status
@@ -144,13 +144,13 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
     BruteForceConfig cfg;
     RETURN_IF_ERROR(Config::Load(cfg, config, knowhere::SEARCH));
 
-    auto metric_type = Str2FaissMetricType(cfg.metric_type);
+    auto metric_type = Str2FaissMetricType(cfg.metric_type.value());
     if (!metric_type.has_value()) {
-        LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << cfg.metric_type;
+        LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << cfg.metric_type.value();
         return Status::invalid_metric_type;
     }
 
-    int topk = cfg.k;
+    int topk = cfg.k.value();
     auto labels = ids;
     auto distances = dis;
 
@@ -214,7 +214,7 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
                     break;
                 }
                 default: {
-                    LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << cfg.metric_type;
+                    LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << cfg.metric_type.value();
                     return Status::invalid_metric_type;
                 }
             }
@@ -248,11 +248,11 @@ BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_da
     BruteForceConfig cfg;
     RETURN_IF_ERROR(Config::Load(cfg, config, knowhere::RANGE_SEARCH));
 
-    auto radius = cfg.radius;
+    auto radius = cfg.radius.value();
     bool is_ip = false;
-    float range_filter = cfg.range_filter;
+    float range_filter = cfg.range_filter.value();
 
-    ASSIGN_OR_RETURN(faiss::MetricType, faiss_metric_type, Str2FaissMetricType(cfg.metric_type));
+    ASSIGN_OR_RETURN(faiss::MetricType, faiss_metric_type, Str2FaissMetricType(cfg.metric_type.value()));
     auto pool = ThreadPool::GetGlobalThreadPool();
 
     std::vector<std::vector<int64_t>> result_id_array(nq);
@@ -300,7 +300,7 @@ BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_da
                     break;
                 }
                 default: {
-                    LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << cfg.metric_type;
+                    LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << cfg.metric_type.value();
                     return Status::invalid_metric_type;
                 }
             }
@@ -312,7 +312,7 @@ BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_da
                 result_dist_array[index][j] = res.distances[j];
                 result_id_array[index][j] = res.labels[j];
             }
-            if (cfg.range_filter != defaultRangeFilter) {
+            if (cfg.range_filter.value() != defaultRangeFilter) {
                 FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, radius,
                                                 range_filter);
             }

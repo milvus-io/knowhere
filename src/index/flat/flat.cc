@@ -37,13 +37,13 @@ class FlatIndexNode : public IndexNode {
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
 
         // do normalize for COSINE metric type
-        if (IsMetricType(f_cfg.metric_type, knowhere::metric::COSINE)) {
+        if (IsMetricType(f_cfg.metric_type.value(), knowhere::metric::COSINE)) {
             Normalize(dataset);
         }
 
-        auto metric = Str2FaissMetricType(f_cfg.metric_type);
+        auto metric = Str2FaissMetricType(f_cfg.metric_type.value());
         if (!metric.has_value()) {
-            LOG_KNOWHERE_WARNING_ << "please check metric type: " << f_cfg.metric_type;
+            LOG_KNOWHERE_WARNING_ << "please check metric type: " << f_cfg.metric_type.value();
             return metric.error();
         }
         index_ = std::make_unique<T>(dataset.GetDim(), metric.value());
@@ -74,11 +74,11 @@ class FlatIndexNode : public IndexNode {
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
 
         // do normalize for COSINE metric type
-        if (IsMetricType(f_cfg.metric_type, knowhere::metric::COSINE)) {
+        if (IsMetricType(f_cfg.metric_type.value(), knowhere::metric::COSINE)) {
             Normalize(dataset);
         }
 
-        auto k = f_cfg.k;
+        auto k = f_cfg.k.value();
         auto nq = dataset.GetRows();
         auto x = dataset.GetTensor();
         auto dim = dataset.GetDim();
@@ -133,7 +133,7 @@ class FlatIndexNode : public IndexNode {
         const FlatConfig& f_cfg = static_cast<const FlatConfig&>(cfg);
 
         // do normalize for COSINE metric type
-        if (IsMetricType(f_cfg.metric_type, knowhere::metric::COSINE)) {
+        if (IsMetricType(f_cfg.metric_type.value(), knowhere::metric::COSINE)) {
             Normalize(dataset);
         }
 
@@ -145,9 +145,9 @@ class FlatIndexNode : public IndexNode {
         float* distances = nullptr;
         size_t* lims = nullptr;
         try {
-            float radius = f_cfg.radius;
+            float radius = f_cfg.radius.value();
             bool is_ip = index_->metric_type == faiss::METRIC_INNER_PRODUCT && std::is_same_v<T, faiss::IndexFlat>;
-            float range_filter = f_cfg.range_filter;
+            float range_filter = f_cfg.range_filter.value();
             std::vector<std::vector<int64_t>> result_id_array(nq);
             std::vector<std::vector<float>> result_dist_array(nq);
             std::vector<size_t> result_size(nq);
@@ -172,7 +172,7 @@ class FlatIndexNode : public IndexNode {
                         result_dist_array[index][j] = res.distances[j];
                         result_id_array[index][j] = res.labels[j];
                     }
-                    if (f_cfg.range_filter != defaultRangeFilter) {
+                    if (f_cfg.range_filter.value() != defaultRangeFilter) {
                         FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, radius,
                                                         range_filter);
                     }
@@ -294,7 +294,7 @@ class FlatIndexNode : public IndexNode {
         auto cfg = static_cast<const knowhere::BaseConfig&>(config);
 
         int io_flags = 0;
-        if (cfg.enable_mmap) {
+        if (cfg.enable_mmap.value()) {
             io_flags |= faiss::IO_FLAG_MMAP;
         }
 
