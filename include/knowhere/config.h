@@ -453,8 +453,9 @@ class BaseConfig : public Config {
             .set_range(1, std::numeric_limits<CFG_INT::value_type>::max())
             .for_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(num_build_thread)
-            .set_default(omp_get_max_threads())
             .description("index thread limit for build.")
+            .allow_empty_without_default()
+            .set_range(1, std::thread::hardware_concurrency())
             .for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(radius)
             .set_default(0.0)
@@ -474,11 +475,6 @@ class BaseConfig : public Config {
             .description("enable mmap for load index")
             .for_deserialize_from_file();
         KNOWHERE_CONFIG_DECLARE_FIELD(for_tuning).set_default(false).description("for tuning").for_search();
-    }
-
-    int
-    get_build_thread_num() const {
-        return num_build_thread.value();
     }
 
     virtual Status

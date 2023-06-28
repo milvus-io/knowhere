@@ -65,7 +65,7 @@ class IvfIndexNode : public IndexNode {
             return !IsMetricType(metric_type, metric::COSINE);
         }
         if constexpr (std::is_same<faiss::IndexIVFFlatCC, T>::value) {
-            return false;
+            return !IsMetricType(metric_type, metric::COSINE);
         }
         if constexpr (std::is_same<faiss::IndexIVFPQ, T>::value) {
             return false;
@@ -225,9 +225,10 @@ template <typename T>
 Status
 IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
     const BaseConfig& base_cfg = static_cast<const IvfConfig&>(cfg);
-    auto build_thread_num = base_cfg.get_build_thread_num();
-    ThreadPool::ScopedOmpSetter setter(build_thread_num);
-
+    std::unique_ptr<ThreadPool::ScopedOmpSetter> setter;
+    if (base_cfg.num_build_thread.has_value()) {
+        setter = std::make_unique<ThreadPool::ScopedOmpSetter>(base_cfg.num_build_thread.value());
+    }
     // do normalize for COSINE metric type
     if (IsMetricType(base_cfg.metric_type.value(), knowhere::metric::COSINE)) {
         Normalize(dataset);
@@ -311,8 +312,10 @@ IvfIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
     auto data = dataset.GetTensor();
     auto rows = dataset.GetRows();
     const BaseConfig& base_cfg = static_cast<const IvfConfig&>(cfg);
-    auto build_thread_num = base_cfg.get_build_thread_num();
-    ThreadPool::ScopedOmpSetter setter(build_thread_num);
+    std::unique_ptr<ThreadPool::ScopedOmpSetter> setter;
+    if (base_cfg.num_build_thread.has_value()) {
+        setter = std::make_unique<ThreadPool::ScopedOmpSetter>(base_cfg.num_build_thread.value());
+    }
     try {
         if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
             index_->add_without_codes(rows, (const float*)data);
