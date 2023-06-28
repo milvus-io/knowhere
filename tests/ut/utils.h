@@ -43,8 +43,8 @@ GenDataSet(int rows, int dim, int seed = 42) {
 }
 
 inline knowhere::DataSetPtr
-CopyDataSet(knowhere::DataSetPtr dataset) {
-    auto rows = dataset->GetRows();
+CopyDataSet(knowhere::DataSetPtr dataset, const int64_t copy_rows) {
+    auto rows = copy_rows;
     auto dim = dataset->GetDim();
     auto data = dataset->GetTensor();
     float* ts = new float[rows * dim];
@@ -67,8 +67,8 @@ GenBinDataSet(int rows, int dim, int seed = 42) {
 }
 
 inline knowhere::DataSetPtr
-CopyBinDataSet(knowhere::DataSetPtr dataset) {
-    auto rows = dataset->GetRows();
+CopyBinDataSet(knowhere::DataSetPtr dataset, const int64_t copy_rows) {
+    auto rows = copy_rows;
     auto dim = dataset->GetDim();
     auto data = dataset->GetTensor();
     int uint8_num = dim / 8;

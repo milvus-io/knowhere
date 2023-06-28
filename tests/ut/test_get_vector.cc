@@ -148,7 +148,7 @@ TEST_CASE("Test Float Get Vector By Ids", "[Float GetVectorByIds]") {
         CAPTURE(name, cfg_json);
         knowhere::Json json = knowhere::Json::parse(cfg_json);
         auto train_ds = GenDataSet(nb, dim, seed);
-        auto train_ds_copy = CopyDataSet(train_ds);
+        auto train_ds_copy = CopyDataSet(train_ds, nb);
         auto ids_ds = GenIdsDataSet(nb, dim);
         REQUIRE(idx.Type() == name);
         auto res = idx.Build(*train_ds, json);
