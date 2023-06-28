@@ -39,12 +39,17 @@ class IvfFlatConfig : public IvfConfig {};
 class IvfFlatCcConfig : public IvfFlatConfig {
  public:
     CFG_INT ssize;
+    CFG_INT num_build_thread;
     KNOHWERE_DECLARE_CONFIG(IvfFlatCcConfig) {
         KNOWHERE_CONFIG_DECLARE_FIELD(ssize)
             .description("segment size")
             .set_default(48)
             .for_train()
             .set_range(32, 2048);
+        KNOWHERE_CONFIG_DECLARE_FIELD(num_build_thread)
+            .set_default(omp_get_max_threads())
+            .description("index thread limit for build.")
+            .for_train();
     }
 };
 

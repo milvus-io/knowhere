@@ -224,9 +224,13 @@ MatchNbits(int64_t size, int64_t nbits) {
 template <typename T>
 Status
 IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
+    std::unique_ptr<ThreadPool::ScopedOmpSetter> setter = nullptr;
+    if constexpr (std::is_same_v<faiss::IndexIVFFlatCC, T>) {
+        const IvfFlatCcConfig& ivf_flat_cc_config = static_cast<const IvfFlatCcConfig&>(cfg);
+        setter = std::make_unique<ThreadPool::ScopedOmpSetter>(ivf_flat_cc_config.num_build_thread.value());
+    }
+
     const BaseConfig& base_cfg = static_cast<const IvfConfig&>(cfg);
-    auto build_thread_num = base_cfg.get_build_thread_num();
-    ThreadPool::ScopedOmpSetter setter(build_thread_num);
 
     // do normalize for COSINE metric type
     if (IsMetricType(base_cfg.metric_type.value(), knowhere::metric::COSINE)) {
@@ -310,9 +314,12 @@ IvfIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
     }
     auto data = dataset.GetTensor();
     auto rows = dataset.GetRows();
-    const BaseConfig& base_cfg = static_cast<const IvfConfig&>(cfg);
-    auto build_thread_num = base_cfg.get_build_thread_num();
-    ThreadPool::ScopedOmpSetter setter(build_thread_num);
+    std::unique_ptr<ThreadPool::ScopedOmpSetter> setter = nullptr;
+    if constexpr (std::is_same_v<faiss::IndexIVFFlatCC, T>) {
+        const IvfFlatCcConfig& ivf_flat_cc_config = static_cast<const IvfFlatCcConfig&>(cfg);
+        setter = std::make_unique<ThreadPool::ScopedOmpSetter>(ivf_flat_cc_config.num_build_thread.value());
+    }
+
     try {
         if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
             index_->add_without_codes(rows, (const float*)data);
