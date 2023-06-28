@@ -122,6 +122,7 @@ class Index {
     Build(const DataSet& dataset, const Json& json) {
         auto cfg = this->node->CreateConfig();
         RETURN_IF_ERROR(LoadConfig(cfg.get(), json, knowhere::TRAIN, "Build"));
+        RETURN_IF_ERROR(cfg->CheckAndAdjustForBuild());
 
 #ifdef NOT_COMPILE_FOR_SWIG
         TimeRecorder rc("Build");
@@ -153,7 +154,7 @@ class Index {
     Search(const DataSet& dataset, const Json& json, const BitsetView& bitset) const {
         auto cfg = this->node->CreateConfig();
         RETURN_IF_ERROR(LoadConfig(cfg.get(), json, knowhere::SEARCH, "Search"));
-        RETURN_IF_ERROR(cfg->CheckAndAdjustConfigForSearch());
+        RETURN_IF_ERROR(cfg->CheckAndAdjustForSearch());
 
 #ifdef NOT_COMPILE_FOR_SWIG
         TimeRecorder rc("Search");
@@ -171,7 +172,7 @@ class Index {
     RangeSearch(const DataSet& dataset, const Json& json, const BitsetView& bitset) const {
         auto cfg = this->node->CreateConfig();
         RETURN_IF_ERROR(LoadConfig(cfg.get(), json, knowhere::RANGE_SEARCH, "RangeSearch"));
-        RETURN_IF_ERROR(cfg->CheckAndAdjustConfigForRangeSearch());
+        RETURN_IF_ERROR(cfg->CheckAndAdjustForRangeSearch());
 
 #ifdef NOT_COMPILE_FOR_SWIG
         TimeRecorder rc("Range Search");

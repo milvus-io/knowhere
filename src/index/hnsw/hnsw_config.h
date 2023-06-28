@@ -15,11 +15,15 @@
 #include "knowhere/comp/index_param.h"
 #include "knowhere/config.h"
 
-// This is not a valid EF value for HNSW
-// This value is used to tell if HnswConfig.ef is coming from user or not
-const int64_t kDefaultHnswEfPlaceholder = -1;
-
 namespace knowhere {
+
+namespace {
+
+constexpr const CFG_INT::value_type kEfMinValue = 16;
+constexpr const CFG_INT::value_type kDefaultRangeSearchEf = 16;
+
+}  // namespace
+
 class HnswConfig : public BaseConfig {
  public:
     CFG_INT M;
@@ -35,7 +39,7 @@ class HnswConfig : public BaseConfig {
             .for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(ef)
             .description("hnsw ef")
-            .set_default(kDefaultHnswEfPlaceholder)
+            .allow_empty_without_default()
             .set_range(1, std::numeric_limits<CFG_INT::value_type>::max())
             .for_search()
             .for_range_search();
@@ -46,33 +50,23 @@ class HnswConfig : public BaseConfig {
             .for_feder();
     }
 
-    Status
-    CheckAndAdjustConfigForSearch() override {
-        auto& hnsw_cfg = static_cast<HnswConfig&>(*this);
-        auto maxef = std::max(65536, hnsw_cfg.k.value() * 2);
-        if (hnsw_cfg.ef.value() > maxef) {
-            LOG_KNOWHERE_ERROR_ << "ef should be in range: [topk, max(65536, topk * 2)]";
+    inline Status
+    CheckAndAdjustForSearch() override {
+        if (!ef.has_value()) {
+            ef = std::max(k.value(), kEfMinValue);
+        } else if (k.value() > ef.value()) {
+            LOG_KNOWHERE_ERROR_ << "ef(" << ef.value() << ") should be larger than k(" << k.value() << ")";
             return Status::out_of_range_in_json;
         }
-        if (hnsw_cfg.ef.value() < hnsw_cfg.k.value()) {
-            if (hnsw_cfg.ef == kDefaultHnswEfPlaceholder) {
-                // ef is set by default value, set ef to k
-                hnsw_cfg.ef = hnsw_cfg.k.value();
-            } else {
-                // ef is set by user
-                LOG_KNOWHERE_ERROR_ << "ef should be in range: [topk, max(65536, topk * 2)]";
-                return Status::out_of_range_in_json;
-            }
-        }
+
         return Status::success;
     }
 
-    Status
-    CheckAndAdjustConfigForRangeSearch() override {
-        auto& hnsw_cfg = static_cast<HnswConfig&>(*this);
-        if (hnsw_cfg.ef.value() == kDefaultHnswEfPlaceholder) {
+    inline Status
+    CheckAndAdjustForRangeSearch() override {
+        if (!ef.has_value()) {
             // if ef is not set by user, set it to default
-            hnsw_cfg.ef = 16;
+            ef = kDefaultRangeSearchEf;
         }
         return Status::success;
     }

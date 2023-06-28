@@ -122,7 +122,7 @@ TEST_CASE("Invalid diskann params test", "[diskann]") {
             test_json["search_list_size"] = 1;
             auto res = diskann.Search(*query_ds, test_json, nullptr);
             REQUIRE_FALSE(res.has_value());
-            REQUIRE(res.error() == knowhere::Status::invalid_args);
+            REQUIRE(res.error() == knowhere::Status::out_of_range_in_json);
         }
         // min_k > max_k
         {

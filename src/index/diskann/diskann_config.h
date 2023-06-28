@@ -16,6 +16,13 @@
 
 namespace knowhere {
 
+namespace {
+
+constexpr const CFG_INT::value_type kSearchListSizeMinValue = 16;
+constexpr const CFG_INT::value_type kDefaultSearchListSizeForBuild = 128;
+
+}  // namespace
+
 class DiskANNConfig : public BaseConfig {
  public:
     // Path prefix to load or save DiskANN
@@ -88,9 +95,9 @@ class DiskANNConfig : public BaseConfig {
             .set_range(1, 2048)
             .for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(search_list_size)
-            .description("the size of search list during the index build.")
-            .set_default(128)
-            .set_range(1, 65536)
+            .description("the size of search list during the index build or search.")
+            .allow_empty_without_default()
+            .set_range(1, std::numeric_limits<CFG_INT::value_type>::max())
             .for_train()
             .for_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(pq_code_budget_gb)
@@ -149,6 +156,27 @@ class DiskANNConfig : public BaseConfig {
             .set_default(-1.0f)
             .set_range(-1.0f, 1.0f)
             .for_search();
+    }
+
+    inline Status
+    CheckAndAdjustForSearch() override {
+        if (!search_list_size.has_value()) {
+            search_list_size = std::max(k.value(), kSearchListSizeMinValue);
+        } else if (k.value() > search_list_size.value()) {
+            LOG_KNOWHERE_ERROR_ << "search_list_size(" << search_list_size.value() << ") should be larger than k("
+                                << k.value() << ")";
+            return Status::out_of_range_in_json;
+        }
+
+        return Status::success;
+    }
+
+    inline Status
+    CheckAndAdjustForBuild() override {
+        if (!search_list_size.has_value()) {
+            search_list_size = kDefaultSearchListSizeForBuild;
+        }
+        return Status::success;
     }
 };
 }  // namespace knowhere
