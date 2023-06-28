@@ -255,7 +255,7 @@ class RaftIvfIndexNode : public IndexNode {
     RaftIvfIndexNode(const Object& object) : devs_{}, gpu_index_{} {
     }
 
-    virtual Status
+    Status
     Train(const DataSet& dataset, const Config& cfg) override {
         auto ivf_raft_cfg = static_cast<const typename KnowhereConfigType<T>::Type&>(cfg);
         if (gpu_index_) {
@@ -331,7 +331,7 @@ class RaftIvfIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual Status
+    Status
     Add(const DataSet& dataset, const Config& cfg) override {
         auto result = Status::success;
         if (!gpu_index_) {
@@ -382,7 +382,7 @@ class RaftIvfIndexNode : public IndexNode {
         return result;
     }
 
-    virtual expected<DataSetPtr>
+    expected<DataSetPtr>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         auto ivf_raft_cfg = static_cast<const typename KnowhereConfigType<T>::Type&>(cfg);
         auto rows = dataset.GetRows();
@@ -469,12 +469,12 @@ class RaftIvfIndexNode : public IndexNode {
         return Status::not_implemented;
     }
 
-    virtual expected<DataSetPtr>
+    expected<DataSetPtr>
     GetVectorByIds(const DataSet& dataset) const override {
         return Status::not_implemented;
     }
 
-    virtual bool
+    bool
     HasRawData(const std::string& metric_type) const override {
         if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
             return !IsMetricType(metric_type, metric::COSINE);
@@ -489,7 +489,7 @@ class RaftIvfIndexNode : public IndexNode {
         return Status::not_implemented;
     }
 
-    virtual Status
+    Status
     Serialize(BinarySet& binset) const override {
         if (!gpu_index_.has_value()) {
             LOG_KNOWHERE_ERROR_ << "Can not serialize empty RaftIvfIndex.";
@@ -524,7 +524,7 @@ class RaftIvfIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual Status
+    Status
     Deserialize(const BinarySet& binset, const Config& config) override {
         std::stringbuf buf;
         auto binary = binset.GetByName(this->Type());
@@ -562,33 +562,33 @@ class RaftIvfIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual Status
+    Status
     DeserializeFromFile(const std::string& filename, const Config& config) {
         LOG_KNOWHERE_ERROR_ << "RaftIvfIndex doesn't support Deserialization from file.";
         return Status::not_implemented;
     }
 
-    virtual std::unique_ptr<BaseConfig>
+    std::unique_ptr<BaseConfig>
     CreateConfig() const override {
         return std::make_unique<typename KnowhereConfigType<T>::Type>();
     }
 
-    virtual int64_t
+    int64_t
     Dim() const override {
         return dim_;
     }
 
-    virtual int64_t
+    int64_t
     Size() const override {
         return 0;
     }
 
-    virtual int64_t
+    int64_t
     Count() const override {
         return counts_;
     }
 
-    virtual std::string
+    std::string
     Type() const override {
         if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
             return knowhere::IndexEnum::INDEX_RAFT_IVFFLAT;
