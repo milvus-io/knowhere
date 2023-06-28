@@ -33,23 +33,23 @@ namespace knowhere {
 typedef nlohmann::json Json;
 
 #ifndef CFG_INT
-#define CFG_INT int32_t
+#define CFG_INT std::optional<int32_t>
 #endif
 
 #ifndef CFG_STRING
-#define CFG_STRING std::string
+#define CFG_STRING std::optional<std::string>
 #endif
 
 #ifndef CFG_FLOAT
-#define CFG_FLOAT float
+#define CFG_FLOAT std::optional<float>
 #endif
 
 #ifndef CFG_LIST
-#define CFG_LIST std::list<int>
+#define CFG_LIST std::optional<std::list<int>>
 #endif
 
 #ifndef CFG_BOOL
-#define CFG_BOOL bool
+#define CFG_BOOL std::optional<bool>
 #endif
 
 template <typename T>
@@ -80,8 +80,8 @@ struct Entry<CFG_STRING> {
     }
     CFG_STRING* val;
     uint32_t type;
-    std::optional<CFG_STRING> default_val;
-    std::optional<CFG_STRING> desc;
+    std::optional<CFG_STRING::value_type> default_val;
+    std::optional<std::string> desc;
 };
 
 template <>
@@ -102,10 +102,10 @@ struct Entry<CFG_FLOAT> {
     }
 
     CFG_FLOAT* val;
-    std::optional<CFG_FLOAT> default_val;
+    std::optional<CFG_FLOAT::value_type> default_val;
     uint32_t type;
-    std::optional<std::pair<CFG_FLOAT, CFG_FLOAT>> range;
-    std::optional<CFG_STRING> desc;
+    std::optional<std::pair<CFG_FLOAT::value_type, CFG_FLOAT::value_type>> range;
+    std::optional<std::string> desc;
 };
 
 template <>
@@ -126,10 +126,10 @@ struct Entry<CFG_INT> {
     }
 
     CFG_INT* val;
-    std::optional<CFG_INT> default_val;
+    std::optional<CFG_INT::value_type> default_val;
     uint32_t type;
-    std::optional<std::pair<CFG_INT, CFG_INT>> range;
-    std::optional<CFG_STRING> desc;
+    std::optional<std::pair<CFG_INT::value_type, CFG_INT::value_type>> range;
+    std::optional<std::string> desc;
 };
 
 template <>
@@ -149,9 +149,9 @@ struct Entry<CFG_LIST> {
     }
 
     CFG_LIST* val;
-    std::optional<CFG_LIST> default_val;
+    std::optional<CFG_LIST::value_type> default_val;
     uint32_t type;
-    std::optional<CFG_STRING> desc;
+    std::optional<std::string> desc;
 };
 
 template <>
@@ -171,9 +171,9 @@ struct Entry<CFG_BOOL> {
     }
 
     CFG_BOOL* val;
-    std::optional<CFG_BOOL> default_val;
+    std::optional<CFG_BOOL::value_type> default_val;
     uint32_t type;
-    std::optional<CFG_STRING> desc;
+    std::optional<std::string> desc;
 };
 
 template <typename T>
@@ -182,20 +182,20 @@ class EntryAccess {
     EntryAccess(Entry<T>* entry) : entry(entry){};
 
     EntryAccess&
-    set_default(const T dft) {
+    set_default(const typename T::value_type dft) {
         entry->default_val = dft;
         *entry->val = dft;
         return *this;
     }
 
     EntryAccess&
-    set_range(T a, T b) {
+    set_range(typename T::value_type a, typename T::value_type b) {
         entry->range = std::make_pair(a, b);
         return *this;
     }
 
     EntryAccess&
-    description(const CFG_STRING& desc) {
+    description(const std::string& desc) {
         entry->desc = desc;
         return *this;
     }
@@ -250,27 +250,6 @@ class EntryAccess {
 
 class Config {
  public:
-    static Json
-    Save(const Config& cfg) {
-        Json json;
-        for (const auto& it : cfg.__DICT__) {
-            const auto& var = it.second;
-            if (const Entry<CFG_INT>* ptr = std::get_if<Entry<CFG_INT>>(&var)) {
-                json[it.first] = *ptr->val;
-            }
-
-            if (const Entry<CFG_STRING>* ptr = std::get_if<Entry<CFG_STRING>>(&var)) {
-                json[it.first] = *ptr->val;
-            }
-
-            if (const Entry<CFG_FLOAT>* ptr = std::get_if<Entry<CFG_FLOAT>>(&var)) {
-                json[it.first] = *ptr->val;
-            }
-        }
-
-        return json;
-    }
-
     static Status
     FormatAndCheck(const Config& cfg, Json& json);
 
@@ -288,7 +267,7 @@ class Config {
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
-                    *ptr->val = ptr->default_val.value();
+                    *ptr->val = ptr->default_val;
                     continue;
                 }
                 if (!json[it.first].is_number_integer()) {
@@ -296,12 +275,12 @@ class Config {
                     return Status::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
-                    if (json[it.first].get<long>() > std::numeric_limits<CFG_INT>::max()) {
+                    if (json[it.first].get<long>() > std::numeric_limits<CFG_INT::value_type>::max()) {
                         LOG_KNOWHERE_ERROR_ << "Arithmetic overflow: param [" << it.first << "] should be at most "
-                                            << std::numeric_limits<CFG_INT>::max();
+                                            << std::numeric_limits<CFG_INT::value_type>::max();
                         return Status::arithmetic_overflow;
                     }
-                    CFG_INT v = json[it.first];
+                    CFG_INT::value_type v = json[it.first];
                     if (ptr->range.value().first <= v && v <= ptr->range.value().second) {
                         *ptr->val = v;
                     } else {
@@ -323,7 +302,7 @@ class Config {
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
-                    *ptr->val = ptr->default_val.value();
+                    *ptr->val = ptr->default_val;
                     continue;
                 }
                 if (!json[it.first].is_number()) {
@@ -331,12 +310,12 @@ class Config {
                     return Status::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
-                    if (json[it.first].get<double>() > std::numeric_limits<CFG_FLOAT>::max()) {
+                    if (json[it.first].get<double>() > std::numeric_limits<CFG_FLOAT::value_type>::max()) {
                         LOG_KNOWHERE_ERROR_ << "Arithmetic overflow: param [" << it.first << "] should be at most "
-                                            << std::numeric_limits<CFG_FLOAT>::max();
+                                            << std::numeric_limits<CFG_FLOAT::value_type>::max();
                         return Status::arithmetic_overflow;
                     }
-                    CFG_FLOAT v = json[it.first];
+                    CFG_FLOAT::value_type v = json[it.first];
                     if (ptr->range.value().first <= v && v <= ptr->range.value().second) {
                         *ptr->val = v;
                     } else {
@@ -358,7 +337,7 @@ class Config {
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
-                    *ptr->val = ptr->default_val.value();
+                    *ptr->val = ptr->default_val;
                     continue;
                 }
                 if (!json[it.first].is_string()) {
@@ -377,14 +356,17 @@ class Config {
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
-                    *ptr->val = ptr->default_val.value();
+                    *ptr->val = ptr->default_val;
                     continue;
                 }
                 if (!json[it.first].is_array()) {
                     LOG_KNOWHERE_ERROR_ << "Type conflict in json: param [" << it.first << "] should be an array.";
                     return Status::type_conflict_in_json;
                 }
-                for (auto&& i : json[it.first]) ptr->val->push_back(i);
+                *ptr->val = CFG_LIST();
+                for (auto&& i : json[it.first]) {
+                    ptr->val->value().push_back(i);
+                }
             }
 
             if (const Entry<CFG_BOOL>* ptr = std::get_if<Entry<CFG_BOOL>>(&var)) {
@@ -396,7 +378,7 @@ class Config {
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
-                    *ptr->val = ptr->default_val.value();
+                    *ptr->val = ptr->default_val;
                     continue;
                 }
                 if (!json[it.first].is_boolean()) {
@@ -415,7 +397,7 @@ class Config {
 
     using VarEntry =
         std::variant<Entry<CFG_STRING>, Entry<CFG_FLOAT>, Entry<CFG_INT>, Entry<CFG_LIST>, Entry<CFG_BOOL>>;
-    std::unordered_map<CFG_STRING, VarEntry> __DICT__;
+    std::unordered_map<std::string, VarEntry> __DICT__;
 };
 
 #define KNOHWERE_DECLARE_CONFIG(CONFIG) CONFIG()
@@ -442,10 +424,10 @@ class BaseConfig : public Config {
         KNOWHERE_CONFIG_DECLARE_FIELD(k)
             .set_default(10)
             .description("search for top k similar vector.")
-            .set_range(1, std::numeric_limits<CFG_INT>::max())
+            .set_range(1, std::numeric_limits<CFG_INT::value_type>::max())
             .for_search();
         KNOWHERE_CONFIG_DECLARE_FIELD(num_build_thread)
-            .set_default(-1)
+            .set_default(omp_get_max_threads())
             .description("index thread limit for build.")
             .for_train();
         KNOWHERE_CONFIG_DECLARE_FIELD(radius)
@@ -470,10 +452,7 @@ class BaseConfig : public Config {
 
     int
     get_build_thread_num() const {
-        if (num_build_thread > 0) {
-            return num_build_thread;
-        }
-        return omp_get_max_threads();
+        return num_build_thread.value();
     }
 
     virtual Status

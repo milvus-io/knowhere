@@ -37,29 +37,23 @@ class HnswIndexNode : public IndexNode {
     }
 
     Status
-    Build(const DataSet& dataset, const Config& cfg) override {
-        RETURN_IF_ERROR(Train(dataset, cfg));
-        return Add(dataset, cfg);
-    }
-
-    Status
     Train(const DataSet& dataset, const Config& cfg) override {
         auto rows = dataset.GetRows();
         auto dim = dataset.GetDim();
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
         hnswlib::SpaceInterface<float>* space = nullptr;
-        if (IsMetricType(hnsw_cfg.metric_type, metric::L2)) {
+        if (IsMetricType(hnsw_cfg.metric_type.value(), metric::L2)) {
             space = new (std::nothrow) hnswlib::L2Space(dim);
-        } else if (IsMetricType(hnsw_cfg.metric_type, metric::IP)) {
+        } else if (IsMetricType(hnsw_cfg.metric_type.value(), metric::IP)) {
             space = new (std::nothrow) hnswlib::InnerProductSpace(dim);
-        } else if (IsMetricType(hnsw_cfg.metric_type, metric::COSINE)) {
+        } else if (IsMetricType(hnsw_cfg.metric_type.value(), metric::COSINE)) {
             space = new (std::nothrow) hnswlib::CosineSpace(dim);
         } else {
-            LOG_KNOWHERE_WARNING_ << "metric type not support in hnsw: " << hnsw_cfg.metric_type;
+            LOG_KNOWHERE_WARNING_ << "metric type not support in hnsw: " << hnsw_cfg.metric_type.value();
             return Status::invalid_metric_type;
         }
-        auto index =
-            new (std::nothrow) hnswlib::HierarchicalNSW<float>(space, rows, hnsw_cfg.M, hnsw_cfg.efConstruction);
+        auto index = new (std::nothrow)
+            hnswlib::HierarchicalNSW<float>(space, rows, hnsw_cfg.M.value(), hnsw_cfg.efConstruction.value());
         if (index == nullptr) {
             LOG_KNOWHERE_WARNING_ << "memory malloc error.";
             return Status::malloc_error;
@@ -108,10 +102,10 @@ class HnswIndexNode : public IndexNode {
         const float* xq = static_cast<const float*>(dataset.GetTensor());
 
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
-        auto k = hnsw_cfg.k;
+        auto k = hnsw_cfg.k.value();
 
         feder::hnsw::FederResultUniq feder_result;
-        if (hnsw_cfg.trace_visit) {
+        if (hnsw_cfg.trace_visit.value()) {
             if (nq != 1) {
                 return Status::invalid_args;
             }
@@ -121,7 +115,7 @@ class HnswIndexNode : public IndexNode {
         auto p_id = new int64_t[k * nq];
         auto p_dist = new float[k * nq];
 
-        hnswlib::SearchParam param{(size_t)hnsw_cfg.ef, hnsw_cfg.for_tuning};
+        hnswlib::SearchParam param{(size_t)hnsw_cfg.ef.value(), hnsw_cfg.for_tuning.value()};
         bool transform =
             (index_->metric_type_ == hnswlib::Metric::INNER_PRODUCT || index_->metric_type_ == hnswlib::Metric::COSINE);
 
@@ -176,18 +170,18 @@ class HnswIndexNode : public IndexNode {
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
         bool is_ip =
             (index_->metric_type_ == hnswlib::Metric::INNER_PRODUCT || index_->metric_type_ == hnswlib::Metric::COSINE);
-        float radius = (is_ip ? (-hnsw_cfg.radius) : hnsw_cfg.radius);
-        float range_filter = hnsw_cfg.range_filter;
+        float radius = (is_ip ? (-hnsw_cfg.radius.value()) : hnsw_cfg.radius.value());
+        float range_filter = hnsw_cfg.range_filter.value();
 
         feder::hnsw::FederResultUniq feder_result;
-        if (hnsw_cfg.trace_visit) {
+        if (hnsw_cfg.trace_visit.value()) {
             if (nq != 1) {
                 return Status::invalid_args;
             }
             feder_result = std::make_unique<feder::hnsw::FederResult>();
         }
 
-        hnswlib::SearchParam param{(size_t)hnsw_cfg.ef};
+        hnswlib::SearchParam param{(size_t)hnsw_cfg.ef.value()};
 
         int64_t* ids = nullptr;
         float* dis = nullptr;
@@ -213,7 +207,7 @@ class HnswIndexNode : public IndexNode {
                     result_id_array[index][j] = p.second;
                 }
                 result_size[index] = rst.size();
-                if (hnsw_cfg.range_filter != defaultRangeFilter) {
+                if (hnsw_cfg.range_filter.value() != defaultRangeFilter) {
                     FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, radius,
                                                     range_filter);
                 }
@@ -278,7 +272,7 @@ class HnswIndexNode : public IndexNode {
         }
 
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
-        auto overview_levels = hnsw_cfg.overview_levels;
+        auto overview_levels = hnsw_cfg.overview_levels.value();
         feder::hnsw::HNSWMeta meta(index_->ef_construction_, index_->M_, index_->cur_element_count, index_->maxlevel_,
                                    index_->enterpoint_node_, overview_levels);
         std::unordered_set<int64_t> id_set;

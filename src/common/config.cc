@@ -80,14 +80,14 @@ Config::FormatAndCheck(const Config& cfg, Json& json) {
                 if (std::get_if<Entry<CFG_INT>>(&var)) {
                     std::string::size_type sz;
                     auto value_str = json[it.first].get<std::string>();
-                    CFG_INT v = std::stoi(value_str.c_str(), &sz);
+                    CFG_INT::value_type v = std::stoi(value_str.c_str(), &sz);
                     if (sz < value_str.length()) {
                         throw KnowhereException("wrong data type in json");
                     }
                     json[it.first] = v;
                 }
                 if (std::get_if<Entry<CFG_FLOAT>>(&var)) {
-                    CFG_FLOAT v = std::stof(json[it.first].get<std::string>().c_str());
+                    CFG_FLOAT::value_type v = std::stof(json[it.first].get<std::string>().c_str());
                     json[it.first] = v;
                 }
 

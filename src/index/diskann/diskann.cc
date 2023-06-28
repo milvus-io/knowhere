@@ -43,17 +43,17 @@ class DiskANNIndexNode : public IndexNode {
     }
 
     Status
-    Build(const DataSet& dataset, const Config& cfg) override {
-        return Add(dataset, cfg);
-    }
+    Build(const DataSet& dataset, const Config& cfg) override;
 
     Status
     Train(const DataSet& dataset, const Config& cfg) override {
-        return Status::success;
+        return Status::not_implemented;
     }
 
     Status
-    Add(const DataSet& dataset, const Config& cfg) override;
+    Add(const DataSet& dataset, const Config& cfg) override {
+        return Status::not_implemented;
+    }
 
     expected<DataSetPtr>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
@@ -250,34 +250,34 @@ CheckMetric(const std::string& diskann_metric) {
 
 template <typename T>
 Status
-DiskANNIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
+DiskANNIndexNode<T>::Build(const DataSet& dataset, const Config& cfg) {
     assert(file_manager_ != nullptr);
     std::lock_guard<std::mutex> lock(preparation_lock_);
     auto build_conf = static_cast<const DiskANNConfig&>(cfg);
-    if (!CheckMetric(build_conf.metric_type)) {
-        LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << build_conf.metric_type;
+    if (!CheckMetric(build_conf.metric_type.value())) {
+        LOG_KNOWHERE_ERROR_ << "Invalid metric type: " << build_conf.metric_type.value();
         return Status::invalid_metric_type;
     }
-    if (AnyIndexFileExist(build_conf.index_prefix)) {
+    if (AnyIndexFileExist(build_conf.index_prefix.value())) {
         LOG_KNOWHERE_ERROR_ << "This index prefix already has index files." << std::endl;
         return Status::diskann_file_error;
     }
-    if (!LoadFile(build_conf.data_path)) {
+    if (!LoadFile(build_conf.data_path.value())) {
         LOG_KNOWHERE_ERROR_ << "Failed load the raw data before building." << std::endl;
         return Status::diskann_file_error;
     }
-    auto& data_path = build_conf.data_path;
-    index_prefix_ = build_conf.index_prefix;
+    auto& data_path = build_conf.data_path.value();
+    index_prefix_ = build_conf.index_prefix.value();
 
     size_t count;
     size_t dim;
-    diskann::get_bin_metadata(build_conf.data_path, count, dim);
+    diskann::get_bin_metadata(build_conf.data_path.value(), count, dim);
     count_.store(count);
     dim_.store(dim);
 
-    bool need_norm = IsMetricType(build_conf.metric_type, knowhere::metric::IP) ||
-                     IsMetricType(build_conf.metric_type, knowhere::metric::COSINE);
-    auto diskann_metric = [m = build_conf.metric_type] {
+    bool need_norm = IsMetricType(build_conf.metric_type.value(), knowhere::metric::IP) ||
+                     IsMetricType(build_conf.metric_type.value(), knowhere::metric::COSINE);
+    auto diskann_metric = [m = build_conf.metric_type.value()] {
         if (IsMetricType(m, knowhere::metric::L2)) {
             return diskann::Metric::L2;
         } else if (IsMetricType(m, knowhere::metric::COSINE)) {
@@ -286,17 +286,18 @@ DiskANNIndexNode<T>::Add(const DataSet& dataset, const Config& cfg) {
             return diskann::Metric::INNER_PRODUCT;
         }
     }();
-    auto num_nodes_to_cache = GetCachedNodeNum(build_conf.search_cache_budget_gb, dim, build_conf.max_degree);
+    auto num_nodes_to_cache =
+        GetCachedNodeNum(build_conf.search_cache_budget_gb.value(), dim, build_conf.max_degree.value());
     diskann::BuildConfig diskann_internal_build_config{data_path,
                                                        index_prefix_,
                                                        diskann_metric,
-                                                       static_cast<unsigned>(build_conf.max_degree),
-                                                       static_cast<unsigned>(build_conf.search_list_size),
-                                                       static_cast<double>(build_conf.pq_code_budget_gb),
-                                                       static_cast<double>(build_conf.build_dram_budget_gb),
-                                                       static_cast<uint32_t>(build_conf.disk_pq_dims),
+                                                       static_cast<unsigned>(build_conf.max_degree.value()),
+                                                       static_cast<unsigned>(build_conf.search_list_size.value()),
+                                                       static_cast<double>(build_conf.pq_code_budget_gb.value()),
+                                                       static_cast<double>(build_conf.build_dram_budget_gb.value()),
+                                                       static_cast<uint32_t>(build_conf.disk_pq_dims.value()),
                                                        false,
-                                                       build_conf.accelerate_build,
+                                                       build_conf.accelerate_build.value(),
                                                        static_cast<uint32_t>(num_nodes_to_cache)};
     RETURN_IF_ERROR(TryDiskANNCall([&]() {
         int res = diskann::build_disk_index<T>(diskann_internal_build_config);
@@ -328,17 +329,17 @@ Status
 DiskANNIndexNode<T>::Deserialize(const BinarySet& binset, const Config& cfg) {
     std::lock_guard<std::mutex> lock(preparation_lock_);
     auto prep_conf = static_cast<const DiskANNConfig&>(cfg);
-    if (!CheckMetric(prep_conf.metric_type)) {
+    if (!CheckMetric(prep_conf.metric_type.value())) {
         return Status::invalid_metric_type;
     }
     if (is_prepared_.load()) {
         return Status::success;
     }
-    index_prefix_ = prep_conf.index_prefix;
-    bool is_ip = IsMetricType(prep_conf.metric_type, knowhere::metric::IP);
-    bool need_norm = IsMetricType(prep_conf.metric_type, knowhere::metric::IP) ||
-                     IsMetricType(prep_conf.metric_type, knowhere::metric::COSINE);
-    auto diskann_metric = [m = prep_conf.metric_type] {
+    index_prefix_ = prep_conf.index_prefix.value();
+    bool is_ip = IsMetricType(prep_conf.metric_type.value(), knowhere::metric::IP);
+    bool need_norm = IsMetricType(prep_conf.metric_type.value(), knowhere::metric::IP) ||
+                     IsMetricType(prep_conf.metric_type.value(), knowhere::metric::COSINE);
+    auto diskann_metric = [m = prep_conf.metric_type.value()] {
         if (IsMetricType(m, knowhere::metric::L2)) {
             return diskann::Metric::L2;
         } else if (IsMetricType(m, knowhere::metric::COSINE)) {
@@ -349,9 +350,9 @@ DiskANNIndexNode<T>::Deserialize(const BinarySet& binset, const Config& cfg) {
     }();
 
     // Load file from file manager.
-    for (auto& filename :
-         GetNecessaryFilenames(index_prefix_, need_norm,
-                               prep_conf.search_cache_budget_gb > 0 && !prep_conf.use_bfs_cache, prep_conf.warm_up)) {
+    for (auto& filename : GetNecessaryFilenames(
+             index_prefix_, need_norm, prep_conf.search_cache_budget_gb.value() > 0 && !prep_conf.use_bfs_cache.value(),
+             prep_conf.warm_up.value())) {
         if (!LoadFile(filename)) {
             return Status::diskann_file_error;
         }
@@ -409,8 +410,8 @@ DiskANNIndexNode<T>::Deserialize(const BinarySet& binset, const Config& cfg) {
             delete[] cached_nodes_ids;
         }
     } else {
-        auto num_nodes_to_cache = GetCachedNodeNum(prep_conf.search_cache_budget_gb, pq_flash_index_->get_data_dim(),
-                                                   pq_flash_index_->get_max_degree());
+        auto num_nodes_to_cache = GetCachedNodeNum(prep_conf.search_cache_budget_gb.value(),
+                                                   pq_flash_index_->get_data_dim(), pq_flash_index_->get_max_degree());
         if (num_nodes_to_cache > pq_flash_index_->get_num_points() / 3) {
             LOG_KNOWHERE_ERROR_ << "Failed to generate cache, num_nodes_to_cache(" << num_nodes_to_cache
                                 << ") is larger than 1/3 of the total data number.";
@@ -418,7 +419,7 @@ DiskANNIndexNode<T>::Deserialize(const BinarySet& binset, const Config& cfg) {
         }
         if (num_nodes_to_cache > 0) {
             LOG_KNOWHERE_INFO_ << "Caching " << num_nodes_to_cache << " sample nodes around medoid(s).";
-            if (prep_conf.use_bfs_cache) {
+            if (prep_conf.use_bfs_cache.value()) {
                 LOG_KNOWHERE_INFO_ << "Use bfs to generate cache list";
                 if (TryDiskANNCall([&]() { pq_flash_index_->cache_bfs_levels(num_nodes_to_cache, node_list); }) !=
                     Status::success) {
@@ -447,7 +448,7 @@ DiskANNIndexNode<T>::Deserialize(const BinarySet& binset, const Config& cfg) {
     }
 
     // warmup
-    if (prep_conf.warm_up) {
+    if (prep_conf.warm_up.value()) {
         LOG_KNOWHERE_INFO_ << "Warming up.";
         uint64_t warmup_L = 20;
         uint64_t warmup_num = 0;
@@ -502,31 +503,33 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
     }
 
     auto search_conf = static_cast<const DiskANNConfig&>(cfg);
-    if (!CheckMetric(search_conf.metric_type)) {
+    if (!CheckMetric(search_conf.metric_type.value())) {
         return Status::invalid_metric_type;
     }
-    auto max_search_list_size = std::max(kSearchListSizeMaxValue, search_conf.k * 10);
-    if (search_conf.search_list_size > max_search_list_size || search_conf.search_list_size < search_conf.k) {
+    auto max_search_list_size = std::max(kSearchListSizeMaxValue, search_conf.k.value() * 10);
+    if (search_conf.search_list_size.value() > max_search_list_size ||
+        search_conf.search_list_size.value() < search_conf.k.value()) {
         LOG_KNOWHERE_ERROR_ << "search_list_size should be in range: [topk, max(200, topk * 10)]";
         return Status::invalid_args;
     }
-    auto k = static_cast<uint64_t>(search_conf.k);
-    auto lsearch = static_cast<uint64_t>(search_conf.search_list_size);
-    auto beamwidth = static_cast<uint64_t>(search_conf.beamwidth);
-    auto filter_ratio = static_cast<float>(search_conf.filter_threshold);
-    auto for_tuning = static_cast<bool>(search_conf.for_tuning);
+    auto k = static_cast<uint64_t>(search_conf.k.value());
+    auto lsearch = static_cast<uint64_t>(search_conf.search_list_size.value());
+    auto beamwidth = static_cast<uint64_t>(search_conf.beamwidth.value());
+    auto filter_ratio = static_cast<float>(search_conf.filter_threshold.value());
+    auto for_tuning = static_cast<bool>(search_conf.for_tuning.value());
 
     auto nq = dataset.GetRows();
     auto dim = dataset.GetDim();
     auto xq = static_cast<const T*>(dataset.GetTensor());
 
     feder::diskann::FederResultUniq feder_result;
-    if (search_conf.trace_visit) {
+    if (search_conf.trace_visit.value()) {
         if (nq != 1) {
             return Status::invalid_args;
         }
         feder_result = std::make_unique<feder::diskann::FederResult>();
-        feder_result->visit_info_.SetQueryConfig(search_conf.k, search_conf.beamwidth, search_conf.search_list_size);
+        feder_result->visit_info_.SetQueryConfig(search_conf.k.value(), search_conf.beamwidth.value(),
+                                                 search_conf.search_list_size.value());
     }
 
     auto p_id = new int64_t[k * nq];
@@ -574,19 +577,19 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
     }
 
     auto search_conf = static_cast<const DiskANNConfig&>(cfg);
-    if (!CheckMetric(search_conf.metric_type)) {
+    if (!CheckMetric(search_conf.metric_type.value())) {
         return Status::invalid_metric_type;
     }
-    if (search_conf.min_k > search_conf.max_k) {
+    if (search_conf.min_k.value() > search_conf.max_k.value()) {
         LOG_KNOWHERE_ERROR_ << "min_k should be smaller than max_k";
         return Status::invalid_args;
     }
-    auto beamwidth = static_cast<uint64_t>(search_conf.beamwidth);
-    auto min_k = static_cast<uint64_t>(search_conf.min_k);
-    auto max_k = static_cast<uint64_t>(search_conf.max_k);
-    auto search_list_and_k_ratio = search_conf.search_list_and_k_ratio;
+    auto beamwidth = static_cast<uint64_t>(search_conf.beamwidth.value());
+    auto min_k = static_cast<uint64_t>(search_conf.min_k.value());
+    auto max_k = static_cast<uint64_t>(search_conf.max_k.value());
+    auto search_list_and_k_ratio = search_conf.search_list_and_k_ratio.value();
 
-    auto radius = search_conf.radius;
+    auto radius = search_conf.radius.value();
     bool is_ip = (pq_flash_index_->get_metric() == diskann::Metric::INNER_PRODUCT);
 
     auto dim = dataset.GetDim();
@@ -610,9 +613,9 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
             pq_flash_index_->range_search(xq + (index * dim), radius, min_k, max_k, result_id_array[index],
                                           result_dist_array[index], beamwidth, search_list_and_k_ratio, bitset);
             // filter range search result
-            if (search_conf.range_filter != defaultRangeFilter) {
+            if (search_conf.range_filter.value() != defaultRangeFilter) {
                 FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, radius,
-                                                search_conf.range_filter);
+                                                search_conf.range_filter.value());
             }
         }));
     }
@@ -625,8 +628,8 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
         return Status::diskann_inner_error;
     }
 
-    GetRangeSearchResult(result_dist_array, result_id_array, is_ip, nq, radius, search_conf.range_filter, p_dist, p_id,
-                         p_lims);
+    GetRangeSearchResult(result_dist_array, result_id_array, is_ip, nq, radius, search_conf.range_filter.value(),
+                         p_dist, p_id, p_lims);
     return GenResultDataSet(nq, p_id, p_dist, p_lims);
 }
 
@@ -676,9 +679,10 @@ DiskANNIndexNode<T>::GetIndexMeta(const Config& cfg) const {
         entry_points.push_back(pq_flash_index_->get_medoids()[i]);
     }
     auto diskann_conf = static_cast<const DiskANNConfig&>(cfg);
-    feder::diskann::DiskANNMeta meta(diskann_conf.data_path, diskann_conf.max_degree, diskann_conf.search_list_size,
-                                     diskann_conf.pq_code_budget_gb, diskann_conf.build_dram_budget_gb,
-                                     diskann_conf.disk_pq_dims, diskann_conf.accelerate_build, Count(), entry_points);
+    feder::diskann::DiskANNMeta meta(diskann_conf.data_path.value(), diskann_conf.max_degree.value(),
+                                     diskann_conf.search_list_size.value(), diskann_conf.pq_code_budget_gb.value(),
+                                     diskann_conf.build_dram_budget_gb.value(), diskann_conf.disk_pq_dims.value(),
+                                     diskann_conf.accelerate_build.value(), Count(), entry_points);
     std::unordered_set<int64_t> id_set(entry_points.begin(), entry_points.end());
 
     Json json_meta, json_id_set;
