@@ -597,8 +597,10 @@ class RaftIvfIndexNode : public IndexNode {
         }
         auto result = raft_detail::raft_results{res, queries.extent(0), k};
         if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
-            raft::neighbors::ivf_flat::search<float, std::int64_t>(res, search_params, *gpu_index_, queries,
-                                                                   result.ids(), result.dists());
+            // TODO: Use mdspan API in 23.08. Previous versions of IVF-FLAT are not using the good workspace resource
+            raft::neighbors::ivf_flat::search<float, std::int64_t>(
+                res, search_params, *gpu_index_, queries.data_handle(), queries.extent(0), k,
+                result.ids().data_handle(), result.dists().data_handle(), res.get_workspace_resource());
         } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
             raft::neighbors::ivf_pq::search<float, std::int64_t>(res, search_params, *gpu_index_, queries, result.ids(),
                                                                  result.dists());

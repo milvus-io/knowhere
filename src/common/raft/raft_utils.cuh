@@ -112,7 +112,6 @@ struct gpu_resources {
             memory_resources_[device_id] =
                 std::make_unique<rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>>(
                     &upstream_mr_, init_pool_size, max_pool_size);
-            rmm::mr::set_current_device_resource(memory_resources_[device_id].get());
         }
     }
 
@@ -124,6 +123,11 @@ struct gpu_resources {
     auto
     get_stream_view(int device_id = get_current_device(), std::size_t thread_id = get_thread_id()) {
         return stream_pools_[device_id]->get_stream(thread_id % streams_per_device_);
+    }
+
+    auto
+    get_memory_pool(int device_id = get_current_device()) {
+        return memory_resources_[device_id].get();
     }
 
  private:
@@ -152,7 +156,7 @@ get_raft_resources_pool(int device_id = get_current_device()) {
     if (iter == all_resources.end()) {
         auto scoped_device = device_setter{device_id};
         all_resources[device_id] = std::make_unique<raft::device_resources>(
-            get_gpu_resources().get_stream_view(), nullptr, rmm::mr::get_current_device_resource());
+            get_gpu_resources().get_stream_view(), nullptr, get_gpu_resources().get_memory_pool());
     }
     return *all_resources[device_id];
 }
@@ -160,13 +164,10 @@ get_raft_resources_pool(int device_id = get_current_device()) {
 inline auto&
 get_raft_resources_no_pool(int device_id = get_current_device()) {
     thread_local auto raft_resources = std::map<int, std::unique_ptr<raft::device_resources>>{};
-    thread_local auto memory_resources = std::map<int, std::unique_ptr<rmm::mr::cuda_memory_resource>>{};
     auto iter = raft_resources.find(device_id);
     if (iter == raft_resources.end()) {
         auto scoped_device = device_setter{device_id};
-        memory_resources[device_id] = std::make_unique<rmm::mr::cuda_memory_resource>();
-        raft_resources[device_id] = std::make_unique<raft::device_resources>(rmm::cuda_stream_per_thread, nullptr,
-                                                                             memory_resources[device_id].get());
+        raft_resources[device_id] = std::make_unique<raft::device_resources>();
     }
     return *raft_resources[device_id];
 }
