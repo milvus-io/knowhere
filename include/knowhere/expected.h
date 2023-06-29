@@ -83,6 +83,16 @@ class expected {
         return val.value();
     }
 
+    const std::string&
+    what() const {
+        return msg;
+    }
+
+    void
+    operator<<(const std::string& msg) {
+        this->msg += msg;
+    }
+
     expected<T>&
     operator=(const Status& err) {
         assert(err != Status::success);
@@ -93,6 +103,7 @@ class expected {
  private:
     std::optional<T> val = std::nullopt;
     std::optional<Status> err = std::nullopt;
+    std::string msg;
 };
 
 // Evaluates expr that returns a Status. Does nothing if the returned Status is

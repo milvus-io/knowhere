@@ -50,27 +50,32 @@ static const std::unordered_set<std::string> ext_legal_json_keys = {"metric_type
                                                                     "for_tuning"};
 
 Status
-Config::FormatAndCheck(const Config& cfg, Json& json) {
-    for (auto& it : json.items()) {
-        bool status = true;
-        {
-            auto it_ = cfg.__DICT__.find(it.key());
-            if (it_ == cfg.__DICT__.end()) {
-                status = false;
+Config::FormatAndCheck(const Config& cfg, Json& json, std::string* const err_msg) {
+    try {
+        for (auto& it : json.items()) {
+            bool status = true;
+            {
+                auto it_ = cfg.__DICT__.find(it.key());
+                if (it_ == cfg.__DICT__.end()) {
+                    status = false;
+                }
+            }
+            {
+                auto it_ = ext_legal_json_keys.find(it.key());
+                if (it_ != ext_legal_json_keys.end()) {
+                    status |= true;
+                }
+            }
+            if (!status) {
+                throw KnowhereException(std::string("invalid json key ") + it.key());
             }
         }
-        {
-            auto it_ = ext_legal_json_keys.find(it.key());
-            if (it_ == ext_legal_json_keys.end()) {
-                status |= false;
-            } else {
-                status |= true;
-            }
+    } catch (std::exception& e) {
+        LOG_KNOWHERE_ERROR_ << e.what();
+        if (err_msg) {
+            *err_msg = e.what();
         }
-        if (!status) {
-            LOG_KNOWHERE_ERROR_ << "invalid json key: " << it.key();
-            return Status::invalid_param_in_json;
-        }
+        return Status::invalid_param_in_json;
     }
 
     try {
@@ -82,7 +87,7 @@ Config::FormatAndCheck(const Config& cfg, Json& json) {
                     auto value_str = json[it.first].get<std::string>();
                     CFG_INT::value_type v = std::stoi(value_str.c_str(), &sz);
                     if (sz < value_str.length()) {
-                        throw KnowhereException("wrong data type in json");
+                        throw KnowhereException(std::string("wrong data type in json ") + value_str);
                     }
                     json[it.first] = v;
                 }
@@ -102,7 +107,10 @@ Config::FormatAndCheck(const Config& cfg, Json& json) {
             }
         }
     } catch (std::exception& e) {
-        LOG_KNOWHERE_ERROR_ << "Invalid value in json: " << e.what();
+        LOG_KNOWHERE_ERROR_ << e.what();
+        if (err_msg) {
+            *err_msg = e.what();
+        }
         return Status::invalid_value_in_json;
     }
     return Status::success;

@@ -262,10 +262,10 @@ class EntryAccess {
 class Config {
  public:
     static Status
-    FormatAndCheck(const Config& cfg, Json& json);
+    FormatAndCheck(const Config& cfg, Json& json, std::string* const err_msg = nullptr);
 
     static Status
-    Load(Config& cfg, const Json& json, PARAM_TYPE type) {
+    Load(Config& cfg, const Json& json, PARAM_TYPE type, std::string* const err_msg = nullptr) {
         for (const auto& it : cfg.__DICT__) {
             const auto& var = it.second;
 
@@ -278,6 +278,9 @@ class Config {
                         continue;
                     }
                     LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
+                    if (err_msg) {
+                        *err_msg = std::string("invalid param ") + it.first;
+                    }
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
@@ -286,12 +289,18 @@ class Config {
                 }
                 if (!json[it.first].is_number_integer()) {
                     LOG_KNOWHERE_ERROR_ << "Type conflict in json: param [" << it.first << "] should be integer.";
+                    if (err_msg) {
+                        *err_msg = std::string("param ") + it.first + " should be integer";
+                    }
                     return Status::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
                     if (json[it.first].get<long>() > std::numeric_limits<CFG_INT::value_type>::max()) {
                         LOG_KNOWHERE_ERROR_ << "Arithmetic overflow: param [" << it.first << "] should be at most "
                                             << std::numeric_limits<CFG_INT::value_type>::max();
+                        if (err_msg) {
+                            *err_msg = std::string("param ") + it.first + " should be at most 2147483647";
+                        }
                         return Status::arithmetic_overflow;
                     }
                     CFG_INT::value_type v = json[it.first];
@@ -300,6 +309,11 @@ class Config {
                     } else {
                         LOG_KNOWHERE_ERROR_ << "Out of range in json: param [" << it.first << "] should be in ["
                                             << ptr->range.value().first << ", " << ptr->range.value().second << "].";
+                        if (err_msg) {
+                            *err_msg = std::string("param ") + it.first + " out of range " + "[ " +
+                                       std::to_string(ptr->range.value().first) + "," +
+                                       std::to_string(ptr->range.value().second) + " ]";
+                        }
                         return Status::out_of_range_in_json;
                     }
                 } else {
@@ -316,6 +330,10 @@ class Config {
                         continue;
                     }
                     LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
+                    if (err_msg) {
+                        *err_msg = std::string("invalid param ") + it.first;
+                    }
+
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
@@ -324,12 +342,20 @@ class Config {
                 }
                 if (!json[it.first].is_number()) {
                     LOG_KNOWHERE_ERROR_ << "Type conflict in json: param [" << it.first << "] should be a number.";
+                    if (err_msg) {
+                        *err_msg = std::string("param ") + it.first + " should be a number";
+                    }
+
                     return Status::type_conflict_in_json;
                 }
                 if (ptr->range.has_value()) {
                     if (json[it.first].get<double>() > std::numeric_limits<CFG_FLOAT::value_type>::max()) {
                         LOG_KNOWHERE_ERROR_ << "Arithmetic overflow: param [" << it.first << "] should be at most "
                                             << std::numeric_limits<CFG_FLOAT::value_type>::max();
+                        if (err_msg) {
+                            *err_msg = std::string("param ") + it.first + " should be at most 3.402823e+38";
+                        }
+
                         return Status::arithmetic_overflow;
                     }
                     CFG_FLOAT::value_type v = json[it.first];
@@ -338,6 +364,12 @@ class Config {
                     } else {
                         LOG_KNOWHERE_ERROR_ << "Out of range in json: param [" << it.first << "] should be in ["
                                             << ptr->range.value().first << ", " << ptr->range.value().second << "].";
+                        if (err_msg) {
+                            *err_msg = std::string("param ") + it.first + " out of range " + "[ " +
+                                       std::to_string(ptr->range.value().first) + "," +
+                                       std::to_string(ptr->range.value().second) + " ]";
+                        }
+
                         return Status::out_of_range_in_json;
                     }
                 } else {
@@ -354,6 +386,9 @@ class Config {
                         continue;
                     }
                     LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
+                    if (err_msg) {
+                        *err_msg = std::string("invalid param ") + it.first;
+                    }
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
@@ -362,6 +397,9 @@ class Config {
                 }
                 if (!json[it.first].is_string()) {
                     LOG_KNOWHERE_ERROR_ << "Type conflict in json: param [" << it.first << "] should be a string.";
+                    if (err_msg) {
+                        *err_msg = std::string("param ") + it.first + " should be a string";
+                    }
                     return Status::type_conflict_in_json;
                 }
                 *ptr->val = json[it.first];
@@ -376,6 +414,10 @@ class Config {
                         continue;
                     }
                     LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
+                    if (err_msg) {
+                        *err_msg = std::string("invalid param ") + it.first;
+                    }
+
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
@@ -384,6 +426,10 @@ class Config {
                 }
                 if (!json[it.first].is_array()) {
                     LOG_KNOWHERE_ERROR_ << "Type conflict in json: param [" << it.first << "] should be an array.";
+                    if (err_msg) {
+                        *err_msg = std::string("param ") + it.first + " should be an array";
+                    }
+
                     return Status::type_conflict_in_json;
                 }
                 *ptr->val = CFG_LIST();
@@ -401,6 +447,10 @@ class Config {
                         continue;
                     }
                     LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
+                    if (err_msg) {
+                        *err_msg = std::string("invalid param ") + it.first;
+                    }
+
                     return Status::invalid_param_in_json;
                 }
                 if (json.find(it.first) == json.end()) {
@@ -409,6 +459,10 @@ class Config {
                 }
                 if (!json[it.first].is_boolean()) {
                     LOG_KNOWHERE_ERROR_ << "Type conflict in json: param [" << it.first << "] should be a boolean.";
+                    if (err_msg) {
+                        *err_msg = std::string("param ") + it.first + " should be a boolean";
+                    }
+
                     return Status::type_conflict_in_json;
                 }
                 *ptr->val = json[it.first];
