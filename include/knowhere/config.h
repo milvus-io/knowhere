@@ -82,6 +82,7 @@ struct Entry<CFG_STRING> {
     uint32_t type;
     std::optional<CFG_STRING::value_type> default_val;
     std::optional<std::string> desc;
+    bool allow_empty_without_default = false;
 };
 
 template <>
@@ -106,6 +107,7 @@ struct Entry<CFG_FLOAT> {
     uint32_t type;
     std::optional<std::pair<CFG_FLOAT::value_type, CFG_FLOAT::value_type>> range;
     std::optional<std::string> desc;
+    bool allow_empty_without_default = false;
 };
 
 template <>
@@ -130,6 +132,7 @@ struct Entry<CFG_INT> {
     uint32_t type;
     std::optional<std::pair<CFG_INT::value_type, CFG_INT::value_type>> range;
     std::optional<std::string> desc;
+    bool allow_empty_without_default = false;
 };
 
 template <>
@@ -152,6 +155,7 @@ struct Entry<CFG_LIST> {
     std::optional<CFG_LIST::value_type> default_val;
     uint32_t type;
     std::optional<std::string> desc;
+    bool allow_empty_without_default = false;
 };
 
 template <>
@@ -174,6 +178,7 @@ struct Entry<CFG_BOOL> {
     std::optional<CFG_BOOL::value_type> default_val;
     uint32_t type;
     std::optional<std::string> desc;
+    bool allow_empty_without_default = false;
 };
 
 template <typename T>
@@ -191,6 +196,12 @@ class EntryAccess {
     EntryAccess&
     set_range(typename T::value_type a, typename T::value_type b) {
         entry->range = std::make_pair(a, b);
+        return *this;
+    }
+
+    EntryAccess&
+    allow_empty_without_default() {
+        entry->allow_empty_without_default = true;
         return *this;
     }
 
@@ -263,6 +274,9 @@ class Config {
                     continue;
                 }
                 if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
+                    if (ptr->allow_empty_without_default) {
+                        continue;
+                    }
                     LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
                     return Status::invalid_param_in_json;
                 }
@@ -298,6 +312,9 @@ class Config {
                     continue;
                 }
                 if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
+                    if (ptr->allow_empty_without_default) {
+                        continue;
+                    }
                     LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
                     return Status::invalid_param_in_json;
                 }
@@ -333,6 +350,9 @@ class Config {
                     continue;
                 }
                 if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
+                    if (ptr->allow_empty_without_default) {
+                        continue;
+                    }
                     LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
                     return Status::invalid_param_in_json;
                 }
@@ -352,6 +372,9 @@ class Config {
                     continue;
                 }
                 if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
+                    if (ptr->allow_empty_without_default) {
+                        continue;
+                    }
                     LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
                     return Status::invalid_param_in_json;
                 }
@@ -374,6 +397,9 @@ class Config {
                     continue;
                 }
                 if (json.find(it.first) == json.end() && !ptr->default_val.has_value()) {
+                    if (ptr->allow_empty_without_default) {
+                        continue;
+                    }
                     LOG_KNOWHERE_ERROR_ << "Invalid param [" << it.first << "] in json.";
                     return Status::invalid_param_in_json;
                 }
@@ -456,12 +482,17 @@ class BaseConfig : public Config {
     }
 
     virtual Status
-    CheckAndAdjustConfigForSearch() {
+    CheckAndAdjustForSearch() {
         return Status::success;
     }
 
     virtual Status
-    CheckAndAdjustConfigForRangeSearch() {
+    CheckAndAdjustForRangeSearch() {
+        return Status::success;
+    }
+
+    virtual inline Status
+    CheckAndAdjustForBuild() {
         return Status::success;
     }
 };
