@@ -27,8 +27,8 @@ TEST_CASE("Knowhere global config", "[init]") {
     knowhere::KnowhereConfig::SetEarlyStopThreshold(early_stop_threshold);
     REQUIRE(knowhere::KnowhereConfig::GetEarlyStopThreshold() == early_stop_threshold);
 
-    knowhere::KnowhereConfig::SetClusteringType(knowhere::KnowhereConfig::ClusteringType::K_MEANS);
     knowhere::KnowhereConfig::SetClusteringType(knowhere::KnowhereConfig::ClusteringType::K_MEANS_PLUS_PLUS);
+    knowhere::KnowhereConfig::SetClusteringType(knowhere::KnowhereConfig::ClusteringType::K_MEANS);
 
 #ifdef KNOWHERE_WITH_DISKANN
     knowhere::KnowhereConfig::SetAioContextPool(128, 2048);
