@@ -510,7 +510,7 @@ DiskANNIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const Bit
     if (search_conf.search_list_size.value() > max_search_list_size ||
         search_conf.search_list_size.value() < search_conf.k.value()) {
         LOG_KNOWHERE_ERROR_ << "search_list_size should be in range: [topk, max(200, topk * 10)]";
-        return Status::invalid_args;
+        return Status::out_of_range_in_json;
     }
     auto k = static_cast<uint64_t>(search_conf.k.value());
     auto lsearch = static_cast<uint64_t>(search_conf.search_list_size.value());
@@ -582,7 +582,7 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
     }
     if (search_conf.min_k.value() > search_conf.max_k.value()) {
         LOG_KNOWHERE_ERROR_ << "min_k should be smaller than max_k";
-        return Status::invalid_args;
+        return Status::out_of_range_in_json;
     }
     auto beamwidth = static_cast<uint64_t>(search_conf.beamwidth.value());
     auto min_k = static_cast<uint64_t>(search_conf.min_k.value());
