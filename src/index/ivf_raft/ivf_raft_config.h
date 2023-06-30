@@ -33,7 +33,7 @@ class RaftIvfFlatConfig : public IvfFlatConfig {
         KNOWHERE_CONFIG_DECLARE_FIELD(k)
             .set_default(10)
             .description("search for top k similar vector.")
-            .set_range(1, 1024)
+            .set_range(1, 256)
             .for_search();
 
         KNOWHERE_CONFIG_DECLARE_FIELD(gpu_ids)
