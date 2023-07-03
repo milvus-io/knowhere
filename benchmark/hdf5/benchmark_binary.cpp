@@ -68,6 +68,33 @@ class Benchmark_binary : public Benchmark_knowhere, public ::testing::Test {
         printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
     }
 
+    void
+    test_binary_hnsw(const knowhere::Json& cfg) {
+        auto conf = cfg;
+        auto M = conf[knowhere::indexparam::HNSW_M].get<int64_t>();
+        auto efc = conf[knowhere::indexparam::EFCONSTRUCTION].get<int64_t>();
+
+        printf("\n[%0.3f s] %s | %s | M=%ld | efc=%ld\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(),
+               M, efc);
+        printf("================================================================================\n");
+        for (auto ef : EFs_) {
+            conf[knowhere::indexparam::EF] = ef;
+            for (auto nq : NQs_) {
+                auto ds_ptr = knowhere::GenDataSet(nq, dim_, xq_);
+                for (auto k : TOPKs_) {
+                    conf[knowhere::meta::TOPK] = k;
+                    CALC_TIME_SPAN(auto result = index_.Search(*ds_ptr, conf, nullptr));
+                    auto ids = result.value()->GetIds();
+                    float recall = CalcRecall(ids, nq, k);
+                    printf("  ef = %4d, nq = %4d, k = %4d, elapse = %6.3fs, R@ = %.4f\n", ef, nq, k, t_diff, recall);
+                    std::fflush(stdout);
+                }
+            }
+        }
+        printf("================================================================================\n");
+        printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+    }
+
  protected:
     void
     SetUp() override {
@@ -98,6 +125,11 @@ class Benchmark_binary : public Benchmark_knowhere, public ::testing::Test {
     // IVF index params
     const std::vector<int32_t> NLISTs_ = {1024};
     const std::vector<int32_t> NPROBEs_ = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512};
+
+    // HNSW index params
+    const std::vector<int32_t> HNSW_Ms_ = {16};
+    const std::vector<int32_t> EFCONs_ = {200};
+    const std::vector<int32_t> EFs_ = {128, 256, 512};
 };
 
 // This testcase can be used to generate binary sift1m HDF5 file
@@ -161,5 +193,20 @@ TEST_F(Benchmark_binary, TEST_BINARY_IVF_FLAT) {
         std::string index_file_name = get_index_name({nlist});
         create_index(index_file_name, conf);
         test_binary_ivf(conf);
+    }
+}
+
+TEST_F(Benchmark_binary, TEST_BINARY_HNSW) {
+    index_type_ = knowhere::IndexEnum::INDEX_HNSW;
+
+    knowhere::Json conf = cfg_;
+    for (auto M : HNSW_Ms_) {
+        conf[knowhere::indexparam::HNSW_M] = M;
+        for (auto efc : EFCONs_) {
+            conf[knowhere::indexparam::EFCONSTRUCTION] = efc;
+            std::string index_file_name = get_index_name({M, efc});
+            create_index(index_file_name, conf);
+            test_binary_hnsw(conf);
+        }
     }
 }
