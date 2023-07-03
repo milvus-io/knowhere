@@ -9,6 +9,7 @@ filters:
       - hhy3
       - PwzXxm
       - cqy123456
+      - zhengbuqian
 
     approvers:
       - cydrain
@@ -19,6 +20,7 @@ filters:
       - hhy3
       - PwzXxm
       - cqy123456
+      - zhengbuqian
 
   "tests":
     reviewers:
