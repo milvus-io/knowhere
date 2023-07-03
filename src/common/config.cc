@@ -53,20 +53,9 @@ Status
 Config::FormatAndCheck(const Config& cfg, Json& json, std::string* const err_msg) {
     try {
         for (auto& it : json.items()) {
-            bool status = true;
-            {
-                auto it_ = cfg.__DICT__.find(it.key());
-                if (it_ == cfg.__DICT__.end()) {
-                    status = false;
-                }
-            }
-            {
-                auto it_ = ext_legal_json_keys.find(it.key());
-                if (it_ != ext_legal_json_keys.end()) {
-                    status |= true;
-                }
-            }
-            if (!status) {
+            // valid only if it.key() exists in one of cfg.__DICT__ and ext_legal_json_keys
+            if (cfg.__DICT__.find(it.key()) == cfg.__DICT__.end() &&
+                ext_legal_json_keys.find(it.key()) == ext_legal_json_keys.end()) {
                 throw KnowhereException(std::string("invalid json key ") + it.key());
             }
         }
