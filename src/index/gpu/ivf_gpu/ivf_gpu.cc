@@ -54,7 +54,7 @@ class GpuIvfIndexNode : public IndexNode {
                       std::is_same<T, faiss::IndexIVFScalarQuantizer>::value);
     }
 
-    virtual Status
+    Status
     Train(const DataSet& dataset, const Config& cfg) override {
         if (index_ && index_->is_trained) {
             LOG_KNOWHERE_WARNING_ << "index is already trained";
@@ -107,7 +107,7 @@ class GpuIvfIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual Status
+    Status
     Add(const DataSet& dataset, const Config& cfg) override {
         if (!index_) {
             LOG_KNOWHERE_ERROR_ << "Can not add data to empty GpuIvfIndex.";
@@ -129,7 +129,7 @@ class GpuIvfIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual expected<DataSetPtr>
+    expected<DataSetPtr>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         auto ivf_gpu_cfg = static_cast<const typename KnowhereConfigType<T>::Type&>(cfg);
 
@@ -163,7 +163,7 @@ class GpuIvfIndexNode : public IndexNode {
         return Status::not_implemented;
     }
 
-    virtual expected<DataSetPtr>
+    expected<DataSetPtr>
     GetVectorByIds(const DataSet& dataset) const override {
         return Status::not_implemented;
     }
@@ -173,7 +173,7 @@ class GpuIvfIndexNode : public IndexNode {
         return Status::not_implemented;
     }
 
-    virtual Status
+    Status
     Serialize(BinarySet& binset) const override {
         if (!index_) {
             LOG_KNOWHERE_ERROR_ << "Can not serialize empty GpuIvfIndex.";
@@ -201,7 +201,7 @@ class GpuIvfIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual Status
+    Status
     Deserialize(const BinarySet& binset, const Config& config) override {
         auto binary = binset.GetByName(Type());
         if (binary == nullptr) {
@@ -232,12 +232,12 @@ class GpuIvfIndexNode : public IndexNode {
         return Status::not_implemented;
     }
 
-    virtual std::unique_ptr<BaseConfig>
+    std::unique_ptr<BaseConfig>
     CreateConfig() const override {
         return std::make_unique<typename KnowhereConfigType<T>::Type>();
     }
 
-    virtual int64_t
+    int64_t
     Dim() const override {
         if (index_) {
             return index_->d;
@@ -245,12 +245,12 @@ class GpuIvfIndexNode : public IndexNode {
         return 0;
     }
 
-    virtual int64_t
+    int64_t
     Size() const override {
         return 0;
     }
 
-    virtual int64_t
+    int64_t
     Count() const override {
         if (index_) {
             return index_->ntotal;
@@ -258,7 +258,7 @@ class GpuIvfIndexNode : public IndexNode {
         return 0;
     }
 
-    virtual std::string
+    std::string
     Type() const override {
         if constexpr (std::is_same<faiss::IndexIVFFlat, T>::value) {
             return knowhere::IndexEnum::INDEX_FAISS_GPU_IVFFLAT;

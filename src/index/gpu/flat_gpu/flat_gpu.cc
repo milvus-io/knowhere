@@ -26,7 +26,7 @@ class GpuFlatIndexNode : public IndexNode {
     GpuFlatIndexNode(const Object& object) : index_(nullptr) {
     }
 
-    virtual Status
+    Status
     Train(const DataSet& dataset, const Config& cfg) override {
         const GpuFlatConfig& f_cfg = static_cast<const GpuFlatConfig&>(cfg);
         auto metric = Str2FaissMetricType(f_cfg.metric_type);
@@ -38,7 +38,7 @@ class GpuFlatIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual Status
+    Status
     Add(const DataSet& dataset, const Config& cfg) override {
         const void* x = dataset.GetTensor();
         const int64_t n = dataset.GetRows();
@@ -52,7 +52,7 @@ class GpuFlatIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual expected<DataSetPtr>
+    expected<DataSetPtr>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         if (!index_) {
             LOG_KNOWHERE_WARNING_ << "index not empty, deleted old index.";
@@ -86,7 +86,7 @@ class GpuFlatIndexNode : public IndexNode {
         return Status::not_implemented;
     }
 
-    virtual expected<DataSetPtr>
+    expected<DataSetPtr>
     GetVectorByIds(const DataSet& dataset) const override {
         DataSetPtr results = std::make_shared<DataSet>();
         auto nq = dataset.GetRows();
@@ -110,7 +110,7 @@ class GpuFlatIndexNode : public IndexNode {
         return Status::not_implemented;
     }
 
-    virtual Status
+    Status
     Serialize(BinarySet& binset) const override {
         if (!index_) {
             LOG_KNOWHERE_WARNING_ << "serilalization on empty index.";
@@ -129,7 +129,7 @@ class GpuFlatIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual Status
+    Status
     Deserialize(const BinarySet& binset, const Config& config) override {
         auto binary = binset.GetByName(Type());
         if (binary == nullptr) {
@@ -161,27 +161,27 @@ class GpuFlatIndexNode : public IndexNode {
         return Status::not_implemented;
     }
 
-    virtual std::unique_ptr<BaseConfig>
+    std::unique_ptr<BaseConfig>
     CreateConfig() const override {
         return std::make_unique<GpuFlatConfig>();
     }
 
-    virtual int64_t
+    int64_t
     Dim() const override {
         return index_->d;
     }
 
-    virtual int64_t
+    int64_t
     Size() const override {
         return index_->ntotal * index_->d * sizeof(float);
     }
 
-    virtual int64_t
+    int64_t
     Count() const override {
         return index_->ntotal;
     }
 
-    virtual std::string
+    std::string
     Type() const override {
         return knowhere::IndexEnum::INDEX_FAISS_GPU_IDMAP;
     }

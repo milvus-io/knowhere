@@ -35,7 +35,7 @@ class CagraIndexNode : public IndexNode {
     CagraIndexNode(const Object& object) : devs_{}, gpu_index_{} {
     }
 
-    virtual Status
+    Status
     Train(const DataSet& dataset, const Config& cfg) override {
         auto cagra_cfg = static_cast<const knowhere::CagraConfig&>(cfg);
         if (gpu_index_) {
@@ -78,12 +78,12 @@ class CagraIndexNode : public IndexNode {
         res.sync_stream();
     }
 
-    virtual Status
+    Status
     Add(const DataSet& dataset, const Config& cfg) override {
         return Status::success;
     }
 
-    virtual expected<DataSetPtr>
+    expected<DataSetPtr>
     Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override {
         auto cagra_cfg = static_cast<const CagraConfig&>(cfg);
         auto rows = dataset.GetRows();
@@ -124,12 +124,12 @@ class CagraIndexNode : public IndexNode {
         return Status::not_implemented;
     }
 
-    virtual expected<DataSetPtr>
+    expected<DataSetPtr>
     GetVectorByIds(const DataSet& dataset) const override {
         return Status::not_implemented;
     }
 
-    virtual bool
+    bool
     HasRawData(const std::string& metric_type) const override {
         return false;
     }
@@ -139,7 +139,7 @@ class CagraIndexNode : public IndexNode {
         return Status::not_implemented;
     }
 
-    virtual Status
+    Status
     Serialize(BinarySet& binset) const override {
         if (!gpu_index_.has_value()) {
             LOG_KNOWHERE_ERROR_ << "Can not serialize empty RaftCagraIndex.";
@@ -166,7 +166,7 @@ class CagraIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual Status
+    Status
     Deserialize(const BinarySet& binset, const Config& config) override {
         std::stringbuf buf;
         auto binary = binset.GetByName(this->Type());
@@ -194,31 +194,31 @@ class CagraIndexNode : public IndexNode {
         return Status::success;
     }
 
-    virtual Status
+    Status
     DeserializeFromFile(const std::string& filename, const Config& config) override {
     }
 
-    virtual std::unique_ptr<BaseConfig>
+    std::unique_ptr<BaseConfig>
     CreateConfig() const override {
         return std::make_unique<CagraConfig>();
     }
 
-    virtual int64_t
+    int64_t
     Dim() const override {
         return dim_;
     }
 
-    virtual int64_t
+    int64_t
     Size() const override {
         return 0;
     }
 
-    virtual int64_t
+    int64_t
     Count() const override {
         return counts_;
     }
 
-    virtual std::string
+    std::string
     Type() const override {
         return knowhere::IndexEnum::INDEX_RAFT_IVFFLAT;
     }
