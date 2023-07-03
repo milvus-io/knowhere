@@ -75,7 +75,8 @@ void IndexScalarQuantizer::search(
                 minheap_heapify(k, D, I);
             }
             scanner->set_query(x + i * d);
-            scanner->scan_codes(ntotal, codes.data(), nullptr, D, I, k);
+            scanner->scan_codes(
+                    ntotal, codes.data(), nullptr, nullptr, D, I, k);
 
             // re-order heap
             if (metric_type == METRIC_L2) {
@@ -196,6 +197,7 @@ void IndexIVFScalarQuantizer::sa_decode(idx_t n, const uint8_t* codes, float* x)
 void IndexIVFScalarQuantizer::add_core(
         idx_t n,
         const float* x,
+        const float* x_norms,
         const idx_t* xids,
         const idx_t* coarse_idx) {
     FAISS_THROW_IF_NOT(is_trained);
@@ -227,7 +229,8 @@ void IndexIVFScalarQuantizer::add_core(
                 memset(one_code.data(), 0, code_size);
                 squant->encode_vector(xi, one_code.data());
 
-                size_t ofs = invlists->add_entry(list_no, id, one_code.data());
+                size_t ofs = invlists->add_entry(
+                        list_no, id, one_code.data());
 
                 dm_add.add(i, list_no, ofs);
                 nadd++;

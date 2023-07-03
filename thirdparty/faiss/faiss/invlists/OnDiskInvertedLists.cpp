@@ -418,7 +418,8 @@ size_t OnDiskInvertedLists::add_entries(
         size_t list_no,
         size_t n_entry,
         const idx_t* ids,
-        const uint8_t* code) {
+        const uint8_t* code,
+        const float* code_norm) {
     FAISS_THROW_IF_NOT(!read_only);
     locks->lock_1(list_no);
     size_t o = list_size(list_no);

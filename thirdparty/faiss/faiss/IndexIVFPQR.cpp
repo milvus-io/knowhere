@@ -68,12 +68,13 @@ void IndexIVFPQR::train_residual(idx_t n, const float* x) {
 }
 
 void IndexIVFPQR::add_with_ids(idx_t n, const float* x, const idx_t* xids) {
-    add_core(n, x, xids, nullptr);
+    add_core(n, x, nullptr, xids, nullptr);
 }
 
 void IndexIVFPQR::add_core(
         idx_t n,
         const float* x,
+        const float* x_norms,
         const idx_t* xids,
         const idx_t* precomputed_idx) {
     float* residual_2 = new float[n * d];

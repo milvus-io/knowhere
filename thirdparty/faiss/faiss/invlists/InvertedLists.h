@@ -102,6 +102,14 @@ struct InvertedLists {
      */
     virtual const uint8_t* get_codes(size_t list_no, size_t offset) const;
 
+    /**
+     * get the code normal lengths for an inverted list
+     * @param list_no
+     * @param offset
+     * @return
+     */
+    virtual const float* get_code_norms(size_t list_no, size_t offset) const;
+
     /** get the ids slice beginning with offset for an inverted list
      *
      * @return ids      size : user guarantee the slice side by list_size or segment_size API
@@ -110,6 +118,9 @@ struct InvertedLists {
 
     /// release codes returned by get_codes (default implementation is nop
     virtual void release_codes(size_t list_no, const uint8_t* codes) const;
+
+    /// release code normals returned by get_code_norms (default implementation is nop
+    virtual void release_code_norms(size_t list_no, const float* codes) const;
 
     /// release ids returned by get_ids
     virtual void release_ids(size_t list_no, const idx_t* ids) const;
@@ -129,13 +140,18 @@ struct InvertedLists {
      * writing functions     */
 
     /// add one entry to an inverted list
-    virtual size_t add_entry(size_t list_no, idx_t theid, const uint8_t* code);
+    virtual size_t add_entry(
+            size_t list_no,
+            idx_t theid,
+            const uint8_t* code,
+            const float* code_norm = nullptr);
 
     virtual size_t add_entries(
             size_t list_no,
             size_t n_entry,
             const idx_t* ids,
-            const uint8_t* code) = 0;
+            const uint8_t* code,
+            const float* code_norm = nullptr) = 0;
 
     /// add one entry to an inverted list without codes
     virtual size_t add_entry_without_codes(
@@ -260,6 +276,25 @@ struct InvertedLists {
             il->release_codes(list_no, codes);
         }
     };
+
+    struct ScopedCodeNorms {
+        const InvertedLists* il;
+        const float* code_norms;
+        size_t list_no;
+
+        ScopedCodeNorms(const InvertedLists* il, size_t list_no, size_t offset)
+                : il(il),
+                  code_norms(il->get_code_norms(list_no, offset)),
+                  list_no(list_no) {}
+
+        const float* get() {
+            return code_norms;
+        }
+
+        ~ScopedCodeNorms() {
+            il->release_code_norms(list_no, code_norms);
+        }
+    };
 };
 
 /// simple (default) implementation as an array of inverted lists
@@ -277,7 +312,8 @@ struct ArrayInvertedLists : InvertedLists {
             size_t list_no,
             size_t n_entry,
             const idx_t* ids,
-            const uint8_t* code) override;
+            const uint8_t* code,
+            const float* code_norm = nullptr) override;
 
     size_t add_entries_without_codes (
             size_t list_no,
@@ -320,7 +356,7 @@ struct ConcurrentArrayInvertedLists : InvertedLists {
         std::vector<T> data_;
     };
 
-    ConcurrentArrayInvertedLists(size_t nlist, size_t code_size, size_t segment_size);
+    ConcurrentArrayInvertedLists(size_t nlist, size_t code_size, size_t segment_size, bool save_normal);
 
     size_t cal_segment_num(size_t capacity) const;
     void reserve(size_t list_no, size_t capacity);
@@ -337,6 +373,10 @@ struct ConcurrentArrayInvertedLists : InvertedLists {
     const uint8_t* get_codes(size_t list_no, size_t offset) const override;
     const idx_t* get_ids(size_t list_no, size_t offset) const override;
 
+    const float* get_code_norms(size_t list_no, size_t offset) const override;
+    void release_code_norms(size_t list_no, const float* codes)
+            const override;
+
     idx_t get_single_id(size_t list_no, size_t offset) const override;
     const uint8_t* get_single_code(size_t list_no, size_t offset) const override;
 
@@ -344,7 +384,8 @@ struct ConcurrentArrayInvertedLists : InvertedLists {
             size_t list_no,
             size_t n_entry,
             const idx_t* ids,
-            const uint8_t* code) override;
+            const uint8_t* code,
+            const float* code_norms = nullptr) override;
 
     size_t add_entries_without_codes (
             size_t list_no,
@@ -367,9 +408,11 @@ struct ConcurrentArrayInvertedLists : InvertedLists {
     ~ConcurrentArrayInvertedLists() override;
 
     const size_t segment_size;
+    const bool save_norm;
     std::vector<std::atomic<size_t>> list_cur;
     std::vector<std::deque<Segment<uint8_t>>> codes;
     std::vector<std::deque<Segment<idx_t>>> ids;
+    std::vector<std::deque<Segment<float>>> code_norms;
 };
 
 struct ReadOnlyArrayInvertedLists: InvertedLists {
@@ -410,7 +453,8 @@ struct ReadOnlyArrayInvertedLists: InvertedLists {
             size_t list_no,
             size_t n_entry,
             const idx_t* ids,
-            const uint8_t *code) override;
+            const uint8_t* code,
+            const float* code_norm = nullptr) override;
 
     size_t add_entries_without_codes(
             size_t list_no,
@@ -447,7 +491,8 @@ struct ReadOnlyInvertedLists : InvertedLists {
             size_t list_no,
             size_t n_entry,
             const idx_t* ids,
-            const uint8_t* code) override;
+            const uint8_t* code,
+            const float* code_norm = nullptr) override;
 
     size_t add_entries_without_codes(
             size_t list_no,

@@ -11,7 +11,10 @@
 
 #pragma once
 
-#include "knowhere/config.h"
+#include <strings.h>
+
+#include <vector>
+
 #include "knowhere/dataset.h"
 
 namespace knowhere {
@@ -23,8 +26,11 @@ IsMetricType(const std::string& str, const knowhere::MetricType& metric_type) {
     return !strcasecmp(str.data(), metric_type.c_str());
 }
 
-extern void
+extern float
 NormalizeVec(float* x, int32_t d);
+
+extern std::vector<float>
+NormalizeVecs(float* x, size_t rows, int32_t dim);
 
 extern void
 Normalize(const DataSet& dataset);

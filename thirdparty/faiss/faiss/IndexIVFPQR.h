@@ -45,6 +45,7 @@ struct IndexIVFPQR : IndexIVFPQ {
     void add_core(
             idx_t n,
             const float* x,
+            const float* x_norms,
             const idx_t* xids,
             const idx_t* precomputed_idx) override;
 

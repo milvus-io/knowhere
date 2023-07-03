@@ -65,7 +65,7 @@ class IvfIndexNode : public IndexNode {
             return !IsMetricType(metric_type, metric::COSINE);
         }
         if constexpr (std::is_same<faiss::IndexIVFFlatCC, T>::value) {
-            return !IsMetricType(metric_type, metric::COSINE);
+            return true;
         }
         if constexpr (std::is_same<faiss::IndexIVFPQ, T>::value) {
             return false;
@@ -231,7 +231,9 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
     }
     // do normalize for COSINE metric type
     if (IsMetricType(base_cfg.metric_type.value(), knowhere::metric::COSINE)) {
-        Normalize(dataset);
+        if constexpr (!(std::is_same_v<faiss::IndexIVFFlatCC, T>)) {
+            Normalize(dataset);
+        }
     }
 
     auto metric = Str2FaissMetricType(base_cfg.metric_type.value());
@@ -259,8 +261,9 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
             const IvfFlatCcConfig& ivf_flat_cc_cfg = static_cast<const IvfFlatCcConfig&>(cfg);
             auto nlist = MatchNlist(rows, ivf_flat_cc_cfg.nlist.value());
             qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
-            index =
-                std::make_unique<faiss::IndexIVFFlatCC>(qzr, dim, nlist, ivf_flat_cc_cfg.ssize.value(), metric.value());
+            bool is_cosine = base_cfg.metric_type.value() == metric::COSINE;
+            index = std::make_unique<faiss::IndexIVFFlatCC>(qzr, dim, nlist, ivf_flat_cc_cfg.ssize.value(), is_cosine,
+                                                            metric.value());
             index->own_fields = true;
             index->train(rows, (const float*)data);
         }

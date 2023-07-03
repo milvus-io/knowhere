@@ -110,7 +110,7 @@ struct EncapsulateInvertedLists : InvertedLists {
                 il->get_single_code(list_no, offset), code_size);
     }
 
-    size_t add_entries(size_t, size_t, const idx_t*, const uint8_t*) override {
+    size_t add_entries(size_t, size_t, const idx_t*, const uint8_t*, const float* ) override {
         assert(!"not implemented");
         return 0;
     }

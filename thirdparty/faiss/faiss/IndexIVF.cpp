@@ -18,6 +18,9 @@
 #include <iostream>
 #include <memory>
 
+
+#include <knowhere/utils.h>
+
 #include <faiss/utils/hamming.h>
 #include <faiss/utils/utils.h>
 
@@ -214,7 +217,7 @@ void IndexIVF::add_without_codes(idx_t n, const float* x) {
 void IndexIVF::add_with_ids(idx_t n, const float* x, const idx_t* xids) {
     std::unique_ptr<idx_t[]> coarse_idx(new idx_t[n]);
     quantizer->assign(n, x, coarse_idx.get());
-    add_core(n, x, xids, coarse_idx.get());
+    add_core(n, x, nullptr, xids, coarse_idx.get());
 }
 
 void IndexIVF::add_with_ids_without_codes(
@@ -234,7 +237,8 @@ void IndexIVF::add_sa_codes(idx_t n, const uint8_t* codes, const idx_t* xids) {
         const uint8_t* code = codes + (code_size + coarse_size) * i;
         idx_t list_no = decode_listno(code);
         idx_t id = xids ? xids[i] : ntotal + i;
-        size_t ofs = invlists->add_entry(list_no, id, code + coarse_size);
+        size_t ofs =
+                invlists->add_entry(list_no, id, code + coarse_size);
         dm_adder.add(i, list_no, ofs);
     }
     ntotal += n;
@@ -243,6 +247,7 @@ void IndexIVF::add_sa_codes(idx_t n, const uint8_t* codes, const idx_t* xids) {
 void IndexIVF::add_core(
         idx_t n,
         const float* x,
+        const float* x_norms,
         const idx_t* xids,
         const idx_t* coarse_idx) {
     // do some blocking to avoid excessive allocs
@@ -258,6 +263,7 @@ void IndexIVF::add_core(
             add_core(
                     i1 - i0,
                     x + i0 * d,
+                    (x_norms == nullptr) ? nullptr : (x_norms + i0),
                     xids ? xids + i0 : nullptr,
                     coarse_idx + i0);
         }
@@ -290,7 +296,7 @@ void IndexIVF::add_core(
             if (list_no >= 0 && list_no % nt == rank) {
                 idx_t id = xids ? xids[i] : ntotal + i;
                 size_t ofs = invlists->add_entry(
-                        list_no, id, flat_codes.get() + i * code_size);
+                        list_no, id, flat_codes.get() + i * code_size, x_norms  == nullptr ? nullptr : x_norms + i);
 
                 dm_adder.add(i, list_no, ofs);
 
@@ -572,6 +578,9 @@ void IndexIVF::search_preassigned(
                     std::unique_ptr<InvertedLists::ScopedIds> sids;
                     const Index::idx_t* ids = nullptr;
 
+                    auto scode_norms = std::make_unique<InvertedLists::ScopedCodeNorms>(invlists, key, segment_offset);
+                    const float* code_norms = scode_norms->get();
+
                     if (!store_pairs) {
                         sids.reset(new InvertedLists::ScopedIds(invlists, key, segment_offset));
                         ids = sids->get();
@@ -579,6 +588,7 @@ void IndexIVF::search_preassigned(
                     nheap += scanner->scan_codes(
                             segment_size,
                             scodes.get(),
+                            code_norms,
                             ids,
                             simi,
                             idxi,
@@ -834,6 +844,7 @@ void IndexIVF::range_search_preassigned(
 
                     InvertedLists::ScopedCodes scodes(invlists, key, segment_offset);
                     InvertedLists::ScopedIds ids(invlists, key, segment_offset);
+                    InvertedLists::ScopedCodeNorms scode_norms(invlists, key, segment_offset);
 
                     scanner->set_list(key, coarse_dis[i * nprobe + ik]);
                     nlistv++;
@@ -841,6 +852,7 @@ void IndexIVF::range_search_preassigned(
                     scanner->scan_codes_range(
                             segment_size,
                             scodes.get(),
+                            scode_norms.get(),
                             ids.get(),
                             radius,
                             qres,
@@ -1256,6 +1268,7 @@ IndexIVFStats indexIVF_stats;
 size_t InvertedListScanner::scan_codes(
         size_t list_size,
         const uint8_t* codes,
+        const float* code_norms,
         const idx_t* ids,
         float* simi,
         idx_t* idxi,
@@ -1267,6 +1280,9 @@ size_t InvertedListScanner::scan_codes(
         for (size_t j = 0; j < list_size; j++) {
             if (bitset.empty() || !bitset.test(j)) {
                 float dis = distance_to_code(codes);
+                if (code_norms) {
+                    dis /= code_norms[j];
+                }
                 if (dis < simi[0]) {
                     int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
                     maxheap_replace_top(k, simi, idxi, dis, id);
@@ -1279,6 +1295,9 @@ size_t InvertedListScanner::scan_codes(
         for (size_t j = 0; j < list_size; j++) {
             if (bitset.empty() || !bitset.test(j)) {
                 float dis = distance_to_code(codes);
+                if (code_norms) {
+                    dis /= code_norms[j];
+                }
                 if (dis > simi[0]) {
                     int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
                     minheap_replace_top(k, simi, idxi, dis, id);
@@ -1294,6 +1313,7 @@ size_t InvertedListScanner::scan_codes(
 void InvertedListScanner::scan_codes_range(
         size_t list_size,
         const uint8_t* codes,
+        const float* code_norms,
         const idx_t* ids,
         float radius,
         RangeQueryResult& res,
@@ -1301,6 +1321,9 @@ void InvertedListScanner::scan_codes_range(
     for (size_t j = 0; j < list_size; j++) {
         if (bitset.empty() || !bitset.test(j)) {
             float dis = distance_to_code(codes);
+            if (code_norms) {
+                dis /= code_norms[j];
+            }
             bool keep = !keep_max
                     ? dis < radius
                     : dis > radius; // TODO templatize to remove this test

@@ -49,7 +49,8 @@ struct BlockInvertedLists : InvertedLists {
             size_t list_no,
             size_t n_entry,
             const idx_t* ids,
-            const uint8_t* code) override;
+            const uint8_t* code,
+            const float* code_norm = nullptr) override;
 
     /// not implemented
     void update_entries(

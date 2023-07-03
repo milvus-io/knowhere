@@ -88,7 +88,8 @@ struct OnDiskInvertedLists : InvertedLists {
             size_t list_no,
             size_t n_entry,
             const idx_t* ids,
-            const uint8_t* code) override;
+            const uint8_t* code,
+            const float* code_norm = nullptr) override;
 
     void update_entries(
             size_t list_no,
