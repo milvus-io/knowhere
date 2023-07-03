@@ -11,12 +11,15 @@
 
 #include <omp.h>
 
+#include <cstdint>
+
 #include "common/range_util.h"
 #include "diskann/aux_utils.h"
 #include "diskann/pq_flash_index.h"
 #include "index/diskann/diskann_config.h"
 #include "knowhere/comp/index_param.h"
 #include "knowhere/comp/thread_pool.h"
+#include "knowhere/expected.h"
 #ifndef _WINDOWS
 #include "diskann/linux_aligned_file_reader.h"
 #else
@@ -169,7 +172,7 @@ namespace knowhere {
 namespace {
 static constexpr float kCacheExpansionRate = 1.2;
 static constexpr int kSearchListSizeMaxValue = 200;
-static constexpr int64_t kGetVectorBatchSize = 32;
+
 Status
 TryDiskANNCall(std::function<void()>&& diskann_call) {
     try {
@@ -633,6 +636,11 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
     return GenResultDataSet(nq, p_id, p_dist, p_lims);
 }
 
+/*
+ * Get raw vector data given their ids.
+ * It first tries to get data from cache, if failed, it will try to get data from disk.
+ * It reads as much as possible and it is thread-pool free, it totally depends on the outside to control concurrency.
+ */
 template <typename T>
 expected<DataSetPtr>
 DiskANNIndexNode<T>::GetVectorByIds(const DataSet& dataset) const {
@@ -650,24 +658,11 @@ DiskANNIndexNode<T>::GetVectorByIds(const DataSet& dataset) const {
         return Status::malloc_error;
     }
 
-    auto batch_num = (rows + kGetVectorBatchSize - 1) / kGetVectorBatchSize;
-    std::vector<std::future<void>> futures;
-    futures.reserve(batch_num);
-    bool all_good = true;
-    for (int64_t i = 0; i < batch_num; ++i) {
-        auto idx = i * kGetVectorBatchSize;
-        auto len = std::min(kGetVectorBatchSize, rows - idx);
-        futures.push_back(pool_->push([=]() { pq_flash_index_->get_vector_by_ids(ids + idx, len, data + idx * dim); }));
-    }
-    for (auto& future : futures) {
-        if (TryDiskANNCall([&]() { future.get(); }) != Status::success) {
-            all_good = false;
-        }
-    }
-    if (!all_good) {
+    if (TryDiskANNCall([&]() { pq_flash_index_->get_vector_by_ids(ids, rows, data); }) != Status::success) {
         delete[] data;
         return Status::diskann_inner_error;
-    }
+    };
+
     return GenResultDataSet(rows, dim, data);
 }
 

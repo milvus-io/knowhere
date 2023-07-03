@@ -35,6 +35,10 @@ class LinuxAlignedFileReader : public AlignedFileReader {
   // NOTE :: blocking call
   void read(std::vector<AlignedRead> &read_reqs, IOContext &ctx,
             bool async = false);
+
+  // async reads
+  void get_submitted_req (io_context_t &ctx, size_t n_ops) override;
+  void submit_req(io_context_t &ctx, std::vector<AlignedRead> &read_reqs);
 };
 
 #endif

@@ -1533,29 +1533,25 @@ namespace diskann {
   }
 
   template<typename T>
-  void PQFlashIndex<T>::get_vector_by_ids(const int64_t *ids, const int64_t n, T *output_data) {
-    size_t batch_size = kReadBatchSize;
-    if (long_node) {
-      auto min_size = kReadBatchSize / nsectors_per_node;
-      batch_size = (min_size == 0) ? MAX_N_SECTOR_READS : min_size;
-      if (0 == batch_size) {
-        LOG(ERROR) << "Vector too large, exceeding max number of sector reads";
-        return ;
-      }
+  void PQFlashIndex<T>::get_vector_by_ids(const int64_t *ids, const int64_t n,
+                                          T *output_data) {
+    auto sectors_to_visit =
+        get_sectors_layout_and_write_data_from_cache(ids, n, output_data);
+    if (0 == sectors_to_visit.size()) {
+      return;
     }
+
     ThreadData<T> data = this->thread_data.pop();
     while (data.scratch.sector_scratch == nullptr) {
       this->thread_data.wait_for_push_notify();
       data = this->thread_data.pop();
     }
+
+    const size_t batch_size = std::min(MAX_N_SECTOR_READS / 2UL, sectors_to_visit.size());
+    const size_t half_buf_idx = MAX_N_SECTOR_READS / 2 * read_len_for_node;
     char *sector_scratch = data.scratch.sector_scratch;
     std::vector<AlignedRead> frontier_read_reqs;
     frontier_read_reqs.reserve(batch_size);
-
-    auto sectors_to_visit = get_sectors_layout_and_write_data_from_cache(ids, n, output_data);
-    if (sectors_to_visit.size() == 0) {
-      return;
-    }
 
     std::vector<_u64> sector_offsets;
     sector_offsets.reserve(sectors_to_visit.size());
@@ -1566,28 +1562,46 @@ namespace diskann {
     auto ctx = this->reader->get_ctx();
     const auto sector_num = sector_offsets.size();
     const _u64 num_blocks = DIV_ROUND_UP(sector_num, batch_size);
+    std::vector<AlignedRead> last_reqs;
+    bool rotate = false;
+
     for (_u64 i = 0; i < num_blocks; ++i) {
       _u64 start_idx = i * batch_size;
       _u64 idx_len = std::min(batch_size, sector_num - start_idx);
+      last_reqs = frontier_read_reqs;
       frontier_read_reqs.clear();
       for (_u64 j = 0; j < idx_len; ++j) {
-        char *sector_buf = sector_scratch + j * read_len_for_node;
+        char *sector_buf =
+            sector_scratch + rotate * half_buf_idx + j * read_len_for_node;
         frontier_read_reqs.emplace_back(sector_offsets[start_idx + j], read_len_for_node,
                                     sector_buf);
       }
-      reader->read(frontier_read_reqs, ctx);
-      for (const auto& req : frontier_read_reqs) {
+      rotate ^= 0x1;
+      reader->submit_req(ctx, frontier_read_reqs);
+      for (const auto& req : last_reqs) {
         auto offset = req.offset;
         char* sector_buf = static_cast<char*>(req.buf);
-        for (auto idx : sectors_to_visit[offset]) {
+        for (auto idx : sectors_to_visit.at(offset)) {
           char* node_buf = get_offset_to_node(sector_buf, ids[idx]);
           copy_vec_base_data(output_data, idx, node_buf);
         }
       }
+      reader->get_submitted_req(ctx, frontier_read_reqs.size());
     }
+
+    // if any remaining
+    for (const auto& req : frontier_read_reqs) {
+      auto offset = req.offset;
+      char* sector_buf = static_cast<char*>(req.buf);
+      for (auto idx : sectors_to_visit.at(offset)) {
+        char* node_buf = get_offset_to_node(sector_buf, ids[idx]);
+        copy_vec_base_data(output_data, idx, node_buf);
+      }
+    }
+
+    this->reader->put_ctx(ctx);
     this->thread_data.push(data);
     this->thread_data.push_notify_all();
-    this->reader->put_ctx(ctx);
   }
 
   template<typename T>
