@@ -14,6 +14,8 @@
 #include <cinttypes>
 #include <cstdio>
 
+#include "knowhere/utils.h"
+
 #include <faiss/IndexFlat.h>
 
 #include <faiss/FaissHook.h>
@@ -40,8 +42,9 @@ IndexIVFFlat::IndexIVFFlat(
 void IndexIVFFlat::add_core(
         idx_t n,
         const float* x,
-        const int64_t* xids,
-        const int64_t* coarse_idx) {
+        const float* x_norms,
+        const idx_t* xids,
+        const idx_t* coarse_idx) {
     FAISS_THROW_IF_NOT(is_trained);
     FAISS_THROW_IF_NOT(coarse_idx);
     assert(invlists);
@@ -63,8 +66,9 @@ void IndexIVFFlat::add_core(
             if (list_no >= 0 && list_no % nt == rank) {
                 idx_t id = xids ? xids[i] : ntotal + i;
                 const float* xi = x + i * d;
-                size_t offset =
-                        invlists->add_entry(list_no, id, (const uint8_t*)xi);
+                const float* xi_normal = (x_norms == nullptr) ? nullptr : (x_norms + i);
+                size_t offset = invlists->add_entry(
+                        list_no, id, (const uint8_t*)xi, xi_normal);
                 dm_adder.add(i, list_no, offset);
                 n_add++;
             } else if (rank == 0 && list_no == -1) {
@@ -180,6 +184,7 @@ struct IVFFlatScanner : InvertedListScanner {
     size_t scan_codes(
             size_t list_size,
             const uint8_t* codes,
+            const float* code_norms,
             const idx_t* ids,
             float* simi,
             idx_t* idxi,
@@ -193,6 +198,9 @@ struct IVFFlatScanner : InvertedListScanner {
                 float dis = metric == METRIC_INNER_PRODUCT
                         ? fvec_inner_product(xi, yj, d)
                         : fvec_L2sqr(xi, yj, d);
+                if (code_norms) {
+                    dis /= code_norms[j];
+                }
                 if (C::cmp(simi[0], dis)) {
                     int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
                     heap_replace_top<C>(k, simi, idxi, dis, id);
@@ -206,6 +214,7 @@ struct IVFFlatScanner : InvertedListScanner {
     void scan_codes_range(
             size_t list_size,
             const uint8_t* codes,
+            const float* code_norms,
             const idx_t* ids,
             float radius,
             RangeQueryResult& res,
@@ -216,6 +225,9 @@ struct IVFFlatScanner : InvertedListScanner {
             float dis = metric == METRIC_INNER_PRODUCT
                     ? fvec_inner_product(xi, yj, d)
                     : fvec_L2sqr(xi, yj, d);
+            if (code_norms) {
+                dis /= code_norms[j];
+            }
             if (C::cmp(radius, dis)) {
                 int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
                 if (bitset.empty() || !bitset.test(id)) {
@@ -269,9 +281,10 @@ IndexIVFFlatCC::IndexIVFFlatCC(
         size_t d,
         size_t nlist,
         size_t ssize,
+        bool iscosine,
         MetricType metric)
-        : IndexIVFFlat(quantizer, d, nlist, metric) {
-    replace_invlists(new ConcurrentArrayInvertedLists(nlist, code_size, ssize), true);
+        : is_cosine_(iscosine), IndexIVFFlat(quantizer, d, nlist, metric) {
+    replace_invlists(new ConcurrentArrayInvertedLists(nlist, code_size, ssize, iscosine), true);
 }
 
 void IndexIVFFlatCC::add_with_ids_without_codes(
@@ -287,6 +300,35 @@ void IndexIVFFlatCC::reconstruct_from_offset_without_codes(
         float* recons) const {
     FAISS_THROW_MSG("ivfflat_cc index not support reconstruct_from_offset_without_codes operation");
 }
+
+void IndexIVFFlatCC::train(idx_t n, const float* x) {
+    if (is_cosine_) {
+        auto norm_data = std::make_unique<float[]>(n * d);
+        std::memcpy(norm_data.get(), x , n * d * sizeof(float));
+        knowhere::NormalizeVecs(norm_data.get(), n, d);
+        //use normalized data to train codes for cosine
+        IndexIVF::train(n, norm_data.get());
+    } else {
+        IndexIVF::train(n, x);
+    }
+}
+
+void IndexIVFFlatCC::add_with_ids(idx_t n, const float* x, const idx_t* xids) {
+    std::unique_ptr<idx_t[]> coarse_idx(new idx_t[n]);
+    if (is_cosine_) {
+        auto norm_data = std::make_unique<float[]>(n * d);
+        std::memcpy(norm_data.get(), x, n * d * sizeof(float));
+        auto norms = knowhere::NormalizeVecs(norm_data.get(), n, d);
+        //use normalized data to calculate coarse id
+        quantizer->assign(n, norm_data.get(), coarse_idx.get());
+        //add raw data with its norms to inverted list
+        add_core(n, x, norms.data(), xids, coarse_idx.get());
+    } else {
+        quantizer->assign(n, x, coarse_idx.get());
+        add_core(n, x, nullptr, xids, coarse_idx.get());
+    }
+}
+
 /*****************************************
  * IndexIVFFlatDedup implementation
  ******************************************/

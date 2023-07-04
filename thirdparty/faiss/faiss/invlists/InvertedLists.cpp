@@ -117,8 +117,9 @@ const Index::idx_t* InvertedLists::get_ids(size_t list_no, size_t offset) const 
 size_t InvertedLists::add_entry(
         size_t list_no,
         idx_t theid,
-        const uint8_t* code) {
-    return add_entries(list_no, 1, &theid, code);
+        const uint8_t* code,
+        const float* code_norm) {
+    return add_entries(list_no, 1, &theid, code, code_norm);
 }
 
 size_t InvertedLists::add_entry_without_codes(
@@ -146,6 +147,15 @@ InvertedLists* InvertedLists::to_readonly() {
     return nullptr;
 }
 
+
+const float* InvertedLists::get_code_norms(size_t list_no, size_t offset)
+        const {
+    return nullptr;
+}
+
+void InvertedLists::release_code_norms(size_t list_no, const float* codes)
+        const {}
+
 InvertedLists* InvertedLists::to_readonly_without_codes() {
     return nullptr;
 }
@@ -166,7 +176,11 @@ void InvertedLists::merge_from(InvertedLists* oivf, size_t add_id) {
         size_t list_size = oivf->list_size(i);
         ScopedIds ids(oivf, i);
         if (add_id == 0) {
-            add_entries(i, list_size, ids.get(), ScopedCodes(oivf, i).get());
+            add_entries(
+                    i,
+                    list_size,
+                    ids.get(),
+                    ScopedCodes(oivf, i).get());
         } else {
             std::vector<idx_t> new_ids(list_size);
 
@@ -174,7 +188,10 @@ void InvertedLists::merge_from(InvertedLists* oivf, size_t add_id) {
                 new_ids[j] = ids[j] + add_id;
             }
             add_entries(
-                    i, list_size, new_ids.data(), ScopedCodes(oivf, i).get());
+                    i,
+                    list_size,
+                    new_ids.data(),
+                    ScopedCodes(oivf, i).get());
         }
         oivf->resize(i, 0);
     }
@@ -229,7 +246,8 @@ size_t ArrayInvertedLists::add_entries(
         size_t list_no,
         size_t n_entry,
         const idx_t* ids_in,
-        const uint8_t* code) {
+        const uint8_t* code,
+        const float* code_norm) {
     if (n_entry == 0)
         return 0;
     assert(list_no < nlist);
@@ -298,9 +316,13 @@ ArrayInvertedLists::~ArrayInvertedLists() {}
 ConcurrentArrayInvertedLists::ConcurrentArrayInvertedLists(
         size_t nlist,
         size_t code_size,
-        size_t segment_size)
-        : InvertedLists(nlist, code_size), segment_size(segment_size), list_cur(nlist) {
+        size_t segment_size,
+        bool snorm)
+        : InvertedLists(nlist, code_size), segment_size(segment_size), save_norm(snorm), list_cur(nlist) {
     ids.resize(nlist);
+    if (save_norm) {
+        code_norms.resize(nlist);
+    }
     codes.resize(nlist);
     for (int i = 0; i < nlist; i++) {
         list_cur[i].store(0);
@@ -318,7 +340,11 @@ void ConcurrentArrayInvertedLists::reserve(size_t list_no, size_t capacity) {
     for (size_t idx = cur_segment_no; idx < target_segment_no; idx++) {
         Segment<uint8_t> segment_codes(segment_size, code_size);
         Segment<idx_t> segment_ids(segment_size, 1);
+        Segment<float> segment_code_norms(segment_size, 1);
         codes[list_no].emplace_back(std::move(segment_codes));
+        if (save_norm) {
+            code_norms[list_no].emplace_back(std::move(segment_code_norms));
+        }
         ids[list_no].emplace_back(std::move(segment_ids));
     }
 }
@@ -329,6 +355,9 @@ void ConcurrentArrayInvertedLists::shrink_to_fit(size_t list_no, size_t capacity
 
     for (size_t idx = cur_segment_no; idx > target_segment_no; idx--) {
         ids[list_no].pop_back();
+        if (save_norm) {
+            code_norms[list_no].pop_back();
+        }
         codes[list_no].pop_back();
     }
 }
@@ -349,7 +378,8 @@ size_t ConcurrentArrayInvertedLists::add_entries(
         size_t list_no,
         size_t n_entry,
         const idx_t* ids_in,
-        const uint8_t* codes_in) {
+        const uint8_t* codes_in,
+        const float* code_norms_in) {
     if (n_entry == 0)
         return 0;
 
@@ -363,6 +393,12 @@ size_t ConcurrentArrayInvertedLists::add_entries(
 
     if (first_cur + n_entry <= segment_size) {
         std::memcpy(&ids[list_no][first_id][first_cur], ids_in, n_entry * sizeof(ids_in[0]));
+        if (save_norm) {
+            std::memcpy(
+                    &code_norms[list_no][first_id][first_cur],
+                    code_norms_in,
+                    n_entry * sizeof(float));
+        }
         std::memcpy(&codes[list_no][first_id][first_cur], codes_in, n_entry * code_size);
         list_cur[list_no].fetch_add(n_entry);
         return o;
@@ -373,6 +409,11 @@ size_t ConcurrentArrayInvertedLists::add_entries(
     memcpy(&ids[list_no][first_id][first_cur],
            ids_in,
            first_rest * sizeof(ids_in[0]));
+    if (save_norm) {
+        memcpy(&code_norms[list_no][first_id][first_cur],
+           code_norms_in,
+           first_rest * sizeof(float));
+    }
     memcpy(&codes[list_no][first_id][first_cur],
            codes_in,
            first_rest * code_size);
@@ -388,6 +429,11 @@ size_t ConcurrentArrayInvertedLists::add_entries(
             memcpy(&codes[list_no][segment_id][0],
                    codes_in + entry_cur * code_size,
                    segment_size * code_size);
+            if (save_norm) {
+                memcpy(&code_norms[list_no][segment_id][0],
+                       code_norms_in + entry_cur,
+                       segment_size * sizeof(code_norms_in[0]));
+            }
             memcpy(&ids[list_no][segment_id][0],
                    ids_in + entry_cur,
                    segment_size * sizeof(ids_in[0]));
@@ -399,6 +445,11 @@ size_t ConcurrentArrayInvertedLists::add_entries(
             memcpy(&codes[list_no][segment_id][0],
                    codes_in + entry_cur * code_size,
                    rest_entry * code_size);
+            if (save_norm) {
+                memcpy(&code_norms[list_no][segment_id][0],
+                       code_norms_in + entry_cur,
+                       rest_entry * sizeof(float));
+            }
             memcpy(&ids[list_no][segment_id][0],
                    ids_in + entry_cur,
                    rest_entry * sizeof(ids_in[0]));
@@ -418,6 +469,7 @@ size_t ConcurrentArrayInvertedLists::add_entries_without_codes(
         const idx_t* ids_in) {
     FAISS_THROW_MSG("not implemented add_entries_without_codes");
 }
+//Not used
 void ConcurrentArrayInvertedLists::update_entries(
         size_t list_no,
         size_t offset,
@@ -562,6 +614,25 @@ InvertedLists::idx_t ConcurrentArrayInvertedLists::get_single_id(size_t list_no,
     return *pItem;
 }
 
+const float* ConcurrentArrayInvertedLists::get_code_norms(
+        size_t list_no,
+        size_t offset) const {
+    if (!save_norm) {
+        return nullptr;
+    } else {
+        assert(list_no < nlist);
+        assert(offset < list_size(list_no));
+        auto segment_no = offset / segment_size;
+        auto segment_off = offset % segment_size;
+        return &(code_norms[list_no][segment_no][segment_off]);
+    }
+}
+void ConcurrentArrayInvertedLists::release_code_norms(
+        size_t list_no,
+        const float* codes) const {
+    InvertedLists::release_code_norms(list_no, codes);
+}
+
 /*****************************************************************
  * ReadOnlyArrayInvertedLists implementations
  *****************************************************************/
@@ -687,7 +758,8 @@ size_t ReadOnlyArrayInvertedLists::add_entries(
         size_t,
         size_t,
         const idx_t*,
-        const uint8_t*) {
+        const uint8_t*,
+        const float* code_norm) {
     FAISS_THROW_MSG("not implemented");
 }
 
@@ -777,7 +849,8 @@ size_t ReadOnlyInvertedLists::add_entries(
         size_t,
         size_t,
         const idx_t*,
-        const uint8_t*) {
+        const uint8_t*,
+        const float* code_norm) {
     FAISS_THROW_MSG("not implemented");
 }
 

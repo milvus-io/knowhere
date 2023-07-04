@@ -356,6 +356,7 @@ void IndexIVF::search_preassigned_without_codes(
                 nheap += scanner->scan_codes(
                         list_size,
                         (scodes.get() + code_size * offset),
+                        nullptr,
                         ids,
                         simi,
                         idxi,
@@ -669,6 +670,7 @@ void IndexIVF::range_search_preassigned_without_codes(
                 scanner->scan_codes_range(
                         list_size,
                         (scodes.get() + code_size * offset),
+                        nullptr,
                         ids.get(),
                         radius,
                         qres,

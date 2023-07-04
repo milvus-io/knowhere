@@ -31,6 +31,7 @@ struct IndexIVFFlat : IndexIVF {
     void add_core(
             idx_t n,
             const float* x,
+            const float* x_norms,
             const idx_t* xids,
             const idx_t* precomputed_idx) override;
 
@@ -67,6 +68,7 @@ struct IndexIVFFlatCC : IndexIVFFlat {
             size_t d,
             size_t nlist,
             size_t ssize,
+            bool iscosine,
             MetricType = METRIC_L2);
 
     /// implemented for all IndexIVF* classes
@@ -79,7 +81,14 @@ struct IndexIVFFlatCC : IndexIVFFlat {
             int64_t offset,
             float* recons) const override;
 
+    void train(idx_t n, const float* x) override;
+
+    void add_with_ids(idx_t n, const float* x, const idx_t* xids) override;
+
     IndexIVFFlatCC() {}
+
+   private:
+    bool is_cosine_;
 };
 
 struct IndexIVFFlatDedup : IndexIVFFlat {

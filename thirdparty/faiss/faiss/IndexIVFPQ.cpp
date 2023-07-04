@@ -185,6 +185,7 @@ void IndexIVFPQ::decode_multiple(
 void IndexIVFPQ::add_core(
         idx_t n,
         const float* x,
+        const float* x_norms,
         const idx_t* xids,
         const idx_t* coarse_idx) {
     add_core_o(n, x, xids, nullptr, coarse_idx);
@@ -1063,6 +1064,7 @@ struct IVFPQScanner : IVFPQScannerT<Index::idx_t, METRIC_TYPE, PQDecoder>,
     size_t scan_codes(
             size_t ncode,
             const uint8_t* codes,
+            const float* code_norms,
             const idx_t* ids,
             float* heap_sim,
             idx_t* heap_ids,
@@ -1094,6 +1096,7 @@ struct IVFPQScanner : IVFPQScannerT<Index::idx_t, METRIC_TYPE, PQDecoder>,
     void scan_codes_range(
             size_t ncode,
             const uint8_t* codes,
+            const float* code_norms,
             const idx_t* ids,
             float radius,
             RangeQueryResult& rres,

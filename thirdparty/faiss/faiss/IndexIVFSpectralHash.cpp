@@ -255,6 +255,7 @@ struct IVFScanner : InvertedListScanner {
     size_t scan_codes(
             size_t list_size,
             const uint8_t* codes,
+            const float* code_norms,
             const idx_t* ids,
             float* simi,
             idx_t* idxi,
@@ -279,6 +280,7 @@ struct IVFScanner : InvertedListScanner {
     void scan_codes_range(
             size_t list_size,
             const uint8_t* codes,
+            const float* code_norms,
             const idx_t* ids,
             float radius,
             RangeQueryResult& res,

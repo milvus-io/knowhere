@@ -21,7 +21,7 @@ namespace knowhere {
 
 const float FloatAccuracy = 0.00001;
 
-void
+float
 NormalizeVec(float* x, int32_t d) {
     float norm_l2_sqr = faiss::fvec_norm_L2sqr(x, d);
     if (norm_l2_sqr > 0 && std::abs(1.0f - norm_l2_sqr) > FloatAccuracy) {
@@ -29,7 +29,19 @@ NormalizeVec(float* x, int32_t d) {
         for (int32_t i = 0; i < d; i++) {
             x[i] = x[i] / norm_l2;
         }
+        return norm_l2;
     }
+    return 1.0f;
+}
+
+std::vector<float>
+NormalizeVecs(float* x, size_t rows, int32_t dim) {
+    std::vector<float> norms;
+    norms.reserve(rows);
+    for (size_t i = 0; i < rows; i++) {
+        norms.push_back(NormalizeVec(x + i * dim, dim));
+    }
+    return norms;
 }
 
 void

@@ -34,7 +34,8 @@ size_t BlockInvertedLists::add_entries(
         size_t list_no,
         size_t n_entry,
         const idx_t* ids_in,
-        const uint8_t* code) {
+        const uint8_t* code,
+        const float* code_norm) {
     if (n_entry == 0)
         return 0;
     FAISS_THROW_IF_NOT(list_no < nlist);

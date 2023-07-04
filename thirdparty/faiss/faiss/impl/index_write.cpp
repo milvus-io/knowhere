@@ -260,6 +260,7 @@ void write_InvertedLists(const InvertedLists* ils, IOWriter* f) {
         WRITE1(lca->nlist);
         WRITE1(lca->code_size);
         WRITE1(lca->segment_size);
+        WRITE1(lca->save_norm);
 
         // here we store either as a full or a sparse data buffer
         size_t n_non0 = 0;
@@ -298,6 +299,9 @@ void write_InvertedLists(const InvertedLists* ils, IOWriter* f) {
                     size_t seg_size = lca->get_segment_size(i, j);
                     WRITEANDCHECK(lca->codes[i][j].data_.data(), seg_size * lca->code_size);
                     WRITEANDCHECK(lca->ids[i][j].data_.data(), seg_size);
+                    if (lca->save_norm) {
+                        WRITEANDCHECK(lca->code_norms[i][j].data_.data(), seg_size);
+                    }
                 }
             }
         }

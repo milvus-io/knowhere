@@ -215,11 +215,13 @@ InvertedLists* read_InvertedLists(IOReader* f, int io_flags) {
         return ails;
     } else if (h == fourcc("ilca")) {
         size_t nlist, code_size, segment_size;
+        bool save_norm;
         READ1(nlist);
         READ1(code_size);
         READ1(segment_size);
+        READ1(save_norm);
 
-        auto lca = new ConcurrentArrayInvertedLists(nlist, code_size, segment_size);
+        auto lca = new ConcurrentArrayInvertedLists(nlist, code_size, segment_size, save_norm);
         std::vector<size_t> sizes(nlist);
         read_ArrayInvertedLists_sizes(f, sizes);
         for (size_t i = 0; i < lca->nlist; i++) {
@@ -234,6 +236,9 @@ InvertedLists* read_InvertedLists(IOReader* f, int io_flags) {
                     size_t seg_off = lca->get_segment_offset(i, j);
                     READANDCHECK(lca->codes[i][j].data_.data(), seg_size * lca->code_size);
                     READANDCHECK(lca->ids[i][j].data_.data(), seg_size);
+                    if (save_norm) {
+                        READANDCHECK(lca->code_norms[i][j].data_.data(), seg_size);
+                    }
                 }
             }
         }

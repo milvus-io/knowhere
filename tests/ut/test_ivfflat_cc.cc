@@ -17,10 +17,13 @@
 #include "faiss/invlists/InvertedLists.h"
 #include "knowhere/comp/index_param.h"
 #include "knowhere/factory.h"
+#include "knowhere/utils.h"
 #include "utils.h"
 
 TEST_CASE("Test Build Search Concurrency", "[Concurrency]") {
     using Catch::Approx;
+
+    auto metric = GENERATE(as<std::string>{}, knowhere::metric::L2, knowhere::metric::COSINE);
 
     int64_t nb = 10000, nq = 1000;
     int64_t dim = 128;
@@ -33,10 +36,10 @@ TEST_CASE("Test Build Search Concurrency", "[Concurrency]") {
     auto base_gen = [&]() {
         knowhere::Json json;
         json[knowhere::meta::DIM] = dim;
-        json[knowhere::meta::METRIC_TYPE] = knowhere::metric::L2;
+        json[knowhere::meta::METRIC_TYPE] = metric;
         json[knowhere::meta::TOPK] = top_k;
-        json[knowhere::meta::RADIUS] = 10.0;
-        json[knowhere::meta::RANGE_FILTER] = 0.0;
+        json[knowhere::meta::RADIUS] = knowhere::IsMetricType(metric, knowhere::metric::L2) ? 10.0 : 0.99;
+        json[knowhere::meta::RANGE_FILTER] = knowhere::IsMetricType(metric, knowhere::metric::L2) ? 0.0 : 1.01;
         return json;
     };
 
@@ -59,12 +62,13 @@ TEST_CASE("Test Build Search Concurrency", "[Concurrency]") {
         size_t code_size = 512;
         size_t segment_size = 1024;
 
-        auto invList = std::make_unique<faiss::ConcurrentArrayInvertedLists>(nlist, code_size, segment_size);
+        auto invList = std::make_unique<faiss::ConcurrentArrayInvertedLists>(nlist, code_size, segment_size, true);
 
         for (size_t i = 0; i < nlist; i++) {
             REQUIRE(invList->list_size(i) == 0);
         }
 
+        size_t dim = code_size / sizeof(float);
         std::vector<size_t> list_size_count(nlist, 0);
         for (int cnt = 0; cnt < times; cnt++) {
             {
@@ -74,8 +78,12 @@ TEST_CASE("Test Build Search Concurrency", "[Concurrency]") {
                     std::mt19937_64 rng(i);
                     int64_t add_size = distribution(rng);
                     std::vector<faiss::Index::idx_t> ids(add_size, i);
-                    std::vector<uint8_t> codes(add_size * code_size, (uint8_t)(i % 256));
-                    invList->add_entries(i, add_size, ids.data(), codes.data());
+                    float value = i;
+                    std::vector<float> codes(add_size * dim, value);
+                    std::vector<float> code_normals = knowhere::NormalizeVecs(codes.data(), add_size, dim);
+                    std::vector<float> origin_codes(add_size * dim, value);
+                    invList->add_entries(i, add_size, ids.data(), reinterpret_cast<uint8_t*>(origin_codes.data()),
+                                         code_normals.data());
                     list_size_count[i] += add_size;
                     CHECK(invList->list_size(i) == list_size_count[i]);
                 }
@@ -87,8 +95,12 @@ TEST_CASE("Test Build Search Concurrency", "[Concurrency]") {
                     std::mt19937_64 rng(i * i);
                     int64_t add_size = distribution(rng);
                     std::vector<faiss::Index::idx_t> ids(add_size, i);
-                    std::vector<uint8_t> codes(add_size * code_size, (uint8_t)(i % 256));
-                    invList->add_entries(i, add_size, ids.data(), codes.data());
+                    float value = i;
+                    std::vector<float> codes(add_size * dim, value);
+                    std::vector<float> code_normals = knowhere::NormalizeVecs(codes.data(), add_size, dim);
+                    std::vector<float> origin_codes(add_size * dim, value);
+                    invList->add_entries(i, add_size, ids.data(), reinterpret_cast<uint8_t*>(origin_codes.data()),
+                                         code_normals.data());
                     list_size_count[i] += add_size;
                     CHECK(invList->list_size(i) == list_size_count[i]);
                 }
@@ -107,8 +119,16 @@ TEST_CASE("Test Build Search Concurrency", "[Concurrency]") {
                 }
 
                 for (size_t j = 0; j < list_size; j++) {
-                    for (size_t k = 0; k < code_size; k++) {
-                        CHECK(*(invList->get_codes(i, j) + k) == static_cast<int64_t>(i));
+                    for (size_t k = 0; k < code_size; k += sizeof(float)) {
+                        float* float_x = (float*)(invList->get_codes(i, j) + k);
+                        CHECK(*float_x == (float)(i));
+
+                        float* normal = (float*)(invList->get_code_norms(i, j));
+                        if (i == 0) {
+                            CHECK(std::abs(*normal - 1.0) < 0.0000001);
+                        } else {
+                            CHECK(std::abs(*normal - i * std::sqrt(dim)) < 0.001);
+                        }
                     }
                 }
             }
@@ -230,7 +250,12 @@ TEST_CASE("Test Build Search Concurrency", "[Concurrency]") {
         REQUIRE(idx.Type() == name);
 
         auto& build_ds = train_ds;
-        auto query_ds = GenDataSet(nq, dim, seed);
+        std::vector<knowhere::DataSetPtr> search_list;
+        std::vector<knowhere::DataSetPtr> range_search_list;
+        for (int i = 0; i < search_task_num; i++) {
+            search_list.push_back(GenDataSet(nq, dim, seed));
+            range_search_list.push_back(GenDataSet(nq, dim, seed));
+        }
 
         for (int i = 1; i <= times; i++) {
             std::vector<std::future<knowhere::Status>> add_task_list;
@@ -241,12 +266,14 @@ TEST_CASE("Test Build Search Concurrency", "[Concurrency]") {
                     std::async(std::launch::async, [&idx, &build_ds, &json] { return idx.Add(*build_ds, json); }));
             }
             for (int j = 0; j < search_task_num; j++) {
+                auto& query_set = search_list[j];
                 search_task_list.push_back(std::async(
-                    std::launch::async, [&idx, &query_ds, &json] { return idx.Search(*query_ds, json, nullptr); }));
+                    std::launch::async, [&idx, &query_set, &json] { return idx.Search(*query_set, json, nullptr); }));
             }
             for (int j = 0; j < search_task_num; j++) {
-                range_search_task_list.push_back(std::async(std::launch::async, [&idx, &query_ds, &json] {
-                    return idx.RangeSearch(*query_ds, json, nullptr);
+                auto& range_query_set = range_search_list[j];
+                range_search_task_list.push_back(std::async(std::launch::async, [&idx, &range_query_set, &json] {
+                    return idx.RangeSearch(*range_query_set, json, nullptr);
                 }));
             }
             for (auto& task : add_task_list) {
