@@ -15,7 +15,7 @@
 
 #include "common/metric.h"
 #include "common/range_util.h"
-#include "faiss/utils/BinaryDistance.h"
+#include "faiss/utils/binary_distances.h"
 #include "faiss/utils/distances.h"
 #include "knowhere/comp/thread_pool.h"
 #include "knowhere/config.h"
@@ -24,8 +24,7 @@
 
 namespace knowhere {
 
-/** knowhere wrapper API to call faiss brute force search for all metric types
- */
+/* knowhere wrapper API to call faiss brute force search for all metric types */
 
 class BruteForceConfig : public BaseConfig {};
 
@@ -82,8 +81,7 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
                 case faiss::METRIC_Tanimoto: {
                     auto cur_query = (const uint8_t*)xq + (dim / 8) * index;
                     faiss::float_maxheap_array_t res = {size_t(1), size_t(topk), cur_labels, cur_distances};
-                    binary_distance_knn_hc(faiss::METRIC_Jaccard, &res, cur_query, (const uint8_t*)xb, nb, dim / 8,
-                                           bitset);
+                    binary_knn_hc(faiss::METRIC_Jaccard, &res, cur_query, (const uint8_t*)xb, nb, dim / 8, bitset);
 
                     if (faiss_metric_type == faiss::METRIC_Tanimoto) {
                         for (int i = 0; i < topk; i++) {
@@ -96,8 +94,8 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
                     auto cur_query = (const uint8_t*)xq + (dim / 8) * index;
                     std::vector<int32_t> int_distances(topk);
                     faiss::int_maxheap_array_t res = {size_t(1), size_t(topk), cur_labels, int_distances.data()};
-                    binary_distance_knn_hc(faiss::METRIC_Hamming, &res, (const uint8_t*)cur_query, (const uint8_t*)xb,
-                                           nb, dim / 8, bitset);
+                    binary_knn_hc(faiss::METRIC_Hamming, &res, (const uint8_t*)cur_query, (const uint8_t*)xb, nb,
+                                  dim / 8, bitset);
                     for (int i = 0; i < topk; ++i) {
                         cur_distances[i] = int_distances[i];
                     }
@@ -107,8 +105,8 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
                 case faiss::METRIC_Superstructure: {
                     // only matched ids will be chosen, not to use heap
                     auto cur_query = (const uint8_t*)xq + (dim / 8) * index;
-                    binary_distance_knn_mc(faiss_metric_type, cur_query, (const uint8_t*)xb, 1, nb, topk, dim / 8,
-                                           cur_distances, cur_labels, bitset);
+                    binary_knn_mc(faiss_metric_type, cur_query, (const uint8_t*)xb, 1, nb, topk, dim / 8, cur_distances,
+                                  cur_labels, bitset);
                     break;
                 }
                 default: {
@@ -184,8 +182,7 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
                 case faiss::METRIC_Tanimoto: {
                     auto cur_query = (const uint8_t*)xq + (dim / 8) * index;
                     faiss::float_maxheap_array_t res = {size_t(1), size_t(topk), cur_labels, cur_distances};
-                    binary_distance_knn_hc(faiss::METRIC_Jaccard, &res, cur_query, (const uint8_t*)xb, nb, dim / 8,
-                                           bitset);
+                    binary_knn_hc(faiss::METRIC_Jaccard, &res, cur_query, (const uint8_t*)xb, nb, dim / 8, bitset);
 
                     if (faiss_metric_type == faiss::METRIC_Tanimoto) {
                         for (int i = 0; i < topk; i++) {
@@ -198,8 +195,8 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
                     auto cur_query = (const uint8_t*)xq + (dim / 8) * index;
                     std::vector<int32_t> int_distances(topk);
                     faiss::int_maxheap_array_t res = {size_t(1), size_t(topk), cur_labels, int_distances.data()};
-                    binary_distance_knn_hc(faiss::METRIC_Hamming, &res, (const uint8_t*)cur_query, (const uint8_t*)xb,
-                                           nb, dim / 8, bitset);
+                    binary_knn_hc(faiss::METRIC_Hamming, &res, (const uint8_t*)cur_query, (const uint8_t*)xb, nb,
+                                  dim / 8, bitset);
                     for (int i = 0; i < topk; ++i) {
                         cur_distances[i] = int_distances[i];
                     }
@@ -209,8 +206,8 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
                 case faiss::METRIC_Superstructure: {
                     // only matched ids will be chosen, not to use heap
                     auto cur_query = (const uint8_t*)xq + (dim / 8) * index;
-                    binary_distance_knn_mc(faiss_metric_type, cur_query, (const uint8_t*)xb, 1, nb, topk, dim / 8,
-                                           cur_distances, cur_labels, bitset);
+                    binary_knn_mc(faiss_metric_type, cur_query, (const uint8_t*)xb, 1, nb, topk, dim / 8, cur_distances,
+                                  cur_labels, bitset);
                     break;
                 }
                 default: {

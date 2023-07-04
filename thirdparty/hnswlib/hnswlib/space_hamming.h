@@ -1,6 +1,7 @@
 #pragma once
 
-#include <faiss/utils/BinaryDistance.h>
+#include <faiss/utils/binary_distances.h>
+
 #include "hnswlib.h"
 
 namespace hnswlib {
