@@ -23,6 +23,16 @@
 
 namespace knowhere {
 
+inline Status
+LoadConfig(BaseConfig* cfg, const Json& json, knowhere::PARAM_TYPE param_type, const std::string& method,
+           std::string* const msg = nullptr) {
+    Json json_(json);
+    auto res = Config::FormatAndCheck(*cfg, json_, msg);
+    LOG_KNOWHERE_DEBUG_ << method << " config dump: " << json_.dump();
+    RETURN_IF_ERROR(res);
+    return Config::Load(*cfg, json_, param_type, msg);
+}
+
 template <typename T1>
 class Index {
  public:
@@ -153,7 +163,13 @@ class Index {
     expected<DataSetPtr>
     Search(const DataSet& dataset, const Json& json, const BitsetView& bitset) const {
         auto cfg = this->node->CreateConfig();
-        RETURN_IF_ERROR(LoadConfig(cfg.get(), json, knowhere::SEARCH, "Search"));
+        std::string msg;
+        const Status st = LoadConfig(cfg.get(), json, knowhere::SEARCH, "Search", &msg);
+        if (st != Status::success) {
+            expected<DataSetPtr> ret(st);
+            ret << msg;
+            return ret;
+        }
         RETURN_IF_ERROR(cfg->CheckAndAdjustForSearch());
 
 #ifdef NOT_COMPILE_FOR_SWIG
@@ -262,15 +278,6 @@ class Index {
  private:
     Index(T1* node) : node(node) {
         static_assert(std::is_base_of<IndexNode, T1>::value);
-    }
-
-    Status
-    LoadConfig(BaseConfig* cfg, const Json& json, knowhere::PARAM_TYPE param_type, const std::string& method) const {
-        Json json_(json);
-        auto res = Config::FormatAndCheck(*cfg, json_);
-        LOG_KNOWHERE_DEBUG_ << method << " config dump: " << json_.dump();
-        RETURN_IF_ERROR(res);
-        return Config::Load(*cfg, json_, param_type);
     }
 
     T1* node;
