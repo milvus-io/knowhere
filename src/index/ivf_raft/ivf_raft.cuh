@@ -25,7 +25,7 @@
 #include <optional>
 #include <raft/neighbors/specializations.cuh>
 
-#include "common/raft/res_pool.cuh"
+#include "common/raft/raft_utils.h"
 #include "common/raft_metric.h"
 #include "index/ivf_raft/ivf_raft_config.h"
 #include "knowhere/comp/index_param.h"
@@ -35,7 +35,6 @@
 #include "knowhere/log.h"
 #include "knowhere/utils.h"
 #include "raft/core/device_resources.hpp"
-#include "set_pool.h"
 #include "thrust/execution_policy.h"
 #include "thrust/logical.h"
 #include "thrust/sequence.h"
@@ -158,25 +157,6 @@ namespace detail {
 using raft_ivf_flat_index = raft::neighbors::ivf_flat::index<float, std::int64_t>;
 using raft_ivf_pq_index = raft::neighbors::ivf_pq::index<std::int64_t>;
 
-// TODO(wphicks): Replace this with version from RAFT once merged
-struct device_setter {
-    device_setter(int new_device)
-        : prev_device_{[]() {
-              auto result = int{};
-              RAFT_CUDA_TRY(cudaGetDevice(&result));
-              return result;
-          }()} {
-        RAFT_CUDA_TRY(cudaSetDevice(new_device));
-    }
-
-    ~device_setter() {
-        RAFT_CUDA_TRY_NO_THROW(cudaSetDevice(prev_device_));
-    }
-
- private:
-    int prev_device_;
-};
-
 namespace codebook {
 auto static constexpr const PER_SUBSPACE = "PER_SUBSPACE";
 auto static constexpr const PER_CLUSTER = "PER_CLUSTER";
@@ -263,6 +243,9 @@ class RaftIvfIndexNode : public IndexNode {
             return Status::index_already_trained;
         } else if (ivf_raft_cfg.gpu_ids.value().size() == 1) {
             try {
+                auto scoped_device = raft_utils::device_setter{*ivf_raft_cfg.gpu_ids.value().begin()};
+                raft_utils::init_gpu_resources();
+
                 auto metric = Str2RaftMetricType(ivf_raft_cfg.metric_type.value());
                 if (!metric.has_value()) {
                     LOG_KNOWHERE_WARNING_ << "please check metric value: " << ivf_raft_cfg.metric_type.value();
@@ -275,10 +258,7 @@ class RaftIvfIndexNode : public IndexNode {
                     return Status::invalid_metric_type;
                 }
                 devs_.insert(devs_.begin(), ivf_raft_cfg.gpu_ids.value().begin(), ivf_raft_cfg.gpu_ids.value().end());
-                auto scoped_device = detail::device_setter{*ivf_raft_cfg.gpu_ids.value().begin()};
-                thread_local rmm::cuda_stream stream;
-                thread_local rmm::mr::cuda_memory_resource mr;
-                thread_local raft::device_resources res(stream.view(), nullptr, &mr);
+                auto& res = raft_utils::get_raft_resources();
 
                 auto rows = dataset.GetRows();
                 auto dim = dataset.GetDim();
@@ -286,7 +266,7 @@ class RaftIvfIndexNode : public IndexNode {
 
                 auto data_gpu = raft::make_device_matrix<float, std::int64_t>(res, rows, dim);
                 RAFT_CUDA_TRY(cudaMemcpyAsync(data_gpu.data_handle(), data, data_gpu.size() * sizeof(float),
-                                              cudaMemcpyDefault, stream.value()));
+                                              cudaMemcpyDefault, res.get_stream().value()));
                 if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
                     auto build_params = raft::neighbors::ivf_flat::index_params{};
                     build_params.metric = metric.value();
@@ -318,7 +298,7 @@ class RaftIvfIndexNode : public IndexNode {
                 }
                 dim_ = dim;
                 counts_ = rows;
-                stream.synchronize();
+                res.sync_stream();
 
             } catch (std::exception& e) {
                 LOG_KNOWHERE_WARNING_ << "RAFT inner error, " << e.what();
@@ -338,22 +318,21 @@ class RaftIvfIndexNode : public IndexNode {
             result = Status::index_not_trained;
         } else {
             try {
+                auto scoped_device = raft_utils::device_setter{devs_[0]};
                 auto rows = dataset.GetRows();
                 auto dim = dataset.GetDim();
                 auto* data = reinterpret_cast<float const*>(dataset.GetTensor());
-                auto scoped_device = detail::device_setter{devs_[0]};
 
-                thread_local rmm::cuda_stream stream;
-                thread_local rmm::mr::cuda_memory_resource mr;
-                thread_local raft::device_resources res(stream.view(), nullptr, &mr);
+                raft_utils::init_gpu_resources();
+                auto& res = raft_utils::get_raft_resources();
 
                 // TODO(wphicks): Clean up transfer with raft
                 // buffer objects when available
                 auto data_gpu = raft::make_device_matrix<float, std::int64_t>(res, rows, dim);
                 RAFT_CUDA_TRY(cudaMemcpyAsync(data_gpu.data_handle(), data, data_gpu.size() * sizeof(float),
-                                              cudaMemcpyDefault, stream.value()));
+                                              cudaMemcpyDefault, res.get_stream().value()));
 
-                auto indices = rmm::device_uvector<std::int64_t>(rows, stream);
+                auto indices = rmm::device_uvector<std::int64_t>(rows, res.get_stream());
                 thrust::sequence(res.get_thrust_policy(), indices.begin(), indices.end(), gpu_index_->size());
 
                 if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
@@ -392,16 +371,16 @@ class RaftIvfIndexNode : public IndexNode {
         auto ids = std::unique_ptr<std::int64_t[]>(new std::int64_t[output_size]);
         auto dis = std::unique_ptr<float[]>(new float[output_size]);
         try {
-            auto scoped_device = detail::device_setter{devs_[0]};
-            auto* res_ = &raft_res_pool::get_context().resources_;
+            auto scoped_device = raft_utils::device_setter{devs_[0]};
+            auto& res_ = raft_utils::get_raft_resources();
 
             // TODO(wphicks): Clean up transfer with raft
             // buffer objects when available
-            auto data_gpu = raft::make_device_matrix<float, std::int64_t>(*res_, rows, dim);
-            raft::copy(data_gpu.data_handle(), data, data_gpu.size(), res_->get_stream());
+            auto data_gpu = raft::make_device_matrix<float, std::int64_t>(res_, rows, dim);
+            raft::copy(data_gpu.data_handle(), data, data_gpu.size(), res_.get_stream());
 
-            auto gpu_results = raft_detail::raft_results{*res_};
-            auto gpu_bitset = DeviceBitset{*res_, bitset};
+            auto gpu_results = raft_detail::raft_results{res_};
+            auto gpu_bitset = DeviceBitset{res_, bitset};
 
             if constexpr (std::is_same_v<detail::raft_ivf_flat_index, T>) {
                 auto search_params = raft::neighbors::ivf_flat::search_params{};
@@ -409,7 +388,7 @@ class RaftIvfIndexNode : public IndexNode {
                 auto search_k = std::min(
                     ivf_raft_cfg.k.value() + (bitset.count() * ivf_raft_cfg.k.value() / counts_),
                     std::min(static_cast<uint64_t>(counts_), static_cast<uint64_t>(raft_detail::MAX_IVF_FLAT_K)));
-                gpu_results = RawSearch(*res_, raft::make_const_mdspan(data_gpu.view()), search_params, search_k,
+                gpu_results = RawSearch(res_, raft::make_const_mdspan(data_gpu.view()), search_params, search_k,
                                         ivf_raft_cfg.k.value(), gpu_bitset.view());
             } else if constexpr (std::is_same_v<detail::raft_ivf_pq_index, T>) {
                 auto search_params = raft::neighbors::ivf_pq::search_params{};
@@ -438,23 +417,23 @@ class RaftIvfIndexNode : public IndexNode {
                 }
                 search_params.internal_distance_dtype = internal_distance_dtype.value();
                 search_params.preferred_shmem_carveout = search_params.preferred_shmem_carveout;
-                gpu_results = RawSearch(*res_, raft::make_const_mdspan(data_gpu.view()), search_params,
+                gpu_results = RawSearch(res_, raft::make_const_mdspan(data_gpu.view()), search_params,
                                         ivf_raft_cfg.k.value(), ivf_raft_cfg.k.value(), gpu_bitset.view());
             } else {
                 static_assert(std::is_same_v<detail::raft_ivf_flat_index, T>);
             }
 
             if (gpu_results.k() != ivf_raft_cfg.k.value()) {
-                auto new_gpu_results = raft_detail::raft_results{*res_, gpu_results.rows(), ivf_raft_cfg.k.value()};
-                raft_detail::slice<<<1024, 256, 0, res_->get_stream().value()>>>(
+                auto new_gpu_results = raft_detail::raft_results{res_, gpu_results.rows(), ivf_raft_cfg.k.value()};
+                raft_detail::slice<<<1024, 256, 0, res_.get_stream().value()>>>(
                     new_gpu_results.ids_data(), gpu_results.ids_data(), new_gpu_results.rows(), new_gpu_results.k(),
                     gpu_results.rows(), gpu_results.k());
-                res_->sync_stream();
+                res_.sync_stream();
                 gpu_results = new_gpu_results;
             }
-            raft::copy(ids.get(), gpu_results.ids_data(), output_size, res_->get_stream());
-            raft::copy(dis.get(), gpu_results.dists_data(), output_size, res_->get_stream());
-            res_->sync_stream();
+            raft::copy(ids.get(), gpu_results.ids_data(), output_size, res_.get_stream());
+            raft::copy(dis.get(), gpu_results.dists_data(), output_size, res_.get_stream());
+            res_.sync_stream();
 
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "RAFT inner error, " << e.what();
@@ -503,10 +482,8 @@ class RaftIvfIndexNode : public IndexNode {
         os.write((char*)(&this->counts_), sizeof(this->counts_));
         os.write((char*)(&this->devs_[0]), sizeof(this->devs_[0]));
 
-        auto scoped_device = detail::device_setter{devs_[0]};
-        thread_local rmm::cuda_stream stream;
-        thread_local rmm::mr::cuda_memory_resource mr;
-        thread_local raft::device_resources res(stream.view(), nullptr, &mr);
+        auto scoped_device = raft_utils::device_setter{devs_[0]};
+        auto& res = raft_utils::get_raft_resources();
 
         if constexpr (std::is_same_v<T, detail::raft_ivf_flat_index>) {
             raft::neighbors::ivf_flat::serialize<float, std::int64_t>(res, os, *gpu_index_);
@@ -539,12 +516,10 @@ class RaftIvfIndexNode : public IndexNode {
         is.read((char*)(&this->counts_), sizeof(this->counts_));
         this->devs_.resize(1);
         is.read((char*)(&this->devs_[0]), sizeof(this->devs_[0]));
-        auto scoped_device = detail::device_setter{devs_[0]};
+        auto scoped_device = raft_utils::device_setter{devs_[0]};
 
-        raft_res_pool::resource::instance().init(rmm::cuda_device_id(devs_[0]));
-        thread_local rmm::cuda_stream stream;
-        thread_local rmm::mr::cuda_memory_resource mr;
-        thread_local raft::device_resources res(stream.view(), nullptr, &mr);
+        raft_utils::init_gpu_resources();
+        auto& res = raft_utils::get_raft_resources();
 
         if constexpr (std::is_same_v<T, detail::raft_ivf_flat_index>) {
             T index_ = raft::neighbors::ivf_flat::deserialize<float, std::int64_t>(res, is);
@@ -642,12 +617,6 @@ class RaftIvfIndexNode : public IndexNode {
         return result;
     }
 };
-
-void
-SetRaftMemPool(size_t init_size, size_t max_size) {
-    LOG_KNOWHERE_INFO_ << "Set GPU pool size: init size " << init_size << ", max size " << max_size;
-    raft_res_pool::resource::instance().set_pool_size(init_size, max_size);
-}
 
 }  // namespace knowhere
 #endif /* IVF_RAFT_CUH */
