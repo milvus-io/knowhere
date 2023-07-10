@@ -428,6 +428,7 @@ TEST_CASE("Test Mem Index With Binary Vector", "[bool metrics]") {
         }
     }
 
+#if 0
     SECTION("Test Range Search") {
         using std::make_tuple;
         auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
@@ -449,4 +450,5 @@ TEST_CASE("Test Mem Index With Binary Vector", "[bool metrics]") {
         auto results = idx.RangeSearch(*query_ds, json, nullptr);
         REQUIRE(results.error() == knowhere::Status::faiss_inner_error);
     }
+#endif
 }

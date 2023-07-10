@@ -13,9 +13,11 @@
 
 #include <string>
 
+#ifdef KNOWHERE_WITH_DISKANN
+#include "diskann/aio_context_pool.h"
+#endif
 #include "faiss/Clustering.h"
 #include "faiss/utils/distances.h"
-#include "faiss/utils/utils.h"
 #include "knowhere/log.h"
 #ifdef KNOWHERE_WITH_GPU
 #include "index/gpu/gpu_res_mgr.h"
