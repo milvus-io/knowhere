@@ -22,7 +22,7 @@
 #endif
 #include "simd/hook.h"
 #ifdef KNOWHERE_WITH_RAFT
-#include "index/ivf_raft/set_pool.h"
+#include "common/raft/raft_utils.h"
 #endif
 
 namespace knowhere {
@@ -149,7 +149,7 @@ KnowhereConfig::FreeGPUResource() {
 void
 KnowhereConfig::SetRaftMemPool(size_t init_size, size_t max_size) {
 #ifdef KNOWHERE_WITH_RAFT
-    knowhere::SetRaftMemPool(init_size, max_size);
+    raft_utils::set_mem_pool_size(init_size, max_size);
 #endif
 }
 
