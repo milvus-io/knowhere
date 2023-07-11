@@ -12,6 +12,7 @@
 #include "catch2/catch_approx.hpp"
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/generators/catch_generators.hpp"
+#include "faiss/utils/binary_distances.h"
 #include "hnswlib/hnswalg.h"
 #include "knowhere/bitsetview.h"
 #include "knowhere/comp/brute_force.h"
@@ -26,7 +27,7 @@ constexpr float kKnnRecallThreshold = 0.6f;
 constexpr float kBruteForceRecallThreshold = 0.99f;
 }  // namespace
 
-TEST_CASE("Test Mem Index With Float Vector", "[float vector]") {
+TEST_CASE("Test Mem Index With Float Vector", "[float metrics]") {
     using Catch::Approx;
 
     const int64_t nb = 1000, nq = 10;
@@ -238,21 +239,20 @@ TEST_CASE("Test Mem Index With Float Vector", "[float vector]") {
     }
 }
 
-TEST_CASE("Test Mem Index With Binary Vector", "[binary vector]") {
+TEST_CASE("Test Mem Index With Binary Vector", "[float metrics]") {
     using Catch::Approx;
 
     const int64_t nb = 1000, nq = 10;
     const int64_t dim = 1024;
     const int64_t topk = 5;
 
-    auto metric = GENERATE(as<std::string>{}, knowhere::metric::HAMMING);
-
+    auto metric = GENERATE(as<std::string>{}, knowhere::metric::HAMMING, knowhere::metric::JACCARD);
     auto base_gen = [&]() {
         knowhere::Json json;
         json[knowhere::meta::DIM] = dim;
         json[knowhere::meta::METRIC_TYPE] = metric;
         json[knowhere::meta::TOPK] = topk;
-        json[knowhere::meta::RADIUS] = 10.0;
+        json[knowhere::meta::RADIUS] = knowhere::IsMetricType(metric, knowhere::metric::HAMMING) ? 10.0 : 0.1;
         json[knowhere::meta::RANGE_FILTER] = 0.0;
         return json;
     };
@@ -343,5 +343,110 @@ TEST_CASE("Test Mem Index With Binary Vector", "[binary vector]") {
         idx_.Deserialize(bs);
         auto results = idx_.Search(*query_ds, json, nullptr);
         REQUIRE(results.has_value());
+    }
+}
+
+TEST_CASE("Test Mem Index With Binary Vector", "[bool metrics]") {
+    using Catch::Approx;
+
+    const int64_t nb = 1000, nq = 10;
+    const int64_t topk = 5;
+
+    auto dim = GENERATE(as<int64_t>{}, 8, 16, 32, 64, 128, 256, 512, 160);
+    auto metric = GENERATE(as<std::string>{}, knowhere::metric::SUPERSTRUCTURE, knowhere::metric::SUBSTRUCTURE);
+
+    auto base_gen = [&]() {
+        knowhere::Json json;
+        json[knowhere::meta::DIM] = dim;
+        json[knowhere::meta::METRIC_TYPE] = metric;
+        json[knowhere::meta::TOPK] = topk;
+        return json;
+    };
+
+    auto flat_gen = base_gen;
+    auto ivfflat_gen = [&base_gen]() {
+        knowhere::Json json = base_gen();
+        json[knowhere::indexparam::NLIST] = 16;
+        json[knowhere::indexparam::NPROBE] = 8;
+        return json;
+    };
+
+    auto GenTestDataSet = [](int rows, int dim) {
+        std::mt19937 rng(42);
+        std::uniform_int_distribution<> distrib(0.0, 100.0);
+        int uint8_num = dim / 8;
+        uint8_t* ts = new uint8_t[rows * uint8_num];
+        for (int i = 0; i < rows; ++i) {
+            auto v = (uint8_t)distrib(rng);
+            for (int j = 0; j < uint8_num; ++j) {
+                ts[i * uint8_num + j] = v;
+            }
+        }
+        auto ds = knowhere::GenDataSet(rows, dim, ts);
+        ds->SetIsOwner(true);
+        return ds;
+    };
+    const auto train_ds = GenTestDataSet(nb, dim);
+    const auto query_ds = GenTestDataSet(nq, dim);
+
+    SECTION("Test Search") {
+        auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
+            std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP, flat_gen),
+            std::make_tuple(knowhere::IndexEnum::INDEX_FAISS_BIN_IVFFLAT, ivfflat_gen),
+        }));
+        auto idx = knowhere::IndexFactory::Instance().Create(name);
+        auto cfg_json = gen().dump();
+        CAPTURE(name, cfg_json);
+        knowhere::Json json = knowhere::Json::parse(cfg_json);
+        REQUIRE(idx.Type() == name);
+        auto res = idx.Build(*train_ds, json);
+        if (name == knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP) {
+            REQUIRE(res == knowhere::Status::success);
+        } else {
+            REQUIRE(res == knowhere::Status::faiss_inner_error);
+            return;
+        }
+        auto results = idx.Search(*query_ds, json, nullptr);
+        REQUIRE(results.has_value());
+        auto ids = results.value()->GetIds();
+
+        auto code_size = dim / 8;
+        for (int64_t i = 0; i < nq; i++) {
+            const uint8_t* query_vector = (const uint8_t*)query_ds->GetTensor() + i * code_size;
+            std::vector<int64_t> ids_v(ids + i * topk, ids + (i + 1) * topk);
+            auto ds = GenIdsDataSet(topk, ids_v);
+            auto gv_res = idx.GetVectorByIds(*ds);
+            REQUIRE(gv_res.has_value());
+            for (int64_t j = 0; j < topk; j++) {
+                const uint8_t* res_vector = (const uint8_t*)gv_res.value()->GetTensor() + j * code_size;
+                if (metric == knowhere::metric::SUPERSTRUCTURE) {
+                    REQUIRE(faiss::is_subset(query_vector, res_vector, code_size));
+                } else {
+                    REQUIRE(faiss::is_subset(res_vector, query_vector, code_size));
+                }
+            }
+        }
+    }
+
+    SECTION("Test Range Search") {
+        using std::make_tuple;
+        auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
+            make_tuple(knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP, flat_gen),
+            make_tuple(knowhere::IndexEnum::INDEX_FAISS_BIN_IVFFLAT, ivfflat_gen),
+        }));
+        auto idx = knowhere::IndexFactory::Instance().Create(name);
+        auto cfg_json = gen().dump();
+        CAPTURE(name, cfg_json);
+        knowhere::Json json = knowhere::Json::parse(cfg_json);
+        REQUIRE(idx.Type() == name);
+        auto res = idx.Build(*train_ds, json);
+        if (name == knowhere::IndexEnum::INDEX_FAISS_BIN_IDMAP) {
+            REQUIRE(res == knowhere::Status::success);
+        } else {
+            REQUIRE(res == knowhere::Status::faiss_inner_error);
+            return;
+        }
+        auto results = idx.RangeSearch(*query_ds, json, nullptr);
+        REQUIRE(results.error() == knowhere::Status::faiss_inner_error);
     }
 }

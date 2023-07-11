@@ -90,6 +90,13 @@ GenIdsDataSet(int rows, int64_t seed = 42) {
     return ds;
 }
 
+inline knowhere::DataSetPtr
+GenIdsDataSet(int rows, std::vector<int64_t>& ids) {
+    auto ds = knowhere::GenIdsDataSet(rows, ids.data());
+    ds->SetIsOwner(false);
+    return ds;
+}
+
 inline float
 GetKNNRecall(const knowhere::DataSet& ground_truth, const knowhere::DataSet& result) {
     REQUIRE(ground_truth.GetDim() >= result.GetDim());

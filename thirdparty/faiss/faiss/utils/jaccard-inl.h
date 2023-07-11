@@ -15,7 +15,7 @@
 #ifndef FAISS_JACCARD_INL_H
 #define FAISS_JACCARD_INL_H
 
-#include <faiss/utils/BinaryDistance.h>
+#include <faiss/utils/binary_distances.h>
 #include <faiss/utils/simdlib.h>
 namespace faiss {
 

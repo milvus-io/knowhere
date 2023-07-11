@@ -13,8 +13,8 @@
 #include <faiss/IndexBinary.h>
 #include <faiss/impl/AuxIndexStructures.h>
 #include <faiss/impl/FaissAssert.h>
-#include <faiss/utils/BinaryDistance.h>
 #include <faiss/utils/Heap.h>
+#include <faiss/utils/binary_distances.h>
 #include <faiss/utils/hamming.h>
 #include <faiss/utils/utils.h>
 #include <cstring>
@@ -48,8 +48,7 @@ void IndexBinaryFlat::search(
     if (metric_type == METRIC_Jaccard || metric_type == METRIC_Tanimoto) {
         float* D = reinterpret_cast<float*>(distances);
         float_maxheap_array_t res = {size_t(n), size_t(k), labels, D};
-        binary_distance_knn_hc(
-                METRIC_Jaccard, &res, x, xb.data(), ntotal, code_size, bitset);
+        binary_knn_hc(METRIC_Jaccard, &res, x, xb.data(), ntotal, code_size, bitset);
 
         if (metric_type == METRIC_Tanimoto) {
             for (int i = 0; i < k * n; i++) {
@@ -58,15 +57,14 @@ void IndexBinaryFlat::search(
         }
     } else if (metric_type == METRIC_Hamming) {
         int_maxheap_array_t res = {size_t(n), size_t(k), labels, distances};
-        binary_distance_knn_hc(
-                METRIC_Hamming, &res, x, xb.data(), ntotal, code_size, bitset);
+        binary_knn_hc(METRIC_Hamming, &res, x, xb.data(), ntotal, code_size, bitset);
     } else if (
             metric_type == METRIC_Substructure ||
             metric_type == METRIC_Superstructure) {
         float* D = reinterpret_cast<float*>(distances);
 
         // only matched ids will be chosen, not to use heap
-        binary_distance_knn_mc(
+        binary_knn_mc(
                 metric_type,
                 x,
                 xb.data(),

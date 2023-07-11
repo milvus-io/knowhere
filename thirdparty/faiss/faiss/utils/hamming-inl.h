@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#include <faiss/utils/BinaryDistance.h>
+#include <faiss/utils/binary_distances.h>
 #include <faiss/utils/simdlib.h>
 namespace faiss {
 

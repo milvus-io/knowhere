@@ -12,17 +12,13 @@
 // License for the specific language governing permissions and limitations under
 // the License
 
-#include <faiss/utils/BinaryDistance.h>
+#include <faiss/utils/binary_distances.h>
 
-#include <limits.h>
 #include <omp.h>
-#include <typeinfo>
 
-#include <faiss/impl/FaissAssert.h>
 #include <faiss/utils/hamming.h>
 #include <faiss/utils/jaccard-inl.h>
-#include <faiss/utils/substructure-inl.h>
-#include <faiss/utils/superstructure-inl.h>
+#include <faiss/utils/structure-inl.h>
 #include <faiss/utils/utils.h>
 #include <simd/hook.h>
 
@@ -136,6 +132,8 @@ int and_popcnt(
 #undef fun_u8
 }
 
+// return true, if data1 is subset of data2
+// return false, otherwise
 bool is_subset(
         const uint8_t* data1,
         const uint8_t* data2,
@@ -172,7 +170,7 @@ float bvec_jaccard(
 }
 
 template <class T>
-void binary_distance_knn_mc(
+void binary_knn_mc(
         int bytes_per_code,
         const uint8_t* bs1,
         const uint8_t* bs2,
@@ -290,7 +288,7 @@ void binary_distance_knn_mc(
     }
 }
 
-void binary_distance_knn_mc(
+void binary_knn_mc(
         MetricType metric_type,
         const uint8_t* a,
         const uint8_t* b,
@@ -304,21 +302,21 @@ void binary_distance_knn_mc(
     switch (metric_type) {
         case METRIC_Substructure:
             switch (ncodes) {
-#define binary_distance_knn_mc_Substructure(ncodes)                  \
+#define binary_knn_mc_Substructure(ncodes)                           \
     case ncodes:                                                     \
-        binary_distance_knn_mc<faiss::SubstructureComputer##ncodes>( \
+        binary_knn_mc<faiss::StructureComputer##ncodes<true>>(       \
                 ncodes, a, b, na, nb, k, distances, labels, bitset); \
         break;
-                binary_distance_knn_mc_Substructure(8);
-                binary_distance_knn_mc_Substructure(16);
-                binary_distance_knn_mc_Substructure(32);
-                binary_distance_knn_mc_Substructure(64);
-                binary_distance_knn_mc_Substructure(128);
-                binary_distance_knn_mc_Substructure(256);
-                binary_distance_knn_mc_Substructure(512);
-#undef binary_distance_knn_mc_Substructure
+                binary_knn_mc_Substructure(8);
+                binary_knn_mc_Substructure(16);
+                binary_knn_mc_Substructure(32);
+                binary_knn_mc_Substructure(64);
+                binary_knn_mc_Substructure(128);
+                binary_knn_mc_Substructure(256);
+                binary_knn_mc_Substructure(512);
+#undef binary_knn_mc_Substructure
                 default:
-                    binary_distance_knn_mc<faiss::SubstructureComputerDefault>(
+                    binary_knn_mc<faiss::StructureComputerDefault<true>>(
                             ncodes, a, b, na, nb, k, distances, labels, bitset);
                     break;
             }
@@ -326,22 +324,21 @@ void binary_distance_knn_mc(
 
         case METRIC_Superstructure:
             switch (ncodes) {
-#define binary_distance_knn_mc_Superstructure(ncodes)                  \
-    case ncodes:                                                       \
-        binary_distance_knn_mc<faiss::SuperstructureComputer##ncodes>( \
-                ncodes, a, b, na, nb, k, distances, labels, bitset);   \
+#define binary_knn_mc_Superstructure(ncodes)                         \
+    case ncodes:                                                     \
+        binary_knn_mc<faiss::StructureComputer##ncodes<false>>(      \
+                ncodes, a, b, na, nb, k, distances, labels, bitset); \
         break;
-                binary_distance_knn_mc_Superstructure(8);
-                binary_distance_knn_mc_Superstructure(16);
-                binary_distance_knn_mc_Superstructure(32);
-                binary_distance_knn_mc_Superstructure(64);
-                binary_distance_knn_mc_Superstructure(128);
-                binary_distance_knn_mc_Superstructure(256);
-                binary_distance_knn_mc_Superstructure(512);
-#undef binary_distance_knn_mc_Superstructure
+                binary_knn_mc_Superstructure(8);
+                binary_knn_mc_Superstructure(16);
+                binary_knn_mc_Superstructure(32);
+                binary_knn_mc_Superstructure(64);
+                binary_knn_mc_Superstructure(128);
+                binary_knn_mc_Superstructure(256);
+                binary_knn_mc_Superstructure(512);
+#undef binary_knn_mc_Superstructure
                 default:
-                    binary_distance_knn_mc<
-                            faiss::SuperstructureComputerDefault>(
+                    binary_knn_mc<faiss::StructureComputerDefault<false>>(
                             ncodes, a, b, na, nb, k, distances, labels, bitset);
                     break;
             }
@@ -353,7 +350,7 @@ void binary_distance_knn_mc(
 }
 
 template <class C, class MetricComputer>
-void binary_distance_knn_hc(
+void binary_knn_hc(
         int bytes_per_code,
         HeapArray<C>* ha,
         const uint8_t* bs1,
@@ -467,7 +464,7 @@ void binary_distance_knn_hc(
 }
 
 template <class C>
-void binary_distance_knn_hc(
+void binary_knn_hc(
         MetricType metric_type,
         HeapArray<C>* ha,
         const uint8_t* a,
@@ -479,23 +476,21 @@ void binary_distance_knn_hc(
         case METRIC_Jaccard: {
             {
                 switch (ncodes) {
-#define binary_distance_knn_hc_jaccard(ncodes)                     \
-    case ncodes:                                                   \
-        binary_distance_knn_hc<C, faiss::JaccardComputer##ncodes>( \
-                ncodes, ha, a, b, nb, bitset);                     \
+#define binary_knn_hc_jaccard(ncodes)                     \
+    case ncodes:                                          \
+        binary_knn_hc<C, faiss::JaccardComputer##ncodes>( \
+                ncodes, ha, a, b, nb, bitset);            \
         break;
-                    binary_distance_knn_hc_jaccard(8);
-                    binary_distance_knn_hc_jaccard(16);
-                    binary_distance_knn_hc_jaccard(32);
-                    binary_distance_knn_hc_jaccard(64);
-                    binary_distance_knn_hc_jaccard(128);
-                    binary_distance_knn_hc_jaccard(256);
-                    binary_distance_knn_hc_jaccard(512);
-#undef binary_distance_knn_hc_jaccard
+                    binary_knn_hc_jaccard(8);
+                    binary_knn_hc_jaccard(16);
+                    binary_knn_hc_jaccard(32);
+                    binary_knn_hc_jaccard(64);
+                    binary_knn_hc_jaccard(128);
+                    binary_knn_hc_jaccard(256);
+                    binary_knn_hc_jaccard(512);
+#undef binary_knn_hc_jaccard
                     default:
-                        binary_distance_knn_hc<
-                                C,
-                                faiss::JaccardComputerDefault>(
+                        binary_knn_hc<C, faiss::JaccardComputerDefault>(
                                 ncodes, ha, a, b, nb, bitset);
                         break;
                 }
@@ -506,22 +501,20 @@ void binary_distance_knn_hc(
         case METRIC_Hamming: {
             {
                 switch (ncodes) {
-#define binary_distance_knn_hc_hamming(ncodes)                     \
-    case ncodes:                                                   \
-        binary_distance_knn_hc<C, faiss::HammingComputer##ncodes>( \
-                ncodes, ha, a, b, nb, bitset);                     \
+#define binary_knn_hc_hamming(ncodes)                     \
+    case ncodes:                                          \
+        binary_knn_hc<C, faiss::HammingComputer##ncodes>( \
+                ncodes, ha, a, b, nb, bitset);            \
         break;
-                    binary_distance_knn_hc_hamming(4);
-                    binary_distance_knn_hc_hamming(8);
-                    binary_distance_knn_hc_hamming(16);
-                    binary_distance_knn_hc_hamming(20);
-                    binary_distance_knn_hc_hamming(32);
-                    binary_distance_knn_hc_hamming(64);
-#undef binary_distance_knn_hc_hamming
+                    binary_knn_hc_hamming(4);
+                    binary_knn_hc_hamming(8);
+                    binary_knn_hc_hamming(16);
+                    binary_knn_hc_hamming(20);
+                    binary_knn_hc_hamming(32);
+                    binary_knn_hc_hamming(64);
+#undef binary_knn_hc_hamming
                     default:
-                        binary_distance_knn_hc<
-                                C,
-                                faiss::HammingComputerDefault>(
+                        binary_knn_hc<C, faiss::HammingComputerDefault>(
                                 ncodes, ha, a, b, nb, bitset);
                         break;
                 }
@@ -534,7 +527,7 @@ void binary_distance_knn_hc(
     }
 }
 
-template void binary_distance_knn_hc<CMax<int, int64_t>>(
+template void binary_knn_hc<CMax<int, int64_t>>(
         MetricType metric_type,
         int_maxheap_array_t* ha,
         const uint8_t* a,
@@ -543,7 +536,7 @@ template void binary_distance_knn_hc<CMax<int, int64_t>>(
         size_t ncodes,
         const BitsetView bitset);
 
-template void binary_distance_knn_hc<CMax<float, int64_t>>(
+template void binary_knn_hc<CMax<float, int64_t>>(
         MetricType metric_type,
         float_maxheap_array_t* ha,
         const uint8_t* a,

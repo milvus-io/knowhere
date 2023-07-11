@@ -13,7 +13,7 @@
 #include <algorithm>
 
 #include <faiss/impl/FaissAssert.h>
-#include <faiss/utils/BinaryDistance.h>
+#include <faiss/utils/binary_distances.h>
 #include <faiss/utils/hamming.h>
 #include <faiss/utils/utils.h>
 
@@ -122,8 +122,8 @@ void IndexLSH::search(
 
     int_maxheap_array_t res = {size_t(n), size_t(k), labels, idistances};
 
-    binary_distance_knn_hc(faiss::METRIC_Hamming, &res, (const uint8_t*)&qcodes,
-                           codes.data(), ntotal, code_size, bitset);
+    binary_knn_hc(faiss::METRIC_Hamming, &res, (const uint8_t*)&qcodes,
+                  codes.data(), ntotal, code_size, bitset);
 
     // convert distances to floats
     for (int i = 0; i < k * n; i++)

@@ -1,20 +1,24 @@
 ###################################################################################################
 # Test Knowhere binary index
-test_binary: test_binary_idmap test_binary_ivf_flat
+test_binary: test_binary_idmap test_binary_ivf_flat test_binary_hnsw
 
 test_binary_idmap:
 	./benchmark_binary --gtest_filter="Benchmark_binary.TEST_BINARY_IDMAP" | tee test_binary_idmap.log
 test_binary_ivf_flat:
 	./benchmark_binary --gtest_filter="Benchmark_binary.TEST_BINARY_IVF_FLAT" | tee test_binary_ivf_flat.log
+test_binary_hnsw:
+	./benchmark_binary --gtest_filter="Benchmark_binary.TEST_BINARY_HNSW" | tee test_binary_hnsw.log
 
 ###################################################################################################
 # Test Knowhere binary index range
-test_binary_range: test_binary_range_idmap test_binary_range_ivf_flat
+test_binary_range: test_binary_range_idmap test_binary_range_ivf_flat test_binary_range_hnsw
 
 test_binary_range_idmap:
 	./benchmark_binary_range --gtest_filter="Benchmark_binary_range.TEST_BINARY_IDMAP" | tee test_binary_range_idmap.log
 test_binary_range_ivf_flat:
 	./benchmark_binary_range --gtest_filter="Benchmark_binary_range.TEST_BINARY_IVF_FLAT" | tee test_binary_range_ivf_flat.log
+test_binary_range_hnsw:
+	./benchmark_binary_range --gtest_filter="Benchmark_binary_range.TEST_BINARY_HNSW" | tee test_binary_range_hnsw.log
 
 ###################################################################################################
 # Test Knowhere float index
