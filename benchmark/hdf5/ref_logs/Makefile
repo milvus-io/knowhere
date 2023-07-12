@@ -22,7 +22,7 @@ test_binary_range_hnsw:
 
 ###################################################################################################
 # Test Knowhere float index
-test_float: test_float_idmap test_float_ivf_flat test_float_ivf_sq8 test_float_ivf_pq test_float_hnsw
+test_float: test_float_idmap test_float_ivf_flat test_float_ivf_sq8 test_float_ivf_pq test_float_hnsw test_float_diskann
 test_float_gpu: test_float_ivf_flat test_float_ivf_pq
 
 test_float_idmap:
@@ -35,6 +35,8 @@ test_float_ivf_pq:
 	./benchmark_float --gtest_filter="Benchmark_float.TEST_IVF_PQ" | tee test_float_ivf_pq.log
 test_float_hnsw:
 	./benchmark_float --gtest_filter="Benchmark_float.TEST_HNSW" | tee test_float_hnsw.log
+test_float_diskann:
+	./benchmark_float --gtest_filter="Benchmark_float.TEST_DISKANN" | tee test_float_diskann.log
 
 ###################################################################################################
 # Test Knowhere float index bitset
