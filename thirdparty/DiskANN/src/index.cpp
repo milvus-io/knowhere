@@ -39,7 +39,7 @@
 #endif
 #include "boost/dynamic_bitset.hpp"
 
-#if !defined(__ARM_NEON__) && !defined(__aarch64__)
+#if !defined(__ARM_NEON) || !defined(__aarch64__)
 #include <xmmintrin.h>
 #endif
 #include "diskann/index.h"
@@ -3158,7 +3158,7 @@ namespace diskann {
       unsigned id = init_ids[i];
       if (id >= _nd)
         continue;
-#if defined(__ARM_NEON__) || defined(__aarch64__)
+#if defined(__ARM_NEON) && defined(__aarch64__)
       __builtin_prefetch(_opt_graph + _node_size * id, 0, 3);
 #else
       _mm_prefetch(_opt_graph + _node_size * id, _MM_HINT_T0);
@@ -3188,7 +3188,7 @@ namespace diskann {
         retset[k].flag = false;
         unsigned n = retset[k].id;
 
-#if defined(__ARM_NEON__) || defined(__aarch64__)
+#if defined(__ARM_NEON) && defined(__aarch64__)
         __builtin_prefetch(_opt_graph + _node_size * n + _data_len, 0, 3);
 #else
         _mm_prefetch(_opt_graph + _node_size * n + _data_len, _MM_HINT_T0);
@@ -3198,7 +3198,7 @@ namespace diskann {
         unsigned MaxM = *neighbors;
         neighbors++;
         for (unsigned m = 0; m < MaxM; ++m) {
-#if defined(__ARM_NEON__) || defined(__aarch64__)
+#if defined(__ARM_NEON) && defined(__aarch64__)
           __builtin_prefetch(_opt_graph + _node_size * neighbors[m], 0, 3);
 #else
           _mm_prefetch(_opt_graph + _node_size * neighbors[m], _MM_HINT_T0);

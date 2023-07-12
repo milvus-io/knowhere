@@ -19,7 +19,7 @@ namespace diskann {
   inline void pq_dist_lookup(const _u8* pq_ids, const _u64 n_pts,
                              const _u64 pq_nchunks, const float* pq_dists,
                              float* dists_out) {
-#if defined(__ARM_NEON__) || defined(__aarch64__)
+#if defined(__ARM_NEON) && defined(__aarch64__)
     __builtin_prefetch((char*) dists_out, 1, 3);
     __builtin_prefetch((char*) pq_ids, 0, 3);
     __builtin_prefetch((char*) (pq_ids + 64), 0, 3);
@@ -34,7 +34,7 @@ namespace diskann {
     for (_u64 chunk = 0; chunk < pq_nchunks; chunk++) {
       const float* chunk_dists = pq_dists + 256 * chunk;
       if (chunk < pq_nchunks - 1) {
-#if defined(__ARM_NEON__) || defined(__aarch64__)
+#if defined(__ARM_NEON) && defined(__aarch64__)
         __builtin_prefetch((char*) (chunk_dists + 256), 0, 3);
 #else
         _mm_prefetch((char*) (chunk_dists + 256), _MM_HINT_T0);
