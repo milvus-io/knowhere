@@ -17,7 +17,6 @@
 #include "knowhere/log.h"
 
 #ifdef NOT_COMPILE_FOR_SWIG
-#include "knowhere/comp/time_recorder.h"
 #include "knowhere/prometheus_client.h"
 #endif
 
@@ -135,15 +134,9 @@ class Index {
         RETURN_IF_ERROR(cfg->CheckAndAdjustForBuild());
 
 #ifdef NOT_COMPILE_FOR_SWIG
-        TimeRecorder rc("Build");
-        RETURN_IF_ERROR(this->node->Build(dataset, *cfg));
-        auto span = rc.ElapseFromBegin("done");
-        span *= 0.000001;  // convert to s
-        kw_build_latency.Observe(span);
-#else
-        RETURN_IF_ERROR(this->node->Build(dataset, *cfg));
+        knowhere_build_count.Increment();
 #endif
-        return Status::success;
+        return this->node->Build(dataset, *cfg);
     }
 
     Status
@@ -173,15 +166,9 @@ class Index {
         RETURN_IF_ERROR(cfg->CheckAndAdjustForSearch());
 
 #ifdef NOT_COMPILE_FOR_SWIG
-        TimeRecorder rc("Search");
-        auto res = this->node->Search(dataset, *cfg, bitset);
-        auto span = rc.ElapseFromBegin("done");
-        span *= 0.001;  // convert to ms
-        kw_search_latency.Observe(span);
-#else
-        auto res = this->node->Search(dataset, *cfg, bitset);
+        knowhere_search_count.Increment();
 #endif
-        return res;
+        return this->node->Search(dataset, *cfg, bitset);
     }
 
     expected<DataSetPtr>
@@ -191,15 +178,9 @@ class Index {
         RETURN_IF_ERROR(cfg->CheckAndAdjustForRangeSearch());
 
 #ifdef NOT_COMPILE_FOR_SWIG
-        TimeRecorder rc("Range Search");
-        auto res = this->node->RangeSearch(dataset, *cfg, bitset);
-        auto span = rc.ElapseFromBegin("done");
-        span *= 0.001;  // convert to ms
-        kw_range_search_latency.Observe(span);
-#else
-        auto res = this->node->RangeSearch(dataset, *cfg, bitset);
+        knowhere_range_search_count.Increment();
 #endif
-        return res;
+        return this->node->RangeSearch(dataset, *cfg, bitset);
     }
 
     expected<DataSetPtr>
