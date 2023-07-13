@@ -1,24 +1,28 @@
 ###################################################################################################
 # Test Knowhere binary index
-test_binary: test_binary_idmap test_binary_ivf_flat
+test_binary: test_binary_idmap test_binary_ivf_flat test_binary_hnsw
 
 test_binary_idmap:
 	./benchmark_binary --gtest_filter="Benchmark_binary.TEST_BINARY_IDMAP" | tee test_binary_idmap.log
 test_binary_ivf_flat:
 	./benchmark_binary --gtest_filter="Benchmark_binary.TEST_BINARY_IVF_FLAT" | tee test_binary_ivf_flat.log
+test_binary_hnsw:
+	./benchmark_binary --gtest_filter="Benchmark_binary.TEST_BINARY_HNSW" | tee test_binary_hnsw.log
 
 ###################################################################################################
 # Test Knowhere binary index range
-test_binary_range: test_binary_range_idmap test_binary_range_ivf_flat
+test_binary_range: test_binary_range_idmap test_binary_range_ivf_flat test_binary_range_hnsw
 
 test_binary_range_idmap:
 	./benchmark_binary_range --gtest_filter="Benchmark_binary_range.TEST_BINARY_IDMAP" | tee test_binary_range_idmap.log
 test_binary_range_ivf_flat:
 	./benchmark_binary_range --gtest_filter="Benchmark_binary_range.TEST_BINARY_IVF_FLAT" | tee test_binary_range_ivf_flat.log
+test_binary_range_hnsw:
+	./benchmark_binary_range --gtest_filter="Benchmark_binary_range.TEST_BINARY_HNSW" | tee test_binary_range_hnsw.log
 
 ###################################################################################################
 # Test Knowhere float index
-test_float: test_float_idmap test_float_ivf_flat test_float_ivf_sq8 test_float_ivf_pq test_float_hnsw
+test_float: test_float_idmap test_float_ivf_flat test_float_ivf_sq8 test_float_ivf_pq test_float_hnsw test_float_diskann
 test_float_gpu: test_float_ivf_flat test_float_ivf_pq
 
 test_float_idmap:
@@ -31,6 +35,8 @@ test_float_ivf_pq:
 	./benchmark_float --gtest_filter="Benchmark_float.TEST_IVF_PQ" | tee test_float_ivf_pq.log
 test_float_hnsw:
 	./benchmark_float --gtest_filter="Benchmark_float.TEST_HNSW" | tee test_float_hnsw.log
+test_float_diskann:
+	./benchmark_float --gtest_filter="Benchmark_float.TEST_DISKANN" | tee test_float_diskann.log
 
 ###################################################################################################
 # Test Knowhere float index bitset

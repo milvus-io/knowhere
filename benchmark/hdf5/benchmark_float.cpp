@@ -27,12 +27,6 @@ std::string kIPIndexDir = kDir + "/ip_index";
 std::string kL2IndexPrefix = kL2IndexDir + "/l2";
 std::string kIPIndexPrefix = kIPIndexDir + "/ip";
 
-constexpr uint32_t kNumRows = 10000;
-constexpr uint32_t kNumQueries = 100;
-constexpr uint32_t kDim = 128;
-constexpr uint32_t kK = 10;
-constexpr float kL2KnnRecall = 0.8;
-
 void
 WriteRawDataToDisk(const std::string data_path, const float* raw_data, const uint32_t num, const uint32_t dim) {
     std::ofstream writer(data_path.c_str(), std::ios::binary);
@@ -119,13 +113,16 @@ class Benchmark_float : public Benchmark_knowhere, public ::testing::Test {
         printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
     }
 
+#ifdef KNOWHERE_WITH_DISKANN
     void
     test_diskann(const knowhere::Json& cfg) {
         auto conf = cfg;
         conf["index_prefix"] = (metric_type_ == knowhere::metric::L2 ? kL2IndexPrefix : kIPIndexPrefix);
-        conf["num_threads"] = 8;
         conf["search_cache_budget_gb"] = 0;
         conf["beamwidth"] = 8;
+
+        knowhere::BinarySet binset;
+        index_.Deserialize(binset, conf);
 
         printf("\n[%0.3f s] %s | %s \n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
         printf("================================================================================\n");
@@ -144,6 +141,7 @@ class Benchmark_float : public Benchmark_knowhere, public ::testing::Test {
         printf("================================================================================\n");
         printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
     }
+#endif
 
  protected:
     void
@@ -255,6 +253,7 @@ TEST_F(Benchmark_float, TEST_HNSW) {
     }
 }
 
+#ifdef KNOWHERE_WITH_DISKANN
 TEST_F(Benchmark_float, TEST_DISKANN) {
     index_type_ = knowhere::IndexEnum::INDEX_DISKANN;
 
@@ -264,9 +263,8 @@ TEST_F(Benchmark_float, TEST_DISKANN) {
     conf["data_path"] = kRawDataPath;
     conf["max_degree"] = 56;
     conf["search_list_size"] = 128;
-    conf["pq_code_budget_gb"] = sizeof(float) * kDim * kNumRows * 0.125 / (1024 * 1024 * 1024);
+    conf["pq_code_budget_gb"] = sizeof(float) * dim_ * nb_ * 0.125 / (1024 * 1024 * 1024);
     conf["build_dram_budget_gb"] = 32.0;
-    conf["num_threads"] = 8;
 
     fs::create_directory(kDir);
     fs::create_directory(kL2IndexDir);
@@ -283,3 +281,4 @@ TEST_F(Benchmark_float, TEST_DISKANN) {
     index_.Build(*ds_ptr, conf);
     test_diskann(conf);
 }
+#endif

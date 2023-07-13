@@ -97,6 +97,7 @@ knowhere_file_glob(GLOB_RECURSE KNOWHERE_SRCS src/common/*.cc src/index/*.cc
 set(KNOWHERE_LINKER_LIBS "")
 
 if(WITH_DISKANN)
+  add_definitions(-DKNOWHERE_WITH_DISKANN)
   include(cmake/libs/libdiskann.cmake)
 else()
   knowhere_file_glob(GLOB_RECURSE KNOWHERE_DISKANN_SRCS src/index/diskann/*.cc)

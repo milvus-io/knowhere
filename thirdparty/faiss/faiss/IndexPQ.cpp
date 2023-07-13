@@ -19,7 +19,7 @@
 
 #include <faiss/impl/AuxIndexStructures.h>
 #include <faiss/impl/FaissAssert.h>
-#include <faiss/utils/BinaryDistance.h>
+#include <faiss/utils/binary_distances.h>
 #include <faiss/utils/hamming.h>
 
 namespace faiss {
@@ -217,7 +217,7 @@ void IndexPQ::search(
                     size_t(n), size_t(k), labels, idistances};
 
             if (search_type == ST_HE) {
-                binary_distance_knn_hc(
+                binary_knn_hc(
                         METRIC_Hamming,
                         &res,
                         (const uint8_t*)q_codes,

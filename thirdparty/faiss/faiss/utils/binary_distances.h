@@ -91,7 +91,7 @@ inline float Tanimoto_2_Jaccard(float tnmt) {
  * @param k       number of the matched vectors to return
  * @param ncodes  size of the binary codes (bytes)
  */
-void binary_distance_knn_mc(
+void binary_knn_mc(
         MetricType metric_type,
         const uint8_t* a,
         const uint8_t* b,
@@ -113,7 +113,7 @@ void binary_distance_knn_mc(
  *                (may be bottleneck for k/n > 0.01)
  */
 template <class C>
-void binary_distance_knn_hc(
+void binary_knn_hc(
         MetricType metric_type,
         HeapArray<C>* ha,
         const uint8_t* a,

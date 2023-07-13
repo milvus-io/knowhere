@@ -254,7 +254,6 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
             auto nlist = MatchNlist(rows, ivf_flat_cfg.nlist.value());
             qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
             index = std::make_unique<faiss::IndexIVFFlat>(qzr, dim, nlist, metric.value());
-            index->own_fields = true;
             index->train(rows, (const float*)data);
         }
         if constexpr (std::is_same<faiss::IndexIVFFlatCC, T>::value) {
@@ -264,7 +263,6 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
             bool is_cosine = base_cfg.metric_type.value() == metric::COSINE;
             index = std::make_unique<faiss::IndexIVFFlatCC>(qzr, dim, nlist, ivf_flat_cc_cfg.ssize.value(), is_cosine,
                                                             metric.value());
-            index->own_fields = true;
             index->train(rows, (const float*)data);
         }
         if constexpr (std::is_same<faiss::IndexIVFPQ, T>::value) {
@@ -273,7 +271,6 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
             auto nbits = MatchNbits(rows, ivf_pq_cfg.nbits.value());
             qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
             index = std::make_unique<faiss::IndexIVFPQ>(qzr, dim, nlist, ivf_pq_cfg.m.value(), nbits, metric.value());
-            index->own_fields = true;
             index->train(rows, (const float*)data);
         }
         if constexpr (std::is_same<faiss::IndexIVFScalarQuantizer, T>::value) {
@@ -282,7 +279,6 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
             qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
             index = std::make_unique<faiss::IndexIVFScalarQuantizer>(qzr, dim, nlist, faiss::QuantizerType::QT_8bit,
                                                                      metric.value());
-            index->own_fields = true;
             index->train(rows, (const float*)data);
         }
         if constexpr (std::is_same<faiss::IndexBinaryIVF, T>::value) {
@@ -290,9 +286,9 @@ IvfIndexNode<T>::Train(const DataSet& dataset, const Config& cfg) {
             auto nlist = MatchNlist(rows, ivf_bin_cfg.nlist.value());
             qzr = new (std::nothrow) typename QuantizerT<T>::type(dim, metric.value());
             index = std::make_unique<faiss::IndexBinaryIVF>(qzr, dim, nlist, metric.value());
-            index->own_fields = true;
             index->train(rows, (const uint8_t*)data);
         }
+        index->own_fields = true;
     } catch (std::exception& e) {
         if (qzr) {
             delete qzr;

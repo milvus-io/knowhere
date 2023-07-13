@@ -87,9 +87,9 @@ set(FAISS_SRC
   invlists/DirectMap.cpp
   invlists/InvertedLists.cpp
   invlists/InvertedListsIOHook.cpp
-  utils/BinaryDistance.cpp
   utils/Heap.cpp
   utils/WorkerThread.cpp
+  utils/binary_distances.cpp
   utils/distances.cpp
   utils/distances_simd.cpp
   utils/extra_distances.cpp
@@ -185,9 +185,9 @@ set(FAISS_HEADERS
   invlists/InvertedLists.h
   invlists/InvertedListsIOHook.h
   utils/AlignedTable.h
-  utils/BinaryDistance.h
   utils/Heap.h
   utils/WorkerThread.h
+  utils/binary_distances.h
   utils/distances.h
   utils/extra_distances-inl.h
   utils/extra_distances.h
@@ -202,8 +202,7 @@ set(FAISS_HEADERS
   utils/simdlib_avx2.h
   utils/simdlib_emulated.h
   utils/simdlib_neon.h
-  utils/substructure-inl.h
-  utils/superstructure-inl.h
+  utils/structure-inl.h
   utils/utils.h
 )
 

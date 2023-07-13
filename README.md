@@ -35,6 +35,8 @@ $ export PATH=$PATH:$HOME/.local/bin
 
 #### Build From Source Code
 
+* Ubuntu 20.04
+
 ```bash
 $ mkdir build && cd build
 #DEBUG CPU
@@ -51,6 +53,15 @@ $ conan install .. --build=missing -o with_ut=True -o with_diskann=True -s compi
 $ conan build ..
 #verbose
 export VERBOSE=1
+```
+
+* MacOS
+
+```bash
+#RELEASE CPU
+conan install .. --build=missing -o with_ut=True -s compiler.libcxx=libc++ -s build_type=Release
+#DEBUG CPU
+conan install .. --build=missing -o with_ut=True -s compiler.libcxx=libc++ -s build_type=Debug
 ```
 
 #### Running Unit Tests

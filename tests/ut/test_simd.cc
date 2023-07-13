@@ -15,7 +15,6 @@
 #include "knowhere/comp/brute_force.h"
 #include "knowhere/comp/index_param.h"
 #include "knowhere/comp/knowhere_config.h"
-#include "knowhere/utils.h"
 #include "utils.h"
 
 TEST_CASE("Test BruteForce Search SIMD", "[bf]") {
@@ -54,9 +53,9 @@ TEST_CASE("Test BruteForce Search SIMD", "[bf]") {
         }
     };
 
-    for (auto simd_type : {knowhere::KnowhereConfig::SimdType::AUTO, knowhere::KnowhereConfig::SimdType::AVX512,
-                           knowhere::KnowhereConfig::SimdType::AVX2, knowhere::KnowhereConfig::SimdType::SSE4_2,
-                           knowhere::KnowhereConfig::SimdType::GENERIC}) {
+    for (auto simd_type : {knowhere::KnowhereConfig::SimdType::AVX512, knowhere::KnowhereConfig::SimdType::AVX2,
+                           knowhere::KnowhereConfig::SimdType::SSE4_2, knowhere::KnowhereConfig::SimdType::GENERIC,
+                           knowhere::KnowhereConfig::SimdType::AUTO}) {
         test_search_with_simd(simd_type);
     }
 }
@@ -105,7 +104,7 @@ TEST_CASE("Test PQ Search SIMD", "[pq]") {
         REQUIRE(recall > 0.2);
     };
 
-    for (auto simd_type : {knowhere::KnowhereConfig::SimdType::SSE4_2, knowhere::KnowhereConfig::SimdType::GENERIC}) {
+    for (auto simd_type : {knowhere::KnowhereConfig::SimdType::GENERIC, knowhere::KnowhereConfig::SimdType::AUTO}) {
         for (int64_t m : {8, 16, 32, 64, 128}) {
             test_search_with_simd(m, simd_type);
         }
