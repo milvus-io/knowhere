@@ -20,7 +20,7 @@
 #include <set>
 #include <sstream>
 #include <string.h>
-#if !defined(__ARM_NEON__) && !defined(__aarch64__)
+#if !defined(__ARM_NEON) || !defined(__aarch64__)
 #include <xmmintrin.h>
 #endif
 #ifdef __APPLE__
@@ -36,9 +36,6 @@ typedef HANDLE FileHandle;
 typedef int FileHandle;
 #endif
 
-#if defined(__ARM_NEON__) && defined(__aarch64__)
-#include "distance_neon.h"
-#endif
 #include "logger.h"
 #include "cached_io.h"
 #include "ann_exception.h"
@@ -926,7 +923,7 @@ namespace diskann {
   inline void prefetch_vector(const char* vec, size_t vecsize) {
     size_t max_prefetch_size = (vecsize / 64) * 64;
     for (size_t d = 0; d < max_prefetch_size; d += 64) {
-#if defined(__ARM_NEON__) || defined(__aarch64__)
+#if defined(__ARM_NEON) && defined(__aarch64__)
       __builtin_prefetch((const char*) vec + d, 0, 3);
 #else
       _mm_prefetch((const char*) vec + d, _MM_HINT_T0);
@@ -938,7 +935,7 @@ namespace diskann {
   inline void prefetch_vector_l2(const char* vec, size_t vecsize) {
     size_t max_prefetch_size = (vecsize / 64) * 64;
     for (size_t d = 0; d < max_prefetch_size; d += 64)
-#if defined(__ARM_NEON__) || defined(__aarch64__)
+#if defined(__ARM_NEON) && defined(__aarch64__)
       __builtin_prefetch((const char*) vec + d, 0, 2);
 #else
       _mm_prefetch((const char*) vec + d, _MM_HINT_T1);
