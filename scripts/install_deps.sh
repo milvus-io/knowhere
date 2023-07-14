@@ -56,7 +56,7 @@ if [[ "${MACHINE}" == "Linux" ]]; then
             /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null \
             && echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ '$ubuntu_alias' main' | sudo tee \
             /etc/apt/sources.list.d/kitware.list >/dev/null \
-            && apt update && apt install -y cmake \
+            && sudo apt update && sudo apt install -y cmake \
             && wget https://github.com/Reference-LAPACK/lapack/archive/refs/tags/v3.10.1.tar.gz \
             && tar zxvf v3.10.1.tar.gz && cd lapack-3.10.1/  \
             && cmake -B build -S . -DCMAKE_SKIP_RPATH=ON -DBUILD_SHARED_LIBS=ON \
@@ -64,14 +64,7 @@ if [[ "${MACHINE}" == "Linux" ]]; then
             -DCMAKE_Fortran_COMPILER=gfortran -DLAPACKE_WITH_TMG=ON -DCBLAS=OFF \
             -DBUILD_DEPRECATED=OFF \
             && cmake --build build \
-            && sudo cmake --install build \
-            && sudo rm -r /usr/local/lib/libblas.* \
-            && sudo rm -r /usr/local/lib/liblapacke.* \
-            && sudo rm -r /usr/local/lib/pkgconfig/blas.* \
-            && sudo rm -r /usr/local/lib/pkgconfig/lapacke.* \
-            && sudo rm -r /usr/local/lib/cmake/lapacke* \
-            && sudo rm -r /usr/local/include/* \
-            && cd .. && rm -rf lapack-3.10.1 && rm v3.10.1.tar.gz
+            && sudo cmake --install build
 
             wget https://github.com/xianyi/OpenBLAS/archive/refs/tags/v0.3.21.tar.gz && \
             tar zxvf v0.3.21.tar.gz && cd OpenBLAS-0.3.21 && \
@@ -79,11 +72,9 @@ if [[ "${MACHINE}" == "Linux" ]]; then
             TARGET=HASWELL DYNAMIC_ARCH=1 \
             NUM_THREADS=64 MAJOR_VERSION=3 libs shared && \
             sudo make PREFIX=/usr/local NUM_THREADS=64 MAJOR_VERSION=3 install && \
-            sudo rm -f /usr/local/include/lapack* && \
-            sudo ln -s /usr/local/lib/libopenblasp-r0.3.21.so /lib/libblas.so && \
-            sudo ln -s /usr/local/lib/libopenblasp-r0.3.21.so /lib/libblas.so.3 && \
-            sudo ln -s /usr/local/lib/pkgconfig/openblas.pc /usr/local/lib/pkgconfig/blas.pc && \
-            cd .. && rm -rf OpenBLAS-0.3.21 && rm v0.3.21.tar.gz
+            sudo ln -s /usr/local/lib/libopenblasp-r0.3.21.so /usr/local/lib/libblas.so && \
+            sudo ln -s /usr/local/lib/libopenblasp-r0.3.21.so /usr/local/lib/libblas.so.3 && \
+            sudo ln -s /usr/local/lib/pkgconfig/openblas.pc /usr/local/lib/pkgconfig/blas.pc
         fi
     elif [[ -x "$(command -v yum)" ]]; then
         # for CentOS 7

@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License
 
-cmake_minimum_required(VERSION 3.23.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.23.0 FATAL_ERROR)
 project(knowhere CXX C)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
