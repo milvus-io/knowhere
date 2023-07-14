@@ -26,6 +26,9 @@
 #ifdef KNOWHERE_WITH_RAFT
 #include "common/raft/raft_utils.h"
 #endif
+#ifdef KNOWHERE_WITH_DISKANN
+#include "diskann/aio_context_pool.h"
+#endif
 
 namespace knowhere {
 

@@ -1,3 +1,4 @@
+add_definitions(-DKNOWHERE_WITH_DISKANN)
 find_package(Boost REQUIRED COMPONENTS program_options)
 include_directories(${Boost_INCLUDE_DIR})
 find_package(aio REQUIRED)

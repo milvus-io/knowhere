@@ -10,9 +10,6 @@
 #include "concurrent_queue.h"
 
 namespace {
-  size_t           global_aio_pool_size = 0;
-  size_t           global_aio_max_events = 0;
-  std::mutex       global_aio_pool_mut;
   constexpr size_t default_max_nr = 65536;
   constexpr size_t default_max_events = 256; // sync this with diskann MAX_N_SECTOR_READS
   const size_t     default_pool_size =
@@ -107,6 +104,9 @@ class AioContextPool {
   bool                      stop_ = false;
   size_t                    num_ctx_;
   size_t                    max_events_;
+  inline static size_t           global_aio_pool_size = 0;
+  inline static size_t           global_aio_max_events = 0;
+  inline static std::mutex       global_aio_pool_mut;
 
   AioContextPool(size_t num_ctx, size_t max_events)
       : num_ctx_(num_ctx), max_events_(max_events) {
