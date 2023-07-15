@@ -95,9 +95,8 @@ TEST_CASE("Test Brute Force", "[binary vector]") {
     const int64_t dim = 1024;
     const int64_t k = 5;
 
-    auto metric =
-        GENERATE(as<std::string>{}, knowhere::metric::HAMMING, knowhere::metric::JACCARD, knowhere::metric::TANIMOTO,
-                 knowhere::metric::SUPERSTRUCTURE, knowhere::metric::SUBSTRUCTURE);
+    auto metric = GENERATE(as<std::string>{}, knowhere::metric::HAMMING, knowhere::metric::JACCARD,
+                           knowhere::metric::SUPERSTRUCTURE, knowhere::metric::SUBSTRUCTURE);
 
     const auto train_ds = GenBinDataSet(nb, dim);
     const auto query_ds = CopyBinDataSet(train_ds, nq);
@@ -105,7 +104,6 @@ TEST_CASE("Test Brute Force", "[binary vector]") {
     std::unordered_map<std::string, float> radius_map = {
         {knowhere::metric::HAMMING, 1.0},
         {knowhere::metric::JACCARD, 0.1},
-        {knowhere::metric::TANIMOTO, 0.1},
     };
     const knowhere::Json conf = {
         {knowhere::meta::DIM, dim},

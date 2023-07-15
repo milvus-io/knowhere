@@ -77,17 +77,10 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
                     faiss::knn_inner_product(cur_query, (const float*)xb, dim, 1, nb, &buf, bitset);
                     break;
                 }
-                case faiss::METRIC_Jaccard:
-                case faiss::METRIC_Tanimoto: {
+                case faiss::METRIC_Jaccard: {
                     auto cur_query = (const uint8_t*)xq + (dim / 8) * index;
                     faiss::float_maxheap_array_t res = {size_t(1), size_t(topk), cur_labels, cur_distances};
                     binary_knn_hc(faiss::METRIC_Jaccard, &res, cur_query, (const uint8_t*)xb, nb, dim / 8, bitset);
-
-                    if (faiss_metric_type == faiss::METRIC_Tanimoto) {
-                        for (int i = 0; i < topk; i++) {
-                            cur_distances[i] = faiss::Jaccard_2_Tanimoto(cur_distances[i]);
-                        }
-                    }
                     break;
                 }
                 case faiss::METRIC_Hamming: {
@@ -178,17 +171,10 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
                     faiss::knn_inner_product(cur_query, (const float*)xb, dim, 1, nb, &buf, bitset);
                     break;
                 }
-                case faiss::METRIC_Jaccard:
-                case faiss::METRIC_Tanimoto: {
+                case faiss::METRIC_Jaccard: {
                     auto cur_query = (const uint8_t*)xq + (dim / 8) * index;
                     faiss::float_maxheap_array_t res = {size_t(1), size_t(topk), cur_labels, cur_distances};
                     binary_knn_hc(faiss::METRIC_Jaccard, &res, cur_query, (const uint8_t*)xb, nb, dim / 8, bitset);
-
-                    if (faiss_metric_type == faiss::METRIC_Tanimoto) {
-                        for (int i = 0; i < topk; i++) {
-                            cur_distances[i] = faiss::Jaccard_2_Tanimoto(cur_distances[i]);
-                        }
-                    }
                     break;
                 }
                 case faiss::METRIC_Hamming: {
@@ -281,12 +267,6 @@ BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_da
                     auto cur_query = (const uint8_t*)xq + (dim / 8) * index;
                     faiss::binary_range_search<faiss::CMin<float, int64_t>, float>(
                         faiss::METRIC_Jaccard, cur_query, (const uint8_t*)xb, 1, nb, radius, dim / 8, &res, bitset);
-                    break;
-                }
-                case faiss::METRIC_Tanimoto: {
-                    auto cur_query = (const uint8_t*)xq + (dim / 8) * index;
-                    faiss::binary_range_search<faiss::CMin<float, int64_t>, float>(
-                        faiss::METRIC_Tanimoto, cur_query, (const uint8_t*)xb, 1, nb, radius, dim / 8, &res, bitset);
                     break;
                 }
                 case faiss::METRIC_Hamming: {

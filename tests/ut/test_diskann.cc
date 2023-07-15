@@ -98,7 +98,7 @@ TEST_CASE("Invalid diskann params test", "[diskann]") {
         knowhere::Status test_stat;
         // invalid metric type
         test_json = test_gen();
-        test_json["metric_type"] = knowhere::metric::TANIMOTO;
+        test_json["metric_type"] = knowhere::metric::JACCARD;
         test_stat = diskann.Build(*ds_ptr, test_json);
         REQUIRE(test_stat == knowhere::Status::invalid_metric_type);
         // raw data path not exist

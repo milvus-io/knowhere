@@ -26,7 +26,6 @@ enum MetricType {
                               /// metric_arg
 
     METRIC_Jaccard,
-    METRIC_Tanimoto,
     METRIC_Hamming,
     METRIC_Substructure,       ///< Tversky case alpha = 0, beta = 1
     METRIC_Superstructure,     ///< Tversky case alpha = 1, beta = 0

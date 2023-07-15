@@ -587,8 +587,6 @@ void binary_range_search(
         RangeSearchResult* res,
         const BitsetView bitset) {
     switch (metric_type) {
-        case METRIC_Tanimoto:
-            radius = Tanimoto_2_Jaccard(radius);
         case METRIC_Jaccard: {
             {
                 switch (code_size) {
@@ -612,11 +610,6 @@ void binary_range_search(
                                 faiss::JaccardComputerDefault>(
                                 a, b, na, nb, radius, code_size, res, bitset);
                         break;
-                }
-            }
-            if (METRIC_Tanimoto == metric_type) {
-                for (auto i = 0; i < res->lims[na]; i++) {
-                    res->distances[i] = Jaccard_2_Tanimoto(res->distances[i]);
                 }
             }
             break;

@@ -135,17 +135,4 @@ inline float VectorDistance<METRIC_Jaccard>::operator()(
     return 1 - accu_num / accu_den;
 }
 
-template <>
-inline float VectorDistance<METRIC_Tanimoto>::operator()(
-        const float* x,
-        const float* y) const {
-    float accu_num = 0, accu_den = 0;
-    for (size_t i = 0; i < d; i++) {
-        float xi = x[i], yi = y[i];
-        accu_num += xi * yi;
-        accu_den += xi * xi + yi * yi - xi * yi;
-    }
-    return -log2(accu_num / accu_den) ;
-}
-
 } // namespace faiss
