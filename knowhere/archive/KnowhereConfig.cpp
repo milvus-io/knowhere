@@ -13,6 +13,9 @@
 
 #include "archive/KnowhereConfig.h"
 #include "common/Log.h"
+#ifdef KNOWHERE_WITH_DISKANN
+#include "DiskANN/include/aio_context_pool.h"
+#endif
 #include "index/vector_index/Statistics.h"
 #include "faiss/Clustering.h"
 #include "faiss/FaissHook.h"
@@ -106,6 +109,13 @@ KnowhereConfig::SetClusteringType(const ClusteringType clustering_type) {
             faiss::clustering_type = faiss::ClusteringType::K_MEANS_PLUS_PLUS;
             break;
     }
+}
+
+void
+KnowhereConfig::SetAioContextPool(size_t num_ctx, size_t max_events) {
+#ifdef KNOWHERE_WITH_DISKANN
+    AioContextPool::InitGlobalAioPool(num_ctx, max_events);
+#endif
 }
 
 void

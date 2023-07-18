@@ -151,8 +151,6 @@ namespace diskann {
     for (_s64 thread = 0; thread < (_s64) nthreads; thread++) {
 #pragma omp critical
       {
-        this->reader->register_thread();
-        IOContext &     ctx = this->reader->get_ctx();
         QueryScratch<T> scratch;
         _u64 coord_alloc_size = ROUND_UP(sizeof(T) * this->aligned_dim, 256);
         diskann::alloc_aligned((void **) &scratch.coord_scratch,
@@ -180,7 +178,6 @@ namespace diskann {
                this->aligned_dim * sizeof(float));
 
         ThreadData<T> data;
-        data.ctx = ctx;
         data.scratch = scratch;
         this->thread_data.push(data);
       }
@@ -210,7 +207,6 @@ namespace diskann {
       delete scratch.visited;
 
     }
-    this->reader->deregister_all_threads();
   }
 
   template<typename T>
@@ -218,14 +214,7 @@ namespace diskann {
     LOG(DEBUG) << "Loading the cache list into memory...";
     _u64 num_cached_nodes = node_list.size();
 
-    // borrow thread data
-    ThreadData<T> this_thread_data = this->thread_data.pop();
-    while (this_thread_data.scratch.sector_scratch == nullptr) {
-      this->thread_data.wait_for_push_notify();
-      this_thread_data = this->thread_data.pop();
-    }
-
-    IOContext &ctx = this_thread_data.ctx;
+    auto ctx = this->reader->get_ctx();
 
     nhood_cache_buf = new unsigned[num_cached_nodes * (max_degree + 1)];
     memset(nhood_cache_buf, 0, num_cached_nodes * (max_degree + 1));
@@ -284,9 +273,7 @@ namespace diskann {
         node_idx++;
       }
     }
-    // return thread data
-    this->thread_data.push(this_thread_data);
-    this->thread_data.push_notify_all();
+    this->reader->put_ctx(ctx);
     LOG(DEBUG) << "done.";
   }
 
@@ -369,14 +356,7 @@ namespace diskann {
 
     node_list.clear();
 
-    // borrow thread data
-    ThreadData<T> this_thread_data = this->thread_data.pop();
-    while (this_thread_data.scratch.sector_scratch == nullptr) {
-      this->thread_data.wait_for_push_notify();
-      this_thread_data = this->thread_data.pop();
-    }
-
-    IOContext &ctx = this_thread_data.ctx;
+    auto ctx = this->reader->get_ctx();
 
     std::unique_ptr<tsl::robin_set<unsigned>> cur_level, prev_level;
     cur_level = std::make_unique<tsl::robin_set<unsigned>>();
@@ -482,10 +462,7 @@ namespace diskann {
                << ". #nodes: " << node_list.size() - prev_node_list_size
                << ", #nodes thus far: " << node_list.size();
 
-    // return thread data
-    this->thread_data.push(this_thread_data);
-    this->thread_data.push_notify_all();
-  
+    this->reader->put_ctx(ctx); 
     LOG(DEBUG) << "done";
     auto e = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> diff = e - s;
@@ -507,7 +484,7 @@ namespace diskann {
       data = this->thread_data.pop();
     }
     // borrow ctx
-    IOContext &ctx = data.ctx;
+    auto ctx = this->reader->get_ctx();
     // borrow buf
     auto scratch = &(data.scratch);
     scratch->reset();
@@ -542,6 +519,7 @@ namespace diskann {
     // return ctx
     this->thread_data.push(data);
     this->thread_data.push_notify_all();
+    this->reader->put_ctx(ctx);
   }
 
 #ifdef EXEC_ENV_OLS
@@ -1007,6 +985,8 @@ namespace diskann {
       float *distances, const _u64 beam_width, const bool use_reorder_data,
       QueryStats *stats, const knowhere::feder::diskann::FederResultUniq &feder_result,
       faiss::BitsetView bitset_view, const float filter_ratio_in) {
+    auto ctx = this->reader->get_ctx();
+
     if (beam_width > MAX_N_SECTOR_READS)
       throw ANNException("Beamwidth can not be higher than MAX_N_SECTOR_READS",
                          -1, __FUNCSIG__, __FILE__, __LINE__);
@@ -1024,7 +1004,6 @@ namespace diskann {
         return;
     }
     float query_norm = query_norm_opt.value();
-    IOContext &ctx = data.ctx;
 
     if (!bitset_view.empty()) {
       const auto filter_threshold = filter_ratio_in < 0
@@ -1046,6 +1025,7 @@ namespace diskann {
                                 beam_width, ctx, stats, feder_result, bitset_view);
         this->thread_data.push(data);
         this->thread_data.push_notify_all();
+        this->reader->put_ctx(ctx);
         return;
       }
     }
@@ -1458,6 +1438,7 @@ namespace diskann {
 
     this->thread_data.push(data);
     this->thread_data.push_notify_all();
+    this->reader->put_ctx(ctx);
 
     // std::cout << num_ios << " " <<stats << std::endl;
 
