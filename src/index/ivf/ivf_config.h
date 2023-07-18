@@ -57,6 +57,18 @@ class IvfPqConfig : public IvfConfig {
     }
 };
 
+class ScannConfig : public IvfFlatConfig {
+ public:
+    CFG_FLOAT refine_ratio;
+    KNOHWERE_DECLARE_CONFIG(ScannConfig) {
+        KNOWHERE_CONFIG_DECLARE_FIELD(refine_ratio)
+            .description("refine ratio")
+            .set_default(1)
+            .for_search()
+            .set_range(1, 1000);
+    }
+};
+
 class IvfSqConfig : public IvfConfig {};
 
 class IvfBinConfig : public IvfConfig {};
