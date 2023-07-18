@@ -528,7 +528,7 @@ class BaseConfig : public Config {
             .set_default(false)
             .description("enable mmap for load index")
             .for_deserialize_from_file();
-        KNOWHERE_CONFIG_DECLARE_FIELD(for_tuning).set_default(false).description("for tuning").for_search();
+        KNOWHERE_CONFIG_DECLARE_FIELD(for_tuning).set_default(true).description("for tuning").for_search();
     }
 
     virtual Status
