@@ -669,7 +669,7 @@ namespace diskann {
     }
     LOG_KNOWHERE_INFO_ << "Use " << sample_num << " sampled quries to generate "
                        << num_nodes_to_cache << " cached nodes.";
-    std::vector<std::future<void>> futures;
+    std::vector<folly::Future<folly::Unit>> futures;
     futures.reserve(sample_num);
 
     std::vector<std::pair<uint32_t, uint32_t>> node_count_list(points_num);
@@ -780,7 +780,7 @@ namespace diskann {
     }
 
     for (auto &future : futures) {
-      future.get();
+      future.wait();
     }
 
     std::sort(node_count_list.begin(), node_count_list.end(),
@@ -822,11 +822,11 @@ namespace diskann {
       std::vector<float>   tuning_sample_result_dists(tuning_sample_num, 0);
       diskann::QueryStats *stats = new diskann::QueryStats[tuning_sample_num];
 
-      std::vector<std::future<void>> futures;
+      std::vector<folly::Future<folly::Unit>> futures;
       futures.reserve(tuning_sample_num);
       auto s = std::chrono::high_resolution_clock::now();
       for (_s64 i = 0; i < (int64_t) tuning_sample_num; i++) {
-        futures.push_back(thread_pool->push([&, index = i]() {
+        futures.emplace_back(thread_pool->push([&, index = i]() {
           pFlashIndex->cached_beam_search(
               tuning_sample + (index * tuning_sample_aligned_dim), 1, L,
               tuning_sample_result_ids_64.data() + (index * 1),
@@ -835,7 +835,7 @@ namespace diskann {
         }));
       }
       for (auto &future : futures) {
-        future.get();
+        future.wait();
       }
       auto e = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double> diff = e - s;

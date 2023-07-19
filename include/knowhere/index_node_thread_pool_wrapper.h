@@ -12,93 +12,85 @@
 #ifndef INDEX_NODE_THREAD_POOL_WRAPPER_H
 #define INDEX_NODE_THREAD_POOL_WRAPPER_H
 
-#include "knowhere/comp/thread_pool.h"
 #include "knowhere/index_node.h"
 
 namespace knowhere {
 
+class ThreadPool;
 class IndexNodeThreadPoolWrapper : public IndexNode {
  public:
-    explicit IndexNodeThreadPoolWrapper(std::unique_ptr<IndexNode> index_node)
-        : IndexNodeThreadPoolWrapper(std::move(index_node), ThreadPool::GetGlobalThreadPool()) {
-    }
+    IndexNodeThreadPoolWrapper(std::unique_ptr<IndexNode> index_node, size_t pool_size);
 
-    explicit IndexNodeThreadPoolWrapper(std::unique_ptr<IndexNode> index_node, std::shared_ptr<ThreadPool> thread_pool)
-        : index_node_(std::move(index_node)), thread_pool_(thread_pool) {
-    }
+    IndexNodeThreadPoolWrapper(std::unique_ptr<IndexNode> index_node, std::shared_ptr<ThreadPool> thread_pool);
 
     Status
-    Train(const DataSet& dataset, const Config& cfg) {
+    Train(const DataSet& dataset, const Config& cfg) override {
         return index_node_->Train(dataset, cfg);
     }
 
     Status
-    Add(const DataSet& dataset, const Config& cfg) {
+    Add(const DataSet& dataset, const Config& cfg) override {
         return index_node_->Add(dataset, cfg);
     }
 
     expected<DataSetPtr>
-    Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
-        return thread_pool_->push([&]() { return this->index_node_->Search(dataset, cfg, bitset); }).get();
-    }
+    Search(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
 
     expected<DataSetPtr>
-    RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const {
-        return thread_pool_->push([&]() { return this->index_node_->RangeSearch(dataset, cfg, bitset); }).get();
-    }
+    RangeSearch(const DataSet& dataset, const Config& cfg, const BitsetView& bitset) const override;
 
     expected<DataSetPtr>
-    GetVectorByIds(const DataSet& dataset) const {
+    GetVectorByIds(const DataSet& dataset) const override {
         return index_node_->GetVectorByIds(dataset);
     }
 
     bool
-    HasRawData(const std::string& metric_type) const {
+    HasRawData(const std::string& metric_type) const override {
         return index_node_->HasRawData(metric_type);
     }
 
     expected<DataSetPtr>
-    GetIndexMeta(const Config& cfg) const {
+    GetIndexMeta(const Config& cfg) const override {
         return index_node_->GetIndexMeta(cfg);
     }
 
     Status
-    Serialize(BinarySet& binset) const {
+    Serialize(BinarySet& binset) const override {
         return index_node_->Serialize(binset);
     }
 
     Status
-    Deserialize(const BinarySet& binset, const Config& config) {
+    Deserialize(const BinarySet& binset, const Config& config) override {
         return index_node_->Deserialize(binset, config);
     }
 
     Status
-    DeserializeFromFile(const std::string& filename, const Config& config) {
+    DeserializeFromFile(const std::string& filename, const Config& config) override {
         return index_node_->DeserializeFromFile(filename, config);
     }
 
     std::unique_ptr<BaseConfig>
-    CreateConfig() const {
+    CreateConfig() const override {
         return index_node_->CreateConfig();
     }
 
     int64_t
-    Dim() const {
+    Dim() const override {
         return index_node_->Dim();
     }
 
     int64_t
-    Size() const {
+    Size() const override {
         return index_node_->Size();
     }
 
     int64_t
-    Count() const {
+    Count() const override {
         return index_node_->Count();
     }
 
     std::string
-    Type() const {
+    Type() const override {
         return index_node_->Type();
     }
 

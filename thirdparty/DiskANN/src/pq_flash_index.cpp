@@ -291,10 +291,10 @@ namespace diskann {
     std::vector<float>   tmp_result_dists(sample_num, 0);
 
     auto thread_pool = knowhere::ThreadPool::GetGlobalThreadPool();
-    std::vector<std::future<void>> futures;
+    std::vector<folly::Future<folly::Unit>> futures;
     futures.reserve(sample_num);
     for (_s64 i = 0; i < (int64_t) sample_num; i++) {
-      futures.push_back(thread_pool->push([&, index = i]() {
+      futures.emplace_back(thread_pool->push([&, index = i]() {
         cached_beam_search(samples + (index * sample_aligned_dim), 1, l_search,
                            tmp_result_ids_64.data() + (index * 1),
                            tmp_result_dists.data() + (index * 1), beamwidth);
@@ -302,7 +302,7 @@ namespace diskann {
     }
 
     for (auto &future : futures) {
-      future.get();
+      future.wait();
     }
 
     std::sort(this->node_visit_counter.begin(), node_visit_counter.end(),

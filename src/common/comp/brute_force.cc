@@ -19,6 +19,7 @@
 #include "faiss/utils/distances.h"
 #include "knowhere/comp/thread_pool.h"
 #include "knowhere/config.h"
+#include "knowhere/expected.h"
 #include "knowhere/log.h"
 #include "knowhere/utils.h"
 
@@ -54,10 +55,10 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
     auto distances = new float[nq * topk];
 
     auto pool = ThreadPool::GetGlobalThreadPool();
-    std::vector<std::future<Status>> futs;
+    std::vector<folly::Future<Status>> futs;
     futs.reserve(nq);
     for (int i = 0; i < nq; ++i) {
-        futs.push_back(pool->push([&, index = i] {
+        futs.emplace_back(pool->push([&, index = i] {
             ThreadPool::ScopedOmpSetter setter(1);
             auto cur_labels = labels + topk * index;
             auto cur_distances = distances + topk * index;
@@ -118,7 +119,9 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
         }));
     }
     for (auto& fut : futs) {
-        RETURN_IF_ERROR(fut.get());
+        fut.wait();
+        auto ret = fut.result().value();
+        RETURN_IF_ERROR(ret);
     }
     return GenResultDataSet(nq, cfg.k.value(), labels, distances);
 }
@@ -155,10 +158,10 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
     auto faiss_metric_type = metric_type.value();
 
     auto pool = ThreadPool::GetGlobalThreadPool();
-    std::vector<std::future<Status>> futs;
+    std::vector<folly::Future<Status>> futs;
     futs.reserve(nq);
     for (int i = 0; i < nq; ++i) {
-        futs.push_back(pool->push([&, index = i] {
+        futs.emplace_back(pool->push([&, index = i] {
             ThreadPool::ScopedOmpSetter setter(1);
             auto cur_labels = labels + topk * index;
             auto cur_distances = distances + topk * index;
@@ -219,7 +222,9 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
         }));
     }
     for (auto& fut : futs) {
-        RETURN_IF_ERROR(fut.get());
+        fut.wait();
+        auto ret = fut.result().value();
+        RETURN_IF_ERROR(ret);
     }
     return Status::success;
 }
@@ -256,10 +261,10 @@ BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_da
     std::vector<std::vector<float>> result_dist_array(nq);
     std::vector<size_t> result_size(nq);
     std::vector<size_t> result_lims(nq + 1);
-    std::vector<std::future<Status>> futs;
+    std::vector<folly::Future<Status>> futs;
     futs.reserve(nq);
     for (int i = 0; i < nq; ++i) {
-        futs.push_back(pool->push([&, index = i] {
+        futs.emplace_back(pool->push([&, index = i] {
             ThreadPool::ScopedOmpSetter setter(1);
             faiss::RangeSearchResult res(1);
             switch (faiss_metric_type) {
@@ -317,7 +322,9 @@ BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_da
         }));
     }
     for (auto& fut : futs) {
-        RETURN_IF_ERROR(fut.get());
+        fut.wait();
+        auto ret = fut.result().value();
+        RETURN_IF_ERROR(ret);
     }
 
     int64_t* ids = nullptr;

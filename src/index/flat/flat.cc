@@ -89,10 +89,10 @@ class FlatIndexNode : public IndexNode {
         try {
             ids = new (std::nothrow) int64_t[len];
             distances = new (std::nothrow) float[len];
-            std::vector<std::future<void>> futs;
+            std::vector<folly::Future<folly::Unit>> futs;
             futs.reserve(nq);
             for (int i = 0; i < nq; ++i) {
-                futs.push_back(pool_->push([&, index = i] {
+                futs.emplace_back(pool_->push([&, index = i] {
                     ThreadPool::ScopedOmpSetter setter(1);
                     auto cur_ids = ids + k * index;
                     auto cur_dis = distances + k * index;
@@ -111,7 +111,7 @@ class FlatIndexNode : public IndexNode {
                 }));
             }
             for (auto& fut : futs) {
-                fut.get();
+                fut.wait();
             }
         } catch (const std::exception& e) {
             std::unique_ptr<int64_t[]> auto_delete_ids(ids);
@@ -152,10 +152,10 @@ class FlatIndexNode : public IndexNode {
             std::vector<std::vector<float>> result_dist_array(nq);
             std::vector<size_t> result_size(nq);
             std::vector<size_t> result_lims(nq + 1);
-            std::vector<std::future<void>> futs;
+            std::vector<folly::Future<folly::Unit>> futs;
             futs.reserve(nq);
             for (int i = 0; i < nq; ++i) {
-                futs.push_back(pool_->push([&, index = i] {
+                futs.emplace_back(pool_->push([&, index = i] {
                     ThreadPool::ScopedOmpSetter setter(1);
                     faiss::RangeSearchResult res(1);
                     if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
@@ -179,7 +179,7 @@ class FlatIndexNode : public IndexNode {
                 }));
             }
             for (auto& fut : futs) {
-                fut.get();
+                fut.wait();
             }
             GetRangeSearchResult(result_dist_array, result_id_array, is_ip, nq, radius, range_filter, distances, ids,
                                  lims);

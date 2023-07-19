@@ -70,6 +70,10 @@ include_directories(thirdparty/faiss)
 
 find_package(OpenMP REQUIRED)
 
+find_package(folly REQUIRED)
+set(FOLLY_LIBRARIES Folly::folly)
+include_directories(${folly_INCLUDE_DIRS})
+
 if(WITH_RAFT)
   include(cmake/libs/libraft.cmake)
 endif()
@@ -122,6 +126,7 @@ list(APPEND KNOWHERE_LINKER_LIBS faiss)
 list(APPEND KNOWHERE_LINKER_LIBS glog::glog)
 list(APPEND KNOWHERE_LINKER_LIBS nlohmann_json::nlohmann_json)
 list(APPEND KNOWHERE_LINKER_LIBS prometheus-cpp::core prometheus-cpp::push)
+list(APPEND KNOWHERE_LINKER_LIBS ${FOLLY_LIBRARIES})
 
 add_library(knowhere SHARED ${KNOWHERE_SRCS})
 add_dependencies(knowhere ${KNOWHERE_LINKER_LIBS})

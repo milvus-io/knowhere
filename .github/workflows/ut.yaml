@@ -8,16 +8,16 @@ on:
   pull_request:
     # File paths to consider in the event. Optional; defaults to all.
     paths:
-      - 'include/**'
-      - 'python/**'
-      - 'src/**'
-      - 'thirdparty/**'
-      - 'benchmark/**'
-      - 'cmake/**'
-      - '.github/workflows/ut.yaml'
-      - 'CMakeLists.txt'
-      - '!**.md'
-      - 'tests/**'
+      - "include/**"
+      - "python/**"
+      - "src/**"
+      - "thirdparty/**"
+      - "benchmark/**"
+      - "cmake/**"
+      - ".github/workflows/ut.yaml"
+      - "CMakeLists.txt"
+      - "!**.md"
+      - "tests/**"
 
 jobs:
   ut:
@@ -34,7 +34,7 @@ jobs:
       - name: Install Dependency
         run: |
           sudo apt update \
-          && sudo apt install -y cmake g++ gcc libopenblas-dev libcurl4-openssl-dev libaio-dev python3 python3-pip lcov \
+          && sudo apt install -y cmake g++ gcc libopenblas-dev libcurl4-openssl-dev libaio-dev libdouble-conversion-dev libevent-dev python3 python3-pip lcov \
           && pip3 install conan==1.58.0
       - name: Build & Run
         run: |
@@ -95,11 +95,11 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'
+          python-version: "3.8"
       - name: Install Dependency
         run: |
           sudo apt update \
-          && sudo apt install -y cmake g++ gcc libopenblas-dev libaio-dev libcurl4-openssl-dev python3 python3-pip python3-setuptools \
+          && sudo apt install -y cmake g++ gcc libopenblas-dev libaio-dev libcurl4-openssl-dev libdouble-conversion-dev libevent-dev libgflags-dev python3 python3-pip python3-setuptools \
           && pip3 install conan==1.58.0 pytest faiss-cpu numpy wheel
       - name: Build
         run: |
