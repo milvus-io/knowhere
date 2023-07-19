@@ -226,8 +226,21 @@ class Index {
     }
 
     Status
-    DeserializeFromFile(const std::string& filename, const Config& config = {}) {
-        return this->node->Deserialize(filename, config);
+    DeserializeFromFile(const std::string& filename, const Json& json = {}) {
+        Json json_(json);
+        auto cfg = this->node->CreateConfig();
+        {
+            auto res = Config::FormatAndCheck(*cfg, json_);
+            LOG_KNOWHERE_DEBUG_ << "DeserializeFromFile config dump: " << json_.dump();
+            if (res != Status::success) {
+                return res;
+            }
+        }
+        auto res = Config::Load(*cfg, json_, knowhere::DESERIALIZE_FROM_FILE);
+        if (res != Status::success) {
+            return res;
+        }
+        return this->node->DeserializeFromFile(filename, *cfg);
     }
 
     int64_t
