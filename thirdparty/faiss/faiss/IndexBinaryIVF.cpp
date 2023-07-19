@@ -290,7 +290,7 @@ void IndexBinaryIVF::train(idx_t n, const uint8_t* x) {
         quantizer->reset();
 
         IndexFlat index_tmp;
-        if (metric_type == METRIC_Jaccard || metric_type == METRIC_Tanimoto) {
+        if (metric_type == METRIC_Jaccard) {
             index_tmp = IndexFlat(d, METRIC_Jaccard);
         } else if (
                 metric_type == METRIC_Substructure ||
@@ -858,7 +858,6 @@ BinaryInvertedListScanner* IndexBinaryIVF::get_InvertedListScanner(
                 return select_IVFBinaryScannerL2<false>(code_size);
             }
         case METRIC_Jaccard:
-        case METRIC_Tanimoto:
             if (store_pairs) {
                 return select_IVFBinaryScannerJaccard<true>(code_size);
             } else {
@@ -884,7 +883,7 @@ void IndexBinaryIVF::search_preassigned(
         bool store_pairs,
         const IVFSearchParameters* params,
         const BitsetView bitset) const {
-    if (metric_type == METRIC_Jaccard || metric_type == METRIC_Tanimoto) {
+    if (metric_type == METRIC_Jaccard) {
         if (use_heap) {
             float* D = new float[k * n];
             float* c_dis = new float[n * nprobe];
@@ -901,11 +900,6 @@ void IndexBinaryIVF::search_preassigned(
                     store_pairs,
                     params,
                     bitset);
-            if (metric_type == METRIC_Tanimoto) {
-                for (int i = 0; i < k * n; i++) {
-                    D[i] = Jaccard_2_Tanimoto(D[i]);
-                }
-            }
             memcpy(distances, D, sizeof(float) * n * k);
             delete[] D;
             delete[] c_dis;
@@ -958,20 +952,8 @@ void IndexBinaryIVF::range_search(
 
     t0 = getmillisecs();
     invlists->prefetch_lists(idx.get(), n * nprobe);
-
-    if (metric_type == METRIC_Tanimoto) {
-        radius = Tanimoto_2_Jaccard(radius);
-    }
-
     range_search_preassigned(
             n, x, radius, idx.get(), coarse_dis.get(), res, bitset);
-
-    if (metric_type == METRIC_Tanimoto) {
-        for (auto i = 0; i < res->lims[n]; i++) {
-            res->distances[i] = Jaccard_2_Tanimoto(res->distances[i]);
-        }
-    }
-
     indexIVF_stats.search_time += getmillisecs() - t0;
 }
 

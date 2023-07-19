@@ -105,9 +105,7 @@ class Benchmark_binary : public Benchmark_knowhere, public ::testing::Test {
         load_hdf5_data<true>();
 
         assert(metric_str_ == METRIC_HAM_STR || metric_str_ == METRIC_JAC_STR || metric_str_ == METRIC_TAN_STR);
-        metric_type_ = (metric_str_ == METRIC_HAM_STR)   ? knowhere::metric::HAMMING
-                       : (metric_str_ == METRIC_JAC_STR) ? knowhere::metric::JACCARD
-                                                         : knowhere::metric::TANIMOTO;
+        metric_type_ = (metric_str_ == METRIC_HAM_STR) ? knowhere::metric::HAMMING : knowhere::metric::JACCARD;
         cfg_[knowhere::meta::METRIC_TYPE] = metric_type_;
         knowhere::KnowhereConfig::SetSimdType(knowhere::KnowhereConfig::SimdType::AVX2);
         printf("faiss::distance_compute_blas_threshold: %ld\n", knowhere::KnowhereConfig::GetBlasThreshold());

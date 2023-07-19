@@ -652,7 +652,7 @@ void IndexBinaryIVF::search_preassigned_thread_safe(
         const IVFSearchParameters* params,
         const size_t nprobe,
         const BitsetView bitset) const {
-    if (metric_type == METRIC_Jaccard || metric_type == METRIC_Tanimoto) {
+    if (metric_type == METRIC_Jaccard) {
         if (use_heap) {
             float* D = new float[k * n];
             float* c_dis = new float[n * nprobe];
@@ -670,11 +670,6 @@ void IndexBinaryIVF::search_preassigned_thread_safe(
                     params,
                     nprobe,
                     bitset);
-            if (metric_type == METRIC_Tanimoto) {
-                for (int i = 0; i < k * n; i++) {
-                    D[i] = Jaccard_2_Tanimoto(D[i]);
-                }
-            }
             memcpy(distances, D, sizeof(float) * n * k);
             delete[] D;
             delete[] c_dis;
@@ -747,20 +742,8 @@ void IndexBinaryIVF::range_search_thread_safe(
 
     t0 = getmillisecs();
     invlists->prefetch_lists(idx.get(), n * nprobe);
-
-    if (metric_type == METRIC_Tanimoto) {
-        radius = Tanimoto_2_Jaccard(radius);
-    }
-
     range_search_preassigned_thread_safe(
             n, x, radius, idx.get(), coarse_dis.get(), res, nprobe, bitset);
-
-    if (metric_type == METRIC_Tanimoto) {
-        for (auto i = 0; i < res->lims[n]; i++) {
-            res->distances[i] = Jaccard_2_Tanimoto(res->distances[i]);
-        }
-    }
-
     indexIVF_stats.search_time += getmillisecs() - t0;
 }
 

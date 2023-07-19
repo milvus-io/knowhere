@@ -45,16 +45,10 @@ void IndexBinaryFlat::search(
         const BitsetView bitset) const {
     FAISS_THROW_IF_NOT(k > 0);
 
-    if (metric_type == METRIC_Jaccard || metric_type == METRIC_Tanimoto) {
+    if (metric_type == METRIC_Jaccard) {
         float* D = reinterpret_cast<float*>(distances);
         float_maxheap_array_t res = {size_t(n), size_t(k), labels, D};
         binary_knn_hc(METRIC_Jaccard, &res, x, xb.data(), ntotal, code_size, bitset);
-
-        if (metric_type == METRIC_Tanimoto) {
-            for (int i = 0; i < k * n; i++) {
-                D[i] = Jaccard_2_Tanimoto(D[i]);
-            }
-        }
     } else if (metric_type == METRIC_Hamming) {
         int_maxheap_array_t res = {size_t(n), size_t(k), labels, distances};
         binary_knn_hc(METRIC_Hamming, &res, x, xb.data(), ntotal, code_size, bitset);
@@ -116,19 +110,6 @@ void IndexBinaryFlat::range_search(
         case METRIC_Jaccard: {
             binary_range_search<CMin<float, int64_t>, float>(
                     METRIC_Jaccard,
-                    x,
-                    xb.data(),
-                    n,
-                    ntotal,
-                    radius,
-                    code_size,
-                    result,
-                    bitset);
-            break;
-        }
-        case METRIC_Tanimoto: {
-            binary_range_search<CMin<float, int64_t>, float>(
-                    METRIC_Tanimoto,
                     x,
                     xb.data(),
                     n,
