@@ -35,11 +35,23 @@ NormalizeVecs(float* x, size_t rows, int32_t dim);
 extern void
 Normalize(const DataSet& dataset);
 
+constexpr inline uint64_t seed = 0xc70f6907UL;
+
 inline uint64_t
 hash_vec(const float* x, size_t d) {
-    uint64_t h = 0;
+    uint64_t h = seed;
     for (size_t i = 0; i < d; ++i) {
         h = h * 13331 + *(uint32_t*)(x + i);
+    }
+    return h;
+}
+
+inline uint64_t
+hash_binary_vec(const uint8_t* x, size_t d) {
+    size_t len = (d + 7) / 8;
+    uint64_t h = seed;
+    for (size_t i = 0; i < len; ++i) {
+        h = h * 13331 + x[i];
     }
     return h;
 }
