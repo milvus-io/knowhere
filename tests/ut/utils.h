@@ -115,7 +115,7 @@ GetKNNRecall(const knowhere::DataSet& ground_truth, const knowhere::DataSet& res
         std::sort(ids_0.begin(), ids_0.end());
         std::sort(ids_1.begin(), ids_1.end());
 
-        std::vector<int64_t> v(nq * 2);
+        std::vector<int64_t> v(std::max(ids_0.size(), ids_1.size()));
         std::vector<int64_t>::iterator it;
         it = std::set_intersection(ids_0.begin(), ids_0.end(), ids_1.begin(), ids_1.end(), v.begin());
         v.resize(it - v.begin());
