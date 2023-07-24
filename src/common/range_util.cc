@@ -59,7 +59,7 @@ GetRangeSearchResult(const faiss::RangeSearchResult& res, const bool is_ip, cons
                      const float range_filter, float*& distances, int64_t*& labels, size_t*& lims,
                      const BitsetView& bitset) {
     auto total_valid = CountValidRangeSearchResult(res, is_ip, nq, radius, range_filter, lims);
-    LOG_KNOWHERE_DEBUG_ << "Range search metric type: " << (is_ip ? "IP" : "L2") << ", radius " << radius
+    LOG_KNOWHERE_DEBUG_ << "Range search: is_ip " << (is_ip ? "True" : "False") << ", radius " << radius
                         << ", range_filter " << range_filter << ", total result num " << total_valid;
 
     distances = new float[total_valid];
@@ -114,7 +114,7 @@ GetRangeSearchResult(const std::vector<std::vector<float>>& result_distances,
     }
 
     size_t total_valid = lims[nq];
-    LOG_KNOWHERE_DEBUG_ << "Range search metric type: " << (is_ip ? "IP" : "L2") << ", radius " << radius
+    LOG_KNOWHERE_DEBUG_ << "Range search: is_ip " << (is_ip ? "True" : "False") << ", radius " << radius
                         << ", range_filter " << range_filter << ", total result num " << total_valid;
 
     distances = new float[total_valid];

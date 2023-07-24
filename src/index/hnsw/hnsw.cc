@@ -171,8 +171,10 @@ class HnswIndexNode : public IndexNode {
         auto hnsw_cfg = static_cast<const HnswConfig&>(cfg);
         bool is_ip =
             (index_->metric_type_ == hnswlib::Metric::INNER_PRODUCT || index_->metric_type_ == hnswlib::Metric::COSINE);
-        float radius = (is_ip ? (-hnsw_cfg.radius.value()) : hnsw_cfg.radius.value());
         float range_filter = hnsw_cfg.range_filter.value();
+
+        float radius_for_calc = (is_ip ? -hnsw_cfg.radius.value() : hnsw_cfg.radius.value());
+        float radius_for_filter = hnsw_cfg.radius.value();
 
         feder::hnsw::FederResultUniq feder_result;
         if (hnsw_cfg.trace_visit.value()) {
@@ -198,7 +200,7 @@ class HnswIndexNode : public IndexNode {
         for (int64_t i = 0; i < nq; ++i) {
             futs.emplace_back(pool_->push([&, idx = i]() {
                 auto single_query = (const char*)xq + idx * index_->data_size_;
-                auto rst = index_->searchRange((void*)single_query, radius, bitset, &param, feder_result);
+                auto rst = index_->searchRange((void*)single_query, radius_for_calc, bitset, &param, feder_result);
                 auto elem_cnt = rst.size();
                 result_dist_array[idx].resize(elem_cnt);
                 result_id_array[idx].resize(elem_cnt);
@@ -209,8 +211,8 @@ class HnswIndexNode : public IndexNode {
                 }
                 result_size[idx] = rst.size();
                 if (hnsw_cfg.range_filter.value() != defaultRangeFilter) {
-                    FilterRangeSearchResultForOneNq(result_dist_array[idx], result_id_array[idx], is_ip, radius,
-                                                    range_filter);
+                    FilterRangeSearchResultForOneNq(result_dist_array[idx], result_id_array[idx], is_ip,
+                                                    radius_for_filter, range_filter);
                 }
             }));
         }
@@ -219,7 +221,8 @@ class HnswIndexNode : public IndexNode {
         }
 
         // filter range search result
-        GetRangeSearchResult(result_dist_array, result_id_array, is_ip, nq, radius, range_filter, dis, ids, lims);
+        GetRangeSearchResult(result_dist_array, result_id_array, is_ip, nq, radius_for_filter, range_filter, dis, ids,
+                             lims);
 
         auto res = GenResultDataSet(nq, ids, dis, lims);
 

@@ -593,7 +593,9 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
     auto search_list_and_k_ratio = search_conf.search_list_and_k_ratio.value();
 
     auto radius = search_conf.radius.value();
-    bool is_ip = (pq_flash_index_->get_metric() == diskann::Metric::INNER_PRODUCT);
+    auto range_filter = search_conf.range_filter.value();
+    bool is_ip = (pq_flash_index_->get_metric() == diskann::Metric::INNER_PRODUCT ||
+                  pq_flash_index_->get_metric() == diskann::Metric::COSINE);
 
     auto dim = dataset.GetDim();
     auto nq = dataset.GetRows();
@@ -618,7 +620,7 @@ DiskANNIndexNode<T>::RangeSearch(const DataSet& dataset, const Config& cfg, cons
             // filter range search result
             if (search_conf.range_filter.value() != defaultRangeFilter) {
                 FilterRangeSearchResultForOneNq(result_dist_array[index], result_id_array[index], is_ip, radius,
-                                                search_conf.range_filter.value());
+                                                range_filter);
             }
         }));
     }
