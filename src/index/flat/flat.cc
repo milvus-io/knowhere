@@ -141,17 +141,20 @@ class FlatIndexNode : public IndexNode {
         auto xq = dataset.GetTensor();
         auto dim = dataset.GetDim();
 
+        float radius = f_cfg.radius.value();
+        float range_filter = f_cfg.range_filter.value();
+        bool is_ip = (index_->metric_type == faiss::METRIC_INNER_PRODUCT);
+
         int64_t* ids = nullptr;
         float* distances = nullptr;
         size_t* lims = nullptr;
+
+        std::vector<std::vector<int64_t>> result_id_array(nq);
+        std::vector<std::vector<float>> result_dist_array(nq);
+        std::vector<size_t> result_size(nq);
+        std::vector<size_t> result_lims(nq + 1);
+
         try {
-            float radius = f_cfg.radius.value();
-            bool is_ip = index_->metric_type == faiss::METRIC_INNER_PRODUCT && std::is_same_v<T, faiss::IndexFlat>;
-            float range_filter = f_cfg.range_filter.value();
-            std::vector<std::vector<int64_t>> result_id_array(nq);
-            std::vector<std::vector<float>> result_dist_array(nq);
-            std::vector<size_t> result_size(nq);
-            std::vector<size_t> result_lims(nq + 1);
             std::vector<folly::Future<folly::Unit>> futs;
             futs.reserve(nq);
             for (int i = 0; i < nq; ++i) {
