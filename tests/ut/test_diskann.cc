@@ -351,7 +351,7 @@ TEST_CASE("Test DiskANN GetVectorByIds", "[diskann]") {
                 for (const auto ids_size : ids_sizes) {
                     std::cout << "Testing dim = " << dim << ", cache_size = " << cache_size
                               << ", ids_size = " << ids_size << std::endl;
-                    auto ids_ds = GenIdsDataSet(ids_size);
+                    auto ids_ds = GenIdsDataSet(ids_size, ids_size);
                     auto results = index.GetVectorByIds(*ids_ds);
                     REQUIRE(results.has_value());
                     auto xb = (float*)base_ds->GetTensor();
