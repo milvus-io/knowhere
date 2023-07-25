@@ -37,8 +37,10 @@ std::string kDir = fs::current_path().string() + "/diskann_test";
 std::string kRawDataPath = kDir + "/raw_data";
 std::string kL2IndexDir = kDir + "/l2_index";
 std::string kIPIndexDir = kDir + "/ip_index";
+std::string kCOSINEIndexDir = kDir + "/cosine_index";
 std::string kL2IndexPrefix = kL2IndexDir + "/l2";
 std::string kIPIndexPrefix = kIPIndexDir + "/ip";
+std::string kCOSINEIndexPrefix = kCOSINEIndexDir + "/cosine";
 
 constexpr uint32_t kNumRows = 1000;
 constexpr uint32_t kNumQueries = 100;
@@ -46,8 +48,9 @@ constexpr uint32_t kDim = 128;
 constexpr uint32_t kLargeDim = 1536;
 constexpr uint32_t kK = 10;
 constexpr float kKnnRecall = 0.9;
-constexpr float kL2RangeAp = 0.7;
-constexpr float kIpRangeAp = 0.5;
+constexpr float kL2RangeAp = 0.9;
+constexpr float kIpRangeAp = 0.9;
+constexpr float kCosineRangeAp = 0.9;
 
 void
 WriteRawDataToDisk(const std::string data_path, const float* raw_data, const uint32_t num, const uint32_t dim) {
@@ -145,8 +148,20 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
     REQUIRE_NOTHROW(fs::create_directory(kDir));
     REQUIRE_NOTHROW(fs::create_directory(kL2IndexDir));
     REQUIRE_NOTHROW(fs::create_directory(kIPIndexDir));
+    REQUIRE_NOTHROW(fs::create_directory(kCOSINEIndexDir));
 
-    auto metric_str = GENERATE(as<std::string>{}, knowhere::metric::L2, knowhere::metric::IP);
+    auto metric_str = GENERATE(as<std::string>{}, knowhere::metric::L2, knowhere::metric::IP, knowhere::metric::COSINE);
+
+    std::unordered_map<knowhere::MetricType, std::string> metric_dir_map = {
+        {knowhere::metric::L2, kL2IndexPrefix},
+        {knowhere::metric::IP, kIPIndexPrefix},
+        {knowhere::metric::COSINE, kCOSINEIndexPrefix},
+    };
+    std::unordered_map<knowhere::MetricType, float> metric_range_ap_map = {
+        {knowhere::metric::L2, kL2RangeAp},
+        {knowhere::metric::IP, kIpRangeAp},
+        {knowhere::metric::COSINE, kCosineRangeAp},
+    };
 
     auto base_gen = [&metric_str]() {
         knowhere::Json json;
@@ -156,16 +171,19 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
         if (metric_str == knowhere::metric::L2) {
             json["radius"] = CFG_FLOAT::value_type(200000);
             json["range_filter"] = CFG_FLOAT::value_type(0);
-        } else {
-            json["radius"] = CFG_FLOAT::value_type(50000);
+        } else if (metric_str == knowhere::metric::IP) {
+            json["radius"] = CFG_FLOAT::value_type(350000);
             json["range_filter"] = std::numeric_limits<CFG_FLOAT::value_type>::max();
+        } else {
+            json["radius"] = 0.75f;
+            json["range_filter"] = 1.0f;
         }
         return json;
     };
 
-    auto build_gen = [&base_gen, &metric_str]() {
+    auto build_gen = [&base_gen, &metric_str, &metric_dir_map]() {
         knowhere::Json json = base_gen();
-        json["index_prefix"] = (metric_str == knowhere::metric::L2 ? kL2IndexPrefix : kIPIndexPrefix);
+        json["index_prefix"] = metric_dir_map[metric_str];
         json["data_path"] = kRawDataPath;
         json["max_degree"] = 56;
         json["search_list_size"] = 128;
@@ -175,24 +193,24 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
         return json;
     };
 
-    auto deserialize_gen = [&base_gen, &metric_str]() {
+    auto deserialize_gen = [&base_gen, &metric_str, &metric_dir_map]() {
         knowhere::Json json = base_gen();
-        json["index_prefix"] = (metric_str == knowhere::metric::L2 ? kL2IndexPrefix : kIPIndexPrefix);
+        json["index_prefix"] = metric_dir_map[metric_str];
         json["search_cache_budget_gb"] = sizeof(float) * kDim * kNumRows * 0.125 / (1024 * 1024 * 1024);
         return json;
     };
 
-    auto knn_search_gen = [&base_gen, &metric_str]() {
+    auto knn_search_gen = [&base_gen, &metric_str, &metric_dir_map]() {
         knowhere::Json json = base_gen();
-        json["index_prefix"] = (metric_str == knowhere::metric::L2 ? kL2IndexPrefix : kIPIndexPrefix);
+        json["index_prefix"] = metric_dir_map[metric_str];
         json["search_list_size"] = 36;
         json["beamwidth"] = 8;
         return json;
     };
 
-    auto range_search_gen = [&base_gen, &metric_str]() {
+    auto range_search_gen = [&base_gen, &metric_str, &metric_dir_map]() {
         knowhere::Json json = base_gen();
-        json["index_prefix"] = (metric_str == knowhere::metric::L2 ? kL2IndexPrefix : kIPIndexPrefix);
+        json["index_prefix"] = metric_dir_map[metric_str];
         json["beamwidth"] = 8;
         json["min_k"] = 10;
         json["max_k"] = 8000;
@@ -217,7 +235,7 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
         range_search_gt_ptr = result_range.value();
     }
 
-    SECTION("Test L2/IP metric.") {
+    SECTION("Test search and range search") {
         std::shared_ptr<knowhere::FileManager> file_manager = std::make_shared<knowhere::LocalFileManager>();
         auto diskann_index_pack = knowhere::Pack(file_manager);
         knowhere::Json deserialize_json = knowhere::Json::parse(deserialize_gen().dump());
@@ -286,7 +304,7 @@ TEST_CASE("Test DiskANNIndexNode.", "[diskann]") {
             auto range_search_res = diskann.RangeSearch(*query_ds, range_json, nullptr);
             REQUIRE(range_search_res.has_value());
             auto ap = GetRangeSearchRecall(*range_search_gt_ptr, *range_search_res.value());
-            float standard_ap = metric_str == knowhere::metric::L2 ? kL2RangeAp : kIpRangeAp;
+            float standard_ap = metric_range_ap_map[metric_str];
             REQUIRE(ap > standard_ap);
         }
     }
