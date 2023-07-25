@@ -45,6 +45,7 @@ class KnowhereConan(ConanFile):
         "prometheus-cpp:with_pull": False,
         "with_benchmark": False,
         "with_coverage": False,
+        "boost:without_test": True
     }
 
     exports_sources = (
@@ -79,7 +80,7 @@ class KnowhereConan(ConanFile):
             self.options.rm_safe("fPIC")
 
     def requirements(self):
-        self.requires("boost/1.81.0")
+        self.requires("boost/1.78.0")
         self.requires("glog/0.4.0")
         self.requires("nlohmann_json/3.11.2")
         self.requires("openssl/1.1.1t")
