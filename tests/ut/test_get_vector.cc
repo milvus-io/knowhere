@@ -21,6 +21,7 @@ TEST_CASE("Test Binary Get Vector By Ids", "[Binary GetVectorByIds]") {
     using Catch::Approx;
 
     const int64_t nb = 1000;
+    const int64_t nq = 100;
     const int64_t dim = 128;
 
     const auto metric_type = knowhere::metric::HAMMING;
@@ -65,7 +66,7 @@ TEST_CASE("Test Binary Get Vector By Ids", "[Binary GetVectorByIds]") {
         CAPTURE(name, cfg_json);
         knowhere::Json json = knowhere::Json::parse(cfg_json);
         auto train_ds = GenBinDataSet(nb, dim);
-        auto ids_ds = GenIdsDataSet(nb, dim);
+        auto ids_ds = GenIdsDataSet(nb, nq);
         REQUIRE(idx.Type() == name);
         auto res = idx.Build(*train_ds, json);
         REQUIRE(res == knowhere::Status::success);
@@ -80,10 +81,10 @@ TEST_CASE("Test Binary Get Vector By Ids", "[Binary GetVectorByIds]") {
         auto res_rows = results.value()->GetRows();
         auto res_dim = results.value()->GetDim();
         auto res_data = (uint8_t*)results.value()->GetTensor();
-        REQUIRE(res_rows == nb);
+        REQUIRE(res_rows == nq);
         REQUIRE(res_dim == dim);
         const auto data_bytes = dim / 8;
-        for (int i = 0; i < nb; ++i) {
+        for (int i = 0; i < nq; ++i) {
             auto id = ids_ds->GetIds()[i];
             for (int j = 0; j < data_bytes; ++j) {
                 REQUIRE(res_data[i * data_bytes + j] == xb[id * data_bytes + j]);
@@ -96,6 +97,7 @@ TEST_CASE("Test Float Get Vector By Ids", "[Float GetVectorByIds]") {
     using Catch::Approx;
 
     const int64_t nb = 1000;
+    const int64_t nq = 100;
     const int64_t dim = 128;
 
     auto metric = GENERATE(as<std::string>{}, knowhere::metric::L2, knowhere::metric::COSINE);
@@ -166,7 +168,7 @@ TEST_CASE("Test Float Get Vector By Ids", "[Float GetVectorByIds]") {
         knowhere::Json json = knowhere::Json::parse(cfg_json);
         auto train_ds = GenDataSet(nb, dim);
         auto train_ds_copy = CopyDataSet(train_ds, nb);
-        auto ids_ds = GenIdsDataSet(nb, dim);
+        auto ids_ds = GenIdsDataSet(nb, nq);
         REQUIRE(idx.Type() == name);
         auto res = idx.Build(*train_ds, json);
         REQUIRE(res == knowhere::Status::success);
@@ -184,9 +186,9 @@ TEST_CASE("Test Float Get Vector By Ids", "[Float GetVectorByIds]") {
         auto res_rows = results.value()->GetRows();
         auto res_dim = results.value()->GetDim();
         auto res_data = (float*)results.value()->GetTensor();
-        REQUIRE(res_rows == nb);
+        REQUIRE(res_rows == nq);
         REQUIRE(res_dim == dim);
-        for (int i = 0; i < nb; ++i) {
+        for (int i = 0; i < nq; ++i) {
             const auto id = ids_ds->GetIds()[i];
             for (int j = 0; j < dim; ++j) {
                 REQUIRE(res_data[i * dim + j] == xb[id * dim + j]);

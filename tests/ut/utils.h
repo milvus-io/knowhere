@@ -80,12 +80,12 @@ CopyBinDataSet(knowhere::DataSetPtr dataset, const int64_t copy_rows) {
 }
 
 inline knowhere::DataSetPtr
-GenIdsDataSet(int rows, int64_t seed = 42) {
+GenIdsDataSet(int rows, int nq, int64_t seed = 42) {
     std::mt19937 g(seed);
     int64_t* ids = new int64_t[rows];
     for (int i = 0; i < rows; ++i) ids[i] = i;
     std::shuffle(ids, ids + rows, g);
-    auto ds = knowhere::GenIdsDataSet(rows, ids);
+    auto ds = knowhere::GenIdsDataSet(nq, ids);
     ds->SetIsOwner(true);
     return ds;
 }
