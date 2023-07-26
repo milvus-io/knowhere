@@ -137,7 +137,12 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     };
 
     ~HierarchicalNSW() {
-        free(data_level0_memory_);
+        if (mmap_enabled_) {
+            munmap(data_level0_memory_, max_elements_ * size_data_per_element_);
+        } else {
+            free(data_level0_memory_);
+        }
+
         if (metric_type_ == Metric::COSINE) {
             free(data_norm_l2_);
         }
@@ -196,6 +201,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
     std::default_random_engine level_generator_;
     std::default_random_engine update_probability_generator_;
+
+    bool mmap_enabled_{false};
 
     mutable knowhere::lru_cache<uint64_t, tableint> lru_cache;
 
@@ -679,7 +686,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
         auto pos = input.offset();
 
-        if (cfg.enable_mmap) {
+        if (cfg.enable_mmap.has_value() && cfg.enable_mmap.value()) {
+            cfg.enable_mmap = true;
             // For HNSW, we only mmap the data part, but not the linked lists,
             // which affects the performance significantly
             data_level0_memory_ =
