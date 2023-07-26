@@ -1478,11 +1478,11 @@ namespace diskann {
           res_count = i;
           break;
         }
-        bool out_of_range = (metric == diskann::Metric::INNER_PRODUCT ||
-                             metric == diskann::Metric::COSINE)
-                                ? distances[i] < (float) range
-                                : distances[i] > (float) range;
-        if (out_of_range) {
+        bool in_range = (metric == diskann::Metric::INNER_PRODUCT ||
+                         metric == diskann::Metric::COSINE)
+                                ? distances[i] > (float) range
+                                : distances[i] < (float) range;
+        if (!in_range) {
           res_count = i;
           break;
         }
