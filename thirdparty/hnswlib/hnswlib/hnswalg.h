@@ -655,6 +655,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         } else {
             throw std::runtime_error("Invalid metric type " + std::to_string(metric_type_));
         }
+        fstdistfunc_ = space_->get_dist_func();
+        dist_func_param_ = space_->get_dist_func_param();
 
         readBinaryPOD(input, offsetLevel0_);
         readBinaryPOD(input, max_elements_);
@@ -733,9 +735,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             }
         }
 
-        // split
         input.close();
-        return;
     }
 
     void
