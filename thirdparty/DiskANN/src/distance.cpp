@@ -39,7 +39,7 @@ namespace diskann {
       };
     } else if (m == diskann::Metric::COSINE) {
       return [](const float* x, const float* y, size_t size) -> float {
-        return faiss::fvec_inner_product(x, y, size);
+        return (-1.0) * faiss::fvec_inner_product(x, y, size);
       };
     } else {
       std::stringstream stream;

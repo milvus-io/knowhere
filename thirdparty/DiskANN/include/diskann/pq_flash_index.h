@@ -221,7 +221,7 @@ namespace diskann {
 
     T dist_cmp_wrap(const T *x, const T *y, size_t d, int32_t u) {
       if (metric == Metric::COSINE) {
-        return 1 - dist_cmp(x, y, d) / base_norms[u];
+        return dist_cmp(x, y, d) / base_norms[u];
       } else {
         return dist_cmp(x, y, d);
       }
@@ -230,7 +230,7 @@ namespace diskann {
     float dist_cmp_float_wrap(const float *x, const float *y, size_t d,
                               int32_t u) {
       if (metric == Metric::COSINE) {
-        return 1 - dist_cmp_float(x, y, d) / base_norms[u];
+        return dist_cmp_float(x, y, d) / base_norms[u];
       } else {
         return dist_cmp_float(x, y, d);
       }
