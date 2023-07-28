@@ -175,7 +175,6 @@ struct IVFBinaryScannerL2 : BinaryInvertedListScanner {
             float radius,
             RangeQueryResult& result,
             const BitsetView bitset) const override {
-        size_t nup = 0;
         for (size_t j = 0; j < n; j++) {
             if (bitset.empty() || !bitset.test(ids[j])) {
                 float dis = hc.compute(codes);
@@ -801,9 +800,12 @@ void IndexBinaryIVF::range_search_preassigned_thread_safe(
             scanner->set_query(x + i * code_size);
 
             RangeQueryResult& qres = pres.new_result(i);
+            size_t prev_nres = qres.nres;
 
             for (size_t ik = 0; ik < nprobe; ik++) {
                 scan_list_func(i, ik, qres);
+                if (qres.nres == prev_nres) break;
+                prev_nres = qres.nres;
             }
         }
 

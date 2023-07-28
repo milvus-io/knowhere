@@ -807,13 +807,11 @@ struct KnnSearchResults {
 
     size_t nup;
 
-    inline void add(idx_t j, float dis, const BitsetView bitset = nullptr) {
-        if (bitset.empty() || !bitset.test(ids[j])) {
-            if (C::cmp(heap_sim[0], dis)) {
-                idx_t id = ids ? ids[j] : lo_build(key, j);
-                heap_replace_top<C>(k, heap_sim, heap_ids, dis, id);
-                nup++;
-            }
+    inline void add(idx_t j, float dis) {
+        if (C::cmp(heap_sim[0], dis)) {
+            idx_t id = ids ? ids[j] : lo_build(key, j);
+            heap_replace_top<C>(k, heap_sim, heap_ids, dis, id);
+            nup++;
         }
     }
 };
@@ -827,12 +825,10 @@ struct RangeSearchResults {
     float radius;
     RangeQueryResult& rres;
 
-    inline void add(idx_t j, float dis, const BitsetView bitset = nullptr) {
-        if (bitset.empty() || !bitset.test(ids[j])) {
-            if (C::cmp(radius, dis)) {
-                idx_t id = ids ? ids[j] : lo_build(key, j);
-                rres.add(dis, id);
-            }
+    inline void add(idx_t j, float dis) {
+        if (C::cmp(radius, dis)) {
+            idx_t id = ids ? ids[j] : lo_build(key, j);
+            rres.add(dis, id);
         }
     }
 };
@@ -878,17 +874,18 @@ struct IVFPQScannerT : QueryTables {
             SearchResultType& res,
             const BitsetView bitset = nullptr) const {
         for (size_t j = 0; j < ncode; j++) {
-            PQDecoder decoder(codes, pq.nbits);
-            codes += pq.code_size;
-            float dis = dis0;
-            const float* tab = sim_table;
+            if (bitset.empty() || !bitset.test(res.ids[j])) {
+                PQDecoder decoder(codes, pq.nbits);
+                codes += pq.code_size;
+                float dis = dis0;
+                const float* tab = sim_table;
 
-            for (size_t m = 0; m < pq.M; m++) {
-                dis += tab[decoder.decode()];
-                tab += pq.ksub;
+                for (size_t m = 0; m < pq.M; m++) {
+                    dis += tab[decoder.decode()];
+                    tab += pq.ksub;
+                }
+                res.add(j, dis);
             }
-
-            res.add(j, dis, bitset);
         }
     }
 
@@ -901,18 +898,20 @@ struct IVFPQScannerT : QueryTables {
             SearchResultType& res,
             const BitsetView bitset = nullptr) const {
         for (size_t j = 0; j < ncode; j++) {
-            PQDecoder decoder(codes, pq.nbits);
-            codes += pq.code_size;
+            if (bitset.empty() || !bitset.test(res.ids[j])) {
+                PQDecoder decoder(codes, pq.nbits);
+                codes += pq.code_size;
 
-            float dis = dis0;
-            const float* tab = sim_table_2;
+                float dis = dis0;
+                const float* tab = sim_table_2;
 
-            for (size_t m = 0; m < pq.M; m++) {
-                int ci = decoder.decode();
-                dis += sim_table_ptrs[m][ci] - 2 * tab[ci];
-                tab += pq.ksub;
+                for (size_t m = 0; m < pq.M; m++) {
+                    int ci = decoder.decode();
+                    dis += sim_table_ptrs[m][ci] - 2 * tab[ci];
+                    tab += pq.ksub;
+                }
+                res.add(j, dis);
             }
-            res.add(j, dis, bitset);
         }
     }
 
@@ -939,16 +938,18 @@ struct IVFPQScannerT : QueryTables {
         }
 
         for (size_t j = 0; j < ncode; j++) {
-            pq.decode(codes, decoded_vec);
-            codes += pq.code_size;
+            if (bitset.empty() || !bitset.test(res.ids[j])) {
+                pq.decode(codes, decoded_vec);
+                codes += pq.code_size;
 
-            float dis;
-            if (METRIC_TYPE == METRIC_INNER_PRODUCT) {
-                dis = dis0 + fvec_inner_product(decoded_vec, qi, d);
-            } else {
-                dis = fvec_L2sqr(decoded_vec, dvec, d);
+                float dis;
+                if (METRIC_TYPE == METRIC_INNER_PRODUCT) {
+                    dis = dis0 + fvec_inner_product(decoded_vec, qi, d);
+                } else {
+                    dis = fvec_L2sqr(decoded_vec, dvec, d);
+                }
+                res.add(j, dis);
             }
-            res.add(j, dis, bitset);
         }
     }
 
@@ -970,21 +971,22 @@ struct IVFPQScannerT : QueryTables {
         HammingComputer hc(q_code.data(), code_size);
 
         for (size_t j = 0; j < ncode; j++) {
-            const uint8_t* b_code = codes;
-            int hd = hc.compute(b_code);
-            if (hd < ht) {
-                n_hamming_pass++;
-                PQDecoder decoder(codes, pq.nbits);
+            if (bitset.empty() || !bitset.test(res.ids[j])) {
+                const uint8_t* b_code = codes;
+                int hd = hc.compute(b_code);
+                if (hd < ht) {
+                    n_hamming_pass++;
+                    PQDecoder decoder(codes, pq.nbits);
 
-                float dis = dis0;
-                const float* tab = sim_table;
+                    float dis = dis0;
+                    const float* tab = sim_table;
 
-                for (size_t m = 0; m < pq.M; m++) {
-                    dis += tab[decoder.decode()];
-                    tab += pq.ksub;
+                    for (size_t m = 0; m < pq.M; m++) {
+                        dis += tab[decoder.decode()];
+                        tab += pq.ksub;
+                    }
+                    res.add(j, dis);
                 }
-
-                res.add(j, dis, bitset);
             }
             codes += code_size;
         }

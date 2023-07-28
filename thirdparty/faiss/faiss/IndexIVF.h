@@ -300,7 +300,6 @@ struct IndexIVF : Index, Level1Quantizer {
             float radius,
             RangeSearchResult* result,
             const size_t nprobe,
-            const int parallel_mode,
             const size_t max_codes,
             const BitsetView bitset = nullptr) const;
 
@@ -310,7 +309,6 @@ struct IndexIVF : Index, Level1Quantizer {
             float radius,
             RangeSearchResult* result,
             const size_t nprobe,
-            const int parallel_mode,
             const size_t max_codes,
             const BitsetView bitset = nullptr) const;
 
