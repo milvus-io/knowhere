@@ -409,7 +409,6 @@ struct IVFBinaryScannerL2 : BinaryInvertedListScanner {
             float radius,
             RangeQueryResult& result,
             const BitsetView bitset) const override {
-        size_t nup = 0;
         for (size_t j = 0; j < n; j++) {
             if (bitset.empty() || !bitset.test(ids[j])) {
                 float dis = hc.compute(codes);

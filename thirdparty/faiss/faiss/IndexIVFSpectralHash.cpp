@@ -286,10 +286,12 @@ struct IVFScanner : InvertedListScanner {
             RangeQueryResult& res,
             const BitsetView bitset) const override {
         for (size_t j = 0; j < list_size; j++) {
-            float dis = hc.compute(codes);
-            if (dis < radius) {
-                int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
-                res.add(dis, id);
+            if (bitset.empty() || !bitset.test(ids[j])) {
+                float dis = hc.compute(codes);
+                if (dis < radius) {
+                    int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
+                    res.add(dis, id);
+                }
             }
             codes += code_size;
         }

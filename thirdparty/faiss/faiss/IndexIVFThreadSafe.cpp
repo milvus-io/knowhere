@@ -515,7 +515,6 @@ void IndexIVF::range_search_thread_safe(
         float radius,
         RangeSearchResult* result,
         const size_t nprobe,
-        const int parallel_mode,
         const size_t max_codes,
         const BitsetView bitset) const {
     const size_t final_nprobe = std::min(nlist, nprobe);
@@ -529,8 +528,7 @@ void IndexIVF::range_search_thread_safe(
     t0 = getmillisecs();
     invlists->prefetch_lists(keys.get(), nx * final_nprobe);
 
-    IVFSearchParameters params =
-            gen_search_param(final_nprobe, parallel_mode, max_codes);
+    IVFSearchParameters params = gen_search_param(final_nprobe, 0, max_codes);
 
     range_search_preassigned(
             nx,
@@ -553,7 +551,6 @@ void IndexIVF::range_search_without_codes_thread_safe(
         float radius,
         RangeSearchResult* result,
         const size_t nprobe,
-        const int parallel_mode,
         const size_t max_codes,
         const BitsetView bitset) const {
     const size_t final_nprobe = std::min(nlist, nprobe);
@@ -567,8 +564,7 @@ void IndexIVF::range_search_without_codes_thread_safe(
     t0 = getmillisecs();
     invlists->prefetch_lists(keys.get(), nx * final_nprobe);
 
-    IVFSearchParameters params =
-            gen_search_param(final_nprobe, parallel_mode, max_codes);
+    IVFSearchParameters params = gen_search_param(final_nprobe, 0, max_codes);
 
     range_search_preassigned_without_codes(
             nx,
@@ -675,7 +671,6 @@ void IndexIVF::range_search_preassigned_without_codes(
                         radius,
                         qres,
                         bitset);
-
             } catch (const std::exception& e) {
                 std::lock_guard<std::mutex> lock(exception_mutex);
                 exception_string =
@@ -684,55 +679,20 @@ void IndexIVF::range_search_preassigned_without_codes(
             }
         };
 
-        if (parallel_mode == 0) {
 #pragma omp for
-            for (idx_t i = 0; i < nx; i++) {
-                scanner->set_query(x + i * d);
+        for (idx_t i = 0; i < nx; i++) {
+            scanner->set_query(x + i * d);
 
-                RangeQueryResult& qres = pres.new_result(i);
+            RangeQueryResult& qres = pres.new_result(i);
+            size_t prev_nres = qres.nres;
 
-                for (size_t ik = 0; ik < nprobe; ik++) {
-                    scan_list_func(i, ik, qres, bitset);
-                }
+            for (size_t ik = 0; ik < nprobe; ik++) {
+                scan_list_func(i, ik, qres, bitset);
+                if (qres.nres == prev_nres) break;
+                prev_nres = qres.nres;
             }
-
-        } else if (parallel_mode == 1) {
-            for (size_t i = 0; i < nx; i++) {
-                scanner->set_query(x + i * d);
-
-                RangeQueryResult& qres = pres.new_result(i);
-
-#pragma omp for schedule(dynamic)
-                for (int64_t ik = 0; ik < nprobe; ik++) {
-                    scan_list_func(i, ik, qres, bitset);
-                }
-            }
-        } else if (parallel_mode == 2) {
-            std::vector<RangeQueryResult*> all_qres(nx);
-            RangeQueryResult* qres = nullptr;
-
-#pragma omp for schedule(dynamic)
-            for (idx_t iik = 0; iik < nx * (idx_t)nprobe; iik++) {
-                idx_t i = iik / (idx_t)nprobe;
-                idx_t ik = iik % (idx_t)nprobe;
-                if (qres == nullptr || qres->qno != i) {
-                    FAISS_ASSERT(!qres || i > qres->qno);
-                    qres = &pres.new_result(i);
-                    scanner->set_query(x + i * d);
-                }
-                scan_list_func(i, ik, *qres, bitset);
-            }
-        } else {
-            FAISS_THROW_FMT("parallel_mode %d not supported\n", parallel_mode);
         }
-        if (parallel_mode == 0) {
-            pres.finalize();
-        } else {
-#pragma omp barrier
-#pragma omp single
-            RangeSearchPartialResult::merge(all_pres, false);
-#pragma omp barrier
-        }
+        pres.finalize();
     }
 
     if (interrupt) {
