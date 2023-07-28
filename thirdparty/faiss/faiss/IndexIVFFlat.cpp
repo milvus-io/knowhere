@@ -221,16 +221,16 @@ struct IVFFlatScanner : InvertedListScanner {
             const BitsetView bitset) const override {
         const float* list_vecs = (const float*)codes;
         for (size_t j = 0; j < list_size; j++) {
-            const float* yj = list_vecs + d * j;
-            float dis = metric == METRIC_INNER_PRODUCT
-                    ? fvec_inner_product(xi, yj, d)
-                    : fvec_L2sqr(xi, yj, d);
-            if (code_norms) {
-                dis /= code_norms[j];
-            }
-            if (C::cmp(radius, dis)) {
-                int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
-                if (bitset.empty() || !bitset.test(id)) {
+            if (bitset.empty() || !bitset.test(ids[j])) {
+                const float* yj = list_vecs + d * j;
+                float dis = metric == METRIC_INNER_PRODUCT
+                        ? fvec_inner_product(xi, yj, d)
+                        : fvec_L2sqr(xi, yj, d);
+                if (code_norms) {
+                    dis /= code_norms[j];
+                }
+                if (C::cmp(radius, dis)) {
+                    int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
                     res.add(dis, id);
                 }
             }

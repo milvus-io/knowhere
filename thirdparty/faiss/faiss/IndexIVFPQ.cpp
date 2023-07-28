@@ -808,12 +808,12 @@ struct KnnSearchResults {
     size_t nup;
 
     inline void add(idx_t j, float dis, const BitsetView bitset = nullptr) {
-        if (C::cmp(heap_sim[0], dis)) {
-            idx_t id = ids ? ids[j] : lo_build(key, j);
-            if (!bitset.empty() && bitset.test((int64_t)id))
-                return;
-            heap_replace_top<C>(k, heap_sim, heap_ids, dis, id);
-            nup++;
+        if (bitset.empty() || !bitset.test(ids[j])) {
+            if (C::cmp(heap_sim[0], dis)) {
+                idx_t id = ids ? ids[j] : lo_build(key, j);
+                heap_replace_top<C>(k, heap_sim, heap_ids, dis, id);
+                nup++;
+            }
         }
     }
 };
@@ -828,9 +828,9 @@ struct RangeSearchResults {
     RangeQueryResult& rres;
 
     inline void add(idx_t j, float dis, const BitsetView bitset = nullptr) {
-        if (C::cmp(radius, dis)) {
-            idx_t id = ids ? ids[j] : lo_build(key, j);
-            if (bitset.empty() || !bitset.test(id)) {
+        if (bitset.empty() || !bitset.test(ids[j])) {
+            if (C::cmp(radius, dis)) {
+                idx_t id = ids ? ids[j] : lo_build(key, j);
                 rres.add(dis, id);
             }
         }
