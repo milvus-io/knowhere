@@ -17,46 +17,57 @@
 
 namespace knowhere {
 struct FileReader {
-    int fd;
-    size_t size;
-
     FileReader(const std::string& filename, bool auto_remove = false) {
-        fd = open(filename.data(), O_RDONLY);
-        if (fd < 0) {
-            std::runtime_error("Cannot open file");
+        fd_ = open(filename.data(), O_RDONLY);
+        if (fd_ < 0) {
+            throw std::runtime_error("Cannot open file");
         }
 
-        size = lseek(fd, 0, SEEK_END);
-        lseek(fd, 0, SEEK_SET);
+        size_ = lseek(fd_, 0, SEEK_END);
+        lseek(fd_, 0, SEEK_SET);
 
         if (auto_remove) {
             unlink(filename.data());
         }
     }
 
+    int
+    descriptor() const {
+        return fd_;
+    }
+
+    size_t
+    size() const {
+        return size_;
+    }
+
     ssize_t
     read(char* dst, size_t n) {
-        return ::read(fd, dst, n);
+        return ::read(fd_, dst, n);
     }
 
     off_t
     seek(off_t offset) {
-        return lseek(fd, offset, SEEK_SET);
+        return lseek(fd_, offset, SEEK_SET);
     }
 
     off_t
     advance(off_t offset) {
-        return lseek(fd, offset, SEEK_CUR);
+        return lseek(fd_, offset, SEEK_CUR);
     }
 
     off_t
     offset() {
-        return lseek(fd, 0, SEEK_CUR);
+        return lseek(fd_, 0, SEEK_CUR);
     }
 
     int
     close() {
-        return ::close(fd);
+        return ::close(fd_);
     }
+
+ private:
+    int fd_;
+    size_t size_;
 };
 }  // namespace knowhere
