@@ -643,7 +643,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     loadIndex(const std::string& location, const knowhere::Config& config, size_t max_elements_i = 0) {
         auto cfg = static_cast<const knowhere::BaseConfig&>(config);
 
-        auto input = knowhere::FileReader(location, true);
+        auto input = knowhere::FileReader(location);
 
         size_t dim;
         readBinaryPOD(input, metric_type_);
