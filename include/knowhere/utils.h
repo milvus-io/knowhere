@@ -56,4 +56,10 @@ hash_binary_vec(const uint8_t* x, size_t d) {
     return h;
 }
 
+template <typename T>
+inline T
+round_down(const T value, const T align) {
+    return value / align * align;
+}
+
 }  // namespace knowhere

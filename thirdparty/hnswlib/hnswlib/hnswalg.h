@@ -1,6 +1,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include <cerrno>
 #include <cstddef>
 #include <cstdio>
 #include <stdexcept>
@@ -138,14 +139,14 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
 
     ~HierarchicalNSW() {
         if (mmap_enabled_) {
-            munmap(data_level0_memory_, max_elements_ * size_data_per_element_);
+            munmap(map_, map_size_);
         } else {
             free(data_level0_memory_);
+            if (metric_type_ == Metric::COSINE) {
+                free(data_norm_l2_);
+            }
         }
 
-        if (metric_type_ == Metric::COSINE) {
-            free(data_norm_l2_);
-        }
         for (tableint i = 0; i < cur_element_count; i++) {
             if (element_levels_[i] > 0)
                 free(linkLists_[i]);
@@ -203,6 +204,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     std::default_random_engine update_probability_generator_;
 
     bool mmap_enabled_{false};
+    char* map_;
+    size_t map_size_;
 
     mutable knowhere::lru_cache<uint64_t, tableint> lru_cache;
 
@@ -643,7 +646,9 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     loadIndex(const std::string& location, const knowhere::Config& config, size_t max_elements_i = 0) {
         auto cfg = static_cast<const knowhere::BaseConfig&>(config);
 
-        auto input = knowhere::FileReader(location, true);
+        auto input = knowhere::FileReader(location);
+        map_size_ = input.size();
+        map_ = static_cast<char*>(mmap(nullptr, map_size_, PROT_READ, MAP_SHARED, input.descriptor(), 0));
 
         size_t dim;
         readBinaryPOD(input, metric_type_);
@@ -686,21 +691,17 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         readBinaryPOD(input, mult_);
         readBinaryPOD(input, ef_construction_);
 
-        auto pos = input.offset();
-
         if (cfg.enable_mmap.has_value() && cfg.enable_mmap.value()) {
-            cfg.enable_mmap = true;
+            mmap_enabled_ = true;
             // For HNSW, we only mmap the data part, but not the linked lists,
             // which affects the performance significantly
-            data_level0_memory_ =
-                (char*)mmap(nullptr, max_elements * size_data_per_element_, PROT_READ, MAP_PRIVATE, input.fd, pos);
-            input.advance(max_elements * size_data_per_element_);
+            data_level0_memory_ = map_ + input.offset();
+            input.advance(cur_element_count * size_data_per_element_);
 
             // for COSINE, need load data_norm_l2_
             if (metric_type_ == Metric::COSINE) {
-                data_norm_l2_ =
-                    (float*)mmap(nullptr, max_elements * sizeof(float), PROT_READ, MAP_PRIVATE, input.fd, pos);
-                input.advance(max_elements * sizeof(float));
+                data_norm_l2_ = reinterpret_cast<float*>(map_ + input.offset());
+                input.advance(cur_element_count * sizeof(float));
             }
         } else {
             data_level0_memory_ = (char*)malloc(max_elements * size_data_per_element_);  // NOLINT
