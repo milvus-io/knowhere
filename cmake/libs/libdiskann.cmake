@@ -4,6 +4,10 @@ include_directories(${Boost_INCLUDE_DIR})
 find_package(aio REQUIRED)
 include_directories(${AIO_INCLUDE})
 include_directories(thirdparty/DiskANN/include)
+
+find_package(double-conversion REQUIRED)
+include_directories(${double-conversion_INCLUDE_DIRS})
+
 set(DISKANN_SOURCES
     thirdparty/DiskANN/src/ann_exception.cpp
     thirdparty/DiskANN/src/aux_utils.cpp
