@@ -33,10 +33,8 @@ expected<DataSetPtr>
 BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset, const Json& config,
                    const BitsetView& bitset) {
     std::string metric_str = config[meta::METRIC_TYPE].get<std::string>();
-    bool is_cosine = IsMetricType(metric_str, metric::COSINE);
-    if (is_cosine) {
-        Normalize(*base_dataset);
-    }
+
+    std::unique_ptr<float[]> xb_normed = nullptr;
 
     auto xb = base_dataset->GetTensor();
     auto nb = base_dataset->GetRows();
@@ -44,6 +42,14 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
 
     auto xq = query_dataset->GetTensor();
     auto nq = query_dataset->GetRows();
+
+    bool is_cosine = IsMetricType(metric_str, metric::COSINE);
+    if (is_cosine) {
+        // must do copy here, otherwise it will affect GetVectorByIds
+        xb_normed = std::make_unique<float[]>(nb * dim);
+        std::memcpy(xb_normed.get(), xb, nb * dim * sizeof(float));
+        NormalizeVecs(xb_normed.get(), nb, dim);
+    }
 
     BruteForceConfig cfg;
     RETURN_IF_ERROR(Config::Load(cfg, config, knowhere::SEARCH));
@@ -71,11 +77,13 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
                 }
                 case faiss::METRIC_INNER_PRODUCT: {
                     auto cur_query = (float*)xq + dim * index;
+                    faiss::float_minheap_array_t buf{(size_t)1, (size_t)topk, cur_labels, cur_distances};
                     if (is_cosine) {
                         NormalizeVec(cur_query, dim);
+                        faiss::knn_inner_product(cur_query, xb_normed.get(), dim, 1, nb, &buf, bitset);
+                    } else {
+                        faiss::knn_inner_product(cur_query, (const float*)xb, dim, 1, nb, &buf, bitset);
                     }
-                    faiss::float_minheap_array_t buf{(size_t)1, (size_t)topk, cur_labels, cur_distances};
-                    faiss::knn_inner_product(cur_query, (const float*)xb, dim, 1, nb, &buf, bitset);
                     break;
                 }
                 case faiss::METRIC_Jaccard: {
@@ -123,10 +131,8 @@ Status
 BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_dataset, int64_t* ids, float* dis,
                           const Json& config, const BitsetView& bitset) {
     std::string metric_str = config[meta::METRIC_TYPE].get<std::string>();
-    bool is_cosine = IsMetricType(metric_str, metric::COSINE);
-    if (is_cosine) {
-        Normalize(*base_dataset);
-    }
+
+    std::unique_ptr<float[]> xb_normed = nullptr;
 
     auto xb = base_dataset->GetTensor();
     auto nb = base_dataset->GetRows();
@@ -134,6 +140,14 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
 
     auto xq = query_dataset->GetTensor();
     auto nq = query_dataset->GetRows();
+
+    bool is_cosine = IsMetricType(metric_str, metric::COSINE);
+    if (is_cosine) {
+        // must do copy here, otherwise it will affect GetVectorByIds
+        xb_normed = std::make_unique<float[]>(nb * dim);
+        std::memcpy(xb_normed.get(), xb, nb * dim * sizeof(float));
+        NormalizeVecs(xb_normed.get(), nb, dim);
+    }
 
     BruteForceConfig cfg;
     RETURN_IF_ERROR(Config::Load(cfg, config, knowhere::SEARCH));
@@ -167,11 +181,13 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
                 }
                 case faiss::METRIC_INNER_PRODUCT: {
                     auto cur_query = (float*)xq + dim * index;
+                    faiss::float_minheap_array_t buf{(size_t)1, (size_t)topk, cur_labels, cur_distances};
                     if (is_cosine) {
                         NormalizeVec(cur_query, dim);
+                        faiss::knn_inner_product(cur_query, xb_normed.get(), dim, 1, nb, &buf, bitset);
+                    } else {
+                        faiss::knn_inner_product(cur_query, (const float*)xb, dim, 1, nb, &buf, bitset);
                     }
-                    faiss::float_minheap_array_t buf{(size_t)1, (size_t)topk, cur_labels, cur_distances};
-                    faiss::knn_inner_product(cur_query, (const float*)xb, dim, 1, nb, &buf, bitset);
                     break;
                 }
                 case faiss::METRIC_Jaccard: {
@@ -221,10 +237,8 @@ expected<DataSetPtr>
 BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_dataset, const Json& config,
                         const BitsetView& bitset) {
     std::string metric_str = config[meta::METRIC_TYPE].get<std::string>();
-    bool is_cosine = IsMetricType(metric_str, metric::COSINE);
-    if (is_cosine) {
-        Normalize(*base_dataset);
-    }
+
+    std::unique_ptr<float[]> xb_normed = nullptr;
 
     auto xb = base_dataset->GetTensor();
     auto nb = base_dataset->GetRows();
@@ -232,6 +246,14 @@ BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_da
 
     auto xq = query_dataset->GetTensor();
     auto nq = query_dataset->GetRows();
+
+    bool is_cosine = IsMetricType(metric_str, metric::COSINE);
+    if (is_cosine) {
+        // must do copy here, otherwise it will affect GetVectorByIds
+        xb_normed = std::make_unique<float[]>(nb * dim);
+        std::memcpy(xb_normed.get(), xb, nb * dim * sizeof(float));
+        NormalizeVecs(xb_normed.get(), nb, dim);
+    }
 
     BruteForceConfig cfg;
     RETURN_IF_ERROR(Config::Load(cfg, config, knowhere::RANGE_SEARCH));
@@ -264,8 +286,11 @@ BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_da
                     auto cur_query = (float*)xq + dim * index;
                     if (is_cosine) {
                         NormalizeVec(cur_query, dim);
+                        faiss::range_search_inner_product(cur_query, xb_normed.get(), dim, 1, nb, radius, &res, bitset);
+                    } else {
+                        faiss::range_search_inner_product(cur_query, (const float*)xb, dim, 1, nb, radius, &res,
+                                                          bitset);
                     }
-                    faiss::range_search_inner_product(cur_query, (const float*)xb, dim, 1, nb, radius, &res, bitset);
                     break;
                 }
                 case faiss::METRIC_Jaccard: {
