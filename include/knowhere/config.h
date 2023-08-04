@@ -532,7 +532,7 @@ class BaseConfig : public Config {
     }
 
     virtual Status
-    CheckAndAdjustForSearch() {
+    CheckAndAdjustForSearch(std::string* err_msg) {
         return Status::success;
     }
 

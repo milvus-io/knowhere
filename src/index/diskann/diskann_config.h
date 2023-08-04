@@ -159,12 +159,13 @@ class DiskANNConfig : public BaseConfig {
     }
 
     inline Status
-    CheckAndAdjustForSearch() override {
+    CheckAndAdjustForSearch(std::string* err_msg) override {
         if (!search_list_size.has_value()) {
             search_list_size = std::max(k.value(), kSearchListSizeMinValue);
         } else if (k.value() > search_list_size.value()) {
-            LOG_KNOWHERE_ERROR_ << "search_list_size(" << search_list_size.value() << ") should be larger than k("
-                                << k.value() << ")";
+            *err_msg = "search_list_size(" + std::to_string(search_list_size.value()) + ") should be larger than k(" +
+                       std::to_string(k.value()) + ")";
+            LOG_KNOWHERE_ERROR_ << *err_msg;
             return Status::out_of_range_in_json;
         }
 
