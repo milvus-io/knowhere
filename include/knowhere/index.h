@@ -157,13 +157,18 @@ class Index {
     Search(const DataSet& dataset, const Json& json, const BitsetView& bitset) const {
         auto cfg = this->node->CreateConfig();
         std::string msg;
-        const Status st = LoadConfig(cfg.get(), json, knowhere::SEARCH, "Search", &msg);
-        if (st != Status::success) {
-            expected<DataSetPtr> ret(st);
+        const Status load_status = LoadConfig(cfg.get(), json, knowhere::SEARCH, "Search", &msg);
+        if (load_status != Status::success) {
+            expected<DataSetPtr> ret(load_status);
             ret << msg;
             return ret;
         }
-        RETURN_IF_ERROR(cfg->CheckAndAdjustForSearch());
+        const Status search_status = cfg->CheckAndAdjustForSearch(&msg);
+        if (search_status != Status::success) {
+            expected<DataSetPtr> ret(search_status);
+            ret << msg;
+            return ret;
+        }
 
 #ifdef NOT_COMPILE_FOR_SWIG
         knowhere_search_count.Increment();

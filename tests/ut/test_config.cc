@@ -19,6 +19,7 @@
 
 TEST_CASE("Test config json parse", "[config]") {
     knowhere::Status s;
+    std::string err_msg;
     SECTION("check invalid json keys") {
         auto invalid_json_str = GENERATE(as<std::string>{},
                                          R"({
@@ -174,7 +175,7 @@ TEST_CASE("Test config json parse", "[config]") {
             invalid_value_json = json;
             invalid_value_json["ef"] = 99;
             s = knowhere::Config::Load(wrong_cfg, invalid_value_json, knowhere::SEARCH);
-            s = wrong_cfg.CheckAndAdjustForSearch();
+            s = wrong_cfg.CheckAndAdjustForSearch(&err_msg);
             CHECK(s == knowhere::Status::out_of_range_in_json);
         }
 
@@ -188,7 +189,7 @@ TEST_CASE("Test config json parse", "[config]") {
         {
             knowhere::HnswConfig search_cfg;
             s = knowhere::Config::Load(search_cfg, json, knowhere::SEARCH);
-            s = search_cfg.CheckAndAdjustForSearch();
+            s = search_cfg.CheckAndAdjustForSearch(&err_msg);
             CHECK(s == knowhere::Status::success);
         }
 
@@ -197,7 +198,7 @@ TEST_CASE("Test config json parse", "[config]") {
             auto search_json = json;
             search_json.erase("ef");
             s = knowhere::Config::Load(search_cfg, search_json, knowhere::SEARCH);
-            s = search_cfg.CheckAndAdjustForSearch();
+            s = search_cfg.CheckAndAdjustForSearch(&err_msg);
             CHECK(s == knowhere::Status::success);
             CHECK_EQ(100, search_cfg.ef.value());
         }
@@ -208,7 +209,7 @@ TEST_CASE("Test config json parse", "[config]") {
             search_json.erase("ef");
             search_json["k"] = 10;
             s = knowhere::Config::Load(search_cfg, search_json, knowhere::SEARCH);
-            s = search_cfg.CheckAndAdjustForSearch();
+            s = search_cfg.CheckAndAdjustForSearch(&err_msg);
             CHECK(s == knowhere::Status::success);
             CHECK_EQ(16, search_cfg.ef.value());
         }
@@ -253,7 +254,7 @@ TEST_CASE("Test config json parse", "[config]") {
             knowhere::DiskANNConfig search_cfg;
             s = knowhere::Config::Load(search_cfg, json, knowhere::SEARCH);
             CHECK(s == knowhere::Status::success);
-            s = search_cfg.CheckAndAdjustForSearch();
+            s = search_cfg.CheckAndAdjustForSearch(&err_msg);
             CHECK(s == knowhere::Status::success);
             CHECK_EQ("L2", search_cfg.metric_type.value());
             CHECK_EQ(100, search_cfg.k.value());
@@ -266,7 +267,7 @@ TEST_CASE("Test config json parse", "[config]") {
             search_json["k"] = 2;
             s = knowhere::Config::Load(search_cfg, search_json, knowhere::SEARCH);
             CHECK(s == knowhere::Status::success);
-            s = search_cfg.CheckAndAdjustForSearch();
+            s = search_cfg.CheckAndAdjustForSearch(&err_msg);
             CHECK(s == knowhere::Status::success);
             CHECK_EQ(16, search_cfg.search_list_size.value());
         }
@@ -276,7 +277,7 @@ TEST_CASE("Test config json parse", "[config]") {
             auto search_json = json;
             search_json["search_list_size"] = 99;
             s = knowhere::Config::Load(search_cfg, search_json, knowhere::SEARCH);
-            s = search_cfg.CheckAndAdjustForSearch();
+            s = search_cfg.CheckAndAdjustForSearch(&err_msg);
             CHECK(s == knowhere::Status::out_of_range_in_json);
         }
 
