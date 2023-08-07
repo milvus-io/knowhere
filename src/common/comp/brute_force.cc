@@ -33,11 +33,6 @@ expected<DataSetPtr>
 BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset, const Json& config,
                    const BitsetView& bitset) {
     std::string metric_str = config[meta::METRIC_TYPE].get<std::string>();
-    bool is_cosine = IsMetricType(metric_str, metric::COSINE);
-    if (is_cosine) {
-        Normalize(*base_dataset);
-    }
-
     auto xb = base_dataset->GetTensor();
     auto nb = base_dataset->GetRows();
     auto dim = base_dataset->GetDim();
@@ -71,11 +66,15 @@ BruteForce::Search(const DataSetPtr base_dataset, const DataSetPtr query_dataset
                 }
                 case faiss::METRIC_INNER_PRODUCT: {
                     auto cur_query = (float*)xq + dim * index;
-                    if (is_cosine) {
-                        NormalizeVec(cur_query, dim);
-                    }
                     faiss::float_minheap_array_t buf{(size_t)1, (size_t)topk, cur_labels, cur_distances};
                     faiss::knn_inner_product(cur_query, (const float*)xb, dim, 1, nb, &buf, bitset);
+                    break;
+                }
+                case faiss::METRIC_COSINE: {
+                    auto cur_query = (float*)xq + dim * index;
+                    NormalizeVec(cur_query, dim);
+                    faiss::float_minheap_array_t buf{(size_t)1, (size_t)topk, cur_labels, cur_distances};
+                    faiss::knn_cosine(cur_query, (const float*)xb, dim, 1, nb, &buf, bitset);
                     break;
                 }
                 case faiss::METRIC_Jaccard: {
@@ -123,11 +122,6 @@ Status
 BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_dataset, int64_t* ids, float* dis,
                           const Json& config, const BitsetView& bitset) {
     std::string metric_str = config[meta::METRIC_TYPE].get<std::string>();
-    bool is_cosine = IsMetricType(metric_str, metric::COSINE);
-    if (is_cosine) {
-        Normalize(*base_dataset);
-    }
-
     auto xb = base_dataset->GetTensor();
     auto nb = base_dataset->GetRows();
     auto dim = base_dataset->GetDim();
@@ -167,11 +161,15 @@ BruteForce::SearchWithBuf(const DataSetPtr base_dataset, const DataSetPtr query_
                 }
                 case faiss::METRIC_INNER_PRODUCT: {
                     auto cur_query = (float*)xq + dim * index;
-                    if (is_cosine) {
-                        NormalizeVec(cur_query, dim);
-                    }
                     faiss::float_minheap_array_t buf{(size_t)1, (size_t)topk, cur_labels, cur_distances};
                     faiss::knn_inner_product(cur_query, (const float*)xb, dim, 1, nb, &buf, bitset);
+                    break;
+                }
+                case faiss::METRIC_COSINE: {
+                    auto cur_query = (float*)xq + dim * index;
+                    NormalizeVec(cur_query, dim);
+                    faiss::float_minheap_array_t buf{(size_t)1, (size_t)topk, cur_labels, cur_distances};
+                    faiss::knn_cosine(cur_query, (const float*)xb, dim, 1, nb, &buf, bitset);
                     break;
                 }
                 case faiss::METRIC_Jaccard: {
@@ -262,10 +260,14 @@ BruteForce::RangeSearch(const DataSetPtr base_dataset, const DataSetPtr query_da
                 case faiss::METRIC_INNER_PRODUCT: {
                     is_ip = true;
                     auto cur_query = (float*)xq + dim * index;
-                    if (is_cosine) {
-                        NormalizeVec(cur_query, dim);
-                    }
                     faiss::range_search_inner_product(cur_query, (const float*)xb, dim, 1, nb, radius, &res, bitset);
+                    break;
+                }
+                case faiss::METRIC_COSINE: {
+                    is_ip = true;
+                    auto cur_query = (float*)xq + dim * index;
+                    NormalizeVec(cur_query, dim);
+                    faiss::range_search_cosine(cur_query, (const float*)xb, dim, 1, nb, radius, &res, bitset);
                     break;
                 }
                 case faiss::METRIC_Jaccard: {

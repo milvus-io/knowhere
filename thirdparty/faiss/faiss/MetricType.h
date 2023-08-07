@@ -29,7 +29,7 @@ enum MetricType {
     METRIC_Hamming,
     METRIC_Substructure,       ///< Tversky case alpha = 0, beta = 1
     METRIC_Superstructure,     ///< Tversky case alpha = 1, beta = 0
-
+    METRIC_COSINE,
     /// some additional metrics defined in scipy.spatial.distance
     METRIC_Canberra = 20,
     METRIC_BrayCurtis,
