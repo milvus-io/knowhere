@@ -375,15 +375,10 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
     auto k = ivf_cfg.k.value();
     auto nprobe = ivf_cfg.nprobe.value();
 
-    int parallel_mode = 0;
-    if (nprobe > 1 && rows <= 4) {
-        parallel_mode = 1;
-    }
     int64_t* ids(new (std::nothrow) int64_t[rows * k]);
     float* distances(new (std::nothrow) float[rows * k]);
     int32_t* i_distances = reinterpret_cast<int32_t*>(distances);
     try {
-        size_t max_codes = 0;
         std::vector<folly::Future<folly::Unit>> futs;
         futs.reserve(rows);
         for (int i = 0; i < rows; ++i) {
@@ -401,11 +396,10 @@ IvfIndexNode<T>::Search(const DataSet& dataset, const Config& cfg, const BitsetV
                 } else if constexpr (std::is_same<T, faiss::IndexIVFFlat>::value) {
                     auto cur_data = (const float*)data + index * dim;
                     index_->search_without_codes_thread_safe(1, cur_data, k, distances + offset, ids + offset, nprobe,
-                                                             parallel_mode, max_codes, bitset);
+                                                             0, bitset);
                 } else {
                     auto cur_data = (const float*)data + index * dim;
-                    index_->search_thread_safe(1, cur_data, k, distances + offset, ids + offset, nprobe, parallel_mode,
-                                               max_codes, bitset);
+                    index_->search_thread_safe(1, cur_data, k, distances + offset, ids + offset, nprobe, 0, bitset);
                 }
             }));
         }
