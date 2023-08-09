@@ -2,7 +2,7 @@
     <img src="static/knowhere-logo.png" alt="Knowhere Logo"/>
 </p>
 
-This document will help you to build the Knowhere repository from source code and to run unit tests. Please [file an issue](https://github.com/milvus-io/knowhere/issues/new) if there's a problem.
+This document will help you to build the Knowhere repository from source code and to run unit tests. Please [file an issue](https://github.com/zilliztech/knowhere/issues/new) if there's a problem.
 
 ## Introduction
 
