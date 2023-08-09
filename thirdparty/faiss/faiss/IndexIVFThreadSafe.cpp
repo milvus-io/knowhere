@@ -42,14 +42,12 @@ void IndexIVF::search_thread_safe(
         float* distances,
         idx_t* labels,
         const size_t nprobe,
-        const int parallel_mode,
         const size_t max_codes,
         const BitsetView bitset) const {
     FAISS_THROW_IF_NOT(k > 0);
     const size_t final_nprobe = std::min(nlist, nprobe);
     FAISS_THROW_IF_NOT(final_nprobe > 0);
-    IVFSearchParameters params =
-            gen_search_param(final_nprobe, parallel_mode, max_codes);
+    IVFSearchParameters params = gen_search_param(final_nprobe, 0, max_codes);
 
     // search function for a subset of queries
     auto sub_search_func = [this, k, final_nprobe, bitset, &params](
@@ -132,14 +130,12 @@ void IndexIVF::search_without_codes_thread_safe(
         float* distances,
         idx_t* labels,
         const size_t nprobe,
-        const int parallel_mode,
         const size_t max_codes,
         const BitsetView bitset) const {
     FAISS_THROW_IF_NOT(k > 0);
     const size_t final_nprobe = std::min(nlist, nprobe);
     FAISS_THROW_IF_NOT(final_nprobe > 0);
-    IVFSearchParameters params =
-            gen_search_param(final_nprobe, parallel_mode, max_codes);
+    IVFSearchParameters params = gen_search_param(final_nprobe, 0, max_codes);
 
     // search function for a subset of queries
     auto sub_search_func = [this, k, final_nprobe, bitset, &params](

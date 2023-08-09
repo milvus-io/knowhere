@@ -271,7 +271,6 @@ struct IndexIVF : Index, Level1Quantizer {
             float* distances,
             idx_t* labels,
             const size_t nprobe,
-            const int parallel_mode,
             const size_t max_codes,
             const BitsetView bitset = nullptr) const;
 
@@ -283,7 +282,6 @@ struct IndexIVF : Index, Level1Quantizer {
             float* distances,
             idx_t* labels,
             const size_t nprobe,
-            const int parallel_mode,
             const size_t max_codes,
             const BitsetView bitset = nullptr) const;
 
