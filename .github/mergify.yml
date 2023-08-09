@@ -35,7 +35,7 @@ pull_request_rules:
         - base=1.x
       - and:
         - -body~=\#[0-9]{1,6}(\s+|$)
-        - -body~=https://github.com/zilliztech/knowhere/issues/[0-9]{1,6}(\s+|$)
+        - -body~=https://github.com/zilliztech/Knowhere/issues/[0-9]{1,6}(\s+|$)
       - -label=kind/improvement
       - -title~=\[automated\]
     actions:
@@ -55,7 +55,7 @@ pull_request_rules:
       - or:
         - or:
           - body~=\#[0-9]{1,6}(\s+|$)
-          - body~=https://github.com/zilliztech/knowhere/issues/[0-9]{1,6}(\s+|$)
+          - body~=https://github.com/zilliztech/Knowhere/issues/[0-9]{1,6}(\s+|$)
         - label=kind/improvement
     actions:
       label:
