@@ -50,7 +50,7 @@ Normalize(const DataSet& dataset) {
     auto dim = dataset.GetDim();
     float* data = (float*)dataset.GetTensor();
 
-    LOG_KNOWHERE_INFO_ << "vector normalize, rows " << rows << ", dim " << dim;
+    LOG_KNOWHERE_DEBUG_ << "vector normalize, rows " << rows << ", dim " << dim;
 
     for (int32_t i = 0; i < rows; i++) {
         NormalizeVec(data + i * dim, dim);
