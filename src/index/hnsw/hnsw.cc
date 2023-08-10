@@ -306,8 +306,30 @@ class HnswIndexNode : public IndexNode {
         try {
             MemoryIOWriter writer;
             index_->saveIndex(writer);
-            std::shared_ptr<uint8_t[]> data(writer.data_);
-            binset.Append(Type(), data, writer.rp);
+            std::unique_ptr<uint8_t[]> data(writer.data_);
+            binset.Set(data, writer.rp);
+        } catch (std::exception& e) {
+            LOG_KNOWHERE_WARNING_ << "hnsw inner error: " << e.what();
+            return Status::hnsw_inner_error;
+        }
+        return Status::success;
+    }
+
+    Status
+    Deserialize(BinarySet&& binset, const Config& config) override {
+        if (index_) {
+            delete index_;
+        }
+        try {
+            MemoryMapper reader(binset);
+
+            hnswlib::SpaceInterface<float>* space = nullptr;
+            index_ = new (std::nothrow) hnswlib::HierarchicalNSW<float>(space);
+            index_->loadIndex(reader);
+            LOG_KNOWHERE_INFO_ << "Loaded HNSW index. #points num:" << index_->max_elements_ << " #M:" << index_->M_
+                               << " #max level:" << index_->maxlevel_
+                               << " #ef_construction:" << index_->ef_construction_
+                               << " #dim:" << *(size_t*)(index_->space_->get_dist_func_param());
         } catch (std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "hnsw inner error: " << e.what();
             return Status::hnsw_inner_error;
@@ -321,15 +343,9 @@ class HnswIndexNode : public IndexNode {
             delete index_;
         }
         try {
-            auto binary = binset.GetByName(Type());
-            if (binary == nullptr) {
-                LOG_KNOWHERE_ERROR_ << "Invalid binary set.";
-                return Status::invalid_binary_set;
-            }
-
             MemoryIOReader reader;
-            reader.total = binary->size;
-            reader.data_ = binary->data.get();
+            reader.total = binset.GetSize();
+            reader.data_ = binset.GetData();
 
             hnswlib::SpaceInterface<float>* space = nullptr;
             index_ = new (std::nothrow) hnswlib::HierarchicalNSW<float>(space);

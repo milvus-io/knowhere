@@ -65,6 +65,11 @@ class IndexNodeThreadPoolWrapper : public IndexNode {
     }
 
     Status
+    Deserialize(BinarySet&& binset, const Config& config) override {
+        return index_node_->Deserialize(binset, config);
+    }
+
+    Status
     DeserializeFromFile(const std::string& filename, const Config& config) override {
         return index_node_->DeserializeFromFile(filename, config);
     }

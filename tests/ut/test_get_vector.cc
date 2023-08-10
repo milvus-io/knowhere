@@ -9,9 +9,12 @@
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 // or implied. See the License for the specific language governing permissions and limitations under the License.
 
+#include <bitset>
+
 #include "catch2/catch_approx.hpp"
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/generators/catch_generators.hpp"
+#include "io/FaissIO.h"
 #include "knowhere/comp/index_param.h"
 #include "knowhere/comp/knowhere_config.h"
 #include "knowhere/factory.h"
@@ -141,10 +144,17 @@ TEST_CASE("Test Float Get Vector By Ids", "[Float GetVectorByIds]") {
         knowhere::BinarySet bs;
         auto res = index.Serialize(bs);
         REQUIRE(res == knowhere::Status::success);
-        knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
-        bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)p_data, [&](uint8_t*) {});
-        bptr->size = dim * rows * sizeof(float);
-        bs.Append("RAW_DATA", bptr);
+        uint64_t raw_data_size = dim * rows * sizeof(float);
+        uint64_t index_meta_size = bs.GetSize();
+        auto index_size = raw_data_size + index_meta_size;
+        auto index_bin = std::unique_ptr<uint8_t[]>(new uint8_t[index_size]);
+        knowhere::MemoryIOReader raw_data_reader;
+        raw_data_reader.data_ = static_cast<const uint8_t*>(p_data);
+        raw_data_reader.total = raw_data_size;
+        memcpy(index_bin.get() + index_meta_size, (const uint8_t*)p_data, raw_data_size);
+        memcpy(index_bin.get(), bs.GetData(), index_meta_size);
+
+        bs = knowhere::BinarySet(index_bin, index_size);
         res = index.Deserialize(bs);
         REQUIRE(res == knowhere::Status::success);
     };

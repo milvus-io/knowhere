@@ -85,6 +85,11 @@ class DiskANNIndexNode : public IndexNode {
     Deserialize(const BinarySet& binset, const Config& cfg) override;
 
     Status
+    Deserialize(BinarySet&& binset, const Config& config) override {
+        return Deserialize(static_cast<const BinarySet&>(binset), config);
+    }
+
+    Status
     DeserializeFromFile(const std::string& filename, const Config& config) override {
         LOG_KNOWHERE_ERROR_ << "DiskANN doesn't support Deserialization from file.";
         return Status::not_implemented;

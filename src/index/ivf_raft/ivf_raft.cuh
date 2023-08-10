@@ -537,6 +537,12 @@ class RaftIvfIndexNode : public IndexNode {
     }
 
     Status
+    Deserialize(BinarySet&& binset, const Config& config) override {
+        LOG_KNOWHERE_ERROR_ << "RaftIvfIndex doesn't support Deserialization from BinarySet&&.";
+        return Status::not_implemented;
+    }
+
+    Status
     DeserializeFromFile(const std::string& filename, const Config& config) {
         LOG_KNOWHERE_ERROR_ << "RaftIvfIndex doesn't support Deserialization from file.";
         return Status::not_implemented;

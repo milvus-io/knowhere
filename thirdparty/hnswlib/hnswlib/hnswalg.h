@@ -140,14 +140,14 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     ~HierarchicalNSW() {
         if (mmap_enabled_) {
             munmap(map_, map_size_);
-        } else {
+        } else if (index_bin == nullptr){
             free(data_level0_memory_);
             if (metric_type_ == Metric::COSINE) {
                 free(data_norm_l2_);
             }
         }
 
-        for (tableint i = 0; i < cur_element_count; i++) {
+        for (tableint i = 0; i < cur_element_count && index_bin == nullptr; i++) {
             if (element_levels_[i] > 0)
                 free(linkLists_[i]);
         }
@@ -208,6 +208,8 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     size_t map_size_;
 
     mutable knowhere::lru_cache<uint64_t, tableint> lru_cache;
+
+    std::unique_ptr<uint8_t []> index_bin = nullptr;
 
     inline char*
     getDataByInternalId(tableint internal_id) const {
@@ -784,8 +786,9 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         // output.close();
     }
 
+    template<typename reader_T>
     void
-    loadIndex(knowhere::MemoryIOReader& input, size_t max_elements_i = 0) {
+    loadIndex(reader_T& input, size_t max_elements_i = 0) {
         // linxj: init with metrictype
         size_t dim;
         readBinaryPOD(input, metric_type_);
@@ -828,10 +831,14 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         readBinaryPOD(input, mult_);
         readBinaryPOD(input, ef_construction_);
 
-        data_level0_memory_ = (char*)malloc(max_elements * size_data_per_element_);  // NOLINT
-        if (data_level0_memory_ == nullptr)
-            throw std::runtime_error("Not enough memory: loadIndex failed to allocate level0");
-        input.read(data_level0_memory_, cur_element_count * size_data_per_element_);
+        if constexpr (std::is_same_v<reader_T, knowhere::MemoryIOReader>) {
+            data_level0_memory_ = (char*)malloc(max_elements * size_data_per_element_);  // NOLINT
+            if (data_level0_memory_ == nullptr)
+                throw std::runtime_error("Not enough memory: loadIndex failed to allocate level0");
+            input.read(data_level0_memory_, cur_element_count * size_data_per_element_);
+        } else if constexpr (std::is_same_v<reader_T, knowhere::MemoryMapper>) {
+            input.pin(data_level0_memory_, cur_element_count * size_data_per_element_);
+        }
 
         // for COSINE, need load data_norm_l2_
         if (metric_type_ == Metric::COSINE) {
@@ -862,11 +869,18 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
                 linkLists_[i] = nullptr;
             } else {
                 element_levels_[i] = linkListSize / size_links_per_element_;
-                linkLists_[i] = (char*)malloc(linkListSize);
-                if (linkLists_[i] == nullptr)
-                    throw std::runtime_error("Not enough memory: loadIndex failed to allocate linklist");
-                input.read(linkLists_[i], linkListSize);
+                if constexpr (std::is_same_v<reader_T, knowhere::MemoryIOReader>) {
+                    linkLists_[i] = (char*)malloc(linkListSize);
+                    if (linkLists_[i] == nullptr)
+                        throw std::runtime_error("Not enough memory: loadIndex failed to allocate linklist");
+                    input.read(linkLists_[i], linkListSize);
+                } if constexpr (std::is_same_v<reader_T, knowhere::MemoryMapper>) {
+                    input.pin(linkLists_[i], linkListSize);
+                }
             }
+        }
+        if constexpr (std::is_same_v<reader_T, knowhere::MemoryMapper>) {
+            index_bin = input.data_.Release();
         }
     }
 

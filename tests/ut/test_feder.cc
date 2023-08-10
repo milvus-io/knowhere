@@ -175,10 +175,15 @@ TEST_CASE("Test Feder", "[feder]") {
         knowhere::BinarySet bs;
         auto res = index.Serialize(bs);
         REQUIRE(res == knowhere::Status::success);
-        knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
-        bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)p_data, [&](uint8_t*) {});
-        bptr->size = dim * rows * sizeof(float);
-        bs.Append("RAW_DATA", bptr);
+        uint64_t raw_data_size = dim * rows * sizeof(float);
+        uint64_t index_meta_size = bs.GetSize();
+        auto index_size = raw_data_size + index_meta_size;
+        auto index_bin = std::unique_ptr<uint8_t[]>(new uint8_t[index_size]);
+        memcpy(index_bin.get(), bs.GetData(), index_meta_size);
+        memcpy(index_bin.get() + index_meta_size, p_data, raw_data_size);
+        auto new_bs = knowhere::BinarySet(index_bin, index_size);
+        bs = new_bs;
+
         res = index.Deserialize(bs);
         REQUIRE(res == knowhere::Status::success);
     };

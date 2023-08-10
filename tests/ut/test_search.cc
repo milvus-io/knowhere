@@ -85,10 +85,14 @@ TEST_CASE("Test Mem Index With Float Vector", "[float metrics]") {
         auto p_data = dataset.GetTensor();
         knowhere::BinarySet bs;
         REQUIRE(index.Serialize(bs) == knowhere::Status::success);
-        knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
-        bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)p_data, [&](uint8_t*) {});
-        bptr->size = dim * rows * sizeof(float);
-        bs.Append("RAW_DATA", bptr);
+        uint64_t raw_data_size = dim * rows * sizeof(float);
+        uint64_t index_meta_size = bs.GetSize();
+        auto index_size = raw_data_size + index_meta_size;
+        auto index_bin = std::unique_ptr<uint8_t[]>(new uint8_t[index_size]);
+        memcpy(index_bin.get(), bs.GetData(), index_meta_size);
+        memcpy(index_bin.get() + index_meta_size, p_data, raw_data_size);
+        auto new_bs = knowhere::BinarySet(index_bin, index_size);
+        bs = new_bs;
         REQUIRE(index.Deserialize(bs) == knowhere::Status::success);
     };
 
@@ -218,6 +222,31 @@ TEST_CASE("Test Mem Index With Float Vector", "[float metrics]") {
         }
         auto results = idx_.Search(*query_ds, json, nullptr);
         REQUIRE(results.has_value());
+    }
+
+    SECTION("Test Serialize/Deserialize with zero copy") {
+        using std::make_tuple;
+        auto [name, gen] = GENERATE_REF(table<std::string, std::function<knowhere::Json()>>({
+            make_tuple(knowhere::IndexEnum::INDEX_HNSW, hnsw_gen),
+        }));
+
+        auto idx = knowhere::IndexFactory::Instance().Create(name);
+        auto cfg_json = gen().dump();
+        CAPTURE(name, cfg_json);
+        knowhere::Json json = knowhere::Json::parse(cfg_json);
+        REQUIRE(idx.Type() == name);
+        REQUIRE(idx.Build(*train_ds, json) == knowhere::Status::success);
+        knowhere::BinarySet bs;
+        idx.Serialize(bs);
+
+        {
+            auto idx_ = knowhere::IndexFactory::Instance().Create(name);
+            idx_.Deserialize(knowhere::BinarySet(bs));
+            auto results = idx_.Search(*query_ds, json, nullptr);
+            REQUIRE(results.has_value());
+            float recall = GetKNNRecall(*gt.value(), *results.value());
+            REQUIRE(recall > kKnnRecallThreshold);
+        }
     }
 
     SECTION("Test IVFPQ with invalid params") {

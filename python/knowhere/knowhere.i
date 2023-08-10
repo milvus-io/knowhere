@@ -27,6 +27,7 @@ typedef uint64_t size_t;
 #include <numpy/arrayobject.h>
 #endif
 #include <knowhere/expected.h>
+#include <knowhere/binaryset.h>
 #include <knowhere/factory.h>
 #include <knowhere/comp/local_file_manager.h>
 using namespace knowhere;
@@ -45,11 +46,9 @@ import_array();
 %include <std_pair.i>
 %include <std_map.i>
 %include <std_shared_ptr.i>
+%include <std_unique_ptr.i>
 %include <exception.i>
 %shared_ptr(knowhere::DataSet)
-%shared_ptr(knowhere::BinarySet)
-%template(DataSetPtr) std::shared_ptr<knowhere::DataSet>;
-%template(BinarySetPtr) std::shared_ptr<knowhere::BinarySet>;
 %include <knowhere/expected.h>
 %include <knowhere/dataset.h>
 %include <knowhere/binaryset.h>
@@ -183,15 +182,15 @@ class IndexWrap {
     }
 
     knowhere::Status
-    Serialize(knowhere::BinarySetPtr binset) {
+    Serialize(knowhere::BinarySet& binset) {
         GILReleaser rel;
-        return idx.Serialize(*binset);
+        return idx.Serialize(binset);
     }
 
     knowhere::Status
-    Deserialize(knowhere::BinarySetPtr binset, const std::string& json) {
+    Deserialize(knowhere::BinarySet binset, const std::string& json) {
         GILReleaser rel;
-        return idx.Deserialize(*binset, knowhere::Json::parse(json));
+        return idx.Deserialize(binset, knowhere::Json::parse(json));
     }
 
     int64_t
@@ -239,6 +238,11 @@ class BitSet {
     int num_bits_ = 0;
 };
 
+BinarySet
+GetBinarySet() {
+    return knowhere::BinarySet();
+}
+
 knowhere::BitsetView
 GetNullBitSetView() {
     return nullptr;
@@ -284,10 +288,6 @@ int64_t DataSet_Rows(knowhere::DataSetPtr results){
 
 int64_t DataSet_Dim(knowhere::DataSetPtr results){
     return results->GetDim();
-}
-
-knowhere::BinarySetPtr GetBinarySet() {
-    return std::make_shared<knowhere::BinarySet>();
 }
 
 knowhere::DataSetPtr GetNullDataSet() {

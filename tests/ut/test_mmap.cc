@@ -102,9 +102,9 @@ TEST_CASE("Search mmap", "[float metrics]") {
         auto p_data = dataset.GetTensor();
         knowhere::BinarySet bs;
         REQUIRE(index.Serialize(bs) == knowhere::Status::success);
-        auto data = bs.GetByName(index.Type());
+        auto data = bs.GetData();
 
-        WriteDataToDisk(path.string(), reinterpret_cast<const char*>(data->data.get()), data->size);
+        WriteDataToDisk(path.string(), reinterpret_cast<const char*>(data), bs.GetSize());
 
         // knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
         // bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)p_data, [&](uint8_t*) {});
@@ -259,9 +259,9 @@ TEST_CASE("Search binary mmap", "[float metrics]") {
         auto p_data = dataset.GetTensor();
         knowhere::BinarySet bs;
         REQUIRE(index.Serialize(bs) == knowhere::Status::success);
-        auto data = bs.GetByName(index.Type());
+        auto data = bs.GetData();
 
-        WriteDataToDisk(path.string(), reinterpret_cast<const char*>(data->data.get()), data->size);
+        WriteDataToDisk(path.string(), reinterpret_cast<const char*>(data), bs.GetSize());
 
         // knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
         // bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)p_data, [&](uint8_t*) {});
@@ -370,9 +370,9 @@ TEST_CASE("Search binary mmap", "[bool metrics]") {
         auto p_data = dataset.GetTensor();
         knowhere::BinarySet bs;
         REQUIRE(index.Serialize(bs) == knowhere::Status::success);
-        auto data = bs.GetByName(index.Type());
+        auto data = bs.GetData();
 
-        WriteDataToDisk(path.string(), reinterpret_cast<const char*>(data->data.get()), data->size);
+        WriteDataToDisk(path.string(), reinterpret_cast<const char*>(data), bs.GetSize());
 
         // knowhere::BinaryPtr bptr = std::make_shared<knowhere::Binary>();
         // bptr->data = std::shared_ptr<uint8_t[]>((uint8_t*)p_data, [&](uint8_t*) {});

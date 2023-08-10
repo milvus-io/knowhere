@@ -61,4 +61,18 @@ MemoryIOReader::operator()(void* ptr, size_t size, size_t nitems) {
     return nitems;
 }
 
+size_t
+MemoryMapper::operator()(void* ptr, size_t size, size_t nitems) {
+    if (rp_ >= total_) {
+        return 0;
+    }
+    size_t nremain = (total_ - rp_) / size;
+    if (nremain < nitems) {
+        nitems = nremain;
+    }
+    memcpy(ptr, (data_.GetData() + rp_), size * nitems);
+    rp_ += size * nitems;
+    return nitems;
+}
+
 }  // namespace knowhere

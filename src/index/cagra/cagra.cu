@@ -172,6 +172,12 @@ class CagraIndexNode : public IndexNode {
     }
 
     Status
+    Deserialize(BinarySet&& binset, const Config& config) override {
+        LOG_KNOWHERE_ERROR_ << "Not support Deserialization from BinarySet&& yet.";
+        return Status::not_implemented;
+    }
+
+    Status
     DeserializeFromFile(const std::string& filename, const Config& config) override {
     }
 

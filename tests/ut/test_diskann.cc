@@ -115,7 +115,8 @@ TEST_CASE("Invalid diskann params test", "[diskann]") {
         knowhere::DataSet* ds_ptr = nullptr;
         auto diskann = knowhere::IndexFactory::Instance().Create("DISKANN", diskann_index_pack);
         diskann.Build(*ds_ptr, test_gen());
-        diskann.Deserialize(knowhere::BinarySet(), test_gen());
+        const knowhere::BinarySet& null_bin_set = knowhere::BinarySet();
+        diskann.Deserialize(null_bin_set, test_gen());
 
         knowhere::Json test_json;
         auto query_ds = GenDataSet(kNumQueries, kDim, 42);

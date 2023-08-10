@@ -210,8 +210,9 @@ class Index {
         return this->node->Serialize(binset);
     }
 
+    template <typename Bin_T>
     Status
-    Deserialize(const BinarySet& binset, const Json& json = {}) {
+    Deserialize(Bin_T&& binset, const Json& json = {}) {
         Json json_(json);
         auto cfg = this->node->CreateConfig();
         {
@@ -225,7 +226,7 @@ class Index {
         if (res != Status::success) {
             return res;
         }
-        return this->node->Deserialize(binset, *cfg);
+        return this->node->Deserialize(std::forward<Bin_T>(binset), *cfg);
     }
 
     Status

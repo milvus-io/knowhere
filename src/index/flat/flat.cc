@@ -258,8 +258,9 @@ class FlatIndexNode : public IndexNode {
             if constexpr (std::is_same<T, faiss::IndexBinaryFlat>::value) {
                 faiss::write_index_binary(index_.get(), &writer);
             }
-            std::shared_ptr<uint8_t[]> data(writer.data_);
-            binset.Append(Type(), data, writer.rp);
+            std::unique_ptr<uint8_t[]> data(writer.data_);
+            binset.Set(data, writer.rp);
+
             return Status::success;
         } catch (const std::exception& e) {
             LOG_KNOWHERE_WARNING_ << "error inner faiss: " << e.what();
@@ -269,18 +270,11 @@ class FlatIndexNode : public IndexNode {
 
     Status
     Deserialize(const BinarySet& binset, const Config& config) override {
-        std::vector<std::string> names = {"IVF",        // compatible with knowhere-1.x
-                                          "BinaryIVF",  // compatible with knowhere-1.x
-                                          Type()};
-        auto binary = binset.GetByNames(names);
-        if (binary == nullptr) {
-            LOG_KNOWHERE_ERROR_ << "Invalid binary set.";
-            return Status::invalid_binary_set;
-        }
-
         MemoryIOReader reader;
-        reader.total = binary->size;
-        reader.data_ = binary->data.get();
+
+        reader.total = const_cast<BinarySet&>(binset).GetSize();
+        reader.data_ = const_cast<BinarySet&>(binset).GetData();
+
         if constexpr (std::is_same<T, faiss::IndexFlat>::value) {
             faiss::Index* index = faiss::read_index(&reader);
             index_.reset(static_cast<T*>(index));
@@ -290,6 +284,12 @@ class FlatIndexNode : public IndexNode {
             index_.reset(static_cast<T*>(index));
         }
         return Status::success;
+    }
+
+    Status
+    Deserialize(BinarySet&& binset, const Config& config) override {
+        LOG_KNOWHERE_ERROR_ << "Not support Deserialization from BinarySet&& yet.";
+        return Status::not_implemented;
     }
 
     Status

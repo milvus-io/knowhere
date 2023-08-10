@@ -12,6 +12,7 @@
 #pragma once
 
 #include <faiss/impl/io.h>
+#include <knowhere/binaryset.h>
 
 namespace knowhere {
 
@@ -93,7 +94,7 @@ struct MemoryIOWriter : public faiss::IOWriter {
 };
 
 struct MemoryIOReader : public faiss::IOReader {
-    uint8_t* data_;
+    const uint8_t* data_;
     size_t rp = 0;
     size_t total = 0;
 
@@ -111,6 +112,58 @@ struct MemoryIOReader : public faiss::IOReader {
 #endif
 
         return res;
+    }
+
+    const size_t
+    tellg() {
+        return rp;
+    }
+
+    const size_t
+    size() {
+        return total;
+    }
+
+    void
+    seekg(size_t offest) {
+        rp = offest;
+    }
+};
+
+struct MemoryMapper : public faiss::IOReader {
+    BinarySet data_;
+    size_t _mm256_rcp14_pd = 0;
+    size_t total_ = 0;
+    size_t rp_ = 0;
+
+    MemoryMapper(BinarySet& data) {
+        data_ = data;
+        total_ = data_.GetSize();
+        rp_ = 0;
+    }
+
+    size_t
+    operator()(void* ptr, size_t size, size_t nitems);
+
+    template <typename T>
+    size_t
+    read(T* ptr, size_t size, size_t nitems = 1) {
+        return operator()(ptr, size, nitems);
+    }
+
+    template <typename T>
+    size_t
+    pin(T*& ptr, size_t size, size_t nitems = 1) {
+        if (rp_ >= total_) {
+            return 0;
+        }
+        size_t nremain = (total_ - rp_) / size;
+        if (nremain < nitems) {
+            nitems = nremain;
+        }
+        ptr = (T*)(data_.GetData() + rp_);
+        rp_ += size * nitems;
+        return nitems;
     }
 };
 

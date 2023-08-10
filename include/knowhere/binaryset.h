@@ -20,80 +20,69 @@
 
 namespace knowhere {
 
-struct Binary {
-    std::shared_ptr<uint8_t[]> data;
-    int64_t size = 0;
-};
-using BinaryPtr = std::shared_ptr<Binary>;
-
-inline uint8_t*
-CopyBinary(const BinaryPtr& bin) {
-    uint8_t* newdata = new uint8_t[bin->size];
-    std::memcpy(newdata, bin->data.get(), bin->size);
-    return newdata;
-}
-
 class BinarySet {
  public:
-    BinaryPtr
-    GetByName(const std::string& name) const {
-        if (Contains(name)) {
-            return binary_map_.at(name);
-        }
-        return nullptr;
+    BinarySet() : data_(nullptr), size_(0) {
     }
 
-    // This API is used to be compatible with knowhere-1.x.
-    // It tries each key name one by one, and returns the first matched.
-    BinaryPtr
-    GetByNames(const std::vector<std::string>& names) const {
-        for (auto& name : names) {
-            if (Contains(name)) {
-                return binary_map_.at(name);
-            }
-        }
-        return nullptr;
+    BinarySet(std::unique_ptr<uint8_t[]>& data, uint64_t size) {
+        Clear();
+        Set(data, size);
     }
 
-    void
-    Append(const std::string& name, BinaryPtr binary) {
-        binary_map_[name] = std::move(binary);
+    template <typename T>
+    BinarySet(T&& binset) {
+        Clear();
+        size_ = binset.size_;
+        data_.swap(binset.data_);
+        binset.size_ = 0;
     }
 
-    void
-    Append(const std::string& name, std::shared_ptr<uint8_t[]> data, int64_t size) {
-        auto binary = std::make_shared<Binary>();
-        binary->data = data;
-        binary->size = size;
-        binary_map_[name] = std::move(binary);
-    }
-
-    BinaryPtr
-    Erase(const std::string& name) {
-        BinaryPtr result = nullptr;
-        auto it = binary_map_.find(name);
-        if (it != binary_map_.end()) {
-            result = it->second;
-            binary_map_.erase(it);
-        }
-        return result;
+    template <typename T>
+    BinarySet&
+    operator=(T&& binset) {
+        Clear();
+        size_ = binset.size_;
+        data_.swap(binset.data_);
+        binset.size_ = 0;
+        return *this;
     }
 
     void
-    clear() {
-        binary_map_.clear();
+    Set(std::unique_ptr<uint8_t[]>& data, uint64_t size) {
+        data_ = std::move(data);
+        size_ = size;
     }
 
-    bool
-    Contains(const std::string& key) const {
-        return binary_map_.find(key) != binary_map_.end();
+    void
+    Clear() {
+        if (data_ != nullptr) {
+            data_.reset(nullptr);
+            size_ = 0;
+        }
     }
 
- public:
-    std::map<std::string, BinaryPtr> binary_map_;
+    std::unique_ptr<uint8_t[]>
+    Release() {
+        size_ = 0;
+        return std::move(data_);
+    }
+
+    const uint8_t*
+    GetData() const {
+        return data_.get();
+    }
+
+    const uint64_t
+    GetSize() const {
+        return size_;
+    }
+
+ private:
+    std::unique_ptr<uint8_t[]> data_;
+    uint64_t size_;
 };
 
-using BinarySetPtr = std::shared_ptr<BinarySet>;
 }  // namespace knowhere
 
 #endif /* BINARYSET_H */
