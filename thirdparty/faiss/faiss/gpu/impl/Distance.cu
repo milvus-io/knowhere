@@ -367,10 +367,13 @@ void runDistance(
                             k,
                             streams[curStream]);
                 } else {
+                    // bitset need to match real idx
+                    auto batchBitsetView = bitset.narrow(
+                            0, int(j / 8), bitset.getSize(0) - int(j / 8));
                     // Write into the intermediate output
                     runBlockSelect(
                             distanceBufView,
-                            bitset,
+                            batchBitsetView,
                             outDistanceBufColView,
                             outIndexBufColView,
                             true,

@@ -237,7 +237,9 @@ __global__ void blockSelectPair(
     bool bitsetEmpty = (bitset.getSize(0) == 0);
 
     for (; i < limit; i += ThreadsPerBlock) {
-        if (bitsetEmpty || (!(bitset[i >> 3] & (0x1 << (i & 0x7))))) {
+        // bitset need to match real idx
+        if (bitsetEmpty ||
+            (!(bitset[inV[row][i] >> 3] & (0x1 << (inV[row][i] & 0x7))))) {
             heap.addThreadQ(*inKStart, *inVStart);
         }
         heap.checkThreadQ();
@@ -248,7 +250,9 @@ __global__ void blockSelectPair(
 
     // Handle last remainder fraction of a warp of elements
     if (i < inK.getSize(1)) {
-        if (bitsetEmpty || (!(bitset[i >> 3] & (0x1 << (i & 0x7))))) {
+        // bitset need to match real idx
+        if (bitsetEmpty ||
+            (!(bitset[inV[row][i] >> 3] & (0x1 << (inV[row][i] & 0x7))))) {
             heap.addThreadQ(*inKStart, *inVStart);
         }
     }
