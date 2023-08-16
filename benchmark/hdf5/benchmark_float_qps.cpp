@@ -74,6 +74,64 @@ class Benchmark_float_qps : public Benchmark_knowhere, public ::testing::Test {
     }
 
     void
+    test_cagra(const knowhere::Json& cfg) {
+        auto conf = cfg;
+        auto igd = conf[knowhere::indexparam::INTERMEDIATE_GRAPH_DEGREE].get<int32_t>();
+        auto gd = conf[knowhere::indexparam::GRAPH_DEGREE].get<int32_t>();
+        auto max_iterations = conf[knowhere::indexparam::MAX_ITERATIONS].get<int32_t>();
+        auto search_width = conf[knowhere::indexparam::SEARCH_WIDTH].get<int32_t>();
+
+        auto find_smallest_itopk = [&](float expected_recall) -> int32_t {
+            conf[knowhere::meta::TOPK] = topk_;
+            auto ds_ptr = knowhere::GenDataSet(nq_, dim_, xq_);
+
+            int32_t left = topk_, right = 256, itopk;
+            float recall;
+            while (left <= right) {
+                itopk = left + (right - left) / 2;
+                conf[knowhere::indexparam::ITOPK_SIZE] = itopk;
+
+                auto result = index_.Search(*ds_ptr, conf, nullptr);
+                recall = CalcRecall(result.value()->GetIds(), nq_, topk_);
+                printf(
+                    "[%0.3f s] iterate CAGRA param for recall %.4f: gd=%d, igd=%d, itopk=%d, k=%d, max_it=%d, sw=%d, "
+                    "R@=%.4f\n",
+                    get_time_diff(), expected_recall, gd, igd, itopk, topk_, max_iterations, search_width, recall);
+                std::fflush(stdout);
+                if (std::abs(recall - expected_recall) <= 0.0001) {
+                    return itopk;
+                }
+                if (recall < expected_recall) {
+                    left = itopk + 1;
+                } else {
+                    right = itopk - 1;
+                }
+            }
+            return left;
+        };
+
+        for (auto expected_recall : EXPECTED_RECALLs_) {
+            auto itopk = find_smallest_itopk(expected_recall);
+            conf[knowhere::indexparam::ITOPK_SIZE] = itopk;
+            conf[knowhere::meta::TOPK] = topk_;
+
+            printf(
+                "\n[%0.3f s] %s | %s | intermediate_graph_degree=%d, graph_degree=%d, itopk=%d, k=%d, max_it=%d, "
+                "sw=%d, R@=%.4f\n",
+                get_time_diff(), ann_test_name_.c_str(), index_type_.c_str(), igd, gd, itopk, topk_, max_iterations,
+                search_width, expected_recall);
+            printf("================================================================================\n");
+            for (auto thread_num : THREAD_NUMs_) {
+                CALC_TIME_SPAN(task(conf, thread_num, nq_));
+                printf("  thread_num = %2d, elapse = %6.3fs, VPS = %.3f\n", thread_num, t_diff, nq_ / t_diff);
+                std::fflush(stdout);
+            }
+            printf("================================================================================\n");
+            printf("[%.3f s] Test '%s/%s' done\n\n", get_time_diff(), ann_test_name_.c_str(), index_type_.c_str());
+        }
+    }
+
+    void
     test_hnsw(const knowhere::Json& cfg) {
         auto conf = cfg;
         auto M = conf[knowhere::indexparam::HNSW_M].get<int32_t>();
@@ -191,6 +249,13 @@ class Benchmark_float_qps : public Benchmark_knowhere, public ::testing::Test {
     // HNSW index params
     const std::vector<int32_t> HNSW_Ms_ = {16};
     const std::vector<int32_t> EFCONs_ = {100};
+
+    // CAGRA index params
+    const std::vector<int32_t> GRAPH_DEGREE_ = {16, 32, 64};
+    const std::vector<int32_t> INTERMEDIATE_GRAPH_DEGREE_ = {16, 32, 64, 128};
+    // CAGRA search params
+    const std::vector<int32_t> CAGRA_SEARCH_WIDTH_ = {1, 2, 4};
+    const std::vector<int32_t> CAGRA_MAX_ITERATIONS_ = {0, 16, 32, 64};
 };
 
 TEST_F(Benchmark_float_qps, TEST_IVF_FLAT) {
@@ -260,6 +325,28 @@ TEST_F(Benchmark_float_qps, TEST_HNSW) {
             std::string index_file_name = get_index_name({M, efc});
             create_index(index_file_name, conf);
             test_hnsw(conf);
+        }
+    }
+}
+
+TEST_F(Benchmark_float_qps, TEST_CAGRA) {
+    index_type_ = knowhere::IndexEnum::INDEX_RAFT_CAGRA;
+    knowhere::Json conf = cfg_;
+    for (auto gd : GRAPH_DEGREE_) {
+        conf[knowhere::indexparam::GRAPH_DEGREE] = gd;
+        for (auto igd : INTERMEDIATE_GRAPH_DEGREE_) {
+            if (igd < gd)
+                continue;
+            conf[knowhere::indexparam::INTERMEDIATE_GRAPH_DEGREE] = igd;
+            std::string index_file_name = get_index_name({igd, gd});
+            create_index(index_file_name, conf);
+            for (auto max_iterations : CAGRA_MAX_ITERATIONS_) {
+                for (auto search_width : CAGRA_SEARCH_WIDTH_) {
+                    conf[knowhere::indexparam::MAX_ITERATIONS] = max_iterations;
+                    conf[knowhere::indexparam::SEARCH_WIDTH] = search_width;
+                    test_cagra(conf);
+                }
+            }
         }
     }
 }

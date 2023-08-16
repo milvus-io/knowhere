@@ -15,18 +15,15 @@
 
 add_definitions(-DKNOWHERE_WITH_RAFT)
 include(cmake/utils/fetch_rapids.cmake)
-include(rapids-cmake)
-include(rapids-cpm)
-include(rapids-cuda)
-include(rapids-export)
-include(rapids-find)
+include(rapids-cpm)  # Dependency tracking
+include(rapids-cuda) # Common CMake CUDA logic
 
 rapids_cpm_init()
 
 set(CMAKE_CUDA_FLAGS
     "${CMAKE_CUDA_FLAGS} --expt-extended-lambda --expt-relaxed-constexpr")
 
-set(RAPIDS_VERSION 23.04)
+set(RAPIDS_VERSION 23.08)
 set(RAFT_VERSION "${RAPIDS_VERSION}")
 set(RAFT_FORK "rapidsai")
 set(RAFT_PINNED_TAG "branch-${RAPIDS_VERSION}")
