@@ -1,3 +1,7 @@
+This repo is deprecated. We will continue our open source vector search engine jorney in a new [repo](https://github.com/zilliztech/Knowhere). Please refer to the new repo for the latest updates.
+
+----
+
 <p>
     <img src="static/knowhere-logo.png" alt="Knowhere Logo"/>
 </p>
